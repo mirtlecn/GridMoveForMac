@@ -11,7 +11,7 @@ struct SettingsSidebarTabButton: View {
             HStack(spacing: 12) {
                 Image(systemName: systemImage)
                     .font(.system(size: 18, weight: .medium))
-                    .frame(width: 22)
+                    .frame(width: 24)
 
                 Text(title)
                     .font(.system(size: 16, weight: .semibold))
@@ -20,7 +20,7 @@ struct SettingsSidebarTabButton: View {
             }
             .foregroundStyle(isSelected ? Color.white : Color.primary)
             .padding(.horizontal, 16)
-            .frame(height: 50)
+            .frame(height: 52)
             .background(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(isSelected ? Color.accentColor : Color.clear)
@@ -36,17 +36,17 @@ struct SettingsPageSection<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 10) {
             if let title {
                 Text(title)
-                    .font(.system(size: 16, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
             }
 
             VStack(alignment: .leading, spacing: 14) {
                 content
             }
             .padding(.horizontal, 20)
-            .padding(.vertical, 18)
+            .padding(.vertical, 16)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -54,7 +54,7 @@ struct SettingsPageSection<Content: View>: View {
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color.primary.opacity(0.045), lineWidth: 1)
+                    .stroke(Color.primary.opacity(0.03), lineWidth: 1)
             )
         }
     }
@@ -72,9 +72,8 @@ struct SettingsMiniActionButton: View {
                 .padding(.horizontal, 10)
                 .padding(.vertical, 7)
         }
-        .buttonStyle(.borderedProminent)
-        .tint(Color(nsColor: .quaternaryLabelColor))
-        .foregroundStyle(Color.primary)
+        .buttonStyle(.bordered)
+        .controlSize(.small)
     }
 }
 
@@ -116,20 +115,62 @@ struct SettingsListContainer<Content: View>: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 0) {
                 content
             }
-            .padding(6)
         }
         .frame(minHeight: minHeight, maxHeight: maxHeight)
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.primary.opacity(0.035))
+                .fill(Color(nsColor: .windowBackgroundColor))
         )
         .overlay(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+                .stroke(Color.primary.opacity(0.045), lineWidth: 1)
         )
+    }
+}
+
+struct SettingsListFooterBar<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        HStack(spacing: 8) {
+            content
+            Spacer()
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
+        .background(Color.primary.opacity(0.035))
+        .clipShape(
+            UnevenRoundedRectangle(
+                topLeadingRadius: 0,
+                bottomLeadingRadius: 14,
+                bottomTrailingRadius: 14,
+                topTrailingRadius: 0,
+                style: .continuous
+            )
+        )
+    }
+}
+
+struct SettingsTableHeaderRow: View {
+    let leadingTitle: String
+    let trailingTitle: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(leadingTitle)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            Text(trailingTitle)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.primary.opacity(0.04))
     }
 }
 

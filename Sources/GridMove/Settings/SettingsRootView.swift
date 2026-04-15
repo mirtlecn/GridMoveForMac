@@ -12,7 +12,7 @@ struct SettingsRootView: View {
             detailView
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .frame(minWidth: 1180, minHeight: 800)
+        .frame(minWidth: 920, minHeight: 660)
         .background(Color(nsColor: .windowBackgroundColor))
         .sheet(isPresented: $viewModel.excludedWindowSheetPresented) {
             ExcludedWindowSheetView { kind, value in

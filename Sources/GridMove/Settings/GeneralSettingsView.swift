@@ -5,9 +5,9 @@ struct GeneralSettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 22) {
                 Text("General")
-                    .font(.system(size: 28, weight: .bold))
+                    .font(.system(size: 26, weight: .bold))
 
                 SettingsPageSection(title: nil) {
                     SettingsSwitchRow(
@@ -21,7 +21,7 @@ struct GeneralSettingsView: View {
                 }
 
                 SettingsPageSection(title: "Press And Drag") {
-                    VStack(alignment: .leading, spacing: 18) {
+                    VStack(alignment: .leading, spacing: 16) {
                         SettingsSwitchRow(
                             title: "Middle Mouse",
                             subtitle: "Press middle mouse for a short time to activate the grid.",
@@ -43,68 +43,90 @@ struct GeneralSettingsView: View {
                                 )
                             )
 
-                            SettingsListContainer(minHeight: 104, maxHeight: 128) {
-                                ForEach(viewModel.modifierGroupItems) { item in
-                                    SettingsSelectableListRow(isSelected: viewModel.selectedModifierGroupID == item.id) {
-                                        Text(item.title)
-                                            .font(.system(size: 15))
+                            VStack(spacing: 0) {
+                                SettingsListContainer(minHeight: 96, maxHeight: 120) {
+                                    ForEach(Array(viewModel.modifierGroupItems.enumerated()), id: \.element.id) { offset, item in
+                                        VStack(spacing: 0) {
+                                            SettingsSelectableListRow(isSelected: viewModel.selectedModifierGroupID == item.id) {
+                                                Text(item.title)
+                                                    .font(.system(size: 15))
+                                            }
+                                            .onTapGesture {
+                                                viewModel.selectedModifierGroupID = item.id
+                                            }
+
+                                            if offset < viewModel.modifierGroupItems.count - 1 {
+                                                Divider()
+                                                    .padding(.leading, 14)
+                                            }
+                                        }
                                     }
-                                    .onTapGesture {
-                                        viewModel.selectedModifierGroupID = item.id
+                                }
+                                SettingsListFooterBar {
+                                    SettingsMiniActionButton(systemImage: "plus") {
+                                        viewModel.modifierGroupSheetPresented = true
+                                    }
+
+                                    if viewModel.selectedModifierGroupID != nil {
+                                        SettingsMiniActionButton(systemImage: "minus") {
+                                            viewModel.removeSelectedModifierGroup()
+                                        }
                                     }
                                 }
                             }
                             .disabled(!viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag)
-
-                            HStack(spacing: 8) {
-                                SettingsMiniActionButton(systemImage: "plus") {
-                                    viewModel.modifierGroupSheetPresented = true
-                                }
-
-                                if viewModel.selectedModifierGroupID != nil {
-                                    SettingsMiniActionButton(systemImage: "minus") {
-                                        viewModel.removeSelectedModifierGroup()
-                                    }
-                                }
-                            }
                         }
                     }
                 }
                 .disabled(!viewModel.configuration.general.isEnabled)
 
                 SettingsPageSection(title: "Excluded Windows") {
-                    SettingsListContainer(minHeight: 140, maxHeight: 180) {
-                        ForEach(viewModel.excludedWindowItems) { item in
-                            SettingsSelectableListRow(isSelected: viewModel.selectedExcludedWindowID == item.id) {
-                                Text(item.value)
-                                    .textSelection(.enabled)
-                                    .font(.system(size: 15))
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                Text(item.kind.columnTitle)
-                                    .font(.system(size: 14))
-                                    .foregroundStyle(.secondary)
-                            }
-                            .onTapGesture {
-                                viewModel.selectedExcludedWindowID = item.id
+                    VStack(spacing: 0) {
+                        SettingsListContainer(minHeight: 160, maxHeight: 200) {
+                            SettingsTableHeaderRow(
+                                leadingTitle: "Value",
+                                trailingTitle: "Type"
+                            )
+
+                            ForEach(Array(viewModel.excludedWindowItems.enumerated()), id: \.element.id) { offset, item in
+                                VStack(spacing: 0) {
+                                    SettingsSelectableListRow(isSelected: viewModel.selectedExcludedWindowID == item.id) {
+                                        Text(item.value)
+                                            .textSelection(.enabled)
+                                            .font(.system(size: 15))
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                        Text(item.kind.columnTitle)
+                                            .font(.system(size: 14))
+                                            .foregroundStyle(.secondary)
+                                    }
+                                    .onTapGesture {
+                                        viewModel.selectedExcludedWindowID = item.id
+                                    }
+
+                                    if offset < viewModel.excludedWindowItems.count - 1 {
+                                        Divider()
+                                            .padding(.leading, 14)
+                                    }
+                                }
                             }
                         }
-                    }
 
-                    HStack(spacing: 8) {
-                        SettingsMiniActionButton(systemImage: "plus") {
-                            viewModel.openExcludedWindowSheet()
-                        }
+                        SettingsListFooterBar {
+                            SettingsMiniActionButton(systemImage: "plus") {
+                                viewModel.openExcludedWindowSheet()
+                            }
 
-                        if viewModel.selectedExcludedWindowID != nil {
-                            SettingsMiniActionButton(systemImage: "minus") {
-                                viewModel.removeSelectedExcludedWindow()
+                            if viewModel.selectedExcludedWindowID != nil {
+                                SettingsMiniActionButton(systemImage: "minus") {
+                                    viewModel.removeSelectedExcludedWindow()
+                                }
                             }
                         }
                     }
                 }
             }
-            .padding(.horizontal, 32)
-            .padding(.vertical, 26)
+            .padding(.horizontal, 26)
+            .padding(.vertical, 22)
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
     }
