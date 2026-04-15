@@ -44,6 +44,7 @@ import Testing
     }
 
     #expect(cycleBindings.count == 2)
+    #expect(configuration.general.isEnabled)
     #expect(cycleBindings.contains {
         $0.shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "l")
             && $0.action == .cycleNext
@@ -57,6 +58,30 @@ import Testing
     #expect(!hasFullscreenOrCloseBinding)
     #expect(configuration.dragTriggers.modifierGroups == [[.ctrl, .cmd, .shift, .alt], [.alt]])
     #expect(configuration.appearance.triggerStrokeColor.alpha == 0.2)
+}
+
+@Test func generalSettingsDecodeMissingEnableFlagWithDefaultValue() async throws {
+    let plist = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+    <dict>
+      <key>excludedBundleIDs</key>
+      <array>
+        <string>com.apple.Spotlight</string>
+      </array>
+      <key>excludedWindowTitles</key>
+      <array/>
+    </dict>
+    </plist>
+    """
+
+    let data = try #require(plist.data(using: .utf8))
+    let settings = try PropertyListDecoder().decode(GeneralSettings.self, from: data)
+
+    #expect(settings.isEnabled)
+    #expect(settings.excludedBundleIDs == ["com.apple.Spotlight"])
+    #expect(settings.excludedWindowTitles.isEmpty)
 }
 
 @Test func removingLayoutAlsoRemovesDirectBindingsForThatLayout() async throws {

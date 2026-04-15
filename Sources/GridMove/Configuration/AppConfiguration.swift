@@ -181,8 +181,32 @@ struct RGBAColor: Codable, Equatable, Hashable {
 }
 
 struct GeneralSettings: Codable, Equatable {
+    var isEnabled: Bool
     var excludedBundleIDs: [String]
     var excludedWindowTitles: [String]
+
+    private enum CodingKeys: String, CodingKey {
+        case isEnabled
+        case excludedBundleIDs
+        case excludedWindowTitles
+    }
+
+    init(
+        isEnabled: Bool,
+        excludedBundleIDs: [String],
+        excludedWindowTitles: [String]
+    ) {
+        self.isEnabled = isEnabled
+        self.excludedBundleIDs = excludedBundleIDs
+        self.excludedWindowTitles = excludedWindowTitles
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? true
+        excludedBundleIDs = try container.decode([String].self, forKey: .excludedBundleIDs)
+        excludedWindowTitles = try container.decode([String].self, forKey: .excludedWindowTitles)
+    }
 }
 
 struct AppearanceSettings: Codable, Equatable {
@@ -306,6 +330,7 @@ struct AppConfiguration: Codable, Equatable {
 
     static let defaultValue = AppConfiguration(
         general: GeneralSettings(
+            isEnabled: true,
             excludedBundleIDs: ["com.apple.Spotlight"],
             excludedWindowTitles: []
         ),

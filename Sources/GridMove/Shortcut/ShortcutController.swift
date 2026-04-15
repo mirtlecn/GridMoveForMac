@@ -13,6 +13,8 @@ final class ShortcutController {
     private var eventSource: CFRunLoopSource?
     private var pendingAccessibilityRevocation = false
 
+    var isEnabled = true
+
     init(
         layoutEngine: LayoutEngine,
         windowController: WindowController,
@@ -82,6 +84,10 @@ final class ShortcutController {
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
         guard ensureAccessibilityIsStillGranted() else {
+            return Unmanaged.passUnretained(event)
+        }
+
+        guard isEnabled else {
             return Unmanaged.passUnretained(event)
         }
 

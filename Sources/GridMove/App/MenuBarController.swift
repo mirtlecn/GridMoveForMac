@@ -55,6 +55,10 @@ final class MenuBarController: NSObject {
         onToggleDragGrid(nextState == .on)
     }
 
+    func setEnabled(_ isEnabled: Bool) {
+        dragGridMenuItem.state = isEnabled ? .on : .off
+    }
+
     @objc private func openSettings() {
         onOpenSettings()
     }

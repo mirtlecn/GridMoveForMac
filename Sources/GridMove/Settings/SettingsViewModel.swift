@@ -128,6 +128,20 @@ final class SettingsViewModel: ObservableObject {
         }
     }
 
+    func replaceConfiguration(_ configuration: AppConfiguration) {
+        self.configuration = configuration
+
+        if let selectedLayoutID,
+           let matchedLayout = configuration.layouts.first(where: { $0.id == selectedLayoutID }) {
+            layoutDraft = matchedLayout
+        } else {
+            selectedLayoutID = configuration.layouts.first?.id
+            layoutDraft = configuration.layouts.first
+        }
+
+        resetArmed = false
+    }
+
     func removeBundleID(at index: Int) {
         guard configuration.general.excludedBundleIDs.indices.contains(index) else {
             return
@@ -155,6 +169,11 @@ final class SettingsViewModel: ObservableObject {
             configuration.dragTriggers.enableModifierLeftMouseDrag = enableModifierLeftMouseDrag
         }
         persistConfiguration(status: "Drag triggers updated.")
+    }
+
+    func updateGeneralEnabled(_ isEnabled: Bool) {
+        configuration.general.isEnabled = isEnabled
+        persistConfiguration(status: "Global enable updated.")
     }
 
     func addModifierGroup(_ group: [ModifierKey]) {

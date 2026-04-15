@@ -45,9 +45,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         configureMainMenu()
 
         menuController = MenuBarController(
-            dragGridEnabled: true,
+            dragGridEnabled: configuration.general.isEnabled,
             onToggleDragGrid: { [weak self] isEnabled in
-                self?.dragGridController.isEnabled = isEnabled
+                self?.updateGlobalEnabledState(isEnabled)
             },
             onOpenSettings: { [weak self] in
                 self?.showSettings()
@@ -79,6 +79,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onboardingController = nil
             dragGridController.start()
             shortcutController.start()
+            applyGlobalEnabledState()
         } else {
             dragGridController.stop()
             shortcutController.stop()
@@ -116,12 +117,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 configurationProvider: { [weak self] in self?.configuration ?? .defaultValue },
                 onConfigurationSaved: { [weak self] configuration in
                     self?.configuration = configuration
+                    self?.applyGlobalEnabledState()
+                    self?.settingsController?.updateConfiguration(configuration)
                 }
             )
         }
 
+        settingsController?.updateConfiguration(configuration)
         settingsController?.show()
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func updateGlobalEnabledState(_ isEnabled: Bool) {
+        guard configuration.general.isEnabled != isEnabled else {
+            return
+        }
+
+        configuration.general.isEnabled = isEnabled
+        do {
+            try configurationStore.save(configuration)
+        } catch {
+            AppLogger.shared.error("Failed to save configuration: \(error.localizedDescription)")
+        }
+        applyGlobalEnabledState()
+        settingsController?.updateConfiguration(configuration)
+    }
+
+    private func applyGlobalEnabledState() {
+        dragGridController.isEnabled = configuration.general.isEnabled
+        shortcutController.isEnabled = configuration.general.isEnabled
+        menuController?.setEnabled(configuration.general.isEnabled)
     }
 
     private func showOnboardingIfNeeded() {

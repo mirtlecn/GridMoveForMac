@@ -76,7 +76,9 @@ The app writes a default plist configuration on first launch. The initial values
 
 The Settings window includes:
 
-- `General` for excluded bundle identifiers, excluded window titles, and drag trigger settings
+- `General` for the global enable switch, excluded bundle identifiers, excluded window titles, and drag trigger settings
 - `Layouts` for visual editing of window regions and trigger regions, menu bar trigger selection, drag-and-drop layout ordering, and cycle inclusion
 - `Appearance` for trigger and highlight overlay rendering
 - `Hotkeys` for direct layout actions and cycle shortcuts
+
+When GridMove is disabled, drag triggers, keyboard shortcuts, and CLI layout actions are all blocked until it is enabled again.

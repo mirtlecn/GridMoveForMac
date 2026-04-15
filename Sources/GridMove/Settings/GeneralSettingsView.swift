@@ -6,6 +6,17 @@ struct GeneralSettingsView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                SettingsCard(title: "General") {
+                    SettingsSwitchRow(
+                        title: "Enable",
+                        subtitle: "Allow drag triggers, layout hotkeys, and command line layout actions.",
+                        isOn: Binding(
+                            get: { viewModel.configuration.general.isEnabled },
+                            set: { viewModel.updateGeneralEnabled($0) }
+                        )
+                    )
+                }
+
                 HStack(alignment: .top, spacing: 20) {
                     exclusionCard(
                         title: "Excluded Bundle IDs",

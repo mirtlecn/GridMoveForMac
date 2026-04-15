@@ -44,4 +44,8 @@ final class SettingsWindowController: NSWindowController {
         window?.center()
         window?.makeKeyAndOrderFront(nil)
     }
+
+    func updateConfiguration(_ configuration: AppConfiguration) {
+        viewModel.replaceConfiguration(configuration)
+    }
 }

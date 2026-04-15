@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import GridMove
 
@@ -64,4 +65,20 @@ import Testing
     #expect(throws: CommandLineLayoutResolutionError.ambiguousLayoutName("Center", matches: layouts)) {
         try runner.resolveLayout(identifier: "Center", in: layouts)
     }
+}
+
+@MainActor
+@Test func commandLineRunnerRejectsActionsWhenDisabled() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-cli-tests-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var configuration = AppConfiguration.defaultValue
+    configuration.general.isEnabled = false
+    try store.save(configuration)
+
+    let runner = CommandLineRunner(configurationStore: store)
+
+    #expect(runner.run(action: .cycleNext) == EXIT_FAILURE)
 }

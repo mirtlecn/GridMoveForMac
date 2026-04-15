@@ -38,6 +38,14 @@ final class CommandLineRunner {
     }
 
     func run(action: CommandLineAction) -> Int32 {
+        let configuration: AppConfiguration
+        do {
+            configuration = try configurationStore.load()
+        } catch {
+            writeToStandardError("Failed to load configuration: \(error.localizedDescription)\n")
+            return EXIT_FAILURE
+        }
+
         switch action {
         case .help:
             writeToStandardOutput(CommandLineAction.usage + "\n")
@@ -46,16 +54,13 @@ final class CommandLineRunner {
             break
         }
 
-        guard windowController.isAccessibilityTrusted(prompt: false) else {
-            writeToStandardError("Accessibility access is required.\n")
+        guard configuration.general.isEnabled else {
+            writeToStandardError("GridMove is disabled. Enable it from the menu bar or Settings.\n")
             return EXIT_FAILURE
         }
 
-        let configuration: AppConfiguration
-        do {
-            configuration = try configurationStore.load()
-        } catch {
-            writeToStandardError("Failed to load configuration: \(error.localizedDescription)\n")
+        guard windowController.isAccessibilityTrusted(prompt: false) else {
+            writeToStandardError("Accessibility access is required.\n")
             return EXIT_FAILURE
         }
 
