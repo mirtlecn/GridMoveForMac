@@ -55,6 +55,20 @@ swift run
 
 On first launch, grant Accessibility access in System Settings. The app stays in the menu bar and hides the Dock icon by default.
 
+## CLI
+
+The compiled executable also supports direct command line actions:
+
+```bash
+.build/release/GridMove -next
+.build/release/GridMove -pre
+.build/release/GridMove -layout "Center"
+.build/release/GridMove -layout layout-4
+.build/release/GridMove -help
+```
+
+The `-layout` argument accepts either the layout name or the layout identifier. CLI actions use the same target window lookup as keyboard shortcuts: focused window first, then the window under the cursor.
+
 ## Configuration
 
 The app writes a default plist configuration on first launch. The initial values mirror the migrated `~/.hammerspoon` layouts, trigger regions, modifier groups, and shortcut defaults.
