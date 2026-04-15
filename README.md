@@ -1,0 +1,66 @@
+# GridMove
+
+GridMove is a native macOS menu bar app that migrates the current Hammerspoon window layout and drag grid workflow into a standalone AppKit-based application.
+
+## Current scope
+
+- Global keyboard shortcuts for cycling layouts and applying named layouts
+- Layout cycling that follows the current order in the Settings UI
+- Drag grid activation by middle mouse hold or configured modifier groups plus left mouse
+- Accessibility-based target window lookup, focus, resize, and fullscreen exit
+- Non-activating overlay for trigger slots and target window preview
+- Native AppKit settings window with four sections: General, Layouts, Appearance, and Hotkeys
+- Property list configuration stored at `~/Library/Application Support/GridMove/config.plist`
+
+## Out of scope in this first version
+
+- Space switching
+- Mission Control automation
+- Cross-Space window movement
+- Fullscreen Space management
+- Sparkle integration
+- Third-party shortcut libraries
+
+## Build
+
+```bash
+swift build
+```
+
+## Package A Test App
+
+```bash
+make package-app
+```
+
+This creates:
+
+- `dist/GridMove.app`
+- `dist/GridMove.zip`
+
+Before packaging, `make package-app` removes the local runtime configuration at `~/Library/Application Support/GridMove/config.plist` so the packaged app starts from a clean default state.
+
+The default signing mode is ad-hoc signing for local testing. To use a real certificate, override `SIGN_IDENTITY`:
+
+```bash
+make package-app SIGN_IDENTITY="Developer ID Application: Example Name (TEAMID)"
+```
+
+## Run
+
+```bash
+swift run
+```
+
+On first launch, grant Accessibility access in System Settings. The app stays in the menu bar and hides the Dock icon by default.
+
+## Configuration
+
+The app writes a default plist configuration on first launch. The initial values mirror the migrated `~/.hammerspoon` layouts, trigger regions, modifier groups, and shortcut defaults.
+
+The Settings window includes:
+
+- `General` for excluded bundle identifiers, excluded window titles, and drag trigger settings
+- `Layouts` for visual editing of window regions and trigger regions, plus drag-and-drop layout ordering
+- `Appearance` for trigger and highlight overlay rendering
+- `Hotkeys` for direct layout actions and cycle shortcuts
