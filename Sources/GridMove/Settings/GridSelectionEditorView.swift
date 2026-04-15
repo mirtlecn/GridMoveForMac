@@ -310,10 +310,10 @@ final class GridSelectionEditorView: NSView {
             GridSelection(x: selection.x, y: selection.y, w: selection.w, h: selection.h)
         )
 
-        let topLeft = CGPoint(x: selectionRect.minX, y: selectionRect.maxY)
-        let topRight = CGPoint(x: selectionRect.maxX, y: selectionRect.maxY)
-        let bottomLeft = CGPoint(x: selectionRect.minX, y: selectionRect.minY)
-        let bottomRight = CGPoint(x: selectionRect.maxX, y: selectionRect.minY)
+        let topLeft = CGPoint(x: selectionRect.minX, y: selectionRect.minY)
+        let topRight = CGPoint(x: selectionRect.maxX, y: selectionRect.minY)
+        let bottomLeft = CGPoint(x: selectionRect.minX, y: selectionRect.maxY)
+        let bottomRight = CGPoint(x: selectionRect.maxX, y: selectionRect.maxY)
 
         if isNear(point, topLeft) { return .topLeft }
         if isNear(point, topRight) { return .topRight }
@@ -331,10 +331,10 @@ final class GridSelectionEditorView: NSView {
         if abs(point.x - selectionRect.maxX) <= handleTolerance {
             return .right
         }
-        if abs(point.y - selectionRect.maxY) <= handleTolerance {
+        if abs(point.y - selectionRect.minY) <= handleTolerance {
             return .top
         }
-        if abs(point.y - selectionRect.minY) <= handleTolerance {
+        if abs(point.y - selectionRect.maxY) <= handleTolerance {
             return .bottom
         }
 
