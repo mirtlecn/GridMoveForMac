@@ -480,17 +480,15 @@ private struct SharedGridPreviewContent: View {
                 RoundedRectangle(cornerRadius: 10)
                     .fill(Color(nsColor: .controlBackgroundColor).opacity(0.9))
                     .overlay(alignment: .leading) {
-                        HStack(spacing: 4) {
-                            Circle().fill(Color.white.opacity(0.75)).frame(width: 4, height: 4)
-                            Circle().fill(Color.white.opacity(0.55)).frame(width: 4, height: 4)
-                            Circle().fill(Color.white.opacity(0.4)).frame(width: 4, height: 4)
-                        }
+                        Image(systemName: "apple.logo")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(Color.white.opacity(0.78))
                         .padding(.leading, 10)
                     }
                     .overlay(alignment: .trailing) {
-                        Image(systemName: "apple.logo")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(Color.white.opacity(0.7))
+                        Text("12:00")
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .foregroundStyle(Color.white.opacity(0.72))
                         .padding(.trailing, 10)
                     }
                     .frame(width: previewGeometry.menuBarRect.width, height: previewGeometry.menuBarRect.height)
