@@ -488,14 +488,9 @@ private struct SharedGridPreviewContent: View {
                         .padding(.leading, 10)
                     }
                     .overlay(alignment: .trailing) {
-                        HStack(spacing: 4) {
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(Color.white.opacity(0.55))
-                                .frame(width: 16, height: 4)
-                            RoundedRectangle(cornerRadius: 2)
-                                .fill(Color.white.opacity(0.35))
-                                .frame(width: 10, height: 4)
-                        }
+                        Image(systemName: "apple.logo")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(Color.white.opacity(0.7))
                         .padding(.trailing, 10)
                     }
                     .frame(width: previewGeometry.menuBarRect.width, height: previewGeometry.menuBarRect.height)
