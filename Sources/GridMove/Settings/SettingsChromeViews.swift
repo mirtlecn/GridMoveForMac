@@ -1,60 +1,25 @@
 import SwiftUI
 
-struct SettingsSidebarTabButton: View {
-    let title: String
-    let systemImage: String
-    let isSelected: Bool
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            HStack(spacing: 12) {
-                Image(systemName: systemImage)
-                    .font(.system(size: 18, weight: .medium))
-                    .frame(width: 24)
-
-                Text(title)
-                    .font(.system(size: 16, weight: .semibold))
-
-                Spacer()
-            }
-            .foregroundStyle(isSelected ? Color.white : Color.primary)
-            .padding(.horizontal, 16)
-            .frame(height: 52)
-            .background(
-                RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .fill(isSelected ? Color.accentColor : Color.clear)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-        }
-        .buttonStyle(.plain)
-    }
-}
-
 struct SettingsPageSection<Content: View>: View {
     let title: String?
     @ViewBuilder let content: Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 8) {
             if let title {
                 Text(title)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.title3.weight(.semibold))
             }
 
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 12) {
                 content
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .fill(Color(nsColor: .controlBackgroundColor))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color.primary.opacity(0.03), lineWidth: 1)
             )
         }
     }
@@ -67,10 +32,10 @@ struct SettingsMiniActionButton: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 12, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
                 .frame(width: 14, height: 14)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 7)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 6)
         }
         .buttonStyle(.bordered)
         .controlSize(.small)
@@ -84,8 +49,8 @@ struct SettingsSheetContainer<Content: View>: View {
         VStack(alignment: .leading, spacing: 20) {
             content
         }
-        .padding(24)
-        .frame(minWidth: 520)
+        .padding(20)
+        .frame(minWidth: 460)
     }
 }
 
@@ -97,14 +62,14 @@ struct SettingsSelectableListRow<Content: View>: View {
         HStack(spacing: 12) {
             content
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 11)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(isSelected ? Color.accentColor.opacity(0.12) : Color.clear)
         )
-        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
     }
 }
 
@@ -121,12 +86,8 @@ struct SettingsListContainer<Content: View>: View {
         }
         .frame(minHeight: minHeight, maxHeight: maxHeight)
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Color(nsColor: .windowBackgroundColor))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color.primary.opacity(0.045), lineWidth: 1)
         )
     }
 }
@@ -139,14 +100,14 @@ struct SettingsListFooterBar<Content: View>: View {
             content
             Spacer()
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
         .background(Color.primary.opacity(0.035))
         .clipShape(
             UnevenRoundedRectangle(
                 topLeadingRadius: 0,
-                bottomLeadingRadius: 14,
-                bottomTrailingRadius: 14,
+                bottomLeadingRadius: 12,
+                bottomTrailingRadius: 12,
                 topTrailingRadius: 0,
                 style: .continuous
             )
@@ -161,15 +122,15 @@ struct SettingsTableHeaderRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Text(leadingTitle)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
             Text(trailingTitle)
-                .font(.system(size: 13, weight: .semibold))
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .background(Color.primary.opacity(0.04))
     }
 }
@@ -178,7 +139,7 @@ struct AboutSettingsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
             Text("About")
-                .font(.system(size: 28, weight: .bold))
+                .font(.largeTitle.weight(.bold))
 
             SettingsPageSection(title: "About") {
                 Text("About content will be added later.")

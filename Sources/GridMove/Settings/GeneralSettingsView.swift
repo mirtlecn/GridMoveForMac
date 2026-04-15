@@ -4,130 +4,155 @@ struct GeneralSettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 22) {
-                Text("General")
-                    .font(.system(size: 26, weight: .bold))
+        VStack(alignment: .leading, spacing: 12) {
+            Text("General")
+                .font(.largeTitle.weight(.bold))
+                .padding(.horizontal, 24)
+                .padding(.top, 20)
 
-                SettingsPageSection(title: nil) {
-                    SettingsSwitchRow(
-                        title: "Enable",
-                        subtitle: "Allow drag triggers, layout hotkeys, and command line layout actions.",
+            Form {
+                Section {
+                    Toggle(
                         isOn: Binding(
                             get: { viewModel.configuration.general.isEnabled },
                             set: { viewModel.updateGeneralEnabled($0) }
                         )
-                    )
+                    ) {
+                        SettingsDescriptionLabel(
+                            title: "Enable",
+                            subtitle: "Allow drag triggers, layout hotkeys, and command line layout actions."
+                        )
+                    }
                 }
 
-                SettingsPageSection(title: "Press And Drag") {
-                    VStack(alignment: .leading, spacing: 16) {
-                        SettingsSwitchRow(
-                            title: "Middle Mouse",
-                            subtitle: "Press middle mouse for a short time to activate the grid.",
-                            isOn: Binding(
-                                get: { viewModel.configuration.dragTriggers.enableMiddleMouseDrag },
-                                set: { viewModel.updateDragTriggers(enableMiddleMouseDrag: $0) }
-                            )
+                Section("Press And Drag") {
+                    Toggle(
+                        isOn: Binding(
+                            get: { viewModel.configuration.dragTriggers.enableMiddleMouseDrag },
+                            set: { viewModel.updateDragTriggers(enableMiddleMouseDrag: $0) }
                         )
+                    ) {
+                        SettingsDescriptionLabel(
+                            title: "Middle Mouse",
+                            subtitle: "Press middle mouse for a short time to activate the grid."
+                        )
+                    }
+                    .controlSize(.mini)
 
-                        Divider()
-
-                        VStack(alignment: .leading, spacing: 14) {
-                            SettingsSwitchRow(
-                                title: "Modifier + Left Mouse",
-                                subtitle: "Hold pre-set modifier, then press left mouse to activate.",
-                                isOn: Binding(
-                                    get: { viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag },
-                                    set: { viewModel.updateDragTriggers(enableModifierLeftMouseDrag: $0) }
-                                )
+                    VStack(alignment: .leading, spacing: 10) {
+                        Toggle(
+                            isOn: Binding(
+                                get: { viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag },
+                                set: { viewModel.updateDragTriggers(enableModifierLeftMouseDrag: $0) }
                             )
+                        ) {
+                            SettingsDescriptionLabel(
+                                title: "Modifier + Left Mouse",
+                                subtitle: "Hold pre-set modifier, then press left mouse to activate."
+                            )
+                        }
+                        .controlSize(.mini)
 
-                            VStack(spacing: 0) {
-                                SettingsListContainer(minHeight: 96, maxHeight: 120) {
-                                    ForEach(Array(viewModel.modifierGroupItems.enumerated()), id: \.element.id) { offset, item in
-                                        VStack(spacing: 0) {
-                                            SettingsSelectableListRow(isSelected: viewModel.selectedModifierGroupID == item.id) {
-                                                Text(item.title)
-                                                    .font(.system(size: 15))
-                                            }
-                                            .onTapGesture {
-                                                viewModel.selectedModifierGroupID = item.id
-                                            }
-
-                                            if offset < viewModel.modifierGroupItems.count - 1 {
-                                                Divider()
-                                                    .padding(.leading, 14)
-                                            }
-                                        }
-                                    }
-                                }
-                                SettingsListFooterBar {
-                                    SettingsMiniActionButton(systemImage: "plus") {
-                                        viewModel.modifierGroupSheetPresented = true
-                                    }
-
-                                    if viewModel.selectedModifierGroupID != nil {
-                                        SettingsMiniActionButton(systemImage: "minus") {
-                                            viewModel.removeSelectedModifierGroup()
-                                        }
-                                    }
-                                }
+                        List(selection: $viewModel.selectedModifierGroupID) {
+                            ForEach(viewModel.modifierGroupItems) { item in
+                                Text(item.title)
+                                    .tag(item.id)
                             }
-                            .disabled(!viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag)
+                        }
+                        .frame(minHeight: 92, maxHeight: 116)
+
+                        HStack(spacing: 8) {
+                            Button {
+                                viewModel.modifierGroupSheetPresented = true
+                            } label: {
+                                Label("Add", systemImage: "plus")
+                            }
+                            .labelStyle(.iconOnly)
+                            .buttonStyle(.borderless)
+
+                            if viewModel.selectedModifierGroupID != nil {
+                                Button {
+                                    viewModel.removeSelectedModifierGroup()
+                                } label: {
+                                    Label("Delete", systemImage: "minus")
+                                }
+                                .labelStyle(.iconOnly)
+                                .buttonStyle(.borderless)
+                            }
                         }
                     }
+                    .disabled(!viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag)
                 }
                 .disabled(!viewModel.configuration.general.isEnabled)
 
-                SettingsPageSection(title: "Excluded Windows") {
-                    VStack(spacing: 0) {
-                        SettingsListContainer(minHeight: 160, maxHeight: 200) {
-                            SettingsTableHeaderRow(
-                                leadingTitle: "Value",
-                                trailingTitle: "Type"
-                            )
-
-                            ForEach(Array(viewModel.excludedWindowItems.enumerated()), id: \.element.id) { offset, item in
-                                VStack(spacing: 0) {
-                                    SettingsSelectableListRow(isSelected: viewModel.selectedExcludedWindowID == item.id) {
-                                        Text(item.value)
-                                            .textSelection(.enabled)
-                                            .font(.system(size: 15))
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                        Text(item.kind.columnTitle)
-                                            .font(.system(size: 14))
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    .onTapGesture {
-                                        viewModel.selectedExcludedWindowID = item.id
-                                    }
-
-                                    if offset < viewModel.excludedWindowItems.count - 1 {
-                                        Divider()
-                                            .padding(.leading, 14)
-                                    }
-                                }
-                            }
+                Section("Excluded Windows") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack(spacing: 12) {
+                            Text("Value")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            Text("Type")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundStyle(.secondary)
                         }
 
-                        SettingsListFooterBar {
-                            SettingsMiniActionButton(systemImage: "plus") {
-                                viewModel.openExcludedWindowSheet()
+                        List(selection: $viewModel.selectedExcludedWindowID) {
+                            ForEach(viewModel.excludedWindowItems) { item in
+                                HStack(spacing: 12) {
+                                    Text(item.value)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                    Text(item.kind.columnTitle)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .tag(item.id)
                             }
+                        }
+                        .frame(minHeight: 140, maxHeight: 180)
+
+                        HStack(spacing: 8) {
+                            Button {
+                                viewModel.openExcludedWindowSheet()
+                            } label: {
+                                Label("Add", systemImage: "plus")
+                            }
+                            .labelStyle(.iconOnly)
+                            .buttonStyle(.borderless)
 
                             if viewModel.selectedExcludedWindowID != nil {
-                                SettingsMiniActionButton(systemImage: "minus") {
+                                Button {
                                     viewModel.removeSelectedExcludedWindow()
+                                } label: {
+                                    Label("Delete", systemImage: "minus")
                                 }
+                                .labelStyle(.iconOnly)
+                                .buttonStyle(.borderless)
                             }
                         }
                     }
                 }
             }
-            .padding(.horizontal, 26)
-            .padding(.vertical, 22)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
+            .formStyle(.grouped)
+            .scrollContentBackground(.hidden)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+}
+
+private struct SettingsDescriptionLabel: View {
+    let title: String
+    let subtitle: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.headline)
+            Text(subtitle)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.vertical, 1)
     }
 }

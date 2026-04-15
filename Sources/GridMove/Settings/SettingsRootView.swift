@@ -29,31 +29,25 @@ struct SettingsRootView: View {
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("GridMove")
-                .font(.system(size: 28, weight: .bold))
-                .padding(.top, 72)
+                .font(.title2.weight(.bold))
+                .padding(.horizontal, 14)
+                .padding(.top, 32)
 
             Spacer()
-                .frame(height: 52)
+                .frame(height: 20)
 
-            VStack(spacing: 10) {
+            List(selection: $viewModel.selectedSection) {
                 ForEach(SettingsViewModel.Section.allCases) { section in
-                    SettingsSidebarTabButton(
-                        title: section.title,
-                        systemImage: section.systemImage,
-                        isSelected: viewModel.selectedSection == section,
-                        action: {
-                            withAnimation(.easeInOut(duration: 0.18)) {
-                                viewModel.selectedSection = section
-                            }
-                        }
-                    )
+                    Label(section.title, systemImage: section.systemImage)
+                        .tag(section)
                 }
             }
+            .listStyle(.sidebar)
+            .scrollContentBackground(.hidden)
 
             Spacer()
         }
-        .padding(.horizontal, 18)
-        .frame(minWidth: 270, idealWidth: 270, maxWidth: 270, maxHeight: .infinity, alignment: .topLeading)
+        .frame(minWidth: 228, idealWidth: 228, maxWidth: 228, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(nsColor: .windowBackgroundColor))
     }
 

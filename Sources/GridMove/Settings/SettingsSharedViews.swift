@@ -236,7 +236,7 @@ struct SettingsCard<Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         } label: {
             Text(title)
-                .font(.system(size: 14, weight: .semibold))
+                .font(.headline)
         }
         .controlSize(.large)
     }
@@ -249,11 +249,11 @@ struct SettingsSwitchRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.headline)
                 Text(subtitle)
-                    .font(.system(size: 15, weight: .regular))
+                    .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
