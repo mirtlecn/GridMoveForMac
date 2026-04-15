@@ -3,25 +3,32 @@ import Testing
 @testable import GridMove
 
 @Test func commandLineActionParserAcceptsSupportedArguments() async throws {
-    #expect(try CommandLineAction.parse(arguments: []) == nil)
-    #expect(try CommandLineAction.parse(arguments: ["-help"]) == .help)
-    #expect(try CommandLineAction.parse(arguments: ["--help"]) == .help)
-    #expect(try CommandLineAction.parse(arguments: ["-next"]) == .cycleNext)
-    #expect(try CommandLineAction.parse(arguments: ["-pre"]) == .cyclePrevious)
-    #expect(try CommandLineAction.parse(arguments: ["-prev"]) == .cyclePrevious)
-    #expect(try CommandLineAction.parse(arguments: ["-layout", "Center"]) == .applyLayout(identifier: "Center"))
-    #expect(try CommandLineAction.parse(arguments: ["-psn_0_12345"]) == nil)
+    #expect(try CommandLineInvocation.parse(arguments: []) == nil)
+    #expect(try CommandLineInvocation.parse(arguments: ["-help"]) == CommandLineInvocation(action: .help, targetWindowID: nil))
+    #expect(try CommandLineInvocation.parse(arguments: ["--help"]) == CommandLineInvocation(action: .help, targetWindowID: nil))
+    #expect(try CommandLineInvocation.parse(arguments: ["-next"]) == CommandLineInvocation(action: .cycleNext, targetWindowID: nil))
+    #expect(try CommandLineInvocation.parse(arguments: ["-pre"]) == CommandLineInvocation(action: .cyclePrevious, targetWindowID: nil))
+    #expect(try CommandLineInvocation.parse(arguments: ["-prev"]) == CommandLineInvocation(action: .cyclePrevious, targetWindowID: nil))
+    #expect(try CommandLineInvocation.parse(arguments: ["-layout", "Center"]) == CommandLineInvocation(action: .applyLayout(identifier: "Center"), targetWindowID: nil))
+    #expect(try CommandLineInvocation.parse(arguments: ["-layout", "Center", "-window-id", "123"]) == CommandLineInvocation(action: .applyLayout(identifier: "Center"), targetWindowID: 123))
+    #expect(try CommandLineInvocation.parse(arguments: ["-psn_0_12345"]) == nil)
 }
 
 @Test func commandLineActionParserRejectsInvalidArguments() async throws {
     #expect(throws: CommandLineActionError.unknownArgument("-oops")) {
-        try CommandLineAction.parse(arguments: ["-oops"])
+        try CommandLineInvocation.parse(arguments: ["-oops"])
     }
     #expect(throws: CommandLineActionError.missingLayoutIdentifier) {
-        try CommandLineAction.parse(arguments: ["-layout"])
+        try CommandLineInvocation.parse(arguments: ["-layout"])
+    }
+    #expect(throws: CommandLineActionError.missingWindowIdentifier) {
+        try CommandLineInvocation.parse(arguments: ["-next", "-window-id"])
+    }
+    #expect(throws: CommandLineActionError.invalidWindowIdentifier("oops")) {
+        try CommandLineInvocation.parse(arguments: ["-next", "-window-id", "oops"])
     }
     #expect(throws: CommandLineActionError.unexpectedArguments(["extra"])) {
-        try CommandLineAction.parse(arguments: ["-next", "extra"])
+        try CommandLineInvocation.parse(arguments: ["-next", "extra"])
     }
 }
 
@@ -80,5 +87,5 @@ import Testing
 
     let runner = CommandLineRunner(configurationStore: store)
 
-    #expect(runner.run(action: .cycleNext) == EXIT_FAILURE)
+    #expect(runner.run(invocation: CommandLineInvocation(action: .cycleNext, targetWindowID: nil)) == EXIT_FAILURE)
 }

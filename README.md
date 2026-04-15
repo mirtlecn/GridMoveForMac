@@ -64,10 +64,11 @@ The compiled executable also supports direct command line actions:
 .build/release/GridMove -pre
 .build/release/GridMove -layout "Center"
 .build/release/GridMove -layout layout-4
+.build/release/GridMove -layout "Center" -window-id 12345
 .build/release/GridMove -help
 ```
 
-The `-layout` argument accepts either the layout name or the layout identifier. CLI actions use the same target window lookup as keyboard shortcuts: focused window first, then the window under the cursor.
+The `-layout` argument accepts either the layout name or the layout identifier. If `-window-id <cg-window-id>` is provided, GridMove targets that exact on-screen window. Otherwise CLI actions operate on the currently focused window only.
 If multiple layouts share the same name, use the layout identifier instead. Ambiguous layout names are rejected.
 
 ## Configuration

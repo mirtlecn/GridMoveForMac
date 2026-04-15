@@ -37,7 +37,7 @@ final class CommandLineRunner {
         self.windowController = windowController ?? WindowController(layoutEngine: layoutEngine)
     }
 
-    func run(action: CommandLineAction) -> Int32 {
+    func run(invocation: CommandLineInvocation) -> Int32 {
         let configuration: AppConfiguration
         do {
             configuration = try configurationStore.load()
@@ -46,7 +46,7 @@ final class CommandLineRunner {
             return EXIT_FAILURE
         }
 
-        switch action {
+        switch invocation.action {
         case .help:
             writeToStandardOutput(CommandLineAction.usage + "\n")
             return EXIT_SUCCESS
@@ -64,13 +64,24 @@ final class CommandLineRunner {
             return EXIT_FAILURE
         }
 
-        guard let window = windowController.windowForLayoutAction(configuration: configuration) else {
-            writeToStandardError("No target window found.\n")
+        let window: ManagedWindow?
+        if let targetWindowID = invocation.targetWindowID {
+            window = windowController.window(cgWindowID: targetWindowID, configuration: configuration)
+        } else {
+            window = windowController.focusedWindow(configuration: configuration)
+        }
+
+        guard let window else {
+            if let targetWindowID = invocation.targetWindowID {
+                writeToStandardError("No target window found for window ID \(targetWindowID).\n")
+            } else {
+                writeToStandardError("No focused target window found.\n")
+            }
             return EXIT_FAILURE
         }
 
         let layoutID: String
-        switch action {
+        switch invocation.action {
         case .cycleNext:
             guard let nextLayoutID = layoutEngine.nextLayoutID(for: window.identity, layouts: configuration.layouts) else {
                 writeToStandardError("No layout available for cycling.\n")

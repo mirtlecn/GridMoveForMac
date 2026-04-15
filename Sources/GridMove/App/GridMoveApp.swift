@@ -4,11 +4,11 @@ import AppKit
 enum GridMoveApp {
     static func main() {
         do {
-            if let action = try CommandLineAction.parse(arguments: Array(CommandLine.arguments.dropFirst())) {
+            if let invocation = try CommandLineInvocation.parse(arguments: Array(CommandLine.arguments.dropFirst())) {
                 let application = NSApplication.shared
                 application.setActivationPolicy(.prohibited)
                 let runner = CommandLineRunner()
-                exit(runner.run(action: action))
+                exit(runner.run(invocation: invocation))
             }
         } catch let error as CommandLineActionError {
             FileHandle.standardError.write(Data((error.message + "\n" + CommandLineAction.usage + "\n").utf8))

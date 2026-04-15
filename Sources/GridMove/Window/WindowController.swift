@@ -81,6 +81,27 @@ final class WindowController {
         return window
     }
 
+    func window(cgWindowID: CGWindowID, configuration: AppConfiguration) -> ManagedWindow? {
+        let windowInfos = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
+
+        guard let matchedWindowInfo = windowInfos.first(where: {
+            ($0[kCGWindowNumber as String] as? CGWindowID) == cgWindowID
+        }) else {
+            return nil
+        }
+
+        guard let managedWindow = resolveWindow(from: matchedWindowInfo, point: nil) else {
+            return nil
+        }
+
+        guard !isWindowExcluded(managedWindow, configuration: configuration) else {
+            return nil
+        }
+
+        focus(managedWindow)
+        return managedWindow
+    }
+
     func windowUnderCursor(at point: CGPoint, configuration: AppConfiguration) -> ManagedWindow? {
         let quartzPoint = quartzPoint(fromAppKitPoint: point)
         let windowInfos = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
@@ -236,7 +257,7 @@ final class WindowController {
         return result
     }
 
-    private func resolveWindow(from windowInfo: [String: Any], point: CGPoint) -> ManagedWindow? {
+    private func resolveWindow(from windowInfo: [String: Any], point: CGPoint?) -> ManagedWindow? {
         guard let pid = windowInfo[kCGWindowOwnerPID as String] as? pid_t else {
             return nil
         }
@@ -300,10 +321,12 @@ final class WindowController {
         _ window: ManagedWindow,
         expectedTitle: String?,
         expectedBounds: CGRect?,
-        point: CGPoint
+        point: CGPoint?
     ) -> Int {
-        guard window.frame.contains(point) else {
-            return 0
+        if let point {
+            guard window.frame.contains(point) else {
+                return 0
+            }
         }
 
         var score = 1
