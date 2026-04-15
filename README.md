@@ -68,6 +68,7 @@ The compiled executable also supports direct command line actions:
 ```
 
 The `-layout` argument accepts either the layout name or the layout identifier. CLI actions use the same target window lookup as keyboard shortcuts: focused window first, then the window under the cursor.
+If multiple layouts share the same name, use the layout identifier instead. Ambiguous layout names are rejected.
 
 ## Configuration
 

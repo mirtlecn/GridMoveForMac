@@ -29,8 +29,39 @@ import Testing
     let runner = CommandLineRunner()
     let layouts = AppConfiguration.defaultValue.layouts
 
-    #expect(runner.resolveLayout(identifier: "layout-4", in: layouts)?.id == "layout-4")
-    #expect(runner.resolveLayout(identifier: "Center", in: layouts)?.id == "layout-4")
-    #expect(runner.resolveLayout(identifier: "fill all screen", in: layouts)?.id == "layout-10")
-    #expect(runner.resolveLayout(identifier: "unknown", in: layouts) == nil)
+    #expect(try runner.resolveLayout(identifier: "layout-4", in: layouts).id == "layout-4")
+    #expect(try runner.resolveLayout(identifier: "Center", in: layouts).id == "layout-4")
+    #expect(try runner.resolveLayout(identifier: "fill all screen", in: layouts).id == "layout-10")
+    #expect(throws: CommandLineLayoutResolutionError.unknownLayout("unknown")) {
+        try runner.resolveLayout(identifier: "unknown", in: layouts)
+    }
+}
+
+@MainActor
+@Test func commandLineRunnerRejectsAmbiguousLayoutNames() async throws {
+    let runner = CommandLineRunner()
+    let layouts = [
+        LayoutPreset(
+            id: "layout-a",
+            name: "Center",
+            gridColumns: 12,
+            gridRows: 6,
+            windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6),
+            triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 2, h: 2)),
+            includeInCycle: true
+        ),
+        LayoutPreset(
+            id: "layout-b",
+            name: "Center",
+            gridColumns: 12,
+            gridRows: 6,
+            windowSelection: GridSelection(x: 6, y: 0, w: 6, h: 6),
+            triggerRegion: .screen(GridSelection(x: 10, y: 0, w: 2, h: 2)),
+            includeInCycle: true
+        ),
+    ]
+
+    #expect(throws: CommandLineLayoutResolutionError.ambiguousLayoutName("Center", matches: layouts)) {
+        try runner.resolveLayout(identifier: "Center", in: layouts)
+    }
 }

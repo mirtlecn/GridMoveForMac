@@ -1,6 +1,26 @@
 import AppKit
 import Foundation
 
+enum CommandLineLayoutResolutionError: Error, Equatable {
+    case unknownLayout(String)
+    case ambiguousLayoutName(String, matches: [LayoutPreset])
+
+    var message: String {
+        switch self {
+        case let .unknownLayout(identifier):
+            return "Unknown layout: \(identifier)"
+        case let .ambiguousLayoutName(identifier, matches):
+            let matchList = matches.map { "- \($0.name) [\($0.id)]" }.joined(separator: "\n")
+            return """
+            Ambiguous layout name: \(identifier)
+            Matched layouts:
+            \(matchList)
+            Please use -layout <layout-id>.
+            """
+        }
+    }
+}
+
 @MainActor
 final class CommandLineRunner {
     private let configurationStore: ConfigurationStore
@@ -59,11 +79,14 @@ final class CommandLineRunner {
             }
             layoutID = previousLayoutID
         case let .applyLayout(identifier):
-            guard let layout = resolveLayout(identifier: identifier, in: configuration.layouts) else {
-                let availableLayouts = configuration.layouts
-                    .map { "\($0.name) [\($0.id)]" }
-                    .joined(separator: ", ")
-                writeToStandardError("Unknown layout: \(identifier)\nAvailable layouts: \(availableLayouts)\n")
+            let layout: LayoutPreset
+            do {
+                layout = try resolveLayout(identifier: identifier, in: configuration.layouts)
+            } catch let error as CommandLineLayoutResolutionError {
+                writeToStandardError(error.message + "\n")
+                return EXIT_FAILURE
+            } catch {
+                writeToStandardError("Failed to resolve layout: \(error.localizedDescription)\n")
                 return EXIT_FAILURE
             }
             layoutID = layout.id
@@ -82,12 +105,20 @@ final class CommandLineRunner {
         return EXIT_SUCCESS
     }
 
-    func resolveLayout(identifier: String, in layouts: [LayoutPreset]) -> LayoutPreset? {
+    func resolveLayout(identifier: String, in layouts: [LayoutPreset]) throws -> LayoutPreset {
         if let layoutByID = layouts.first(where: { $0.id.caseInsensitiveCompare(identifier) == .orderedSame }) {
             return layoutByID
         }
 
-        return layouts.first(where: { $0.name.caseInsensitiveCompare(identifier) == .orderedSame })
+        let matchedLayouts = layouts.filter { $0.name.caseInsensitiveCompare(identifier) == .orderedSame }
+        if let matchedLayout = matchedLayouts.onlyElement {
+            return matchedLayout
+        }
+        if !matchedLayouts.isEmpty {
+            throw CommandLineLayoutResolutionError.ambiguousLayoutName(identifier, matches: matchedLayouts)
+        }
+
+        throw CommandLineLayoutResolutionError.unknownLayout(identifier)
     }
 
     private func writeToStandardOutput(_ message: String) {
@@ -96,5 +127,11 @@ final class CommandLineRunner {
 
     private func writeToStandardError(_ message: String) {
         FileHandle.standardError.write(Data(message.utf8))
+    }
+}
+
+private extension Collection {
+    var onlyElement: Element? {
+        count == 1 ? first : nil
     }
 }
