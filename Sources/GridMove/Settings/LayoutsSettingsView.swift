@@ -113,18 +113,7 @@ struct LayoutsSettingsView: View {
                                     strokeColor: Color(viewModel.configuration.appearance.highlightStrokeColor.nsColor),
                                     fillOpacity: viewModel.configuration.appearance.highlightFillOpacity,
                                     strokeWidth: viewModel.configuration.appearance.highlightStrokeWidth
-                                ),
-                                additionalOverlays: [
-                                    GridPreviewOverlayItem(
-                                        id: "trigger-overlay",
-                                        region: viewModel.layoutDraft?.triggerRegion ?? draft.triggerRegion,
-                                        style: GridPreviewOverlayStyle(
-                                            strokeColor: Color(viewModel.configuration.appearance.triggerStrokeColor.nsColor),
-                                            fillOpacity: min(max(viewModel.configuration.appearance.triggerOpacity * 0.45, 0.08), 0.35),
-                                            strokeWidth: 2
-                                        )
-                                    ),
-                                ]
+                                )
                             )
                             .frame(height: gridEditorHeight)
                         }
