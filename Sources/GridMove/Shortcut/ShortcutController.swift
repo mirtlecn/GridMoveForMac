@@ -157,6 +157,7 @@ final class ShortcutController {
 
     private func ensureAccessibilityIsStillGranted() -> Bool {
         guard accessibilityTrustedProvider() else {
+            stop()
             scheduleAccessibilityRevocationHandling()
             return false
         }

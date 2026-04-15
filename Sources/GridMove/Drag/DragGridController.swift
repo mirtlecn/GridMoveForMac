@@ -441,6 +441,7 @@ final class DragGridController {
     private func ensureAccessibilityIsStillGranted() -> Bool {
         guard accessibilityTrustedProvider() else {
             resetState()
+            stop()
             scheduleAccessibilityRevocationHandling()
             return false
         }

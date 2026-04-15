@@ -409,19 +409,28 @@ final class WindowController {
             guard primeWindowOnTargetScreen(targetScreen, for: window) else {
                 return false
             }
-            let positionResult = AXUIElementSetAttributeValue(window.element, kAXPositionAttribute as CFString, positionValue)
-            let sizeResult = AXUIElementSetAttributeValue(window.element, kAXSizeAttribute as CFString, sizeValue)
-            let settlePositionResult = AXUIElementSetAttributeValue(window.element, kAXPositionAttribute as CFString, positionValue)
-            let settleSizeResult = AXUIElementSetAttributeValue(window.element, kAXSizeAttribute as CFString, sizeValue)
-            return positionResult == .success
-                && sizeResult == .success
-                && settlePositionResult == .success
-                && settleSizeResult == .success
+            let firstPassSucceeded = applyFrameValues(positionValue: positionValue, sizeValue: sizeValue, to: window.element)
+            scheduleCrossScreenSettle(positionValue: positionValue, sizeValue: sizeValue, for: window.element)
+            return firstPassSucceeded
         }
 
-        let positionResult = AXUIElementSetAttributeValue(window.element, kAXPositionAttribute as CFString, positionValue)
-        let sizeResult = AXUIElementSetAttributeValue(window.element, kAXSizeAttribute as CFString, sizeValue)
+        return applyFrameValues(positionValue: positionValue, sizeValue: sizeValue, to: window.element)
+    }
+
+    private func applyFrameValues(positionValue: AXValue, sizeValue: AXValue, to element: AXUIElement) -> Bool {
+        let positionResult = AXUIElementSetAttributeValue(element, kAXPositionAttribute as CFString, positionValue)
+        let sizeResult = AXUIElementSetAttributeValue(element, kAXSizeAttribute as CFString, sizeValue)
         return positionResult == .success && sizeResult == .success
+    }
+
+    private func scheduleCrossScreenSettle(positionValue: AXValue, sizeValue: AXValue, for element: AXUIElement) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) { [weak self] in
+            guard let self else {
+                return
+            }
+
+            _ = self.applyFrameValues(positionValue: positionValue, sizeValue: sizeValue, to: element)
+        }
     }
 
     private func primeWindowOnTargetScreen(_ screen: NSScreen, for window: ManagedWindow) -> Bool {
