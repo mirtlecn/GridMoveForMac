@@ -21,7 +21,18 @@ enum ModifierKey: String, Codable, CaseIterable, Hashable {
         }
     }
 
-    var displayName: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .ctrl:
+            return "Ctrl"
+        case .cmd:
+            return "Cmd"
+        case .shift:
+            return "Shift"
+        case .alt:
+            return "Option"
+        }
+    }
 }
 
 struct KeyboardShortcut: Codable, Equatable, Hashable {

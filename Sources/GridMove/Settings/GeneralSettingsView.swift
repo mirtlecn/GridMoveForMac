@@ -5,8 +5,11 @@ struct GeneralSettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                SettingsCard(title: "General") {
+            VStack(alignment: .leading, spacing: 28) {
+                Text("General")
+                    .font(.system(size: 34, weight: .bold))
+
+                SettingsPageSection(title: "Enable") {
                     SettingsSwitchRow(
                         title: "Enable",
                         subtitle: "Allow drag triggers, layout hotkeys, and command line layout actions.",
@@ -17,100 +20,86 @@ struct GeneralSettingsView: View {
                     )
                 }
 
-                HStack(alignment: .top, spacing: 20) {
-                    exclusionCard(
-                        title: "Excluded Bundle IDs",
-                        values: viewModel.configuration.general.excludedBundleIDs,
-                        onAdd: { viewModel.requestEntry(.bundleID) },
-                        onDelete: viewModel.removeBundleID(at:)
-                    )
-                    exclusionCard(
-                        title: "Excluded Window Titles",
-                        values: viewModel.configuration.general.excludedWindowTitles,
-                        onAdd: { viewModel.requestEntry(.windowTitle) },
-                        onDelete: viewModel.removeWindowTitle(at:)
-                    )
-                }
-
-                SettingsCard(title: "Drag Triggers") {
-                    VStack(alignment: .leading, spacing: 16) {
+                SettingsPageSection(title: "Press And Drag") {
+                    VStack(alignment: .leading, spacing: 18) {
                         SettingsSwitchRow(
-                            title: "Enable Middle Mouse Drag",
-                            subtitle: "Hold the middle mouse button to activate the drag grid.",
+                            title: "Middle Mouse",
+                            subtitle: "Press middle mouse for a short time to activate the grid.",
                             isOn: Binding(
                                 get: { viewModel.configuration.dragTriggers.enableMiddleMouseDrag },
                                 set: { viewModel.updateDragTriggers(enableMiddleMouseDrag: $0) }
                             )
                         )
 
-                        SettingsSwitchRow(
-                            title: "Enable Modifier + Left Mouse Drag",
-                            subtitle: "Use a configured modifier group with the left mouse button.",
-                            isOn: Binding(
-                                get: { viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag },
-                                set: { viewModel.updateDragTriggers(enableModifierLeftMouseDrag: $0) }
+                        Divider()
+
+                        VStack(alignment: .leading, spacing: 14) {
+                            SettingsSwitchRow(
+                                title: "Modifier + Left Mouse",
+                                subtitle: "Hold pre-set modifier, then press left mouse to activate.",
+                                isOn: Binding(
+                                    get: { viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag },
+                                    set: { viewModel.updateDragTriggers(enableModifierLeftMouseDrag: $0) }
+                                )
                             )
-                        )
 
-                        VStack(alignment: .leading, spacing: 10) {
-                            ForEach(Array(viewModel.configuration.dragTriggers.modifierGroups.enumerated()), id: \.offset) { index, group in
-                                HStack(spacing: 12) {
-                                    Text(group.map(\.displayName).joined(separator: " + "))
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                    Button("Delete") {
-                                        viewModel.removeModifierGroup(at: index)
+                            List(selection: $viewModel.selectedModifierGroupID) {
+                                ForEach(viewModel.modifierGroupItems) { item in
+                                    Text(item.title)
+                                        .tag(Optional(item.id))
+                                }
+                            }
+                            .listStyle(.inset(alternatesRowBackgrounds: false))
+                            .frame(minHeight: 104, maxHeight: 128)
+                            .disabled(!viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag)
+
+                            HStack(spacing: 8) {
+                                SettingsMiniActionButton(systemImage: "plus") {
+                                    viewModel.modifierGroupSheetPresented = true
+                                }
+
+                                if viewModel.selectedModifierGroupID != nil {
+                                    SettingsMiniActionButton(systemImage: "minus") {
+                                        viewModel.removeSelectedModifierGroup()
                                     }
                                 }
                             }
                         }
+                    }
+                }
+                .disabled(!viewModel.configuration.general.isEnabled)
 
-                        Button("Add Modifier Group") {
-                            viewModel.modifierGroupSheetPresented = true
+                SettingsPageSection(title: "Excluded Windows") {
+                    List(selection: $viewModel.selectedExcludedWindowID) {
+                        ForEach(viewModel.excludedWindowItems) { item in
+                            HStack(spacing: 12) {
+                                Text(item.value)
+                                    .textSelection(.enabled)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                Text(item.kind.columnTitle)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .tag(Optional(item.id))
+                        }
+                    }
+                    .listStyle(.inset(alternatesRowBackgrounds: false))
+                    .frame(minHeight: 140, maxHeight: 180)
+
+                    HStack(spacing: 8) {
+                        SettingsMiniActionButton(systemImage: "plus") {
+                            viewModel.openExcludedWindowSheet()
+                        }
+
+                        if viewModel.selectedExcludedWindowID != nil {
+                            SettingsMiniActionButton(systemImage: "minus") {
+                                viewModel.removeSelectedExcludedWindow()
+                            }
                         }
                     }
                 }
             }
-            .padding(20)
+            .padding(28)
             .frame(maxWidth: .infinity, alignment: .topLeading)
-        }
-    }
-
-    private func exclusionCard(
-        title: String,
-        values: [String],
-        onAdd: @escaping () -> Void,
-        onDelete: @escaping (Int) -> Void
-    ) -> some View {
-        SettingsCard(title: title) {
-            VStack(alignment: .leading, spacing: 12) {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: 8) {
-                        if values.isEmpty {
-                            Text("No items")
-                                .foregroundStyle(.secondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        } else {
-                            ForEach(Array(values.enumerated()), id: \.offset) { index, value in
-                                HStack(spacing: 12) {
-                                    Text(value)
-                                        .textSelection(.enabled)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                    Button("Delete") {
-                                        onDelete(index)
-                                    }
-                                }
-                                .padding(.vertical, 4)
-                            }
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .frame(minHeight: 180, maxHeight: 220)
-
-                Button("+ Add") {
-                    onAdd()
-                }
-            }
         }
     }
 }

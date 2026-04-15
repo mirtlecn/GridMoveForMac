@@ -135,35 +135,6 @@ struct LabeledNumberFieldRow: View {
     }
 }
 
-struct TextEntrySheetView: View {
-    let kind: SettingsViewModel.EntryKind
-    let onConfirm: (String) -> Void
-
-    @Environment(\.dismiss) private var dismiss
-    @State private var value = ""
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(kind.prompt)
-                .foregroundStyle(.secondary)
-            TextField("", text: $value)
-                .textFieldStyle(.roundedBorder)
-            HStack {
-                Spacer()
-                Button("Cancel") { dismiss() }
-                Button(kind.confirmLabel) {
-                    onConfirm(value)
-                    dismiss()
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-            }
-        }
-        .padding(20)
-        .frame(width: 380)
-    }
-}
-
 struct ModifierGroupSheetView: View {
     let onConfirm: ([ModifierKey]) -> Void
 
@@ -171,29 +142,31 @@ struct ModifierGroupSheetView: View {
     @State private var selectedKeys = Set<ModifierKey>()
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Choose one or more modifier keys.")
-                .foregroundStyle(.secondary)
-
-            ForEach(ModifierKey.allCases, id: \.self) { key in
-                Toggle(
-                    key.displayName,
-                    isOn: Binding(
-                        get: { selectedKeys.contains(key) },
-                        set: { isEnabled in
-                            if isEnabled {
-                                selectedKeys.insert(key)
-                            } else {
-                                selectedKeys.remove(key)
+        SettingsSheetContainer {
+            HStack(alignment: .center, spacing: 18) {
+                ForEach(ModifierKey.allCases, id: \.self) { key in
+                    Toggle(
+                        key.displayName,
+                        isOn: Binding(
+                            get: { selectedKeys.contains(key) },
+                            set: { isEnabled in
+                                if isEnabled {
+                                    selectedKeys.insert(key)
+                                } else {
+                                    selectedKeys.remove(key)
+                                }
                             }
-                        }
+                        )
                     )
-                )
+                    .toggleStyle(.checkbox)
+                }
             }
 
-            HStack {
+            HStack(spacing: 10) {
                 Spacer()
                 Button("Cancel") { dismiss() }
+                    .buttonStyle(.bordered)
+
                 Button("Add") {
                     onConfirm(ModifierKey.allCases.filter { selectedKeys.contains($0) })
                     dismiss()
@@ -202,8 +175,48 @@ struct ModifierGroupSheetView: View {
                 .disabled(selectedKeys.isEmpty)
             }
         }
-        .padding(20)
-        .frame(width: 320)
+    }
+}
+
+struct ExcludedWindowSheetView: View {
+    let onConfirm: (SettingsViewModel.EntryKind, String) -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var kind: SettingsViewModel.EntryKind = .bundleID
+    @State private var value = ""
+
+    var body: some View {
+        SettingsSheetContainer {
+            HStack(alignment: .center, spacing: 14) {
+                Picker("", selection: $kind) {
+                    ForEach([SettingsViewModel.EntryKind.bundleID, .windowTitle]) { entryKind in
+                        Text(entryKind.columnTitle).tag(entryKind)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.menu)
+                .frame(width: 150)
+
+                Text("Is")
+                    .foregroundStyle(.secondary)
+
+                TextField("", text: $value)
+                    .textFieldStyle(.roundedBorder)
+            }
+
+            HStack(spacing: 10) {
+                Spacer()
+                Button("Cancel") { dismiss() }
+                    .buttonStyle(.bordered)
+
+                Button("Add") {
+                    onConfirm(kind, value)
+                    dismiss()
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            }
+        }
     }
 }
 

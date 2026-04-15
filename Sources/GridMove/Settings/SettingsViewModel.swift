@@ -9,6 +9,7 @@ final class SettingsViewModel: ObservableObject {
         case layouts
         case appearance
         case hotkeys
+        case about
 
         var id: String { rawValue }
 
@@ -16,8 +17,9 @@ final class SettingsViewModel: ObservableObject {
             switch self {
             case .general: return "General"
             case .layouts: return "Layouts"
-            case .appearance: return "Appearance"
+            case .appearance: return "Themes"
             case .hotkeys: return "Hotkeys"
+            case .about: return "About"
             }
         }
 
@@ -27,8 +29,26 @@ final class SettingsViewModel: ObservableObject {
             case .layouts: return "square.grid.3x3"
             case .appearance: return "paintpalette"
             case .hotkeys: return "keyboard"
+            case .about: return "info.circle"
             }
         }
+    }
+
+    struct ModifierGroupItem: Identifiable, Equatable {
+        let id: String
+        let index: Int
+        let keys: [ModifierKey]
+
+        var title: String {
+            keys.map(\.displayName).joined(separator: " + ")
+        }
+    }
+
+    struct ExcludedWindowItem: Identifiable, Equatable {
+        let id: String
+        let index: Int
+        let value: String
+        let kind: EntryKind
     }
 
     enum EntryKind: String, Identifiable {
@@ -37,21 +57,12 @@ final class SettingsViewModel: ObservableObject {
 
         var id: String { rawValue }
 
-        var title: String {
+        var columnTitle: String {
             switch self {
-            case .bundleID: return "Add Bundle ID"
-            case .windowTitle: return "Add Window Title"
+            case .bundleID: return "Bundle ID"
+            case .windowTitle: return "Window Title"
             }
         }
-
-        var prompt: String {
-            switch self {
-            case .bundleID: return "Enter the bundle identifier to exclude."
-            case .windowTitle: return "Enter the exact window title to exclude."
-            }
-        }
-
-        var confirmLabel: String { "Add" }
     }
 
     @Published var configuration: AppConfiguration
@@ -60,8 +71,10 @@ final class SettingsViewModel: ObservableObject {
     @Published var layoutDraft: LayoutPreset?
     @Published var statusMessage: String = ""
     @Published var resetArmed = false
-    @Published var entrySheetKind: EntryKind?
+    @Published var excludedWindowSheetPresented = false
     @Published var modifierGroupSheetPresented = false
+    @Published var selectedModifierGroupID: String?
+    @Published var selectedExcludedWindowID: String?
 
     private let configurationStore: ConfigurationStore
     private let onConfigurationSaved: (AppConfiguration) -> Void
@@ -101,18 +114,51 @@ final class SettingsViewModel: ObservableObject {
         configuration.layouts.map { ($0.name, HotkeyAction.applyLayout(layoutID: $0.id)) }
     }
 
+    var modifierGroupItems: [ModifierGroupItem] {
+        configuration.dragTriggers.modifierGroups.enumerated().map { index, keys in
+            ModifierGroupItem(
+                id: "modifier-\(index)-\(keys.map(\.rawValue).joined(separator: "-"))",
+                index: index,
+                keys: keys
+            )
+        }
+    }
+
+    var excludedWindowItems: [ExcludedWindowItem] {
+        let bundleIDItems = configuration.general.excludedBundleIDs.enumerated().map { index, value in
+            ExcludedWindowItem(
+                id: "bundle-\(index)-\(value)",
+                index: index,
+                value: value,
+                kind: .bundleID
+            )
+        }
+
+        let titleItems = configuration.general.excludedWindowTitles.enumerated().map { index, value in
+            ExcludedWindowItem(
+                id: "title-\(index)-\(value)",
+                index: index,
+                value: value,
+                kind: .windowTitle
+            )
+        }
+
+        return bundleIDItems + titleItems
+    }
+
     func show() {
         if selectedLayoutID == nil {
             selectedLayoutID = configuration.layouts.first?.id
             layoutDraft = configuration.layouts.first
         }
+        synchronizeSelectionState()
     }
 
-    func requestEntry(_ kind: EntryKind) {
-        entrySheetKind = kind
+    func openExcludedWindowSheet() {
+        excludedWindowSheetPresented = true
     }
 
-    func confirmEntry(kind: EntryKind, value: String) {
+    func addExcludedWindow(kind: EntryKind, value: String) {
         let trimmedValue = value.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedValue.isEmpty else {
             return
@@ -140,6 +186,7 @@ final class SettingsViewModel: ObservableObject {
         }
 
         resetArmed = false
+        synchronizeSelectionState()
     }
 
     func removeBundleID(at index: Int) {
@@ -156,6 +203,20 @@ final class SettingsViewModel: ObservableObject {
         }
         configuration.general.excludedWindowTitles.remove(at: index)
         persistConfiguration(status: "Excluded window title removed.")
+    }
+
+    func removeSelectedExcludedWindow() {
+        guard let selectedExcludedWindowID,
+              let selectedItem = excludedWindowItems.first(where: { $0.id == selectedExcludedWindowID }) else {
+            return
+        }
+
+        switch selectedItem.kind {
+        case .bundleID:
+            removeBundleID(at: selectedItem.index)
+        case .windowTitle:
+            removeWindowTitle(at: selectedItem.index)
+        }
     }
 
     func updateDragTriggers(
@@ -190,6 +251,14 @@ final class SettingsViewModel: ObservableObject {
         }
         configuration.dragTriggers.modifierGroups.remove(at: index)
         persistConfiguration(status: "Modifier group removed.")
+    }
+
+    func removeSelectedModifierGroup() {
+        guard let selectedModifierGroupID,
+              let selectedItem = modifierGroupItems.first(where: { $0.id == selectedModifierGroupID }) else {
+            return
+        }
+        removeModifierGroup(at: selectedItem.index)
     }
 
     func selectLayout(id: String?) {
@@ -338,8 +407,21 @@ final class SettingsViewModel: ObservableObject {
             try configurationStore.save(configuration)
             onConfigurationSaved(configuration)
             statusMessage = status
+            synchronizeSelectionState()
         } catch {
             statusMessage = error.localizedDescription
+        }
+    }
+
+    private func synchronizeSelectionState() {
+        if let selectedModifierGroupID,
+           !modifierGroupItems.contains(where: { $0.id == selectedModifierGroupID }) {
+            self.selectedModifierGroupID = nil
+        }
+
+        if let selectedExcludedWindowID,
+           !excludedWindowItems.contains(where: { $0.id == selectedExcludedWindowID }) {
+            self.selectedExcludedWindowID = nil
         }
     }
 }

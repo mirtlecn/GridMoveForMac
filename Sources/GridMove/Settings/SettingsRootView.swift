@@ -4,22 +4,16 @@ struct SettingsRootView: View {
     @ObservedObject var viewModel: SettingsViewModel
 
     var body: some View {
-        NavigationSplitView {
-            List(SettingsViewModel.Section.allCases, selection: $viewModel.selectedSection) { section in
-                Label(section.title, systemImage: section.systemImage)
-                    .tag(section)
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                sidebar
+
+                Divider()
+
+                detailView
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
-            .navigationSplitViewColumnWidth(min: 180, ideal: 220)
-            .listStyle(.sidebar)
-        } detail: {
-            detailView
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .navigationSplitViewStyle(.balanced)
-        .toolbar(removing: .sidebarToggle)
-        .frame(minWidth: 1120, minHeight: 760)
-        .background(.background)
-        .safeAreaInset(edge: .bottom) {
+
             if !viewModel.statusMessage.isEmpty {
                 Text(viewModel.statusMessage)
                     .font(.caption)
@@ -29,9 +23,11 @@ struct SettingsRootView: View {
                     .background(.bar)
             }
         }
-        .sheet(item: $viewModel.entrySheetKind) { kind in
-            TextEntrySheetView(kind: kind) { value in
-                viewModel.confirmEntry(kind: kind, value: value)
+        .frame(minWidth: 1180, minHeight: 800)
+        .background(Color(nsColor: .windowBackgroundColor))
+        .sheet(isPresented: $viewModel.excludedWindowSheetPresented) {
+            ExcludedWindowSheetView { kind, value in
+                viewModel.addExcludedWindow(kind: kind, value: value)
             }
         }
         .sheet(isPresented: $viewModel.modifierGroupSheetPresented) {
@@ -39,6 +35,40 @@ struct SettingsRootView: View {
                 viewModel.addModifierGroup(group)
             }
         }
+    }
+
+    private var sidebar: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            SettingsWindowTrafficLightsView()
+                .padding(.top, 22)
+
+            Text("GridMove")
+                .font(.system(size: 34, weight: .bold))
+                .padding(.top, 26)
+
+            Spacer()
+                .frame(height: 42)
+
+            VStack(spacing: 10) {
+                ForEach(SettingsViewModel.Section.allCases) { section in
+                    SettingsSidebarTabButton(
+                        title: section.title,
+                        systemImage: section.systemImage,
+                        isSelected: viewModel.selectedSection == section,
+                        action: {
+                            withAnimation(.easeInOut(duration: 0.18)) {
+                                viewModel.selectedSection = section
+                            }
+                        }
+                    )
+                }
+            }
+
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .frame(minWidth: 270, idealWidth: 270, maxWidth: 270, maxHeight: .infinity, alignment: .topLeading)
+        .background(Color(nsColor: .windowBackgroundColor))
     }
 
     @ViewBuilder
@@ -52,6 +82,8 @@ struct SettingsRootView: View {
             AppearanceSettingsView(viewModel: viewModel)
         case .hotkeys:
             HotkeysSettingsView(viewModel: viewModel)
+        case .about:
+            AboutSettingsView()
         }
     }
 }
