@@ -40,8 +40,8 @@ import Testing
         outerPadding: 12
     )
 
-    let topLeftCell = geometry.cell(at: CGPoint(x: -100, y: 900), clampToCanvas: true)
-    let bottomRightCell = geometry.cell(at: CGPoint(x: 9000, y: -100), clampToCanvas: true)
+    let topLeftCell = geometry.cell(at: CGPoint(x: -100, y: -100), clampToCanvas: true)
+    let bottomRightCell = geometry.cell(at: CGPoint(x: 9000, y: 900), clampToCanvas: true)
 
     #expect(topLeftCell?.column == 0)
     #expect(topLeftCell?.row == 0)
@@ -59,5 +59,5 @@ import Testing
 
     let selectionRect = geometry.selectionRect(GridSelection(x: 5, y: 0, w: 2, h: 2))
 
-    #expect(selectionRect.maxY > geometry.canvasRect.midY)
+    #expect(selectionRect.minY < geometry.canvasRect.midY)
 }

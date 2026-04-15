@@ -19,7 +19,7 @@ struct GridPreviewGeometry {
         let cellHeight = canvasRect.height / CGFloat(max(rows, 1))
         return CGRect(
             x: canvasRect.minX + CGFloat(column) * cellWidth + 3,
-            y: canvasRect.maxY - CGFloat(row + 1) * cellHeight + 3,
+            y: canvasRect.minY + CGFloat(row) * cellHeight + 3,
             width: cellWidth - 6,
             height: cellHeight - 6
         )
@@ -30,7 +30,7 @@ struct GridPreviewGeometry {
         let cellHeight = canvasRect.height / CGFloat(max(rows, 1))
         return CGRect(
             x: canvasRect.minX + CGFloat(selection.x) * cellWidth + 2,
-            y: canvasRect.maxY - CGFloat(selection.y + selection.h) * cellHeight + 2,
+            y: canvasRect.minY + CGFloat(selection.y) * cellHeight + 2,
             width: CGFloat(selection.w) * cellWidth - 4,
             height: CGFloat(selection.h) * cellHeight - 4
         )
@@ -56,8 +56,7 @@ struct GridPreviewGeometry {
         let cellHeight = canvasRect.height / CGFloat(max(rows, 1))
 
         let column = min(columns - 1, max(0, Int(relativeX / cellWidth)))
-        let rowFromBottom = min(rows - 1, max(0, Int(relativeY / cellHeight)))
-        let row = rows - 1 - rowFromBottom
+        let row = min(rows - 1, max(0, Int(relativeY / cellHeight)))
         return (column, row)
     }
 }

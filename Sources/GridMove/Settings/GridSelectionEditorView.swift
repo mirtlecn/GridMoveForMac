@@ -87,6 +87,10 @@ final class GridSelectionEditorView: NSView {
         true
     }
 
+    override var isFlipped: Bool {
+        true
+    }
+
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
 
