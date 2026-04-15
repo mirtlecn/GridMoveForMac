@@ -111,13 +111,57 @@ struct GridSelection: Codable, Equatable, Hashable {
     var h: Int
 }
 
+struct MenuBarSelection: Codable, Equatable, Hashable {
+    var x: Int
+    var w: Int
+}
+
+enum TriggerRegion: Codable, Equatable, Hashable {
+    case screen(GridSelection)
+    case menuBar(MenuBarSelection)
+
+    private enum CodingKeys: String, CodingKey {
+        case kind
+        case gridSelection
+        case menuBarSelection
+    }
+
+    private enum Kind: String, Codable {
+        case screen
+        case menuBar
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        switch try container.decode(Kind.self, forKey: .kind) {
+        case .screen:
+            self = .screen(try container.decode(GridSelection.self, forKey: .gridSelection))
+        case .menuBar:
+            self = .menuBar(try container.decode(MenuBarSelection.self, forKey: .menuBarSelection))
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case let .screen(selection):
+            try container.encode(Kind.screen, forKey: .kind)
+            try container.encode(selection, forKey: .gridSelection)
+        case let .menuBar(selection):
+            try container.encode(Kind.menuBar, forKey: .kind)
+            try container.encode(selection, forKey: .menuBarSelection)
+        }
+    }
+}
+
 struct LayoutPreset: Codable, Equatable, Hashable, Identifiable {
     var id: String
     var name: String
     var gridColumns: Int
     var gridRows: Int
     var windowSelection: GridSelection
-    var triggerSelection: GridSelection
+    var triggerRegion: TriggerRegion
+    var includeInCycle: Bool
 }
 
 struct RGBAColor: Codable, Equatable, Hashable {
@@ -230,16 +274,17 @@ struct AppConfiguration: Codable, Equatable {
 
     static var defaultLayouts: [LayoutPreset] {
         [
-            LayoutPreset(id: "layout-1", name: "Left 1/3", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 4, h: 6), triggerSelection: GridSelection(x: 0, y: 0, w: 2, h: 6)),
-            LayoutPreset(id: "layout-2", name: "Left 1/2", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6), triggerSelection: GridSelection(x: 2, y: 2, w: 3, h: 2)),
-            LayoutPreset(id: "layout-3", name: "Left 2/3", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 8, h: 6), triggerSelection: GridSelection(x: 2, y: 0, w: 3, h: 2)),
-            LayoutPreset(id: "layout-4", name: "Center", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4), triggerSelection: GridSelection(x: 5, y: 2, w: 2, h: 2)),
-            LayoutPreset(id: "layout-5", name: "Right 2/3", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 4, y: 0, w: 8, h: 6), triggerSelection: GridSelection(x: 7, y: 0, w: 3, h: 2)),
-            LayoutPreset(id: "layout-6", name: "Right 1/2", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 6, y: 0, w: 6, h: 6), triggerSelection: GridSelection(x: 7, y: 2, w: 3, h: 2)),
-            LayoutPreset(id: "layout-7", name: "Right 1/3", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 6), triggerSelection: GridSelection(x: 10, y: 2, w: 2, h: 2)),
-            LayoutPreset(id: "layout-8", name: "Right 1/3 Top", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 3), triggerSelection: GridSelection(x: 10, y: 0, w: 2, h: 2)),
-            LayoutPreset(id: "layout-9", name: "Right 1/3 Bottom", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 3, w: 4, h: 3), triggerSelection: GridSelection(x: 10, y: 4, w: 2, h: 2)),
-            LayoutPreset(id: "layout-10", name: "Fill all screen", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerSelection: GridSelection(x: 5, y: 0, w: 2, h: 2)),
+            LayoutPreset(id: "layout-1", name: "Left 1/3", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 4, h: 6), triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 2, h: 6)), includeInCycle: true),
+            LayoutPreset(id: "layout-2", name: "Left 1/2", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6), triggerRegion: .screen(GridSelection(x: 2, y: 2, w: 3, h: 2)), includeInCycle: true),
+            LayoutPreset(id: "layout-3", name: "Left 2/3", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 8, h: 6), triggerRegion: .screen(GridSelection(x: 2, y: 0, w: 3, h: 2)), includeInCycle: true),
+            LayoutPreset(id: "layout-4", name: "Center", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4), triggerRegion: .screen(GridSelection(x: 5, y: 2, w: 2, h: 2)), includeInCycle: true),
+            LayoutPreset(id: "layout-5", name: "Right 2/3", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 4, y: 0, w: 8, h: 6), triggerRegion: .screen(GridSelection(x: 7, y: 0, w: 3, h: 2)), includeInCycle: true),
+            LayoutPreset(id: "layout-6", name: "Right 1/2", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 6, y: 0, w: 6, h: 6), triggerRegion: .screen(GridSelection(x: 7, y: 2, w: 3, h: 2)), includeInCycle: true),
+            LayoutPreset(id: "layout-7", name: "Right 1/3", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 6), triggerRegion: .screen(GridSelection(x: 10, y: 2, w: 2, h: 2)), includeInCycle: true),
+            LayoutPreset(id: "layout-8", name: "Right 1/3 Top", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 3), triggerRegion: .screen(GridSelection(x: 10, y: 0, w: 2, h: 2)), includeInCycle: true),
+            LayoutPreset(id: "layout-9", name: "Right 1/3 Bottom", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 3, w: 4, h: 3), triggerRegion: .screen(GridSelection(x: 10, y: 4, w: 2, h: 2)), includeInCycle: true),
+            LayoutPreset(id: "layout-10", name: "Fill all screen", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .screen(GridSelection(x: 5, y: 0, w: 2, h: 2)), includeInCycle: true),
+            LayoutPreset(id: "layout-11", name: "Fill all screen (Menu Bar)", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .menuBar(MenuBarSelection(x: 1, w: 4)), includeInCycle: false),
         ]
     }
 

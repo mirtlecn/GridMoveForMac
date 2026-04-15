@@ -5,8 +5,8 @@ import Testing
 @Test func defaultLayoutsMatchAgreedSelections() async throws {
     let layouts = AppConfiguration.defaultValue.layouts
 
-    #expect(layouts.count == 10)
-    #expect(layouts.map(\.id) == (1 ... 10).map { "layout-\($0)" })
+    #expect(layouts.count == 11)
+    #expect(layouts.map(\.id) == (1 ... 11).map { "layout-\($0)" })
     #expect(layouts.map(\.name) == [
         "Left 1/3",
         "Left 1/2",
@@ -18,15 +18,19 @@ import Testing
         "Right 1/3 Top",
         "Right 1/3 Bottom",
         "Fill all screen",
+        "Fill all screen (Menu Bar)",
     ])
     #expect(layouts[0].windowSelection == GridSelection(x: 0, y: 0, w: 4, h: 6))
-    #expect(layouts[0].triggerSelection == GridSelection(x: 0, y: 0, w: 2, h: 6))
+    #expect(layouts[0].triggerRegion == .screen(GridSelection(x: 0, y: 0, w: 2, h: 6)))
     #expect(layouts[3].windowSelection == GridSelection(x: 3, y: 1, w: 6, h: 4))
-    #expect(layouts[3].triggerSelection == GridSelection(x: 5, y: 2, w: 2, h: 2))
+    #expect(layouts[3].triggerRegion == .screen(GridSelection(x: 5, y: 2, w: 2, h: 2)))
     #expect(layouts[7].windowSelection == GridSelection(x: 8, y: 0, w: 4, h: 3))
-    #expect(layouts[7].triggerSelection == GridSelection(x: 10, y: 0, w: 2, h: 2))
+    #expect(layouts[7].triggerRegion == .screen(GridSelection(x: 10, y: 0, w: 2, h: 2)))
     #expect(layouts[9].windowSelection == GridSelection(x: 0, y: 0, w: 12, h: 6))
-    #expect(layouts[9].triggerSelection == GridSelection(x: 5, y: 0, w: 2, h: 2))
+    #expect(layouts[9].triggerRegion == .screen(GridSelection(x: 5, y: 0, w: 2, h: 2)))
+    #expect(layouts[10].windowSelection == GridSelection(x: 0, y: 0, w: 12, h: 6))
+    #expect(layouts[10].triggerRegion == .menuBar(MenuBarSelection(x: 1, w: 4)))
+    #expect(layouts[10].includeInCycle == false)
 }
 
 @Test func layoutFrameUsesTopOriginCoordinates() async throws {
@@ -58,11 +62,13 @@ import Testing
 @Test func triggerSlotsUseLayoutSpecificSelections() async throws {
     let engine = LayoutEngine()
     let configuration = AppConfiguration.defaultValue
+    let screenFrame = CGRect(x: 0, y: 0, width: 1800, height: 930)
     let usableFrame = CGRect(x: 0, y: 0, width: 1800, height: 900)
 
-    let slots = engine.resolveTriggerSlots(in: usableFrame, configuration: configuration)
-    let firstSlot = try #require(slots.first)
-    let fullscreenSlot = try #require(slots.last)
+    let slots = engine.resolveTriggerSlots(screenFrame: screenFrame, usableFrame: usableFrame, configuration: configuration)
+    let firstSlot = try #require(slots.first(where: { $0.layoutID == "layout-1" }))
+    let fullscreenSlot = try #require(slots.first(where: { $0.layoutID == "layout-10" }))
+    let menuBarSlot = try #require(slots.first(where: { $0.layoutID == "layout-11" }))
 
     #expect(firstSlot.layoutID == "layout-1")
     #expect(firstSlot.triggerFrame.origin.x == 2)
@@ -75,6 +81,11 @@ import Testing
     #expect(fullscreenSlot.triggerFrame.origin.y == 602)
     #expect(fullscreenSlot.triggerFrame.size.width == 296)
     #expect(fullscreenSlot.triggerFrame.size.height == 296)
+
+    #expect(menuBarSlot.triggerFrame.origin.x == 302)
+    #expect(menuBarSlot.triggerFrame.origin.y == 902)
+    #expect(menuBarSlot.triggerFrame.size.width == 1196)
+    #expect(menuBarSlot.triggerFrame.size.height == 26)
 }
 
 @Test func layoutCyclingFollowsCurrentUiOrder() async throws {
@@ -83,11 +94,13 @@ import Testing
 
     engine.recordLayoutID("layout-10", for: "window-a")
     engine.recordLayoutID("layout-2", for: "window-b")
+    engine.recordLayoutID("layout-11", for: "window-c")
 
     #expect(engine.nextLayoutID(for: "window-a", layouts: layouts) == "layout-1")
     #expect(engine.previousLayoutID(for: "window-a", layouts: layouts) == "layout-9")
     #expect(engine.nextLayoutID(for: "window-b", layouts: layouts) == "layout-3")
     #expect(engine.previousLayoutID(for: "window-new", layouts: layouts) == "layout-10")
+    #expect(engine.nextLayoutID(for: "window-c", layouts: layouts) == "layout-1")
 }
 
 @Test func layoutCyclingUsesReorderedLayoutList() async throws {
@@ -107,6 +120,7 @@ import Testing
         "layout-8",
         "layout-9",
         "layout-10",
+        "layout-11",
         "layout-2",
     ])
     #expect(engine.nextLayoutID(for: "window-a", layouts: configuration.layouts) == "layout-1")

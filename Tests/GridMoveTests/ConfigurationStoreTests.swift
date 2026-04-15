@@ -10,7 +10,7 @@ import Testing
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
 
     let initialConfiguration = try store.load()
-    #expect(initialConfiguration.layouts.count == 10)
+    #expect(initialConfiguration.layouts.count == 11)
     #expect(FileManager.default.fileExists(atPath: store.fileURL.path))
     #expect(store.fileURL.lastPathComponent == "config.plist")
 

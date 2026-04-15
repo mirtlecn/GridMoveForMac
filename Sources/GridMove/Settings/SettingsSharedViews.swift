@@ -283,6 +283,38 @@ struct GridSelectionEditorRepresentable: NSViewRepresentable {
     }
 }
 
+struct TriggerRegionEditorRepresentable: NSViewRepresentable {
+    var columns: Int
+    var rows: Int
+    @Binding var triggerRegion: TriggerRegion
+    var selectionColor: NSColor
+    var showsGridBackground = true
+    var showsSelection = true
+
+    func makeNSView(context: Context) -> TriggerRegionEditorView {
+        let view = TriggerRegionEditorView(columns: columns, rows: rows)
+        view.selectionColor = selectionColor
+        view.showsGridBackground = showsGridBackground
+        view.showsSelection = showsSelection
+        view.onTriggerRegionChanged = { nextRegion in
+            triggerRegion = nextRegion
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: TriggerRegionEditorView, context: Context) {
+        nsView.columns = columns
+        nsView.rows = rows
+        nsView.selectionColor = selectionColor
+        nsView.showsGridBackground = showsGridBackground
+        nsView.showsSelection = showsSelection
+        nsView.triggerRegion = triggerRegion
+        nsView.onTriggerRegionChanged = { nextRegion in
+            triggerRegion = nextRegion
+        }
+    }
+}
+
 struct ShortcutRecorderRepresentable: NSViewRepresentable {
     @Binding var shortcut: KeyboardShortcut
 
@@ -311,7 +343,7 @@ struct GridPreviewOverlayStyle {
 
 struct GridPreviewOverlayItem: Identifiable {
     let id: String
-    let selection: GridSelection
+    let region: TriggerRegion
     let style: GridPreviewOverlayStyle
 }
 
@@ -333,7 +365,7 @@ private struct FixedAspectPreviewFrame<Content: View>: View {
 
     private func fittedPreviewRect(in size: CGSize) -> CGRect {
         let bounds = CGRect(origin: .zero, size: size)
-        let targetAspectRatio = PreviewDisplayMetrics.mainDisplayAspectRatio
+        let targetAspectRatio = PreviewDisplayMetrics.totalPreviewAspectRatio
         guard bounds.width > 0, bounds.height > 0, targetAspectRatio > 0 else {
             return bounds
         }
@@ -372,6 +404,7 @@ struct InteractiveGridPreview: View {
     let rows: Int
     @Binding var selection: GridSelection
     let style: GridPreviewOverlayStyle
+    var additionalOverlays: [GridPreviewOverlayItem] = []
 
     var body: some View {
         FixedAspectPreviewFrame {
@@ -380,13 +413,43 @@ struct InteractiveGridPreview: View {
                     columns: columns,
                     rows: rows,
                     overlays: [
-                        GridPreviewOverlayItem(id: "selection", selection: selection, style: style),
-                    ]
+                        GridPreviewOverlayItem(id: "selection", region: .screen(selection), style: style),
+                    ] + additionalOverlays
                 )
                 GridSelectionEditorRepresentable(
                     columns: columns,
                     rows: rows,
                     selection: $selection,
+                    selectionColor: NSColor(style.strokeColor),
+                    showsGridBackground: false,
+                    showsSelection: false
+                )
+            }
+        }
+    }
+}
+
+struct InteractiveTriggerRegionPreview: View {
+    let columns: Int
+    let rows: Int
+    @Binding var triggerRegion: TriggerRegion
+    let style: GridPreviewOverlayStyle
+    var additionalOverlays: [GridPreviewOverlayItem] = []
+
+    var body: some View {
+        FixedAspectPreviewFrame {
+            ZStack {
+                SharedGridPreviewContent(
+                    columns: columns,
+                    rows: rows,
+                    overlays: [
+                        GridPreviewOverlayItem(id: "trigger", region: triggerRegion, style: style),
+                    ] + additionalOverlays
+                )
+                TriggerRegionEditorRepresentable(
+                    columns: columns,
+                    rows: rows,
+                    triggerRegion: $triggerRegion,
                     selectionColor: NSColor(style.strokeColor),
                     showsGridBackground: false,
                     showsSelection: false
@@ -414,6 +477,38 @@ private struct SharedGridPreviewContent: View {
                 RoundedRectangle(cornerRadius: 20)
                     .fill(Color(nsColor: .windowBackgroundColor).opacity(0.95))
 
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.9))
+                    .overlay(alignment: .leading) {
+                        HStack(spacing: 4) {
+                            Circle().fill(Color.white.opacity(0.75)).frame(width: 4, height: 4)
+                            Circle().fill(Color.white.opacity(0.55)).frame(width: 4, height: 4)
+                            Circle().fill(Color.white.opacity(0.4)).frame(width: 4, height: 4)
+                        }
+                        .padding(.leading, 10)
+                    }
+                    .overlay(alignment: .trailing) {
+                        HStack(spacing: 4) {
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(Color.white.opacity(0.55))
+                                .frame(width: 16, height: 4)
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(Color.white.opacity(0.35))
+                                .frame(width: 10, height: 4)
+                        }
+                        .padding(.trailing, 10)
+                    }
+                    .frame(width: previewGeometry.menuBarRect.width, height: previewGeometry.menuBarRect.height)
+                    .position(x: previewGeometry.menuBarRect.midX, y: previewGeometry.menuBarRect.midY)
+
+                ForEach(0 ..< rows, id: \.self) { segment in
+                    let segmentRect = previewGeometry.menuBarSegmentRect(segment: segment)
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.white.opacity(0.08))
+                        .frame(width: segmentRect.width, height: segmentRect.height)
+                        .position(x: segmentRect.midX, y: segmentRect.midY)
+                }
+
                 ForEach(0 ..< rows, id: \.self) { row in
                     ForEach(0 ..< columns, id: \.self) { column in
                         let cellRect = previewGeometry.cellRect(column: column, row: row)
@@ -429,16 +524,8 @@ private struct SharedGridPreviewContent: View {
                     .frame(width: previewGeometry.canvasRect.width, height: previewGeometry.canvasRect.height)
                     .position(x: previewGeometry.canvasRect.midX, y: previewGeometry.canvasRect.midY)
 
-                ForEach(overlays) { overlay in
-                    let overlayRect = previewGeometry.selectionRect(overlay.selection)
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(overlay.style.strokeColor.opacity(overlay.style.fillOpacity))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(overlay.style.strokeColor, lineWidth: overlay.style.strokeWidth)
-                        )
-                        .frame(width: overlayRect.width, height: overlayRect.height)
-                        .position(x: overlayRect.midX, y: overlayRect.midY)
+                ForEach(Array(overlays.enumerated()), id: \.element.id) { _, overlay in
+                    overlayView(for: overlay, geometry: previewGeometry)
                 }
             }
         }
@@ -448,6 +535,28 @@ private struct SharedGridPreviewContent: View {
         let base = NSColor.controlBackgroundColor.blended(withFraction: 0.2, of: .black) ?? .controlBackgroundColor
         let alternate = NSColor.controlBackgroundColor.blended(withFraction: 0.08, of: .white) ?? .controlBackgroundColor
         return Color(nsColor: (row + column).isMultiple(of: 2) ? base : alternate)
+    }
+
+    private func overlayView(for overlay: GridPreviewOverlayItem, geometry: GridPreviewGeometry) -> some View {
+        let overlayRect = overlayRect(for: overlay.region, geometry: geometry)
+
+        return RoundedRectangle(cornerRadius: 12)
+            .fill(overlay.style.strokeColor.opacity(overlay.style.fillOpacity))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(overlay.style.strokeColor, lineWidth: overlay.style.strokeWidth)
+            )
+            .frame(width: overlayRect.width, height: overlayRect.height)
+            .position(x: overlayRect.midX, y: overlayRect.midY)
+    }
+
+    private func overlayRect(for region: TriggerRegion, geometry: GridPreviewGeometry) -> CGRect {
+        switch region {
+        case let .screen(selection):
+            return geometry.selectionRect(selection)
+        case let .menuBar(selection):
+            return geometry.menuBarSelectionRect(selection)
+        }
     }
 }
 
@@ -474,7 +583,7 @@ struct AppearancePreviewSwiftUIView: View {
             overlays.append(
                 GridPreviewOverlayItem(
                     id: "window",
-                    selection: previewWindowSelection,
+                    region: .screen(previewWindowSelection),
                     style: GridPreviewOverlayStyle(
                         strokeColor: Color(configuration.appearance.highlightStrokeColor.nsColor),
                         fillOpacity: configuration.appearance.highlightFillOpacity,
@@ -488,7 +597,7 @@ struct AppearancePreviewSwiftUIView: View {
             overlays.append(
                 GridPreviewOverlayItem(
                     id: "trigger",
-                    selection: previewTriggerSelection,
+                    region: .screen(previewTriggerSelection),
                     style: GridPreviewOverlayStyle(
                         strokeColor: Color(configuration.appearance.triggerStrokeColor.nsColor),
                         fillOpacity: min(max(configuration.appearance.triggerOpacity * 0.45, 0.08), 0.35),

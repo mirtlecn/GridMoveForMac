@@ -86,6 +86,16 @@ struct LayoutsSettingsView: View {
                                         .textFieldStyle(.roundedBorder)
                                     }
                                 }
+
+                                Toggle(
+                                    "Include in cycle",
+                                    isOn: Binding(
+                                        get: { viewModel.layoutDraft?.includeInCycle ?? true },
+                                        set: { newValue in
+                                            viewModel.updateLayoutDraft { $0.includeInCycle = newValue }
+                                        }
+                                    )
+                                )
                             }
                         }
 
@@ -103,26 +113,48 @@ struct LayoutsSettingsView: View {
                                     strokeColor: Color(viewModel.configuration.appearance.highlightStrokeColor.nsColor),
                                     fillOpacity: viewModel.configuration.appearance.highlightFillOpacity,
                                     strokeWidth: viewModel.configuration.appearance.highlightStrokeWidth
-                                )
+                                ),
+                                additionalOverlays: [
+                                    GridPreviewOverlayItem(
+                                        id: "trigger-overlay",
+                                        region: viewModel.layoutDraft?.triggerRegion ?? draft.triggerRegion,
+                                        style: GridPreviewOverlayStyle(
+                                            strokeColor: Color(viewModel.configuration.appearance.triggerStrokeColor.nsColor),
+                                            fillOpacity: min(max(viewModel.configuration.appearance.triggerOpacity * 0.45, 0.08), 0.35),
+                                            strokeWidth: 2
+                                        )
+                                    ),
+                                ]
                             )
                             .frame(height: gridEditorHeight)
                         }
 
                         SettingsCard(title: "Trigger Area") {
-                            InteractiveGridPreview(
+                            InteractiveTriggerRegionPreview(
                                 columns: draft.gridColumns,
                                 rows: draft.gridRows,
-                                selection: Binding(
-                                    get: { viewModel.layoutDraft?.triggerSelection ?? draft.triggerSelection },
-                                    set: { newSelection in
-                                        viewModel.updateLayoutDraft { $0.triggerSelection = newSelection }
+                                triggerRegion: Binding(
+                                    get: { viewModel.layoutDraft?.triggerRegion ?? draft.triggerRegion },
+                                    set: { newRegion in
+                                        viewModel.updateLayoutDraft { $0.triggerRegion = newRegion }
                                     }
                                 ),
                                 style: GridPreviewOverlayStyle(
                                     strokeColor: Color(viewModel.configuration.appearance.triggerStrokeColor.nsColor),
                                     fillOpacity: min(max(viewModel.configuration.appearance.triggerOpacity * 0.45, 0.08), 0.35),
                                     strokeWidth: 2
-                                )
+                                ),
+                                additionalOverlays: [
+                                    GridPreviewOverlayItem(
+                                        id: "window-overlay",
+                                        region: .screen(viewModel.layoutDraft?.windowSelection ?? draft.windowSelection),
+                                        style: GridPreviewOverlayStyle(
+                                            strokeColor: Color(viewModel.configuration.appearance.highlightStrokeColor.nsColor),
+                                            fillOpacity: viewModel.configuration.appearance.highlightFillOpacity,
+                                            strokeWidth: viewModel.configuration.appearance.highlightStrokeWidth
+                                        )
+                                    ),
+                                ]
                             )
                             .frame(height: gridEditorHeight)
                         }

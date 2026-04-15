@@ -5,8 +5,9 @@ GridMove is a native macOS menu bar app that migrates the current Hammerspoon wi
 ## Current scope
 
 - Global keyboard shortcuts for cycling layouts and applying named layouts
-- Layout cycling that follows the current order in the Settings UI
+- Layout cycling that follows the current order in the Settings UI and skips layouts excluded from cycling
 - Drag grid activation by middle mouse hold or configured modifier groups plus left mouse
+- Trigger regions that can use either the screen grid or a segmented menu bar strip
 - Accessibility-based target window lookup, focus, resize, and fullscreen exit
 - Non-activating overlay for trigger slots and target window preview
 - Native AppKit settings window with four sections: General, Layouts, Appearance, and Hotkeys
@@ -61,6 +62,6 @@ The app writes a default plist configuration on first launch. The initial values
 The Settings window includes:
 
 - `General` for excluded bundle identifiers, excluded window titles, and drag trigger settings
-- `Layouts` for visual editing of window regions and trigger regions, plus drag-and-drop layout ordering
+- `Layouts` for visual editing of window regions and trigger regions, menu bar trigger selection, drag-and-drop layout ordering, and cycle inclusion
 - `Appearance` for trigger and highlight overlay rendering
 - `Hotkeys` for direct layout actions and cycle shortcuts

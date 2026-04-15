@@ -38,17 +38,29 @@ final class LayoutEngine {
     }
 
     func resolveTriggerSlots(on screen: NSScreen, configuration: AppConfiguration) -> [ResolvedTriggerSlot] {
-        resolveTriggerSlots(in: screen.visibleFrame, configuration: configuration)
+        resolveTriggerSlots(
+            screenFrame: screen.frame,
+            usableFrame: screen.visibleFrame,
+            configuration: configuration
+        )
     }
 
     func resolveTriggerSlots(in usableFrame: CGRect, configuration: AppConfiguration) -> [ResolvedTriggerSlot] {
+        resolveTriggerSlots(screenFrame: usableFrame, usableFrame: usableFrame, configuration: configuration)
+    }
+
+    func resolveTriggerSlots(
+        screenFrame: CGRect,
+        usableFrame: CGRect,
+        configuration: AppConfiguration
+    ) -> [ResolvedTriggerSlot] {
         configuration.layouts.map { preset in
-            let triggerFrame = frame(
-                for: preset.triggerSelection,
-                columns: preset.gridColumns,
-                rows: preset.gridRows,
-                in: usableFrame
-            ).insetBy(dx: configuration.appearance.triggerGap, dy: configuration.appearance.triggerGap).integral
+            let triggerFrame = triggerFrame(
+                for: preset,
+                screenFrame: screenFrame,
+                usableFrame: usableFrame,
+                gap: configuration.appearance.triggerGap
+            )
 
             return ResolvedTriggerSlot(
                 layoutID: preset.id,
@@ -67,10 +79,11 @@ final class LayoutEngine {
     }
 
     func currentLayoutID(for windowIdentity: String, layouts: [LayoutPreset]) -> String {
-        if let layoutID = windowLayoutIDs[windowIdentity], layouts.contains(where: { $0.id == layoutID }) {
+        let cycleLayouts = cycleEligibleLayouts(from: layouts)
+        if let layoutID = windowLayoutIDs[windowIdentity], cycleLayouts.contains(where: { $0.id == layoutID }) {
             return layoutID
         }
-        return layouts.first?.id ?? ""
+        return cycleLayouts.first?.id ?? ""
     }
 
     func nextLayoutID(for windowIdentity: String, layouts: [LayoutPreset]) -> String? {
@@ -82,14 +95,27 @@ final class LayoutEngine {
     }
 
     func cycleLayoutID(for windowIdentity: String, layouts: [LayoutPreset], direction: Int) -> String? {
-        guard !layouts.isEmpty else {
+        let cycleLayouts = cycleEligibleLayouts(from: layouts)
+        guard !cycleLayouts.isEmpty else {
             return nil
         }
 
-        let currentLayoutID = currentLayoutID(for: windowIdentity, layouts: layouts)
-        let currentIndex = layouts.firstIndex(where: { $0.id == currentLayoutID }) ?? 0
-        let nextIndex = (currentIndex + direction + layouts.count) % layouts.count
-        return layouts[nextIndex].id
+        if let currentLayoutID = windowLayoutIDs[windowIdentity],
+           let currentIndex = layouts.firstIndex(where: { $0.id == currentLayoutID }) {
+            var nextIndex = currentIndex
+            repeat {
+                nextIndex = (nextIndex + direction + layouts.count) % layouts.count
+                if layouts[nextIndex].includeInCycle {
+                    return layouts[nextIndex].id
+                }
+            } while nextIndex != currentIndex
+            return nil
+        }
+
+        if direction >= 0 {
+            return cycleLayouts.first?.id
+        }
+        return cycleLayouts.last?.id
     }
 
     func triggerSlot(containing point: CGPoint, slots: [ResolvedTriggerSlot]) -> ResolvedTriggerSlot? {
@@ -98,5 +124,61 @@ final class LayoutEngine {
 
     func layoutPreset(for layoutID: String, in configuration: AppConfiguration) -> LayoutPreset? {
         configuration.layouts.first(where: { $0.id == layoutID })
+    }
+
+    private func cycleEligibleLayouts(from layouts: [LayoutPreset]) -> [LayoutPreset] {
+        layouts.filter(\.includeInCycle)
+    }
+
+    private func triggerFrame(
+        for preset: LayoutPreset,
+        screenFrame: CGRect,
+        usableFrame: CGRect,
+        gap: Double
+    ) -> CGRect {
+        switch preset.triggerRegion {
+        case let .screen(selection):
+            return frame(
+                for: selection,
+                columns: preset.gridColumns,
+                rows: preset.gridRows,
+                in: usableFrame
+            )
+            .insetBy(dx: gap, dy: gap)
+            .integral
+        case let .menuBar(selection):
+            return menuBarFrame(
+                for: selection,
+                segments: preset.gridRows,
+                screenFrame: screenFrame,
+                usableFrame: usableFrame,
+                gap: gap
+            )
+        }
+    }
+
+    private func menuBarFrame(
+        for selection: MenuBarSelection,
+        segments: Int,
+        screenFrame: CGRect,
+        usableFrame: CGRect,
+        gap: Double
+    ) -> CGRect {
+        let menuBarHeight = max(screenFrame.maxY - usableFrame.maxY, 24)
+        let barFrame = CGRect(
+            x: screenFrame.minX,
+            y: screenFrame.maxY - menuBarHeight,
+            width: screenFrame.width,
+            height: menuBarHeight
+        )
+        let segmentWidth = barFrame.width / CGFloat(max(segments, 1))
+        return CGRect(
+            x: barFrame.minX + CGFloat(selection.x) * segmentWidth,
+            y: barFrame.minY,
+            width: CGFloat(selection.w) * segmentWidth,
+            height: barFrame.height
+        )
+        .insetBy(dx: gap, dy: gap)
+        .integral
     }
 }

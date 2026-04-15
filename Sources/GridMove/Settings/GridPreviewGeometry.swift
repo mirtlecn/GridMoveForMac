@@ -2,6 +2,11 @@ import AppKit
 import CoreGraphics
 import Foundation
 
+enum GridPreviewHit {
+    case screen(column: Int, row: Int)
+    case menuBar(segment: Int)
+}
+
 struct GridPreviewGeometry {
     static let defaultOuterPadding: CGFloat = 12
 
@@ -10,8 +15,26 @@ struct GridPreviewGeometry {
     let bounds: CGRect
     let outerPadding: CGFloat
 
-    var canvasRect: CGRect {
+    private var contentRect: CGRect {
         bounds.insetBy(dx: outerPadding, dy: outerPadding)
+    }
+
+    var menuBarRect: CGRect {
+        CGRect(
+            x: contentRect.minX,
+            y: contentRect.minY,
+            width: contentRect.width,
+            height: menuBarHeight
+        )
+    }
+
+    var canvasRect: CGRect {
+        CGRect(
+            x: contentRect.minX,
+            y: menuBarRect.maxY + menuBarSpacing,
+            width: contentRect.width,
+            height: screenHeight
+        )
     }
 
     func cellRect(column: Int, row: Int) -> CGRect {
@@ -33,6 +56,26 @@ struct GridPreviewGeometry {
             y: canvasRect.minY + CGFloat(selection.y) * cellHeight + 2,
             width: CGFloat(selection.w) * cellWidth - 4,
             height: CGFloat(selection.h) * cellHeight - 4
+        )
+    }
+
+    func menuBarSegmentRect(segment: Int) -> CGRect {
+        let segmentWidth = menuBarRect.width / CGFloat(max(rows, 1))
+        return CGRect(
+            x: menuBarRect.minX + CGFloat(segment) * segmentWidth + 3,
+            y: menuBarRect.minY + 3,
+            width: segmentWidth - 6,
+            height: menuBarRect.height - 6
+        )
+    }
+
+    func menuBarSelectionRect(_ selection: MenuBarSelection) -> CGRect {
+        let segmentWidth = menuBarRect.width / CGFloat(max(rows, 1))
+        return CGRect(
+            x: menuBarRect.minX + CGFloat(selection.x) * segmentWidth + 2,
+            y: menuBarRect.minY + 2,
+            width: CGFloat(selection.w) * segmentWidth - 4,
+            height: menuBarRect.height - 4
         )
     }
 
@@ -59,9 +102,55 @@ struct GridPreviewGeometry {
         let row = min(rows - 1, max(0, Int(relativeY / cellHeight)))
         return (column, row)
     }
+
+    func menuBarSegment(at point: CGPoint, clampToMenuBar: Bool) -> Int? {
+        let sourcePoint: CGPoint
+        if clampToMenuBar {
+            sourcePoint = CGPoint(
+                x: min(max(point.x, menuBarRect.minX + 0.001), menuBarRect.maxX - 0.001),
+                y: min(max(point.y, menuBarRect.minY + 0.001), menuBarRect.maxY - 0.001)
+            )
+        } else {
+            guard menuBarRect.contains(point) else {
+                return nil
+            }
+            sourcePoint = point
+        }
+
+        let relativeX = sourcePoint.x - menuBarRect.minX
+        let segmentWidth = menuBarRect.width / CGFloat(max(rows, 1))
+        return min(rows - 1, max(0, Int(relativeX / segmentWidth)))
+    }
+
+    func triggerHit(at point: CGPoint, clampToPreview: Bool) -> GridPreviewHit? {
+        if let segment = menuBarSegment(at: point, clampToMenuBar: clampToPreview && point.y <= canvasRect.minY) {
+            return .menuBar(segment: segment)
+        }
+
+        if let cell = cell(at: point, clampToCanvas: clampToPreview) {
+            return .screen(column: cell.column, row: cell.row)
+        }
+
+        return nil
+    }
+
+    private var screenHeight: CGFloat {
+        contentRect.height / (1 + PreviewDisplayMetrics.menuBarHeightRatio + PreviewDisplayMetrics.menuBarSpacingRatio)
+    }
+
+    private var menuBarHeight: CGFloat {
+        screenHeight * PreviewDisplayMetrics.menuBarHeightRatio
+    }
+
+    private var menuBarSpacing: CGFloat {
+        screenHeight * PreviewDisplayMetrics.menuBarSpacingRatio
+    }
 }
 
 enum PreviewDisplayMetrics {
+    static let menuBarHeightRatio: CGFloat = 0.065
+    static let menuBarSpacingRatio: CGFloat = 0.03
+
     static var mainDisplayAspectRatio: CGFloat {
         if let frame = NSScreen.screens.first(where: {
             ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value == CGMainDisplayID()
@@ -74,5 +163,9 @@ enum PreviewDisplayMetrics {
         }
 
         return 16.0 / 10.0
+    }
+
+    static var totalPreviewAspectRatio: CGFloat {
+        mainDisplayAspectRatio / (1 + menuBarHeightRatio + menuBarSpacingRatio)
     }
 }

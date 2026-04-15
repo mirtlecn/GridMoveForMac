@@ -187,7 +187,7 @@ final class SettingsViewModel: ObservableObject {
         draft.gridColumns = max(1, draft.gridColumns)
         draft.gridRows = max(1, draft.gridRows)
         draft.windowSelection = clamp(draft.windowSelection, columns: draft.gridColumns, rows: draft.gridRows)
-        draft.triggerSelection = clamp(draft.triggerSelection, columns: draft.gridColumns, rows: draft.gridRows)
+        draft.triggerRegion = clamp(draft.triggerRegion, columns: draft.gridColumns, rows: draft.gridRows)
         layoutDraft = draft
         resetArmed = false
     }
@@ -200,7 +200,8 @@ final class SettingsViewModel: ObservableObject {
             gridColumns: 12,
             gridRows: 6,
             windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4),
-            triggerSelection: GridSelection(x: 3, y: 1, w: 6, h: 4)
+            triggerRegion: .screen(GridSelection(x: 3, y: 1, w: 6, h: 4)),
+            includeInCycle: true
         )
         configuration.layouts.append(preset)
         selectedLayoutID = preset.id
@@ -300,6 +301,17 @@ final class SettingsViewModel: ObservableObject {
         let w = min(max(selection.w, 1), max(columns - x, 1))
         let h = min(max(selection.h, 1), max(rows - y, 1))
         return GridSelection(x: x, y: y, w: w, h: h)
+    }
+
+    private func clamp(_ region: TriggerRegion, columns: Int, rows: Int) -> TriggerRegion {
+        switch region {
+        case let .screen(selection):
+            return .screen(clamp(selection, columns: columns, rows: rows))
+        case let .menuBar(selection):
+            let x = min(max(selection.x, 0), max(rows - 1, 0))
+            let w = min(max(selection.w, 1), max(rows - x, 1))
+            return .menuBar(MenuBarSelection(x: x, w: w))
+        }
     }
 
     private func persistConfiguration(status: String) {
