@@ -247,13 +247,7 @@ struct AppConfiguration: Codable, Equatable {
         let layoutIDs = defaultLayouts.map(\.id)
         return [
             ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "l"), action: .cycleNext),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "k"), action: .cycleNext),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "d"), action: .cycleNext),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "s"), action: .cycleNext),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "h"), action: .cyclePrevious),
             ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "j"), action: .cyclePrevious),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "w"), action: .cyclePrevious),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "a"), action: .cyclePrevious),
             ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "\\"), action: .applyLayout(layoutID: layoutIDs[3])),
             ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "["), action: .applyLayout(layoutID: layoutIDs[1])),
             ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "]"), action: .applyLayout(layoutID: layoutIDs[5])),
@@ -262,15 +256,6 @@ struct AppConfiguration: Codable, Equatable {
             ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "-"), action: .applyLayout(layoutID: layoutIDs[0])),
             ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "="), action: .applyLayout(layoutID: layoutIDs[4])),
             ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "return"), action: .applyLayout(layoutID: layoutIDs[9])),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.alt], key: "\\"), action: .applyLayout(layoutID: layoutIDs[3])),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.alt], key: "["), action: .applyLayout(layoutID: layoutIDs[1])),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.alt], key: "]"), action: .applyLayout(layoutID: layoutIDs[5])),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.alt], key: ";"), action: .applyLayout(layoutID: layoutIDs[2])),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.alt], key: "'"), action: .applyLayout(layoutID: layoutIDs[6])),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.alt], key: "-"), action: .applyLayout(layoutID: layoutIDs[0])),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.alt], key: "="), action: .applyLayout(layoutID: layoutIDs[4])),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.alt], key: ","), action: .applyLayout(layoutID: layoutIDs[7])),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.alt], key: "return"), action: .applyLayout(layoutID: layoutIDs[9])),
         ]
     }
 

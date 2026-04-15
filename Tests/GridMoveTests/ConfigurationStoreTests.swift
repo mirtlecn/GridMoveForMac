@@ -28,16 +28,32 @@ import Testing
 @Test func defaultConfigurationKeepsExpectedShortcutAndModifierDefaults() async throws {
     let configuration = AppConfiguration.defaultValue
 
-    let hasAltCommaLayoutBinding = configuration.hotkeys.bindings.contains { binding in
-        binding.shortcut == KeyboardShortcut(modifiers: [.alt], key: ",")
-            && binding.action == .applyLayout(layoutID: "layout-8")
+    let cycleBindings = configuration.hotkeys.bindings.filter {
+        $0.action == .cycleNext || $0.action == .cyclePrevious
+    }
+    let hasAltLayoutBinding = configuration.hotkeys.bindings.contains { binding in
+        binding.shortcut.modifiers == [.alt]
+    }
+    let hasHyperLayoutFourBinding = configuration.hotkeys.bindings.contains { binding in
+        binding.shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "\\")
+            && binding.action == .applyLayout(layoutID: "layout-4")
     }
     let hasFullscreenOrCloseBinding = configuration.hotkeys.bindings.contains { binding in
         let key = binding.shortcut.key
         return key == "/" || key == "x"
     }
 
-    #expect(hasAltCommaLayoutBinding)
+    #expect(cycleBindings.count == 2)
+    #expect(cycleBindings.contains {
+        $0.shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "l")
+            && $0.action == .cycleNext
+    })
+    #expect(cycleBindings.contains {
+        $0.shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "j")
+            && $0.action == .cyclePrevious
+    })
+    #expect(!hasAltLayoutBinding)
+    #expect(hasHyperLayoutFourBinding)
     #expect(!hasFullscreenOrCloseBinding)
     #expect(configuration.dragTriggers.modifierGroups == [[.ctrl, .cmd, .shift, .alt], [.alt]])
     #expect(configuration.appearance.triggerStrokeColor.alpha == 0.2)
