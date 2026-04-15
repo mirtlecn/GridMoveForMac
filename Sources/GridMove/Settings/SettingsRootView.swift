@@ -4,24 +4,13 @@ struct SettingsRootView: View {
     @ObservedObject var viewModel: SettingsViewModel
 
     var body: some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                sidebar
+        HStack(spacing: 0) {
+            sidebar
 
-                Divider()
+            Divider()
 
-                detailView
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-
-            if !viewModel.statusMessage.isEmpty {
-                Text(viewModel.statusMessage)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .background(.bar)
-            }
+            detailView
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 1180, minHeight: 800)
         .background(Color(nsColor: .windowBackgroundColor))
@@ -39,15 +28,12 @@ struct SettingsRootView: View {
 
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
-            SettingsWindowTrafficLightsView()
-                .padding(.top, 22)
-
             Text("GridMove")
-                .font(.system(size: 34, weight: .bold))
-                .padding(.top, 26)
+                .font(.system(size: 28, weight: .bold))
+                .padding(.top, 72)
 
             Spacer()
-                .frame(height: 42)
+                .frame(height: 52)
 
             VStack(spacing: 10) {
                 ForEach(SettingsViewModel.Section.allCases) { section in
@@ -66,7 +52,7 @@ struct SettingsRootView: View {
 
             Spacer()
         }
-        .padding(.horizontal, 20)
+        .padding(.horizontal, 18)
         .frame(minWidth: 270, idealWidth: 270, maxWidth: 270, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(nsColor: .windowBackgroundColor))
     }

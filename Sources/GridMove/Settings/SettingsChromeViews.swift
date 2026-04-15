@@ -1,21 +1,5 @@
 import SwiftUI
 
-struct SettingsWindowTrafficLightsView: View {
-    var body: some View {
-        HStack(spacing: 8) {
-            Circle()
-                .fill(Color(red: 1.0, green: 0.37, blue: 0.33))
-                .frame(width: 12, height: 12)
-            Circle()
-                .fill(Color(red: 1.0, green: 0.74, blue: 0.18))
-                .frame(width: 12, height: 12)
-            Circle()
-                .fill(Color(red: 0.17, green: 0.8, blue: 0.33))
-                .frame(width: 12, height: 12)
-        }
-    }
-}
-
 struct SettingsSidebarTabButton: View {
     let title: String
     let systemImage: String
@@ -26,8 +10,8 @@ struct SettingsSidebarTabButton: View {
         Button(action: action) {
             HStack(spacing: 12) {
                 Image(systemName: systemImage)
-                    .font(.system(size: 16, weight: .semibold))
-                    .frame(width: 18)
+                    .font(.system(size: 18, weight: .medium))
+                    .frame(width: 22)
 
                 Text(title)
                     .font(.system(size: 16, weight: .semibold))
@@ -35,39 +19,42 @@ struct SettingsSidebarTabButton: View {
                 Spacer()
             }
             .foregroundStyle(isSelected ? Color.white : Color.primary)
-            .padding(.horizontal, 14)
-            .frame(height: 46)
+            .padding(.horizontal, 16)
+            .frame(height: 50)
             .background(
-                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
                     .fill(isSelected ? Color.accentColor : Color.clear)
             )
-            .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
     }
 }
 
 struct SettingsPageSection<Content: View>: View {
-    let title: String
+    let title: String?
     @ViewBuilder let content: Content
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text(title)
-                .font(.system(size: 18, weight: .semibold))
+            if let title {
+                Text(title)
+                    .font(.system(size: 16, weight: .semibold))
+            }
 
             VStack(alignment: .leading, spacing: 14) {
                 content
             }
-            .padding(18)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 18)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
                     .fill(Color(nsColor: .controlBackgroundColor))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.primary.opacity(0.045), lineWidth: 1)
             )
         }
     }
@@ -82,10 +69,12 @@ struct SettingsMiniActionButton: View {
             Image(systemName: systemImage)
                 .font(.system(size: 12, weight: .semibold))
                 .frame(width: 14, height: 14)
-                .padding(8)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 7)
         }
-        .buttonStyle(.bordered)
-        .controlSize(.small)
+        .buttonStyle(.borderedProminent)
+        .tint(Color(nsColor: .quaternaryLabelColor))
+        .foregroundStyle(Color.primary)
     }
 }
 
@@ -98,6 +87,49 @@ struct SettingsSheetContainer<Content: View>: View {
         }
         .padding(24)
         .frame(minWidth: 520)
+    }
+}
+
+struct SettingsSelectableListRow<Content: View>: View {
+    let isSelected: Bool
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        HStack(spacing: 12) {
+            content
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(isSelected ? Color.accentColor.opacity(0.14) : Color.clear)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+}
+
+struct SettingsListContainer<Content: View>: View {
+    let minHeight: CGFloat
+    let maxHeight: CGFloat
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 2) {
+                content
+            }
+            .padding(6)
+        }
+        .frame(minHeight: minHeight, maxHeight: maxHeight)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.primary.opacity(0.035))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Color.primary.opacity(0.05), lineWidth: 1)
+        )
     }
 }
 

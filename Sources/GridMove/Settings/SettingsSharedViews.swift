@@ -166,12 +166,14 @@ struct ModifierGroupSheetView: View {
                 Spacer()
                 Button("Cancel") { dismiss() }
                     .buttonStyle(.bordered)
+                    .controlSize(.large)
 
                 Button("Add") {
                     onConfirm(ModifierKey.allCases.filter { selectedKeys.contains($0) })
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
+                .controlSize(.large)
                 .disabled(selectedKeys.isEmpty)
             }
         }
@@ -208,12 +210,14 @@ struct ExcludedWindowSheetView: View {
                 Spacer()
                 Button("Cancel") { dismiss() }
                     .buttonStyle(.bordered)
+                    .controlSize(.large)
 
                 Button("Add") {
                     onConfirm(kind, value)
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
+                .controlSize(.large)
                 .disabled(value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
@@ -247,9 +251,9 @@ struct SettingsSwitchRow: View {
         HStack(alignment: .top, spacing: 16) {
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.body.weight(.medium))
+                    .font(.system(size: 17, weight: .semibold))
                 Text(subtitle)
-                    .font(.callout)
+                    .font(.system(size: 15, weight: .regular))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -260,7 +264,7 @@ struct SettingsSwitchRow: View {
                 .labelsHidden()
                 .toggleStyle(.switch)
         }
-        .padding(.vertical, 2)
+        .padding(.vertical, 4)
     }
 }
 

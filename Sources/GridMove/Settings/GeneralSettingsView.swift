@@ -5,11 +5,11 @@ struct GeneralSettingsView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
+            VStack(alignment: .leading, spacing: 24) {
                 Text("General")
-                    .font(.system(size: 34, weight: .bold))
+                    .font(.system(size: 28, weight: .bold))
 
-                SettingsPageSection(title: "Enable") {
+                SettingsPageSection(title: nil) {
                     SettingsSwitchRow(
                         title: "Enable",
                         subtitle: "Allow drag triggers, layout hotkeys, and command line layout actions.",
@@ -43,14 +43,17 @@ struct GeneralSettingsView: View {
                                 )
                             )
 
-                            List(selection: $viewModel.selectedModifierGroupID) {
+                            SettingsListContainer(minHeight: 104, maxHeight: 128) {
                                 ForEach(viewModel.modifierGroupItems) { item in
-                                    Text(item.title)
-                                        .tag(Optional(item.id))
+                                    SettingsSelectableListRow(isSelected: viewModel.selectedModifierGroupID == item.id) {
+                                        Text(item.title)
+                                            .font(.system(size: 15))
+                                    }
+                                    .onTapGesture {
+                                        viewModel.selectedModifierGroupID = item.id
+                                    }
                                 }
                             }
-                            .listStyle(.inset(alternatesRowBackgrounds: false))
-                            .frame(minHeight: 104, maxHeight: 128)
                             .disabled(!viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag)
 
                             HStack(spacing: 8) {
@@ -70,20 +73,22 @@ struct GeneralSettingsView: View {
                 .disabled(!viewModel.configuration.general.isEnabled)
 
                 SettingsPageSection(title: "Excluded Windows") {
-                    List(selection: $viewModel.selectedExcludedWindowID) {
+                    SettingsListContainer(minHeight: 140, maxHeight: 180) {
                         ForEach(viewModel.excludedWindowItems) { item in
-                            HStack(spacing: 12) {
+                            SettingsSelectableListRow(isSelected: viewModel.selectedExcludedWindowID == item.id) {
                                 Text(item.value)
                                     .textSelection(.enabled)
+                                    .font(.system(size: 15))
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                 Text(item.kind.columnTitle)
+                                    .font(.system(size: 14))
                                     .foregroundStyle(.secondary)
                             }
-                            .tag(Optional(item.id))
+                            .onTapGesture {
+                                viewModel.selectedExcludedWindowID = item.id
+                            }
                         }
                     }
-                    .listStyle(.inset(alternatesRowBackgrounds: false))
-                    .frame(minHeight: 140, maxHeight: 180)
 
                     HStack(spacing: 8) {
                         SettingsMiniActionButton(systemImage: "plus") {
@@ -98,7 +103,8 @@ struct GeneralSettingsView: View {
                     }
                 }
             }
-            .padding(28)
+            .padding(.horizontal, 32)
+            .padding(.vertical, 26)
             .frame(maxWidth: .infinity, alignment: .topLeading)
         }
     }
