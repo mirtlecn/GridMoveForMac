@@ -145,10 +145,54 @@ struct AppearanceSettings: Codable, Equatable {
     var renderTriggerAreas: Bool
     var triggerOpacity: Double
     var triggerGap: Double
+    var triggerStrokeColor: RGBAColor
     var renderWindowHighlight: Bool
     var highlightFillOpacity: Double
     var highlightStrokeWidth: Double
     var highlightStrokeColor: RGBAColor
+
+    private enum CodingKeys: String, CodingKey {
+        case renderTriggerAreas
+        case triggerOpacity
+        case triggerGap
+        case triggerStrokeColor
+        case renderWindowHighlight
+        case highlightFillOpacity
+        case highlightStrokeWidth
+        case highlightStrokeColor
+    }
+
+    init(
+        renderTriggerAreas: Bool,
+        triggerOpacity: Double,
+        triggerGap: Double,
+        triggerStrokeColor: RGBAColor,
+        renderWindowHighlight: Bool,
+        highlightFillOpacity: Double,
+        highlightStrokeWidth: Double,
+        highlightStrokeColor: RGBAColor
+    ) {
+        self.renderTriggerAreas = renderTriggerAreas
+        self.triggerOpacity = triggerOpacity
+        self.triggerGap = triggerGap
+        self.triggerStrokeColor = triggerStrokeColor
+        self.renderWindowHighlight = renderWindowHighlight
+        self.highlightFillOpacity = highlightFillOpacity
+        self.highlightStrokeWidth = highlightStrokeWidth
+        self.highlightStrokeColor = highlightStrokeColor
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        renderTriggerAreas = try container.decode(Bool.self, forKey: .renderTriggerAreas)
+        triggerOpacity = try container.decode(Double.self, forKey: .triggerOpacity)
+        triggerGap = try container.decode(Double.self, forKey: .triggerGap)
+        triggerStrokeColor = try container.decodeIfPresent(RGBAColor.self, forKey: .triggerStrokeColor) ?? RGBAColor.defaultTriggerStrokeColor
+        renderWindowHighlight = try container.decode(Bool.self, forKey: .renderWindowHighlight)
+        highlightFillOpacity = try container.decode(Double.self, forKey: .highlightFillOpacity)
+        highlightStrokeWidth = try container.decode(Double.self, forKey: .highlightStrokeWidth)
+        highlightStrokeColor = try container.decode(RGBAColor.self, forKey: .highlightStrokeColor)
+    }
 }
 
 struct DragTriggerSettings: Codable, Equatable {
@@ -239,10 +283,11 @@ struct AppConfiguration: Codable, Equatable {
             renderTriggerAreas: true,
             triggerOpacity: 0.2,
             triggerGap: 2,
+            triggerStrokeColor: .defaultTriggerStrokeColor,
             renderWindowHighlight: true,
             highlightFillOpacity: 0.08,
             highlightStrokeWidth: 3,
-            highlightStrokeColor: RGBAColor(red: 1.0, green: 0.47, blue: 0.12, alpha: 0.92)
+            highlightStrokeColor: RGBAColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.92)
         ),
         dragTriggers: DragTriggerSettings(
             middleMouseButtonNumber: 2,
@@ -282,6 +327,18 @@ struct AppConfiguration: Codable, Equatable {
 
         let movedLayout = layouts.remove(at: sourceIndex)
         layouts.insert(movedLayout, at: destinationIndex)
+    }
+}
+
+private extension RGBAColor {
+    static var defaultTriggerStrokeColor: RGBAColor {
+        let resolvedColor = NSColor.controlAccentColor.usingColorSpace(.deviceRGB) ?? .systemBlue
+        return RGBAColor(
+            red: resolvedColor.redComponent,
+            green: resolvedColor.greenComponent,
+            blue: resolvedColor.blueComponent,
+            alpha: 0.2
+        )
     }
 }
 

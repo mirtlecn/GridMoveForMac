@@ -256,10 +256,14 @@ struct GridSelectionEditorRepresentable: NSViewRepresentable {
     var rows: Int
     @Binding var selection: GridSelection
     var selectionColor: NSColor
+    var showsGridBackground = true
+    var showsSelection = true
 
     func makeNSView(context: Context) -> GridSelectionEditorView {
         let view = GridSelectionEditorView(columns: columns, rows: rows)
         view.selectionColor = selectionColor
+        view.showsGridBackground = showsGridBackground
+        view.showsSelection = showsSelection
         view.onSelectionChanged = { nextSelection in
             selection = GridSelection(x: nextSelection.x, y: nextSelection.y, w: nextSelection.w, h: nextSelection.h)
         }
@@ -270,6 +274,8 @@ struct GridSelectionEditorRepresentable: NSViewRepresentable {
         nsView.columns = columns
         nsView.rows = rows
         nsView.selectionColor = selectionColor
+        nsView.showsGridBackground = showsGridBackground
+        nsView.showsSelection = showsSelection
         nsView.selection = CellSelection(x: selection.x, y: selection.y, w: selection.w, h: selection.h)
         nsView.onSelectionChanged = { nextSelection in
             selection = GridSelection(x: nextSelection.x, y: nextSelection.y, w: nextSelection.w, h: nextSelection.h)
@@ -297,55 +303,201 @@ struct ShortcutRecorderRepresentable: NSViewRepresentable {
     }
 }
 
-struct AppearancePreviewSwiftUIView: View {
-    let configuration: AppConfiguration
+struct GridPreviewOverlayStyle {
+    let strokeColor: Color
+    let fillOpacity: Double
+    let strokeWidth: CGFloat
+}
+
+struct GridPreviewOverlayItem: Identifiable {
+    let id: String
+    let selection: GridSelection
+    let style: GridPreviewOverlayStyle
+}
+
+private struct FixedAspectPreviewFrame<Content: View>: View {
+    @ViewBuilder let content: Content
 
     var body: some View {
         GeometryReader { geometry in
-            let screenRect = geometry.frame(in: .local).insetBy(dx: 24, dy: 24)
-            let preset = configuration.layouts.first ?? AppConfiguration.defaultLayouts[0]
-            let engine = LayoutEngine()
-            let triggerFrame = engine.frame(
-                for: preset.triggerSelection,
-                columns: preset.gridColumns,
-                rows: preset.gridRows,
-                in: screenRect
-            ).insetBy(dx: configuration.appearance.triggerGap, dy: configuration.appearance.triggerGap)
-            let windowFrame = engine.frame(
-                for: preset.windowSelection,
-                columns: preset.gridColumns,
-                rows: preset.gridRows,
-                in: screenRect
+            let fittedRect = fittedPreviewRect(in: geometry.size)
+
+            ZStack {
+                content
+                    .frame(width: fittedRect.width, height: fittedRect.height)
+                    .position(x: fittedRect.midX, y: fittedRect.midY)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+
+    private func fittedPreviewRect(in size: CGSize) -> CGRect {
+        let bounds = CGRect(origin: .zero, size: size)
+        let targetAspectRatio = PreviewDisplayMetrics.mainDisplayAspectRatio
+        guard bounds.width > 0, bounds.height > 0, targetAspectRatio > 0 else {
+            return bounds
+        }
+
+        let availableAspectRatio = bounds.width / bounds.height
+        let fittedSize: CGSize
+        if availableAspectRatio > targetAspectRatio {
+            fittedSize = CGSize(width: bounds.height * targetAspectRatio, height: bounds.height)
+        } else {
+            fittedSize = CGSize(width: bounds.width, height: bounds.width / targetAspectRatio)
+        }
+
+        return CGRect(
+            x: (bounds.width - fittedSize.width) / 2,
+            y: (bounds.height - fittedSize.height) / 2,
+            width: fittedSize.width,
+            height: fittedSize.height
+        )
+    }
+}
+
+struct SharedGridPreview: View {
+    let columns: Int
+    let rows: Int
+    let overlays: [GridPreviewOverlayItem]
+
+    var body: some View {
+        FixedAspectPreviewFrame {
+            SharedGridPreviewContent(columns: columns, rows: rows, overlays: overlays)
+        }
+    }
+}
+
+struct InteractiveGridPreview: View {
+    let columns: Int
+    let rows: Int
+    @Binding var selection: GridSelection
+    let style: GridPreviewOverlayStyle
+
+    var body: some View {
+        FixedAspectPreviewFrame {
+            ZStack {
+                SharedGridPreviewContent(
+                    columns: columns,
+                    rows: rows,
+                    overlays: [
+                        GridPreviewOverlayItem(id: "selection", selection: selection, style: style),
+                    ]
+                )
+                GridSelectionEditorRepresentable(
+                    columns: columns,
+                    rows: rows,
+                    selection: $selection,
+                    selectionColor: NSColor(style.strokeColor),
+                    showsGridBackground: false,
+                    showsSelection: false
+                )
+            }
+        }
+    }
+}
+
+private struct SharedGridPreviewContent: View {
+    let columns: Int
+    let rows: Int
+    let overlays: [GridPreviewOverlayItem]
+
+    var body: some View {
+        GeometryReader { geometry in
+            let previewGeometry = GridPreviewGeometry(
+                columns: columns,
+                rows: rows,
+                bounds: geometry.frame(in: .local),
+                outerPadding: GridPreviewGeometry.defaultOuterPadding
             )
 
             ZStack {
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(nsColor: .controlBackgroundColor))
+                    .fill(Color(nsColor: .windowBackgroundColor).opacity(0.95))
+
+                ForEach(0 ..< rows, id: \.self) { row in
+                    ForEach(0 ..< columns, id: \.self) { column in
+                        let cellRect = previewGeometry.cellRect(column: column, row: row)
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(cellFillColor(column: column, row: row))
+                            .frame(width: cellRect.width, height: cellRect.height)
+                            .position(x: cellRect.midX, y: cellRect.midY)
+                    }
+                }
 
                 RoundedRectangle(cornerRadius: 16)
                     .stroke(Color.secondary.opacity(0.35), lineWidth: 1)
-                    .frame(width: screenRect.width, height: screenRect.height)
-                    .position(x: screenRect.midX, y: screenRect.midY)
+                    .frame(width: previewGeometry.canvasRect.width, height: previewGeometry.canvasRect.height)
+                    .position(x: previewGeometry.canvasRect.midX, y: previewGeometry.canvasRect.midY)
 
-                if configuration.appearance.renderTriggerAreas {
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.accentColor.opacity(configuration.appearance.triggerOpacity), lineWidth: 2)
-                        .frame(width: triggerFrame.width, height: triggerFrame.height)
-                        .position(x: triggerFrame.midX, y: triggerFrame.midY)
-                }
-
-                if configuration.appearance.renderWindowHighlight {
-                    let color = Color(configuration.appearance.highlightStrokeColor.nsColor)
+                ForEach(overlays) { overlay in
+                    let overlayRect = previewGeometry.selectionRect(overlay.selection)
                     RoundedRectangle(cornerRadius: 12)
-                        .fill(color.opacity(configuration.appearance.highlightFillOpacity))
+                        .fill(overlay.style.strokeColor.opacity(overlay.style.fillOpacity))
                         .overlay(
                             RoundedRectangle(cornerRadius: 12)
-                                .stroke(color, lineWidth: configuration.appearance.highlightStrokeWidth)
+                                .stroke(overlay.style.strokeColor, lineWidth: overlay.style.strokeWidth)
                         )
-                        .frame(width: windowFrame.width, height: windowFrame.height)
-                        .position(x: windowFrame.midX, y: windowFrame.midY)
+                        .frame(width: overlayRect.width, height: overlayRect.height)
+                        .position(x: overlayRect.midX, y: overlayRect.midY)
                 }
             }
         }
+    }
+
+    private func cellFillColor(column: Int, row: Int) -> Color {
+        let base = NSColor.controlBackgroundColor.blended(withFraction: 0.2, of: .black) ?? .controlBackgroundColor
+        let alternate = NSColor.controlBackgroundColor.blended(withFraction: 0.08, of: .white) ?? .controlBackgroundColor
+        return Color(nsColor: (row + column).isMultiple(of: 2) ? base : alternate)
+    }
+}
+
+struct AppearancePreviewSwiftUIView: View {
+    let configuration: AppConfiguration
+
+    private let previewColumns = 12
+    private let previewRows = 6
+    private let previewWindowSelection = GridSelection(x: 3, y: 1, w: 6, h: 4)
+    private let previewTriggerSelection = GridSelection(x: 5, y: 2, w: 2, h: 2)
+
+    var body: some View {
+        SharedGridPreview(
+            columns: previewColumns,
+            rows: previewRows,
+            overlays: appearancePreviewOverlays
+        )
+    }
+
+    private var appearancePreviewOverlays: [GridPreviewOverlayItem] {
+        var overlays: [GridPreviewOverlayItem] = []
+
+        if configuration.appearance.renderWindowHighlight {
+            overlays.append(
+                GridPreviewOverlayItem(
+                    id: "window",
+                    selection: previewWindowSelection,
+                    style: GridPreviewOverlayStyle(
+                        strokeColor: Color(configuration.appearance.highlightStrokeColor.nsColor),
+                        fillOpacity: configuration.appearance.highlightFillOpacity,
+                        strokeWidth: configuration.appearance.highlightStrokeWidth
+                    )
+                )
+            )
+        }
+
+        if configuration.appearance.renderTriggerAreas {
+            overlays.append(
+                GridPreviewOverlayItem(
+                    id: "trigger",
+                    selection: previewTriggerSelection,
+                    style: GridPreviewOverlayStyle(
+                        strokeColor: Color(configuration.appearance.triggerStrokeColor.nsColor),
+                        fillOpacity: min(max(configuration.appearance.triggerOpacity * 0.45, 0.08), 0.35),
+                        strokeWidth: 2
+                    )
+                )
+            )
+        }
+
+        return overlays
     }
 }

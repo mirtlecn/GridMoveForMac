@@ -40,6 +40,7 @@ import Testing
     #expect(hasAltCommaLayoutBinding)
     #expect(!hasFullscreenOrCloseBinding)
     #expect(configuration.dragTriggers.modifierGroups == [[.ctrl, .cmd, .shift, .alt], [.alt]])
+    #expect(configuration.appearance.triggerStrokeColor.alpha == 0.2)
 }
 
 @Test func removingLayoutAlsoRemovesDirectBindingsForThatLayout() async throws {
@@ -55,4 +56,43 @@ import Testing
         return false
     })
     #expect(configuration.hotkeys.bindings.contains(where: { $0.action == .cycleNext }))
+}
+
+@Test func appearanceSettingsDecodeMissingTriggerStrokeColorWithDefaultValue() async throws {
+    let plist = """
+    <?xml version="1.0" encoding="UTF-8"?>
+    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+    <plist version="1.0">
+    <dict>
+      <key>renderTriggerAreas</key>
+      <true/>
+      <key>triggerOpacity</key>
+      <real>0.2</real>
+      <key>triggerGap</key>
+      <real>2</real>
+      <key>renderWindowHighlight</key>
+      <true/>
+      <key>highlightFillOpacity</key>
+      <real>0.08</real>
+      <key>highlightStrokeWidth</key>
+      <real>3</real>
+      <key>highlightStrokeColor</key>
+      <dict>
+        <key>red</key>
+        <real>1</real>
+        <key>green</key>
+        <real>1</real>
+        <key>blue</key>
+        <real>1</real>
+        <key>alpha</key>
+        <real>0.92</real>
+      </dict>
+    </dict>
+    </plist>
+    """
+
+    let data = try #require(plist.data(using: .utf8))
+    let settings = try PropertyListDecoder().decode(AppearanceSettings.self, from: data)
+
+    #expect(settings.triggerStrokeColor.alpha == 0.2)
 }

@@ -32,6 +32,31 @@ struct AppearanceSettingsView: View {
                                     range: 0 ... 1
                                 )
 
+                                HStack {
+                                    Text("Trigger Stroke Color")
+                                        .foregroundStyle(.secondary)
+                                        .frame(width: 130, alignment: .leading)
+                                    ColorPicker(
+                                        "",
+                                        selection: Binding(
+                                            get: { Color(viewModel.configuration.appearance.triggerStrokeColor.nsColor) },
+                                            set: { newColor in
+                                                let nsColor = NSColor(newColor)
+                                                let resolved = nsColor.usingColorSpace(.deviceRGB) ?? .controlAccentColor
+                                                viewModel.updateAppearance {
+                                                    $0.triggerStrokeColor = RGBAColor(
+                                                        red: resolved.redComponent,
+                                                        green: resolved.greenComponent,
+                                                        blue: resolved.blueComponent,
+                                                        alpha: resolved.alphaComponent
+                                                    )
+                                                }
+                                            }
+                                        )
+                                    )
+                                    .labelsHidden()
+                                }
+
                                 LabeledNumberFieldRow(
                                     title: "Trigger Gap",
                                     value: Binding(

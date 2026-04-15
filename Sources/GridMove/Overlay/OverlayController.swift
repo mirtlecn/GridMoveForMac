@@ -100,7 +100,7 @@ private final class OverlayView: NSView {
     }
 
     private func drawTriggerSlots() {
-        let color = NSColor.controlAccentColor.withAlphaComponent(configuration.appearance.triggerOpacity)
+        let color = configuration.appearance.triggerStrokeColor.nsColor
         color.setStroke()
 
         for slot in resolvedSlots {

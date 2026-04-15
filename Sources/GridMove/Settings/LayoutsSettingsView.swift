@@ -90,7 +90,7 @@ struct LayoutsSettingsView: View {
                         }
 
                         SettingsCard(title: "Window Layout") {
-                            GridSelectionEditorRepresentable(
+                            InteractiveGridPreview(
                                 columns: draft.gridColumns,
                                 rows: draft.gridRows,
                                 selection: Binding(
@@ -99,13 +99,17 @@ struct LayoutsSettingsView: View {
                                         viewModel.updateLayoutDraft { $0.windowSelection = newSelection }
                                     }
                                 ),
-                                selectionColor: .controlAccentColor
+                                style: GridPreviewOverlayStyle(
+                                    strokeColor: Color(viewModel.configuration.appearance.highlightStrokeColor.nsColor),
+                                    fillOpacity: viewModel.configuration.appearance.highlightFillOpacity,
+                                    strokeWidth: viewModel.configuration.appearance.highlightStrokeWidth
+                                )
                             )
                             .frame(height: gridEditorHeight)
                         }
 
                         SettingsCard(title: "Trigger Area") {
-                            GridSelectionEditorRepresentable(
+                            InteractiveGridPreview(
                                 columns: draft.gridColumns,
                                 rows: draft.gridRows,
                                 selection: Binding(
@@ -114,7 +118,11 @@ struct LayoutsSettingsView: View {
                                         viewModel.updateLayoutDraft { $0.triggerSelection = newSelection }
                                     }
                                 ),
-                                selectionColor: .systemOrange
+                                style: GridPreviewOverlayStyle(
+                                    strokeColor: Color(viewModel.configuration.appearance.triggerStrokeColor.nsColor),
+                                    fillOpacity: min(max(viewModel.configuration.appearance.triggerOpacity * 0.45, 0.08), 0.35),
+                                    strokeWidth: 2
+                                )
                             )
                             .frame(height: gridEditorHeight)
                         }

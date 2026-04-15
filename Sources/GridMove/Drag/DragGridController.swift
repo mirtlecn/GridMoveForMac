@@ -21,7 +21,6 @@ final class DragGridController {
         var overlayActivationPoint: CGPoint?
         var resolvedSlots: [ResolvedTriggerSlot] = []
         var suppressedMouseUpButton: TriggerButton?
-        var syntheticMiddleMouseUpPending = false
         var targetWindow: ManagedWindow?
     }
 
@@ -116,6 +115,10 @@ final class DragGridController {
     }
 
     private func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
+        if SyntheticEventMarker.isMiddleMouseReplay(event) {
+            return Unmanaged.passUnretained(event)
+        }
+
         guard ensureAccessibilityIsStillGranted() else {
             return Unmanaged.passUnretained(event)
         }
@@ -201,16 +204,16 @@ final class DragGridController {
             }
 
             guard let targetWindow = self.windowController.windowUnderCursor(at: point, configuration: configuration) else {
+                self.postSyntheticMiddleMouseDown(at: self.windowController.quartzPoint(fromAppKitPoint: point))
                 self.resetState()
                 return
             }
 
             self.enterDragMode(button: .middle, targetWindow: targetWindow, point: point, configuration: configuration)
-            self.postSyntheticMiddleMouseUp(at: event.location)
         }
         state.activationTimer = timer
         timer.resume()
-        return Unmanaged.passUnretained(event)
+        return nil
     }
 
     private func handleMouseDragged(
@@ -223,6 +226,9 @@ final class DragGridController {
         }
 
         guard state.active else {
+            if expectedButton == .middle, state.activationTimer != nil {
+                return nil
+            }
             return expectedButton == .left ? nil : Unmanaged.passUnretained(event)
         }
 
@@ -231,11 +237,6 @@ final class DragGridController {
     }
 
     private func handleMouseUp(event: CGEvent, button: TriggerButton) -> Unmanaged<CGEvent>? {
-        if state.syntheticMiddleMouseUpPending, button == .middle {
-            state.syntheticMiddleMouseUpPending = false
-            return Unmanaged.passUnretained(event)
-        }
-
         if state.suppressedMouseUpButton == button {
             state.suppressedMouseUpButton = nil
             return nil
@@ -247,8 +248,14 @@ final class DragGridController {
 
         if state.activationTimer != nil {
             state.activationTimer?.cancel()
+            if button == .middle, let mouseDownPoint = state.mouseDownPoint {
+                postSyntheticMiddleMouseClick(
+                    downAt: windowController.quartzPoint(fromAppKitPoint: mouseDownPoint),
+                    upAt: event.location
+                )
+            }
             resetState()
-            return button == .left ? nil : Unmanaged.passUnretained(event)
+            return nil
         }
 
         if state.active {
@@ -380,18 +387,38 @@ final class DragGridController {
         overlayController.dismiss()
     }
 
-    private func postSyntheticMiddleMouseUp(at point: CGPoint) {
-        state.syntheticMiddleMouseUpPending = true
+    private func postSyntheticMiddleMouseDown(at point: CGPoint) {
         guard let source = CGEventSource(stateID: .hidSystemState) else {
             return
         }
 
-        guard let syntheticEvent = CGEvent(mouseEventSource: source, mouseType: .otherMouseUp, mouseCursorPosition: point, mouseButton: .center) else {
+        guard let syntheticEvent = CGEvent(mouseEventSource: source, mouseType: .otherMouseDown, mouseCursorPosition: point, mouseButton: .center) else {
             return
         }
 
+        SyntheticEventMarker.markMiddleMouseReplay(syntheticEvent)
         syntheticEvent.setIntegerValueField(.mouseEventButtonNumber, value: Int64(TriggerButton.middle.rawValue))
         syntheticEvent.post(tap: .cghidEventTap)
+    }
+
+    private func postSyntheticMiddleMouseClick(downAt downPoint: CGPoint, upAt upPoint: CGPoint) {
+        guard let source = CGEventSource(stateID: .hidSystemState) else {
+            return
+        }
+
+        guard
+            let downEvent = CGEvent(mouseEventSource: source, mouseType: .otherMouseDown, mouseCursorPosition: downPoint, mouseButton: .center),
+            let upEvent = CGEvent(mouseEventSource: source, mouseType: .otherMouseUp, mouseCursorPosition: upPoint, mouseButton: .center)
+        else {
+            return
+        }
+
+        SyntheticEventMarker.markMiddleMouseReplay(downEvent)
+        SyntheticEventMarker.markMiddleMouseReplay(upEvent)
+        downEvent.setIntegerValueField(.mouseEventButtonNumber, value: Int64(TriggerButton.middle.rawValue))
+        upEvent.setIntegerValueField(.mouseEventButtonNumber, value: Int64(TriggerButton.middle.rawValue))
+        downEvent.post(tap: .cghidEventTap)
+        upEvent.post(tap: .cghidEventTap)
     }
 
     private func normalizedModifiers(from flags: CGEventFlags) -> Set<ModifierKey> {

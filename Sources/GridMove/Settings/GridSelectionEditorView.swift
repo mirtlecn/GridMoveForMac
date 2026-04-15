@@ -9,6 +9,33 @@ struct CellSelection: Equatable {
 
 @MainActor
 final class GridSelectionEditorView: NSView {
+    private enum ResizeHandle {
+        case top
+        case bottom
+        case left
+        case right
+        case topLeft
+        case topRight
+        case bottomLeft
+        case bottomRight
+
+        var cursor: NSCursor {
+            switch self {
+            case .left, .right:
+                return .resizeLeftRight
+            case .top, .bottom:
+                return .resizeUpDown
+            case .topLeft, .topRight, .bottomLeft, .bottomRight:
+                return .crosshair
+            }
+        }
+    }
+
+    private enum DragState {
+        case creating(startCell: (column: Int, row: Int))
+        case resizing(handle: ResizeHandle, initialSelection: CellSelection)
+    }
+
     var columns: Int = 12 {
         didSet { needsDisplay = true }
     }
@@ -25,10 +52,20 @@ final class GridSelectionEditorView: NSView {
         didSet { needsDisplay = true }
     }
 
-    var drawsSelectionFill = true
+    var showsGridBackground = true {
+        didSet { needsDisplay = true }
+    }
+
+    var showsSelection = true {
+        didSet { needsDisplay = true }
+    }
+
     var onSelectionChanged: ((CellSelection) -> Void)?
 
-    private var dragStartCell: (column: Int, row: Int)?
+    private var dragState: DragState?
+    private var trackingArea: NSTrackingArea?
+    private var hasPushedCursor = false
+    private let handleTolerance: CGFloat = 14
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -46,61 +83,118 @@ final class GridSelectionEditorView: NSView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    override var acceptsFirstResponder: Bool {
+        true
+    }
+
+    override func updateTrackingAreas() {
+        super.updateTrackingAreas()
+
+        if let trackingArea {
+            removeTrackingArea(trackingArea)
+        }
+
+        let options: NSTrackingArea.Options = [
+            .activeInKeyWindow,
+            .inVisibleRect,
+            .mouseMoved,
+            .cursorUpdate,
+        ]
+        let area = NSTrackingArea(rect: bounds, options: options, owner: self, userInfo: nil)
+        addTrackingArea(area)
+        trackingArea = area
+    }
+
     override func draw(_ dirtyRect: NSRect) {
         super.draw(dirtyRect)
 
-        let background = NSColor.windowBackgroundColor.blended(withFraction: 0.15, of: .black) ?? .windowBackgroundColor
-        background.setFill()
-        dirtyRect.fill()
+        if showsGridBackground {
+            let background = NSColor.windowBackgroundColor.blended(withFraction: 0.15, of: .black) ?? .windowBackgroundColor
+            background.setFill()
+            dirtyRect.fill()
+            drawOuterFrame()
+            drawCells()
+        }
 
-        drawOuterFrame()
-        drawCells()
-        drawSelection()
+        if showsSelection {
+            drawSelection()
+        }
     }
 
     override func mouseDown(with event: NSEvent) {
         let point = convert(event.locationInWindow, from: nil)
-        guard let cell = cell(at: point) else {
+
+        if let selection, let handle = resizeHandle(at: point, selection: selection) {
+            dragState = .resizing(handle: handle, initialSelection: selection)
+            window?.disableCursorRects()
+            handle.cursor.push()
+            hasPushedCursor = true
             return
         }
 
-        dragStartCell = cell
+        guard let cell = previewGeometry.cell(at: point, clampToCanvas: false) else {
+            return
+        }
+
         let nextSelection = CellSelection(x: cell.column, y: cell.row, w: 1, h: 1)
-        selection = nextSelection
-        onSelectionChanged?(nextSelection)
+        dragState = .creating(startCell: cell)
+        updateSelection(nextSelection)
     }
 
     override func mouseDragged(with event: NSEvent) {
-        guard let dragStartCell else {
+        guard let dragState else {
             return
         }
 
         let point = convert(event.locationInWindow, from: nil)
-        guard let currentCell = cell(at: point) else {
+        guard let currentCell = previewGeometry.cell(at: point, clampToCanvas: true) else {
             return
         }
 
-        let left = min(dragStartCell.column, currentCell.column)
-        let top = min(dragStartCell.row, currentCell.row)
-        let right = max(dragStartCell.column, currentCell.column)
-        let bottom = max(dragStartCell.row, currentCell.row)
-        let nextSelection = CellSelection(
-            x: left,
-            y: top,
-            w: right - left + 1,
-            h: bottom - top + 1
-        )
-        selection = nextSelection
-        onSelectionChanged?(nextSelection)
+        switch dragState {
+        case let .creating(startCell):
+            updateSelection(selectionBetween(startCell: startCell, endCell: currentCell))
+        case let .resizing(handle, initialSelection):
+            updateSelection(selectionByResizing(initialSelection: initialSelection, handle: handle, targetCell: currentCell))
+        }
     }
 
     override func mouseUp(with event: NSEvent) {
-        dragStartCell = nil
+        dragState = nil
+        if hasPushedCursor {
+            window?.enableCursorRects()
+            NSCursor.pop()
+            hasPushedCursor = false
+        }
+        updateCursor(for: convert(event.locationInWindow, from: nil))
+    }
+
+    override func mouseMoved(with event: NSEvent) {
+        guard dragState == nil else {
+            return
+        }
+        updateCursor(for: convert(event.locationInWindow, from: nil))
+    }
+
+    override func cursorUpdate(with event: NSEvent) {
+        guard dragState == nil else {
+            return
+        }
+        updateCursor(for: convert(event.locationInWindow, from: nil))
+    }
+
+    private var previewGeometry: GridPreviewGeometry {
+        GridPreviewGeometry(
+            columns: columns,
+            rows: rows,
+            bounds: bounds,
+            outerPadding: GridPreviewGeometry.defaultOuterPadding
+        )
     }
 
     private func drawOuterFrame() {
-        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: 12, yRadius: 12)
-        NSColor.separatorColor.withAlphaComponent(0.45).setStroke()
+        let path = NSBezierPath(roundedRect: bounds.insetBy(dx: 1, dy: 1), xRadius: 16, yRadius: 16)
+        NSColor.separatorColor.withAlphaComponent(0.4).setStroke()
         path.lineWidth = 1
         path.stroke()
     }
@@ -112,19 +206,20 @@ final class GridSelectionEditorView: NSView {
 
         let baseFill = NSColor.controlBackgroundColor.blended(withFraction: 0.2, of: .black) ?? .controlBackgroundColor
         let alternateFill = NSColor.controlBackgroundColor.blended(withFraction: 0.08, of: .white) ?? .controlBackgroundColor
-        let borderColor = NSColor.gridColor.withAlphaComponent(0.28)
 
         for row in 0 ..< rows {
             for column in 0 ..< columns {
-                let rect = rect(forCellAtColumn: column, row: row)
-                let path = NSBezierPath(roundedRect: rect, xRadius: 4, yRadius: 4)
+                let rect = previewGeometry.cellRect(column: column, row: row)
+                let path = NSBezierPath(roundedRect: rect, xRadius: 8, yRadius: 8)
                 ((row + column).isMultiple(of: 2) ? baseFill : alternateFill).setFill()
                 path.fill()
-                borderColor.setStroke()
-                path.lineWidth = 0.8
-                path.stroke()
             }
         }
+
+        let framePath = NSBezierPath(roundedRect: previewGeometry.canvasRect, xRadius: 16, yRadius: 16)
+        NSColor.separatorColor.withAlphaComponent(0.35).setStroke()
+        framePath.lineWidth = 1
+        framePath.stroke()
     }
 
     private func drawSelection() {
@@ -132,49 +227,125 @@ final class GridSelectionEditorView: NSView {
             return
         }
 
-        let rect = rect(for: selection)
-        let path = NSBezierPath(roundedRect: rect, xRadius: 10, yRadius: 10)
-        if drawsSelectionFill {
-            selectionColor.withAlphaComponent(0.22).setFill()
-            path.fill()
-        }
+        let rect = previewGeometry.selectionRect(
+            GridSelection(x: selection.x, y: selection.y, w: selection.w, h: selection.h)
+        )
+        let path = NSBezierPath(roundedRect: rect, xRadius: 12, yRadius: 12)
+        selectionColor.withAlphaComponent(0.22).setFill()
+        path.fill()
         selectionColor.setStroke()
         path.lineWidth = 2.5
         path.stroke()
     }
 
-    private func cell(at point: CGPoint) -> (column: Int, row: Int)? {
-        guard bounds.contains(point), columns > 0, rows > 0 else {
+    private func updateSelection(_ selection: CellSelection) {
+        self.selection = selection
+        onSelectionChanged?(selection)
+    }
+
+    private func selectionBetween(
+        startCell: (column: Int, row: Int),
+        endCell: (column: Int, row: Int)
+    ) -> CellSelection {
+        let left = min(startCell.column, endCell.column)
+        let top = min(startCell.row, endCell.row)
+        let right = max(startCell.column, endCell.column)
+        let bottom = max(startCell.row, endCell.row)
+
+        return CellSelection(
+            x: left,
+            y: top,
+            w: right - left + 1,
+            h: bottom - top + 1
+        )
+    }
+
+    private func selectionByResizing(
+        initialSelection: CellSelection,
+        handle: ResizeHandle,
+        targetCell: (column: Int, row: Int)
+    ) -> CellSelection {
+        var left = initialSelection.x
+        var top = initialSelection.y
+        var right = initialSelection.x + initialSelection.w - 1
+        var bottom = initialSelection.y + initialSelection.h - 1
+
+        switch handle {
+        case .left:
+            left = min(max(0, targetCell.column), right)
+        case .right:
+            right = max(min(columns - 1, targetCell.column), left)
+        case .top:
+            top = min(max(0, targetCell.row), bottom)
+        case .bottom:
+            bottom = max(min(rows - 1, targetCell.row), top)
+        case .topLeft:
+            left = min(max(0, targetCell.column), right)
+            top = min(max(0, targetCell.row), bottom)
+        case .topRight:
+            right = max(min(columns - 1, targetCell.column), left)
+            top = min(max(0, targetCell.row), bottom)
+        case .bottomLeft:
+            left = min(max(0, targetCell.column), right)
+            bottom = max(min(rows - 1, targetCell.row), top)
+        case .bottomRight:
+            right = max(min(columns - 1, targetCell.column), left)
+            bottom = max(min(rows - 1, targetCell.row), top)
+        }
+
+        return CellSelection(
+            x: left,
+            y: top,
+            w: right - left + 1,
+            h: bottom - top + 1
+        )
+    }
+
+    private func resizeHandle(at point: CGPoint, selection: CellSelection) -> ResizeHandle? {
+        let selectionRect = previewGeometry.selectionRect(
+            GridSelection(x: selection.x, y: selection.y, w: selection.w, h: selection.h)
+        )
+
+        let topLeft = CGPoint(x: selectionRect.minX, y: selectionRect.maxY)
+        let topRight = CGPoint(x: selectionRect.maxX, y: selectionRect.maxY)
+        let bottomLeft = CGPoint(x: selectionRect.minX, y: selectionRect.minY)
+        let bottomRight = CGPoint(x: selectionRect.maxX, y: selectionRect.minY)
+
+        if isNear(point, topLeft) { return .topLeft }
+        if isNear(point, topRight) { return .topRight }
+        if isNear(point, bottomLeft) { return .bottomLeft }
+        if isNear(point, bottomRight) { return .bottomRight }
+
+        let expandedRect = selectionRect.insetBy(dx: -handleTolerance, dy: -handleTolerance)
+        guard expandedRect.contains(point) else {
             return nil
         }
 
-        let cellWidth = bounds.width / CGFloat(columns)
-        let cellHeight = bounds.height / CGFloat(rows)
-        let column = min(columns - 1, max(0, Int(point.x / cellWidth)))
-        let rowFromBottom = min(rows - 1, max(0, Int(point.y / cellHeight)))
-        let row = rows - 1 - rowFromBottom
-        return (column, row)
+        if abs(point.x - selectionRect.minX) <= handleTolerance {
+            return .left
+        }
+        if abs(point.x - selectionRect.maxX) <= handleTolerance {
+            return .right
+        }
+        if abs(point.y - selectionRect.maxY) <= handleTolerance {
+            return .top
+        }
+        if abs(point.y - selectionRect.minY) <= handleTolerance {
+            return .bottom
+        }
+
+        return nil
     }
 
-    private func rect(for selection: CellSelection) -> CGRect {
-        let cellWidth = bounds.width / CGFloat(max(columns, 1))
-        let cellHeight = bounds.height / CGFloat(max(rows, 1))
-        return CGRect(
-            x: CGFloat(selection.x) * cellWidth + 2,
-            y: bounds.height - CGFloat(selection.y + selection.h) * cellHeight + 2,
-            width: CGFloat(selection.w) * cellWidth - 4,
-            height: CGFloat(selection.h) * cellHeight - 4
-        )
+    private func isNear(_ point: CGPoint, _ target: CGPoint) -> Bool {
+        abs(point.x - target.x) <= handleTolerance && abs(point.y - target.y) <= handleTolerance
     }
 
-    private func rect(forCellAtColumn column: Int, row: Int) -> CGRect {
-        let cellWidth = bounds.width / CGFloat(max(columns, 1))
-        let cellHeight = bounds.height / CGFloat(max(rows, 1))
-        return CGRect(
-            x: CGFloat(column) * cellWidth + 3,
-            y: bounds.height - CGFloat(row + 1) * cellHeight + 3,
-            width: cellWidth - 6,
-            height: cellHeight - 6
-        )
+    private func updateCursor(for point: CGPoint) {
+        guard let selection, let handle = resizeHandle(at: point, selection: selection) else {
+            NSCursor.arrow.set()
+            return
+        }
+        handle.cursor.set()
     }
 }
