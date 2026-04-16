@@ -5,12 +5,12 @@ APP_VERSION ?= 0.1.0
 BUILD_NUMBER ?= 1
 SIGN_IDENTITY ?= -
 APP_BUNDLE_ID ?= local.mirtle.GridMove
-CONFIG_PLIST := $(HOME)/Library/Application Support/GridMove/config.plist
+CONFIG_JSON := $(HOME)/.config/GridMove/config.json
 
 .PHONY: build test check dev run release sign-app verify-app clean
 
 build: test release
-	rm -f "$(CONFIG_PLIST)"
+	rm -f "$(CONFIG_JSON)"
 	rm -rf "$(DIST_DIR)/$(APP_NAME)" "$(DIST_DIR)/$(APP_NAME)-macos.tar.gz" "$(DIST_DIR)/$(APP_NAME).zip" "$(DIST_DIR)/$(APP_NAME).dmg"
 	./scripts/package_app.sh \
 		"$(APP_NAME)" \

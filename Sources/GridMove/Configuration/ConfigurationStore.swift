@@ -2,7 +2,7 @@ import Foundation
 
 final class ConfigurationStore {
     private let fileManager: FileManager
-    private let directoryURL: URL
+    let directoryURL: URL
     let fileURL: URL
 
     init(
@@ -12,17 +12,23 @@ final class ConfigurationStore {
         self.fileManager = fileManager
         let baseURL = baseDirectoryURL
             ?? fileManager.homeDirectoryForCurrentUser
-                .appendingPathComponent("Library/Application Support/GridMove", isDirectory: true)
+                .appendingPathComponent(".config", isDirectory: true)
+                .appendingPathComponent("GridMove", isDirectory: true)
         directoryURL = baseURL
-        fileURL = baseURL.appendingPathComponent("config.plist")
+        fileURL = baseURL.appendingPathComponent("config.json")
     }
 
     func load() throws -> AppConfiguration {
         try ensureDirectoryExists()
 
         if fileManager.fileExists(atPath: fileURL.path) {
-            let data = try Data(contentsOf: fileURL)
-            return try PropertyListDecoder().decode(AppConfiguration.self, from: data)
+            do {
+                let data = try Data(contentsOf: fileURL)
+                return try makeDecoder().decode(AppConfiguration.self, from: data)
+            } catch {
+                AppLogger.shared.error("Failed to decode configuration from \(self.fileURL.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
+                return .defaultValue
+            }
         }
 
         let configuration = AppConfiguration.defaultValue
@@ -32,13 +38,21 @@ final class ConfigurationStore {
 
     func save(_ configuration: AppConfiguration) throws {
         try ensureDirectoryExists()
-        let encoder = PropertyListEncoder()
-        encoder.outputFormat = .xml
-        let data = try encoder.encode(configuration)
+        let data = try makeEncoder().encode(configuration)
         try data.write(to: fileURL, options: .atomic)
     }
 
     private func ensureDirectoryExists() throws {
         try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
+    }
+
+    private func makeDecoder() -> JSONDecoder {
+        JSONDecoder()
+    }
+
+    private func makeEncoder() -> JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
+        return encoder
     }
 }

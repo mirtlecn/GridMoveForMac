@@ -2,7 +2,7 @@ import Foundation
 import Testing
 @testable import GridMove
 
-@Test func configurationStoreWritesDefaultPlistAndCanReload() async throws {
+@Test func configurationStoreWritesDefaultJSONAndCanReload() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-tests-\(UUID().uuidString)", isDirectory: true)
     defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
@@ -12,7 +12,7 @@ import Testing
     let initialConfiguration = try store.load()
     #expect(initialConfiguration.layouts.count == 11)
     #expect(FileManager.default.fileExists(atPath: store.fileURL.path))
-    #expect(store.fileURL.lastPathComponent == "config.plist")
+    #expect(store.fileURL.lastPathComponent == "config.json")
 
     var updatedConfiguration = initialConfiguration
     updatedConfiguration.general.excludedWindowTitles = ["Test Title"]
@@ -23,6 +23,28 @@ import Testing
     let reloadedConfiguration = try store.load()
 
     #expect(reloadedConfiguration == updatedConfiguration)
+}
+
+@Test func configurationStoreReturnsDefaultAndPreservesBrokenJSON() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-invalid-json-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+
+    let invalidJSON = """
+    {
+      "general": {
+        "isEnabled": true,
+    """
+    try invalidJSON.write(to: store.fileURL, atomically: true, encoding: .utf8)
+
+    let configuration = try store.load()
+    let reloadedText = try String(contentsOf: store.fileURL, encoding: .utf8)
+
+    #expect(configuration == .defaultValue)
+    #expect(reloadedText == invalidJSON)
 }
 
 @Test func defaultConfigurationKeepsExpectedShortcutAndModifierDefaults() async throws {
@@ -106,23 +128,15 @@ import Testing
 }
 
 @Test func generalSettingsDecodeMissingEnableFlagWithDefaultValue() async throws {
-    let plist = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>excludedBundleIDs</key>
-      <array>
-        <string>com.apple.Spotlight</string>
-      </array>
-      <key>excludedWindowTitles</key>
-      <array/>
-    </dict>
-    </plist>
+    let json = """
+    {
+      "excludedBundleIDs": ["com.apple.Spotlight"],
+      "excludedWindowTitles": []
+    }
     """
 
-    let data = try #require(plist.data(using: .utf8))
-    let settings = try PropertyListDecoder().decode(GeneralSettings.self, from: data)
+    let data = try #require(json.data(using: .utf8))
+    let settings = try JSONDecoder().decode(GeneralSettings.self, from: data)
 
     #expect(settings.isEnabled)
     #expect(settings.excludedBundleIDs == ["com.apple.Spotlight"])
@@ -145,40 +159,51 @@ import Testing
 }
 
 @Test func appearanceSettingsDecodeMissingTriggerStrokeColorWithDefaultValue() async throws {
-    let plist = """
-    <?xml version="1.0" encoding="UTF-8"?>
-    <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-    <plist version="1.0">
-    <dict>
-      <key>renderTriggerAreas</key>
-      <true/>
-      <key>triggerOpacity</key>
-      <real>0.2</real>
-      <key>triggerGap</key>
-      <real>2</real>
-      <key>renderWindowHighlight</key>
-      <true/>
-      <key>highlightFillOpacity</key>
-      <real>0.08</real>
-      <key>highlightStrokeWidth</key>
-      <real>3</real>
-      <key>highlightStrokeColor</key>
-      <dict>
-        <key>red</key>
-        <real>1</real>
-        <key>green</key>
-        <real>1</real>
-        <key>blue</key>
-        <real>1</real>
-        <key>alpha</key>
-        <real>0.92</real>
-      </dict>
-    </dict>
-    </plist>
+    let json = """
+    {
+      "renderTriggerAreas": true,
+      "triggerOpacity": 0.2,
+      "triggerGap": 2,
+      "renderWindowHighlight": true,
+      "highlightFillOpacity": 0.08,
+      "highlightStrokeWidth": 3,
+      "highlightStrokeColor": {
+        "red": 1,
+        "green": 1,
+        "blue": 1,
+        "alpha": 0.92
+      }
+    }
     """
 
-    let data = try #require(plist.data(using: .utf8))
-    let settings = try PropertyListDecoder().decode(AppearanceSettings.self, from: data)
+    let data = try #require(json.data(using: .utf8))
+    let settings = try JSONDecoder().decode(AppearanceSettings.self, from: data)
 
     #expect(settings.triggerStrokeColor.alpha == 0.2)
+}
+
+@Test func triggerRegionRoundTripsThroughJSON() async throws {
+    let screenRegion = TriggerRegion.screen(GridSelection(x: 1, y: 2, w: 3, h: 4))
+    let menuBarRegion = TriggerRegion.menuBar(MenuBarSelection(x: 2, w: 5))
+
+    let encoder = JSONEncoder()
+    let decoder = JSONDecoder()
+
+    let screenData = try encoder.encode(screenRegion)
+    let menuBarData = try encoder.encode(menuBarRegion)
+
+    #expect(try decoder.decode(TriggerRegion.self, from: screenData) == screenRegion)
+    #expect(try decoder.decode(TriggerRegion.self, from: menuBarData) == menuBarRegion)
+}
+
+@Test func hotkeyActionRoundTripsThroughJSON() async throws {
+    let encoder = JSONEncoder()
+    let decoder = JSONDecoder()
+    let applyLayout = HotkeyAction.applyLayout(layoutID: "layout-4")
+    let cycleNext = HotkeyAction.cycleNext
+    let cyclePrevious = HotkeyAction.cyclePrevious
+
+    #expect(try decoder.decode(HotkeyAction.self, from: encoder.encode(applyLayout)) == applyLayout)
+    #expect(try decoder.decode(HotkeyAction.self, from: encoder.encode(cycleNext)) == cycleNext)
+    #expect(try decoder.decode(HotkeyAction.self, from: encoder.encode(cyclePrevious)) == cyclePrevious)
 }

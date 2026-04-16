@@ -55,7 +55,7 @@ final class CommandLineRunner {
         }
 
         guard configuration.general.isEnabled else {
-            writeToStandardError("GridMove is disabled. Enable it from the menu bar or Settings.\n")
+            writeToStandardError("GridMove is disabled. Enable it from the menu bar or edit the config file.\n")
             return EXIT_FAILURE
         }
 

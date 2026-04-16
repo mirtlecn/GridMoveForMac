@@ -12,12 +12,16 @@ final class MenuBarController: NSObject {
     private let menu = NSMenu()
     private let dragGridMenuItem = NSMenuItem(title: UICopy.enableMenuTitle, action: nil, keyEquivalent: "")
     private let enableSeparatorItem = NSMenuItem.separator()
+    private let actionSectionSeparatorItem = NSMenuItem.separator()
+    private let reloadConfigMenuItem = NSMenuItem(title: UICopy.reloadConfigMenuTitle, action: nil, keyEquivalent: "")
+    private let customizeMenuItem = NSMenuItem(title: UICopy.customizeMenuTitle, action: nil, keyEquivalent: "")
     private var actionMenuItems: [NSMenuItem] = []
     private var actionItems: [ActionItem]
 
     private let onToggleDragGrid: (Bool) -> Void
     private let onPerformAction: (HotkeyAction) -> Void
-    private let onOpenSettings: () -> Void
+    private let onReloadConfiguration: () -> Void
+    private let onCustomize: () -> Void
     private let onQuit: () -> Void
 
     init(
@@ -25,13 +29,15 @@ final class MenuBarController: NSObject {
         actionItems: [ActionItem],
         onToggleDragGrid: @escaping (Bool) -> Void,
         onPerformAction: @escaping (HotkeyAction) -> Void,
-        onOpenSettings: @escaping () -> Void,
+        onReloadConfiguration: @escaping () -> Void,
+        onCustomize: @escaping () -> Void,
         onQuit: @escaping () -> Void
     ) {
         self.actionItems = actionItems
         self.onToggleDragGrid = onToggleDragGrid
         self.onPerformAction = onPerformAction
-        self.onOpenSettings = onOpenSettings
+        self.onReloadConfiguration = onReloadConfiguration
+        self.onCustomize = onCustomize
         self.onQuit = onQuit
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         super.init()
@@ -52,10 +58,16 @@ final class MenuBarController: NSObject {
 
         rebuildActionItems(isEnabled: dragGridEnabled)
 
-        let settingsItem = NSMenuItem(title: UICopy.settingsMenuTitle, action: #selector(openSettings), keyEquivalent: ",")
-        settingsItem.target = self
-        menu.addItem(.separator())
-        menu.addItem(settingsItem)
+        actionSectionSeparatorItem.isHidden = actionItems.isEmpty
+        menu.addItem(actionSectionSeparatorItem)
+
+        reloadConfigMenuItem.target = self
+        reloadConfigMenuItem.action = #selector(reloadConfiguration)
+        menu.addItem(reloadConfigMenuItem)
+
+        customizeMenuItem.target = self
+        customizeMenuItem.action = #selector(customize)
+        menu.addItem(customizeMenuItem)
 
         menu.addItem(.separator())
 
@@ -87,6 +99,7 @@ final class MenuBarController: NSObject {
         actionMenuItems.removeAll()
 
         guard !actionItems.isEmpty else {
+            actionSectionSeparatorItem.isHidden = true
             return
         }
 
@@ -108,14 +121,15 @@ final class MenuBarController: NSObject {
             nextIndex += 1
         }
 
-        let separator = NSMenuItem.separator()
-        separator.isEnabled = false
-        menu.insertItem(separator, at: nextIndex)
-        actionMenuItems.append(separator)
+        actionSectionSeparatorItem.isHidden = false
     }
 
-    @objc private func openSettings() {
-        onOpenSettings()
+    @objc private func reloadConfiguration() {
+        onReloadConfiguration()
+    }
+
+    @objc private func customize() {
+        onCustomize()
     }
 
     @objc private func performAction(_ sender: NSMenuItem) {
@@ -127,5 +141,11 @@ final class MenuBarController: NSObject {
 
     @objc private func quit() {
         onQuit()
+    }
+
+    var menuItemDescriptorsForTesting: [String] {
+        menu.items.map { item in
+            item.isSeparatorItem ? "|" : item.title
+        }
     }
 }

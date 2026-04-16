@@ -3,7 +3,8 @@ import Foundation
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private let configurationStore = ConfigurationStore()
+    private let configurationStore: ConfigurationStore
+    private let openURL: (URL) -> Bool
     private let layoutEngine = LayoutEngine()
     private lazy var windowController = WindowController(layoutEngine: layoutEngine)
     private let overlayController = OverlayController()
@@ -38,14 +39,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     )
 
-    private var configuration = AppConfiguration.defaultValue
+    private(set) var configuration = AppConfiguration.defaultValue
     private var menuController: MenuBarController?
-    private var settingsController: SettingsWindowController?
     private var onboardingController: OnboardingWindowController?
     private var accessibilityPollingTimer: Timer?
 
+    init(
+        configurationStore: ConfigurationStore = ConfigurationStore(),
+        openURL: @escaping (URL) -> Bool = { NSWorkspace.shared.open($0) }
+    ) {
+        self.configurationStore = configurationStore
+        self.openURL = openURL
+        super.init()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
-        loadConfigurationFromDisk()
+        reloadConfigurationFromDisk()
         configureMainMenu()
 
         menuController = MenuBarController(
@@ -57,8 +66,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onPerformAction: { [weak self] action in
                 self?.performMenuAction(action)
             },
-            onOpenSettings: { [weak self] in
-                self?.showSettings()
+            onReloadConfiguration: { [weak self] in
+                self?.reloadConfigurationFromDisk()
+            },
+            onCustomize: { [weak self] in
+                _ = self?.openConfigurationDirectory()
             },
             onQuit: {
                 NSApplication.shared.terminate(nil)
@@ -114,36 +126,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func loadConfigurationFromDisk() {
+    func reloadConfigurationFromDisk() {
         do {
-            configuration = try configurationStore.load()
+            applyConfiguration(try configurationStore.load())
         } catch {
             AppLogger.shared.error("Failed to load configuration: \(error.localizedDescription)")
-            configuration = .defaultValue
+            applyConfiguration(.defaultValue)
         }
-        menuController?.updateActionItems(makeMenuActionItems(configuration: configuration), isEnabled: configuration.general.isEnabled)
-    }
-
-    private func showSettings() {
-        if settingsController == nil {
-            settingsController = SettingsWindowController(
-                configurationStore: configurationStore,
-                configurationProvider: { [weak self] in self?.configuration ?? .defaultValue },
-                onConfigurationSaved: { [weak self] configuration in
-                    self?.configuration = configuration
-                    self?.applyGlobalEnabledState()
-                    self?.menuController?.updateActionItems(
-                        self?.makeMenuActionItems(configuration: configuration) ?? [],
-                        isEnabled: configuration.general.isEnabled
-                    )
-                    self?.settingsController?.updateConfiguration(configuration)
-                }
-            )
-        }
-
-        settingsController?.updateConfiguration(configuration)
-        settingsController?.show()
-        NSApp.activate(ignoringOtherApps: true)
     }
 
     private func updateGlobalEnabledState(_ isEnabled: Bool) {
@@ -159,7 +148,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         applyGlobalEnabledState()
         menuController?.updateActionItems(makeMenuActionItems(configuration: configuration), isEnabled: isEnabled)
-        settingsController?.updateConfiguration(configuration)
     }
 
     private func applyGlobalEnabledState() {
@@ -260,9 +248,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let applicationMenuItem = NSMenuItem()
         let applicationMenu = NSMenu(title: UICopy.applicationMenuTitle)
 
-        let settingsItem = NSMenuItem(title: UICopy.settingsMenuTitle, action: #selector(openSettingsFromMenu), keyEquivalent: ",")
-        settingsItem.target = self
-        applicationMenu.addItem(settingsItem)
+        let reloadItem = NSMenuItem(title: UICopy.reloadConfigMenuTitle, action: #selector(reloadConfigurationFromMenu), keyEquivalent: "")
+        reloadItem.target = self
+        applicationMenu.addItem(reloadItem)
+
+        let customizeItem = NSMenuItem(title: UICopy.customizeAppMenuTitle, action: #selector(customizeFromMenu), keyEquivalent: ",")
+        customizeItem.target = self
+        customizeItem.keyEquivalentModifierMask = [.command]
+        applicationMenu.addItem(customizeItem)
         applicationMenu.addItem(.separator())
 
         let quitItem = NSMenuItem(title: UICopy.quitAppMenuTitle, action: #selector(quitApplication), keyEquivalent: "q")
@@ -275,12 +268,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.mainMenu = mainMenu
     }
 
-    @objc private func openSettingsFromMenu() {
-        showSettings()
+    @objc private func reloadConfigurationFromMenu() {
+        reloadConfigurationFromDisk()
+    }
+
+    @objc private func customizeFromMenu() {
+        _ = openConfigurationDirectory()
     }
 
     @objc private func quitApplication() {
         NSApp.terminate(nil)
+    }
+
+    @discardableResult
+    func openConfigurationDirectory() -> Bool {
+        openURL(configurationStore.directoryURL)
+    }
+
+    private func applyConfiguration(_ configuration: AppConfiguration) {
+        self.configuration = configuration
+        applyGlobalEnabledState()
+        menuController?.updateActionItems(
+            makeMenuActionItems(configuration: configuration),
+            isEnabled: configuration.general.isEnabled
+        )
     }
 }
 
