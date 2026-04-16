@@ -461,6 +461,8 @@ final class SettingsViewModel: ObservableObject {
         }
         configuration.layouts[index] = layoutDraft
         layoutDeleteArmed = false
+        layoutForwardSelectionID = layoutDraft.id
+        layoutPageMode = .list
         persistConfiguration(status: "Layout saved.")
     }
 

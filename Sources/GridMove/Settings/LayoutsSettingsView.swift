@@ -42,11 +42,11 @@ struct LayoutsSettingsView: View {
                 Text("Layouts")
                     .font(.title.weight(.semibold))
 
-                SettingsGroupedRows {
-                    ForEach(viewModel.layoutItems) { item in
-                        LayoutListRow(
-                            title: item.title,
-                            onOpen: { viewModel.openLayoutDetail(id: item.id) }
+            SettingsGroupedRows {
+                ForEach(viewModel.layoutItems) { item in
+                    LayoutListRow(
+                        title: item.title,
+                        onOpen: { viewModel.openLayoutDetail(id: item.id) }
                         )
                         .onDrag {
                             draggedLayoutID = item.id
@@ -160,8 +160,24 @@ struct LayoutsSettingsView: View {
             Divider()
 
             SettingsGroupedRow {
-                LabeledContent("Grid", value: "\(draft.gridColumns)x\(draft.gridRows)")
-                    .font(.body)
+                layoutGridRow(
+                    columns: Binding(
+                        get: { String(viewModel.layoutDraft?.gridColumns ?? draft.gridColumns) },
+                        set: { newValue in
+                            viewModel.updateLayoutDraft {
+                                $0.gridColumns = max(1, Int(newValue) ?? $0.gridColumns)
+                            }
+                        }
+                    ),
+                    rows: Binding(
+                        get: { String(viewModel.layoutDraft?.gridRows ?? draft.gridRows) },
+                        set: { newValue in
+                            viewModel.updateLayoutDraft {
+                                $0.gridRows = max(1, Int(newValue) ?? $0.gridRows)
+                            }
+                        }
+                    )
+                )
             }
         }
     }
@@ -230,6 +246,28 @@ struct LayoutsSettingsView: View {
                 .textFieldStyle(.roundedBorder)
         }
     }
+
+    private func layoutGridRow(columns: Binding<String>, rows: Binding<String>) -> some View {
+        HStack(spacing: 16) {
+            Text("Grid")
+                .font(.body)
+                .frame(width: 96, alignment: .leading)
+
+            TextField("12", text: columns)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 72)
+
+            Text("x")
+                .font(.body)
+                .foregroundStyle(.secondary)
+
+            TextField("6", text: rows)
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 72)
+
+            Spacer(minLength: 0)
+        }
+    }
 }
 
 private struct LayoutListRow: View {
@@ -255,6 +293,7 @@ private struct LayoutListRow: View {
         .padding(.horizontal, 18)
         .padding(.vertical, 16)
         .contentShape(Rectangle())
+        .onTapGesture(perform: onOpen)
     }
 }
 

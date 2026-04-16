@@ -210,6 +210,7 @@ import Testing
     viewModel.saveLayoutDraft()
     #expect(viewModel.hasUnsavedLayoutChanges == false)
     #expect(viewModel.configuration.layouts[0].name == "Primary")
+    #expect(viewModel.layoutPageMode == .list)
 }
 
 @MainActor
@@ -258,4 +259,27 @@ import Testing
     #expect(viewModel.layoutDeleteArmed == false)
     #expect(viewModel.layoutPageMode == .list)
     #expect(viewModel.configuration.layouts.count == initialCount - 1)
+}
+
+@MainActor
+@Test func settingsViewModelUpdatesGridDraftValues() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let viewModel = SettingsViewModel(
+        configurationStore: store,
+        configurationProvider: { AppConfiguration.defaultValue },
+        onConfigurationSaved: { _ in }
+    )
+
+    viewModel.openLayoutDetail(id: AppConfiguration.defaultValue.layouts[0].id)
+    viewModel.updateLayoutDraft {
+        $0.gridColumns = 10
+        $0.gridRows = 5
+    }
+
+    #expect(viewModel.layoutDraft?.gridColumns == 10)
+    #expect(viewModel.layoutDraft?.gridRows == 5)
 }
