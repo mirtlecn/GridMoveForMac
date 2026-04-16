@@ -11,9 +11,9 @@ struct AppearanceSettingsView: View {
         var title: String {
             switch self {
             case .windowOverlay:
-                return "Window Overlay"
+                return "Window overlay"
             case .triggerOverlay:
-                return "Trigger Overlay"
+                return "Trigger overlay"
             }
         }
     }
@@ -46,6 +46,7 @@ struct AppearanceSettingsView: View {
                 }
             }
             .pickerStyle(.segmented)
+            .frame(maxWidth: .infinity)
 
             switch selectedTab {
             case .windowOverlay:
@@ -56,7 +57,7 @@ struct AppearanceSettingsView: View {
 
             HStack {
                 Spacer()
-                Button("Reset To Defaults") {
+                Button("Reset to defaults") {
                     switch selectedTab {
                     case .windowOverlay:
                         viewModel.resetWindowAppearanceToDefaults()
@@ -70,23 +71,25 @@ struct AppearanceSettingsView: View {
     }
 
     private var windowOverlayConfiguration: some View {
-        SettingsPageSection(title: nil) {
-            SettingsSwitchRow(
-                title: "Render Window Area",
-                subtitle: "Show the current or target window preview while dragging.",
-                isOn: Binding(
-                    get: { viewModel.configuration.appearance.renderWindowHighlight },
-                    set: { newValue in
-                        viewModel.updateAppearance { $0.renderWindowHighlight = newValue }
-                    }
+        SettingsGroupedRows {
+            SettingsGroupedRow {
+                SettingsSwitchRow(
+                    title: "Render window area",
+                    subtitle: "Show the current or target window preview while dragging.",
+                    isOn: Binding(
+                        get: { viewModel.configuration.appearance.renderWindowHighlight },
+                        set: { newValue in
+                            viewModel.updateAppearance { $0.renderWindowHighlight = newValue }
+                        }
+                    )
                 )
-            )
+            }
 
             Divider()
 
-            VStack(alignment: .leading, spacing: 12) {
+            SettingsGroupedRow {
                 LabeledSliderRow(
-                    title: "Fill Opacity",
+                    title: "Fill opacity",
                     value: Binding(
                         get: { viewModel.configuration.appearance.highlightFillOpacity },
                         set: { newValue in
@@ -95,9 +98,15 @@ struct AppearanceSettingsView: View {
                     ),
                     range: 0 ... 1
                 )
+            }
+            .allowsHitTesting(viewModel.configuration.appearance.renderWindowHighlight)
+            .opacity(viewModel.configuration.appearance.renderWindowHighlight ? 1 : 0.45)
 
+            Divider()
+
+            SettingsGroupedRow {
                 LabeledNumberFieldRow(
-                    title: "Stroke Width",
+                    title: "Stroke width",
                     value: Binding(
                         get: { viewModel.configuration.appearance.highlightStrokeWidth },
                         set: { newValue in
@@ -105,9 +114,15 @@ struct AppearanceSettingsView: View {
                         }
                     )
                 )
+            }
+            .allowsHitTesting(viewModel.configuration.appearance.renderWindowHighlight)
+            .opacity(viewModel.configuration.appearance.renderWindowHighlight ? 1 : 0.45)
 
+            Divider()
+
+            SettingsGroupedRow {
                 colorPickerRow(
-                    title: "Stroke Color",
+                    title: "Stroke color",
                     color: Binding(
                         get: { Color(viewModel.configuration.appearance.highlightStrokeColor.nsColor) },
                         set: { newColor in
@@ -118,29 +133,31 @@ struct AppearanceSettingsView: View {
                     )
                 )
             }
-            .disabled(!viewModel.configuration.appearance.renderWindowHighlight)
+            .allowsHitTesting(viewModel.configuration.appearance.renderWindowHighlight)
             .opacity(viewModel.configuration.appearance.renderWindowHighlight ? 1 : 0.45)
         }
     }
 
     private var triggerOverlayConfiguration: some View {
-        SettingsPageSection(title: nil) {
-            SettingsSwitchRow(
-                title: "Render Trigger Area",
-                subtitle: "Show trigger regions while dragging across the screen or menu bar.",
-                isOn: Binding(
-                    get: { viewModel.configuration.appearance.renderTriggerAreas },
-                    set: { newValue in
-                        viewModel.updateAppearance { $0.renderTriggerAreas = newValue }
-                    }
+        SettingsGroupedRows {
+            SettingsGroupedRow {
+                SettingsSwitchRow(
+                    title: "Render trigger area",
+                    subtitle: "Show trigger regions while dragging across the screen or menu bar.",
+                    isOn: Binding(
+                        get: { viewModel.configuration.appearance.renderTriggerAreas },
+                        set: { newValue in
+                            viewModel.updateAppearance { $0.renderTriggerAreas = newValue }
+                        }
+                    )
                 )
-            )
+            }
 
             Divider()
 
-            VStack(alignment: .leading, spacing: 12) {
+            SettingsGroupedRow {
                 LabeledSliderRow(
-                    title: "Stroke Opacity",
+                    title: "Stroke opacity",
                     value: Binding(
                         get: { viewModel.configuration.appearance.triggerOpacity },
                         set: { newValue in
@@ -149,9 +166,15 @@ struct AppearanceSettingsView: View {
                     ),
                     range: 0 ... 1
                 )
+            }
+            .allowsHitTesting(viewModel.configuration.appearance.renderTriggerAreas)
+            .opacity(viewModel.configuration.appearance.renderTriggerAreas ? 1 : 0.45)
 
+            Divider()
+
+            SettingsGroupedRow {
                 LabeledNumberFieldRow(
-                    title: "Grid Gap",
+                    title: "Grid gap",
                     value: Binding(
                         get: { viewModel.configuration.appearance.triggerGap },
                         set: { newValue in
@@ -159,9 +182,15 @@ struct AppearanceSettingsView: View {
                         }
                     )
                 )
+            }
+            .allowsHitTesting(viewModel.configuration.appearance.renderTriggerAreas)
+            .opacity(viewModel.configuration.appearance.renderTriggerAreas ? 1 : 0.45)
 
+            Divider()
+
+            SettingsGroupedRow {
                 colorPickerRow(
-                    title: "Stroke Color",
+                    title: "Stroke color",
                     color: Binding(
                         get: { Color(viewModel.configuration.appearance.triggerStrokeColor.nsColor) },
                         set: { newColor in
@@ -172,7 +201,7 @@ struct AppearanceSettingsView: View {
                     )
                 )
             }
-            .disabled(!viewModel.configuration.appearance.renderTriggerAreas)
+            .allowsHitTesting(viewModel.configuration.appearance.renderTriggerAreas)
             .opacity(viewModel.configuration.appearance.renderTriggerAreas ? 1 : 0.45)
         }
     }
