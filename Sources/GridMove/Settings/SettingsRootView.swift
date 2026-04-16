@@ -27,7 +27,7 @@ struct SettingsRootView: View {
 
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("GridMove")
+            Text(UICopy.appName)
                 .font(.largeTitle.weight(.bold))
                 .padding(.horizontal, 12)
                 .padding(.top, 18)

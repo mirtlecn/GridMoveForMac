@@ -20,11 +20,11 @@ final class SettingsViewModel: ObservableObject {
 
         var title: String {
             switch self {
-            case .general: return "General"
-            case .layouts: return "Layouts"
-            case .appearance: return "Appearance"
-            case .hotkeys: return "Hotkeys"
-            case .about: return "About"
+            case .general: return UICopy.generalSectionTitle
+            case .layouts: return UICopy.layoutsSectionTitle
+            case .appearance: return UICopy.appearanceSectionTitle
+            case .hotkeys: return UICopy.hotkeysSectionTitle
+            case .about: return UICopy.aboutSectionTitle
             }
         }
 
@@ -70,8 +70,8 @@ final class SettingsViewModel: ObservableObject {
 
         var columnTitle: String {
             switch self {
-            case .bundleID: return "Bundle ID"
-            case .windowTitle: return "Window Title"
+            case .bundleID: return UICopy.bundleIDTitle
+            case .windowTitle: return UICopy.windowTitle
             }
         }
     }
@@ -135,10 +135,10 @@ final class SettingsViewModel: ObservableObject {
     }
 
     var hotkeyActionOptions: [(String, HotkeyAction)] {
-        configuration.layouts.map { ("Apply \(layoutDisplayLabel(for: $0))", HotkeyAction.applyLayout(layoutID: $0.id)) }
+        configuration.layouts.map { (UICopy.applyLayout(layoutDisplayLabel(for: $0)), HotkeyAction.applyLayout(layoutID: $0.id)) }
         + [
-            ("Apply Next Layout", .cycleNext),
-            ("Apply Previous Layout", .cyclePrevious),
+            (UICopy.applyNextLayout, .cycleNext),
+            (UICopy.applyPreviousLayout, .cyclePrevious),
         ]
     }
 
@@ -155,7 +155,7 @@ final class SettingsViewModel: ObservableObject {
     var selectedLayoutDisplayID: String {
         guard let selectedLayoutID,
               let index = configuration.layouts.firstIndex(where: { $0.id == selectedLayoutID }) else {
-            return "Layouts"
+            return UICopy.layoutsSectionTitle
         }
         return makeLayoutDisplayID(for: index)
     }
@@ -262,10 +262,10 @@ final class SettingsViewModel: ObservableObject {
         switch kind {
         case .bundleID:
             configuration.general.excludedBundleIDs.append(trimmedValue)
-            persistConfiguration(status: "Excluded bundle ID added.")
+            persistConfiguration(status: UICopy.excludedBundleIDAdded)
         case .windowTitle:
             configuration.general.excludedWindowTitles.append(trimmedValue)
-            persistConfiguration(status: "Excluded window title added.")
+            persistConfiguration(status: UICopy.excludedWindowTitleAdded)
         }
     }
 
@@ -289,7 +289,7 @@ final class SettingsViewModel: ObservableObject {
             return
         }
         configuration.general.excludedBundleIDs.remove(at: index)
-        persistConfiguration(status: "Excluded bundle ID removed.")
+        persistConfiguration(status: UICopy.excludedBundleIDRemoved)
     }
 
     func removeWindowTitle(at index: Int) {
@@ -297,7 +297,7 @@ final class SettingsViewModel: ObservableObject {
             return
         }
         configuration.general.excludedWindowTitles.remove(at: index)
-        persistConfiguration(status: "Excluded window title removed.")
+        persistConfiguration(status: UICopy.excludedWindowTitleRemoved)
     }
 
     func removeSelectedExcludedWindow() {
@@ -324,12 +324,12 @@ final class SettingsViewModel: ObservableObject {
         if let enableModifierLeftMouseDrag {
             configuration.dragTriggers.enableModifierLeftMouseDrag = enableModifierLeftMouseDrag
         }
-        persistConfiguration(status: "Drag triggers updated.")
+        persistConfiguration(status: UICopy.dragTriggersUpdated)
     }
 
     func updateGeneralEnabled(_ isEnabled: Bool) {
         configuration.general.isEnabled = isEnabled
-        persistConfiguration(status: "Global enable updated.")
+        persistConfiguration(status: UICopy.globalEnableUpdated)
     }
 
     func addModifierGroup(_ group: [ModifierKey]) {
@@ -337,7 +337,7 @@ final class SettingsViewModel: ObservableObject {
             return
         }
         configuration.dragTriggers.modifierGroups.append(group)
-        persistConfiguration(status: "Modifier group added.")
+        persistConfiguration(status: UICopy.modifierGroupAdded)
     }
 
     func removeModifierGroup(at index: Int) {
@@ -345,7 +345,7 @@ final class SettingsViewModel: ObservableObject {
             return
         }
         configuration.dragTriggers.modifierGroups.remove(at: index)
-        persistConfiguration(status: "Modifier group removed.")
+        persistConfiguration(status: UICopy.modifierGroupRemoved)
     }
 
     func removeSelectedModifierGroup() {
@@ -390,7 +390,7 @@ final class SettingsViewModel: ObservableObject {
         layoutDraft = preset
         layoutPageMode = .detail
         layoutForwardSelectionID = nil
-        persistConfiguration(status: "Layout added.")
+        persistConfiguration(status: UICopy.layoutAdded)
     }
 
     func openLayoutDetail(id: String) {
@@ -422,7 +422,7 @@ final class SettingsViewModel: ObservableObject {
 
     func deleteSelectedLayout() {
         guard configuration.layouts.count > 1, let selectedLayoutID else {
-            statusMessage = "At least one layout is required."
+            statusMessage = UICopy.atLeastOneLayoutRequired
             return
         }
 
@@ -437,7 +437,7 @@ final class SettingsViewModel: ObservableObject {
         layoutPageMode = .list
         layoutDeleteArmed = false
         layoutForwardSelectionID = nil
-        persistConfiguration(status: "Layout removed.")
+        persistConfiguration(status: UICopy.layoutRemoved)
     }
 
     func moveLayout(id: String, before targetID: String) {
@@ -452,7 +452,7 @@ final class SettingsViewModel: ObservableObject {
         configuration.layouts.insert(movedLayout, at: adjustedTargetIndex)
 
         selectedLayoutID = layoutDraft?.id ?? selectedLayoutID ?? configuration.layouts.first?.id
-        persistConfiguration(status: "Layout order updated.")
+        persistConfiguration(status: UICopy.layoutOrderUpdated)
     }
 
     func saveLayoutDraft() {
@@ -463,14 +463,14 @@ final class SettingsViewModel: ObservableObject {
         layoutDeleteArmed = false
         layoutForwardSelectionID = layoutDraft.id
         layoutPageMode = .list
-        persistConfiguration(status: "Layout saved.")
+        persistConfiguration(status: UICopy.layoutSaved)
     }
 
     func updateAppearance(_ mutate: (inout AppearanceSettings) -> Void) {
         mutate(&configuration.appearance)
         configuration.appearance.triggerGap = max(0, configuration.appearance.triggerGap)
         configuration.appearance.highlightStrokeWidth = max(1, configuration.appearance.highlightStrokeWidth)
-        persistConfiguration(status: "Appearance updated.")
+        persistConfiguration(status: UICopy.appearanceUpdated)
     }
 
     func resetTriggerAppearanceToDefaults() {
@@ -479,7 +479,7 @@ final class SettingsViewModel: ObservableObject {
         configuration.appearance.triggerOpacity = defaults.triggerOpacity
         configuration.appearance.triggerGap = defaults.triggerGap
         configuration.appearance.triggerStrokeColor = defaults.triggerStrokeColor
-        persistConfiguration(status: "Trigger appearance reset.")
+        persistConfiguration(status: UICopy.triggerAppearanceReset)
     }
 
     func resetWindowAppearanceToDefaults() {
@@ -488,7 +488,7 @@ final class SettingsViewModel: ObservableObject {
         configuration.appearance.highlightFillOpacity = defaults.highlightFillOpacity
         configuration.appearance.highlightStrokeWidth = defaults.highlightStrokeWidth
         configuration.appearance.highlightStrokeColor = defaults.highlightStrokeColor
-        persistConfiguration(status: "Window appearance reset.")
+        persistConfiguration(status: UICopy.windowAppearanceReset)
     }
 
     func replaceBinding(_ binding: ShortcutBinding) {
@@ -496,12 +496,12 @@ final class SettingsViewModel: ObservableObject {
             return
         }
         configuration.hotkeys.bindings[index] = binding
-        persistConfiguration(status: "Hotkeys updated.")
+        persistConfiguration(status: UICopy.hotkeysUpdated)
     }
 
     func deleteBinding(_ bindingID: String) {
         configuration.hotkeys.bindings.removeAll { $0.id == bindingID }
-        persistConfiguration(status: "Hotkey removed.")
+        persistConfiguration(status: UICopy.hotkeyRemoved)
     }
 
     func addHotkeyBinding() {
@@ -509,7 +509,7 @@ final class SettingsViewModel: ObservableObject {
         let binding = ShortcutBinding(isEnabled: true, shortcut: nil, action: defaultAction)
         configuration.hotkeys.bindings.insert(binding, at: 0)
         selectedHotkeyBindingID = binding.id
-        persistConfiguration(status: "Hotkey added.")
+        persistConfiguration(status: UICopy.hotkeyAdded)
     }
 
     func deleteSelectedHotkeyBinding() {
@@ -524,21 +524,21 @@ final class SettingsViewModel: ObservableObject {
         configuration.hotkeys.bindings.append(
             ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.alt], key: "a"), action: action)
         )
-        persistConfiguration(status: "Direct action hotkey added.")
+        persistConfiguration(status: UICopy.directActionHotkeyAdded)
     }
 
     func addPreviousCycleBinding() {
         configuration.hotkeys.bindings.append(
             ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.alt], key: "h"), action: .cyclePrevious)
         )
-        persistConfiguration(status: "Previous layout hotkey added.")
+        persistConfiguration(status: UICopy.previousLayoutHotkeyAdded)
     }
 
     func addNextCycleBinding() {
         configuration.hotkeys.bindings.append(
             ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.alt], key: "l"), action: .cycleNext)
         )
-        persistConfiguration(status: "Next layout hotkey added.")
+        persistConfiguration(status: UICopy.nextLayoutHotkeyAdded)
     }
 
     func layoutDisplayLabel(for layout: LayoutPreset) -> String {

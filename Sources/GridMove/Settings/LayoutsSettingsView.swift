@@ -12,9 +12,9 @@ struct LayoutsSettingsView: View {
         var title: String {
             switch self {
             case .windowOverlay:
-                return "Window Overlay"
+                return UICopy.windowOverlayTitle
             case .triggerOverlay:
-                return "Trigger Overlay"
+                return UICopy.triggerOverlayTitle
             }
         }
     }
@@ -39,7 +39,7 @@ struct LayoutsSettingsView: View {
     private var listPage: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
-                Text("Layouts")
+                Text(UICopy.layoutsSectionTitle)
                     .font(.title.weight(.semibold))
 
             SettingsGroupedRows {
@@ -70,7 +70,7 @@ struct LayoutsSettingsView: View {
 
                 HStack {
                     Spacer()
-                    Button("Add Layout") {
+                    Button(UICopy.addLayout) {
                         viewModel.addLayout()
                     }
                     .buttonStyle(.bordered)
@@ -104,7 +104,7 @@ struct LayoutsSettingsView: View {
                     previewSection(draft: draft)
 
                     HStack(spacing: 10) {
-                        Button(viewModel.layoutDeleteArmed ? "Confirm Delete" : "Delete") {
+                        Button(viewModel.layoutDeleteArmed ? UICopy.confirmDelete : UICopy.delete) {
                             viewModel.deleteSelectedLayout()
                         }
                         .buttonStyle(.bordered)
@@ -113,7 +113,7 @@ struct LayoutsSettingsView: View {
 
                         Spacer()
 
-                        Button("Save") {
+                        Button(UICopy.save) {
                             viewModel.saveLayoutDraft()
                         }
                         .buttonStyle(.borderedProminent)
@@ -132,7 +132,7 @@ struct LayoutsSettingsView: View {
         SettingsGroupedRows {
             SettingsGroupedRow {
                 layoutToggleRow(
-                    title: "Include in Cycle",
+                    title: UICopy.includeInCycle,
                     isOn: Binding(
                         get: { viewModel.layoutDraft?.includeInCycle ?? draft.includeInCycle },
                         set: { isOn in
@@ -146,8 +146,8 @@ struct LayoutsSettingsView: View {
 
             SettingsGroupedRow {
                 layoutTextFieldRow(
-                    title: "Name",
-                    placeholder: "Optional Name",
+                    title: UICopy.name,
+                    placeholder: UICopy.optionalName,
                     text: Binding(
                         get: { viewModel.layoutDraft?.name ?? draft.name },
                         set: { newValue in
@@ -249,7 +249,7 @@ struct LayoutsSettingsView: View {
 
     private func layoutGridRow(columns: Binding<String>, rows: Binding<String>) -> some View {
         HStack(spacing: 16) {
-            Text("Grid")
+            Text(UICopy.grid)
                 .font(.body)
                 .frame(width: 96, alignment: .leading)
 

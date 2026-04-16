@@ -10,7 +10,7 @@ final class MenuBarController: NSObject {
 
     private let statusItem: NSStatusItem
     private let menu = NSMenu()
-    private let dragGridMenuItem = NSMenuItem(title: "Enable", action: nil, keyEquivalent: "")
+    private let dragGridMenuItem = NSMenuItem(title: UICopy.enableMenuTitle, action: nil, keyEquivalent: "")
     private let enableSeparatorItem = NSMenuItem.separator()
     private var actionMenuItems: [NSMenuItem] = []
     private var actionItems: [ActionItem]
@@ -42,7 +42,7 @@ final class MenuBarController: NSObject {
         statusItem.button?.title = ""
         statusItem.button?.image = MenuBarIcon.makeImage()
         statusItem.button?.imagePosition = .imageOnly
-        statusItem.button?.toolTip = "GridMove"
+        statusItem.button?.toolTip = UICopy.appName
 
         dragGridMenuItem.state = dragGridEnabled ? .on : .off
         dragGridMenuItem.target = self
@@ -52,14 +52,14 @@ final class MenuBarController: NSObject {
 
         rebuildActionItems(isEnabled: dragGridEnabled)
 
-        let settingsItem = NSMenuItem(title: "Settings…", action: #selector(openSettings), keyEquivalent: ",")
+        let settingsItem = NSMenuItem(title: UICopy.settingsMenuTitle, action: #selector(openSettings), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(.separator())
         menu.addItem(settingsItem)
 
         menu.addItem(.separator())
 
-        let quitItem = NSMenuItem(title: "Quit", action: #selector(quit), keyEquivalent: "")
+        let quitItem = NSMenuItem(title: UICopy.quitMenuTitle, action: #selector(quit), keyEquivalent: "")
         quitItem.target = self
         menu.addItem(quitItem)
 

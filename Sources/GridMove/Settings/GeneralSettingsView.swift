@@ -13,13 +13,13 @@ struct GeneralSettingsView: View {
                     )
                 ) {
                     SettingsDescriptionLabel(
-                        title: "Enable",
-                        subtitle: "Allow Drag Triggers, Layout Hotkeys, And Command Line Layout Actions."
+                        title: UICopy.enableTitle,
+                        subtitle: UICopy.enableSubtitle
                     )
                 }
             }
 
-            Section("Press And Drag") {
+            Section(UICopy.pressAndDragSectionTitle) {
                 Toggle(
                     isOn: Binding(
                         get: { viewModel.configuration.dragTriggers.enableMiddleMouseDrag },
@@ -27,8 +27,8 @@ struct GeneralSettingsView: View {
                     )
                 ) {
                     SettingsDescriptionLabel(
-                        title: "Middle Mouse",
-                        subtitle: "Press Middle Mouse For A Short Time To Activate The Grid."
+                        title: UICopy.middleMouseTitle,
+                        subtitle: UICopy.middleMouseSubtitle
                     )
                 }
                 .controlSize(.mini)
@@ -41,8 +41,8 @@ struct GeneralSettingsView: View {
                         )
                     ) {
                         SettingsDescriptionLabel(
-                            title: "Modifier + Left Mouse",
-                            subtitle: "Hold Pre-Set Modifier, Then Press Left Mouse To Activate."
+                            title: UICopy.modifierLeftMouseTitle,
+                            subtitle: UICopy.modifierLeftMouseSubtitle
                         )
                     }
                     .controlSize(.mini)
@@ -80,10 +80,10 @@ struct GeneralSettingsView: View {
             }
             .disabled(!viewModel.configuration.general.isEnabled)
 
-            Section("Excluded Windows") {
+            Section(UICopy.excludedWindowsSectionTitle) {
                 SettingsActionList {
                     Table(viewModel.excludedWindowItems, selection: $viewModel.selectedExcludedWindowID) {
-                        TableColumn("Value") { item in
+                        TableColumn(UICopy.valueColumnTitle) { item in
                             Text(item.value)
                                 .font(.footnote)
                                 .lineLimit(1)
@@ -91,7 +91,7 @@ struct GeneralSettingsView: View {
                         }
                         .width(min: 280)
 
-                        TableColumn("Type") { item in
+                        TableColumn(UICopy.typeColumnTitle) { item in
                             Text(item.kind.columnTitle)
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)

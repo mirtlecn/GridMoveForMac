@@ -13,7 +13,7 @@ final class OnboardingWindowController: NSWindowController {
             backing: .buffered,
             defer: false
         )
-        window.title = "GridMove Setup"
+        window.title = UICopy.onboardingWindowTitle
         super.init(window: window)
         buildInterface()
     }
@@ -34,16 +34,14 @@ final class OnboardingWindowController: NSWindowController {
             return
         }
 
-        let titleLabel = NSTextField(labelWithString: "Accessibility Access Is Required")
+        let titleLabel = NSTextField(labelWithString: UICopy.onboardingTitle)
         titleLabel.font = .boldSystemFont(ofSize: 18)
 
-        let bodyLabel = NSTextField(wrappingLabelWithString:
-            "GridMove needs Accessibility permission to find windows under the pointer, focus them, and apply layouts. Open System Settings and allow GridMove in Privacy & Security > Accessibility."
-        )
+        let bodyLabel = NSTextField(wrappingLabelWithString: UICopy.onboardingBody)
         bodyLabel.textColor = .secondaryLabelColor
 
-        let requestButton = NSButton(title: "Request Accessibility Access", target: self, action: #selector(requestAccessibility))
-        let openSettingsButton = NSButton(title: "Open Accessibility Settings", target: self, action: #selector(openAccessibilitySettings))
+        let requestButton = NSButton(title: UICopy.requestAccessibilityAccess, target: self, action: #selector(requestAccessibility))
+        let openSettingsButton = NSButton(title: UICopy.openAccessibilitySettings, target: self, action: #selector(openAccessibilitySettings))
 
         let buttonRow = NSStackView(views: [requestButton, openSettingsButton])
         buttonRow.orientation = .horizontal

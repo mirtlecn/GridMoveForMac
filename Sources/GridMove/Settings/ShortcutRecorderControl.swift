@@ -41,7 +41,7 @@ final class ShortcutRecorderControl: NSButton {
 
     private func beginRecording() {
         isRecording = true
-        title = "Type Shortcut"
+        title = UICopy.typeShortcut
         window?.makeFirstResponder(self)
     }
 
@@ -87,10 +87,10 @@ final class ShortcutRecorderControl: NSButton {
 
     private func updateTitle() {
         if isRecording {
-            title = "Type Shortcut"
+            title = UICopy.typeShortcut
             return
         }
 
-        title = shortcut?.symbolDisplayString ?? "Not Set"
+        title = shortcut?.symbolDisplayString ?? UICopy.notSet
     }
 }

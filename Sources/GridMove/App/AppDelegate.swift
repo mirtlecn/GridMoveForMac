@@ -184,12 +184,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func makeMenuActionItems(configuration: AppConfiguration) -> [MenuBarController.ActionItem] {
         let cycleItems: [MenuBarController.ActionItem] = [
             MenuBarController.ActionItem(
-                title: "Apply Previous Layout",
+                title: UICopy.applyPreviousLayout,
                 action: .cyclePrevious,
                 shortcut: configuration.hotkeys.firstShortcut(for: .cyclePrevious)
             ),
             MenuBarController.ActionItem(
-                title: "Apply Next Layout",
+                title: UICopy.applyNextLayout,
                 action: .cycleNext,
                 shortcut: configuration.hotkeys.firstShortcut(for: .cycleNext)
             ),
@@ -197,7 +197,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let layoutItems = configuration.layouts.map { layout in
             MenuBarController.ActionItem(
-                title: "Apply \(layout.name)",
+                title: UICopy.applyLayout(layout.name),
                 action: .applyLayout(layoutID: layout.id),
                 shortcut: configuration.hotkeys.firstShortcut(for: .applyLayout(layoutID: layout.id))
             )
@@ -253,14 +253,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func configureMainMenu() {
         let mainMenu = NSMenu()
         let applicationMenuItem = NSMenuItem()
-        let applicationMenu = NSMenu(title: "Application")
+        let applicationMenu = NSMenu(title: UICopy.applicationMenuTitle)
 
-        let settingsItem = NSMenuItem(title: "Settings…", action: #selector(openSettingsFromMenu), keyEquivalent: ",")
+        let settingsItem = NSMenuItem(title: UICopy.settingsMenuTitle, action: #selector(openSettingsFromMenu), keyEquivalent: ",")
         settingsItem.target = self
         applicationMenu.addItem(settingsItem)
         applicationMenu.addItem(.separator())
 
-        let quitItem = NSMenuItem(title: "Quit GridMove", action: #selector(quitApplication), keyEquivalent: "q")
+        let quitItem = NSMenuItem(title: UICopy.quitAppMenuTitle, action: #selector(quitApplication), keyEquivalent: "q")
         quitItem.target = self
         quitItem.keyEquivalentModifierMask = [.command]
         applicationMenu.addItem(quitItem)

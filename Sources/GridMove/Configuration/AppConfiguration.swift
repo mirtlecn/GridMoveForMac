@@ -121,13 +121,13 @@ enum HotkeyAction: Codable, Equatable, Hashable {
         switch self {
         case let .applyLayout(layoutID):
             if let name = layouts.first(where: { $0.id == layoutID })?.name {
-                return "Apply \(name)"
+                return UICopy.applyLayout(name)
             }
-            return "Apply Unknown Layout"
+            return UICopy.applyLayout(UICopy.unknownLayout)
         case .cycleNext:
-            return "Apply Next Layout"
+            return UICopy.applyNextLayout
         case .cyclePrevious:
-            return "Apply Previous Layout"
+            return UICopy.applyPreviousLayout
         }
     }
 }
@@ -369,17 +369,17 @@ struct AppConfiguration: Codable, Equatable {
 
     static var defaultLayouts: [LayoutPreset] {
         [
-            LayoutPreset(id: "layout-1", name: "Left 1/3", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 4, h: 6), triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 2, h: 6)), includeInCycle: true),
-            LayoutPreset(id: "layout-2", name: "Left 1/2", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6), triggerRegion: .screen(GridSelection(x: 2, y: 2, w: 3, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-3", name: "Left 2/3", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 8, h: 6), triggerRegion: .screen(GridSelection(x: 2, y: 0, w: 3, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-4", name: "Center", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4), triggerRegion: .screen(GridSelection(x: 5, y: 2, w: 2, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-5", name: "Right 2/3", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 4, y: 0, w: 8, h: 6), triggerRegion: .screen(GridSelection(x: 7, y: 0, w: 3, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-6", name: "Right 1/2", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 6, y: 0, w: 6, h: 6), triggerRegion: .screen(GridSelection(x: 7, y: 2, w: 3, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-7", name: "Right 1/3", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 6), triggerRegion: .screen(GridSelection(x: 10, y: 2, w: 2, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-8", name: "Right 1/3 Top", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 3), triggerRegion: .screen(GridSelection(x: 10, y: 0, w: 2, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-9", name: "Right 1/3 Bottom", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 3, w: 4, h: 3), triggerRegion: .screen(GridSelection(x: 10, y: 4, w: 2, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-10", name: "Fill All Screen", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .screen(GridSelection(x: 5, y: 0, w: 2, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-11", name: "Fill All Screen (Menu Bar)", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .menuBar(MenuBarSelection(x: 1, w: 4)), includeInCycle: false),
+            LayoutPreset(id: "layout-1", name: UICopy.defaultLayoutNames[0], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 4, h: 6), triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 2, h: 6)), includeInCycle: true),
+            LayoutPreset(id: "layout-2", name: UICopy.defaultLayoutNames[1], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6), triggerRegion: .screen(GridSelection(x: 2, y: 2, w: 3, h: 2)), includeInCycle: true),
+            LayoutPreset(id: "layout-3", name: UICopy.defaultLayoutNames[2], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 8, h: 6), triggerRegion: .screen(GridSelection(x: 2, y: 0, w: 3, h: 2)), includeInCycle: true),
+            LayoutPreset(id: "layout-4", name: UICopy.defaultLayoutNames[3], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4), triggerRegion: .screen(GridSelection(x: 5, y: 2, w: 2, h: 2)), includeInCycle: true),
+            LayoutPreset(id: "layout-5", name: UICopy.defaultLayoutNames[4], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 4, y: 0, w: 8, h: 6), triggerRegion: .screen(GridSelection(x: 7, y: 0, w: 3, h: 2)), includeInCycle: true),
+            LayoutPreset(id: "layout-6", name: UICopy.defaultLayoutNames[5], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 6, y: 0, w: 6, h: 6), triggerRegion: .screen(GridSelection(x: 7, y: 2, w: 3, h: 2)), includeInCycle: true),
+            LayoutPreset(id: "layout-7", name: UICopy.defaultLayoutNames[6], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 6), triggerRegion: .screen(GridSelection(x: 10, y: 2, w: 2, h: 2)), includeInCycle: true),
+            LayoutPreset(id: "layout-8", name: UICopy.defaultLayoutNames[7], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 3), triggerRegion: .screen(GridSelection(x: 10, y: 0, w: 2, h: 2)), includeInCycle: true),
+            LayoutPreset(id: "layout-9", name: UICopy.defaultLayoutNames[8], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 3, w: 4, h: 3), triggerRegion: .screen(GridSelection(x: 10, y: 4, w: 2, h: 2)), includeInCycle: true),
+            LayoutPreset(id: "layout-10", name: UICopy.defaultLayoutNames[9], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .screen(GridSelection(x: 5, y: 0, w: 2, h: 2)), includeInCycle: true),
+            LayoutPreset(id: "layout-11", name: UICopy.defaultLayoutNames[10], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .menuBar(MenuBarSelection(x: 1, w: 4)), includeInCycle: false),
         ]
     }
 

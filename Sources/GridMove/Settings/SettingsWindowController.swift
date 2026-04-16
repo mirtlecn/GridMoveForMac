@@ -22,7 +22,7 @@ final class SettingsWindowController: NSWindowController {
             backing: .buffered,
             defer: false
         )
-        window.title = "GridMove Settings"
+        window.title = UICopy.settingsWindowTitle
         window.minSize = NSSize(width: 860, height: 620)
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden

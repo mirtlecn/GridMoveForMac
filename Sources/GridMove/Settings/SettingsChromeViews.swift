@@ -277,7 +277,7 @@ struct AboutSettingsView: View {
     var body: some View {
         Form {
             Section {
-                LabeledContent("Version", value: appVersion)
+                LabeledContent(UICopy.version, value: appVersion)
                     .font(.body)
             }
         }

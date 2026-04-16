@@ -10,6 +10,45 @@ import Testing
 }
 
 @MainActor
+@Test func settingsCopyUsesSentenceCaseForVisibleLabels() async throws {
+    #expect(UICopy.pressAndDragSectionTitle == "Press and drag")
+    #expect(UICopy.middleMouseTitle == "Middle mouse")
+    #expect(UICopy.modifierLeftMouseTitle == "Modifier + left mouse")
+    #expect(UICopy.hotkeysHelpText == "To change a shortcut, double-click the key combination, then type a new shortcut.")
+    #expect(UICopy.applyNextLayout == "Apply next layout")
+    #expect(UICopy.applyPreviousLayout == "Apply previous layout")
+    #expect(UICopy.windowOverlayTitle == "Window overlay")
+    #expect(UICopy.triggerOverlayTitle == "Trigger overlay")
+    #expect(UICopy.resetToDefaults == "Reset to defaults")
+    #expect(UICopy.onboardingTitle == "Accessibility access is required")
+    #expect(UICopy.requestAccessibilityAccess == "Request accessibility access")
+    #expect(UICopy.openAccessibilitySettings == "Open accessibility settings")
+    #expect(UICopy.typeShortcut == "Type shortcut")
+    #expect(UICopy.notSet == "Not set")
+    #expect(UICopy.windowTitle == "Window title")
+    #expect(UICopy.defaultLayoutNames[7] == "Right 1/3 top")
+    #expect(UICopy.defaultLayoutNames[10] == "Fill all screen (Menu bar)")
+    #expect(UICopy.applyLayout("Center") == "Apply Center")
+}
+
+@MainActor
+@Test func settingsViewModelHotkeyActionOptionsUseSentenceCaseCycleLabels() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let viewModel = SettingsViewModel(
+        configurationStore: store,
+        configurationProvider: { AppConfiguration.defaultValue },
+        onConfigurationSaved: { _ in }
+    )
+
+    #expect(viewModel.hotkeyActionOptions.contains(where: { $0.0 == "Apply next layout" && $0.1 == .cycleNext }))
+    #expect(viewModel.hotkeyActionOptions.contains(where: { $0.0 == "Apply previous layout" && $0.1 == .cyclePrevious }))
+}
+
+@MainActor
 @Test func settingsViewModelAddsAndRemovesExcludedWindows() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-settings-\(UUID().uuidString)", isDirectory: true)

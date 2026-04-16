@@ -6,7 +6,7 @@ struct HotkeysSettingsView: View {
     var body: some View {
         Form {
             Section {
-                Text("To Change A Shortcut, Double-Click The Key Combination, Then Type A New Shortcut.")
+                Text(UICopy.hotkeysHelpText)
                     .foregroundStyle(.secondary)
 
                 hotkeyList

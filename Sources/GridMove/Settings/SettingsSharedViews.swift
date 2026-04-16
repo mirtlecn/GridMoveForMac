@@ -39,7 +39,7 @@ struct DirectHotkeyRow: View {
             )
             .frame(width: 240, height: 32)
 
-            Button("Delete", role: .destructive) {
+            Button(UICopy.delete, role: .destructive) {
                 onDelete()
             }
         }
@@ -54,7 +54,7 @@ struct CycleHotkeyRow: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            Text(binding.action == .cyclePrevious ? "Apply Previous Layout" : "Apply Next Layout")
+            Text(binding.action == .cyclePrevious ? UICopy.applyPreviousLayout : UICopy.applyNextLayout)
                 .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -70,7 +70,7 @@ struct CycleHotkeyRow: View {
             )
             .frame(width: 240, height: 32)
 
-            Button("Delete", role: .destructive) {
+            Button(UICopy.delete, role: .destructive) {
                 onDelete()
             }
         }
@@ -165,11 +165,11 @@ struct ModifierGroupSheetView: View {
 
             HStack(spacing: 10) {
                 Spacer()
-                Button("Cancel") { dismiss() }
+                Button(UICopy.cancel) { dismiss() }
                     .buttonStyle(.bordered)
                     .controlSize(.regular)
 
-                Button("Add") {
+                Button(UICopy.add) {
                     onConfirm(ModifierKey.allCases.filter { selectedKeys.contains($0) })
                     dismiss()
                 }
@@ -200,7 +200,7 @@ struct ExcludedWindowSheetView: View {
                 .pickerStyle(.menu)
                 .frame(width: 150)
 
-                Text("Is")
+                Text(UICopy.isLabel)
                     .foregroundStyle(.secondary)
 
                 TextField("", text: $value)
@@ -209,11 +209,11 @@ struct ExcludedWindowSheetView: View {
 
             HStack(spacing: 10) {
                 Spacer()
-                Button("Cancel") { dismiss() }
+                Button(UICopy.cancel) { dismiss() }
                     .buttonStyle(.bordered)
                     .controlSize(.regular)
 
-                Button("Add") {
+                Button(UICopy.add) {
                     onConfirm(kind, value)
                     dismiss()
                 }

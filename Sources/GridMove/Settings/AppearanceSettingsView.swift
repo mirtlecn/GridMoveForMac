@@ -11,9 +11,9 @@ struct AppearanceSettingsView: View {
         var title: String {
             switch self {
             case .windowOverlay:
-                return "Window Overlay"
+                return UICopy.windowOverlayTitle
             case .triggerOverlay:
-                return "Trigger Overlay"
+                return UICopy.triggerOverlayTitle
             }
         }
     }
@@ -57,7 +57,7 @@ struct AppearanceSettingsView: View {
 
             HStack {
                 Spacer()
-                Button("Reset to Defaults") {
+                Button(UICopy.resetToDefaults) {
                     switch selectedTab {
                     case .windowOverlay:
                         viewModel.resetWindowAppearanceToDefaults()
@@ -74,8 +74,8 @@ struct AppearanceSettingsView: View {
         SettingsGroupedRows {
             SettingsGroupedRow {
                 SettingsSwitchRow(
-                    title: "Render Window Area",
-                    subtitle: "Show the current or target window preview while dragging.",
+                    title: UICopy.renderWindowArea,
+                    subtitle: UICopy.renderWindowAreaSubtitle,
                     isOn: Binding(
                         get: { viewModel.configuration.appearance.renderWindowHighlight },
                         set: { newValue in
@@ -89,7 +89,7 @@ struct AppearanceSettingsView: View {
 
             SettingsGroupedRow {
                 LabeledSliderRow(
-                    title: "Fill Opacity",
+                    title: UICopy.fillOpacity,
                     value: Binding(
                         get: { viewModel.configuration.appearance.highlightFillOpacity },
                         set: { newValue in
@@ -106,7 +106,7 @@ struct AppearanceSettingsView: View {
 
             SettingsGroupedRow {
                 LabeledNumberFieldRow(
-                    title: "Stroke Width",
+                    title: UICopy.strokeWidth,
                     value: Binding(
                         get: { viewModel.configuration.appearance.highlightStrokeWidth },
                         set: { newValue in
@@ -122,7 +122,7 @@ struct AppearanceSettingsView: View {
 
             SettingsGroupedRow {
                 colorPickerRow(
-                    title: "Stroke Color",
+                    title: UICopy.strokeColor,
                     color: Binding(
                         get: { Color(viewModel.configuration.appearance.highlightStrokeColor.nsColor) },
                         set: { newColor in
@@ -142,8 +142,8 @@ struct AppearanceSettingsView: View {
         SettingsGroupedRows {
             SettingsGroupedRow {
                 SettingsSwitchRow(
-                    title: "Render Trigger Area",
-                    subtitle: "Show trigger regions while dragging across the screen or menu bar.",
+                    title: UICopy.renderTriggerArea,
+                    subtitle: UICopy.renderTriggerAreaSubtitle,
                     isOn: Binding(
                         get: { viewModel.configuration.appearance.renderTriggerAreas },
                         set: { newValue in
@@ -157,7 +157,7 @@ struct AppearanceSettingsView: View {
 
             SettingsGroupedRow {
                 LabeledSliderRow(
-                    title: "Stroke Opacity",
+                    title: UICopy.strokeOpacity,
                     value: Binding(
                         get: { viewModel.configuration.appearance.triggerOpacity },
                         set: { newValue in
@@ -174,7 +174,7 @@ struct AppearanceSettingsView: View {
 
             SettingsGroupedRow {
                 LabeledNumberFieldRow(
-                    title: "Grid Gap",
+                    title: UICopy.gridGap,
                     value: Binding(
                         get: { viewModel.configuration.appearance.triggerGap },
                         set: { newValue in
@@ -190,7 +190,7 @@ struct AppearanceSettingsView: View {
 
             SettingsGroupedRow {
                 colorPickerRow(
-                    title: "Stroke Color",
+                    title: UICopy.strokeColor,
                     color: Binding(
                         get: { Color(viewModel.configuration.appearance.triggerStrokeColor.nsColor) },
                         set: { newColor in
