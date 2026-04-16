@@ -1,6 +1,11 @@
 import Foundation
 
 final class ConfigurationStore {
+    struct LoadResult {
+        let configuration: AppConfiguration
+        let didFallBackToDefault: Bool
+    }
+
     private let fileManager: FileManager
     let directoryURL: URL
     let fileURL: URL
@@ -19,33 +24,37 @@ final class ConfigurationStore {
     }
 
     func load() throws -> AppConfiguration {
+        try loadWithStatus().configuration
+    }
+
+    func loadWithStatus() throws -> LoadResult {
         try ensureDirectoryExists()
 
         if fileManager.fileExists(atPath: fileURL.path) {
             do {
                 let data = try Data(contentsOf: fileURL)
-                let configurationFile = try makeDecoder().decode(
-                    ConfigurationFile.self,
-                    from: stripJSONComments(from: data)
+                let configurationFile = try makeDecoder().decode(ConfigurationFile.self, from: data)
+                return LoadResult(
+                    configuration: try configurationFile.makeAppConfiguration(),
+                    didFallBackToDefault: false
                 )
-                return try configurationFile.makeAppConfiguration()
             } catch {
                 AppLogger.shared.error("Failed to decode configuration from \(self.fileURL.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
-                return .defaultValue
+                return LoadResult(configuration: .defaultValue, didFallBackToDefault: true)
             }
         }
 
         let configuration = AppConfiguration.defaultValue
         try save(configuration)
-        return configuration
+        return LoadResult(configuration: configuration, didFallBackToDefault: false)
     }
 
     func save(_ configuration: AppConfiguration) throws {
         try ensureDirectoryExists()
         let normalizedConfiguration = normalizeConfiguration(configuration)
         let configurationFile = ConfigurationFile(configuration: normalizedConfiguration)
-        let text = configurationFile.renderedText
-        try text.write(to: fileURL, atomically: true, encoding: .utf8)
+        let data = try makeEncoder().encode(configurationFile)
+        try data.write(to: fileURL, options: .atomic)
     }
 
     private func ensureDirectoryExists() throws {
@@ -107,70 +116,9 @@ final class ConfigurationStore {
         )
     }
 
-    private func stripJSONComments(from data: Data) throws -> Data {
-        let source = String(decoding: data, as: UTF8.self)
-        var output = ""
-        var index = source.startIndex
-        var isInsideString = false
-        var isEscaped = false
-
-        while index < source.endIndex {
-            let character = source[index]
-            let nextIndex = source.index(after: index)
-            let nextCharacter = nextIndex < source.endIndex ? source[nextIndex] : "\0"
-
-            if isInsideString {
-                output.append(character)
-                if isEscaped {
-                    isEscaped = false
-                } else if character == "\\" {
-                    isEscaped = true
-                } else if character == "\"" {
-                    isInsideString = false
-                }
-                index = nextIndex
-                continue
-            }
-
-            if character == "\"" {
-                isInsideString = true
-                output.append(character)
-                index = nextIndex
-                continue
-            }
-
-            if character == "/" && nextCharacter == "/" {
-                index = source.index(after: nextIndex)
-                while index < source.endIndex && source[index] != "\n" {
-                    index = source.index(after: index)
-                }
-                continue
-            }
-
-            if character == "/" && nextCharacter == "*" {
-                index = source.index(after: nextIndex)
-                while index < source.endIndex {
-                    let current = source[index]
-                    let lookaheadIndex = source.index(after: index)
-                    let lookahead = lookaheadIndex < source.endIndex ? source[lookaheadIndex] : "\0"
-                    if current == "*" && lookahead == "/" {
-                        index = source.index(after: lookaheadIndex)
-                        break
-                    }
-                    index = lookaheadIndex
-                }
-                continue
-            }
-
-            output.append(character)
-            index = nextIndex
-        }
-
-        return Data(output.utf8)
-    }
 }
 
-private struct ConfigurationFile: Decodable {
+private struct ConfigurationFile: Codable {
     let general: GeneralSettings
     let appearance: AppearanceConfiguration
     let dragTriggers: DragTriggerSettings
@@ -227,195 +175,9 @@ private struct ConfigurationFile: Decodable {
         )
     }
 
-    var renderedText: String {
-        var lines: [String] = []
-        lines.append("{")
-        lines.append("  // Global enable switch and window exclusion rules.")
-        lines.append("  \"general\": \(renderGeneral()),")
-        lines.append("")
-        lines.append("  // Overlay rendering. Stroke colors use #RRGGBBAA.")
-        lines.append("  \"appearance\": \(renderAppearance()),")
-        lines.append("")
-        lines.append("  // Drag trigger settings. modifierGroups is a list of modifier key groups.")
-        lines.append("  \"dragTriggers\": \(renderDragTriggers()),")
-        lines.append("")
-        lines.append("  // Hotkey bindings. action.kind supports: cycleNext, cyclePrevious, applyLayout.")
-        lines.append("  // For applyLayout, action.layout is the 1-based layout number in the layouts array.")
-        lines.append("  \"hotkeys\": \(renderHotkeys()),")
-        lines.append("")
-        lines.append("  // Layouts are applied and cycled in array order. includeInCycle=false skips next/previous cycle.")
-        lines.append("  \"layouts\": \(renderLayouts())")
-        lines.append("}")
-        return lines.joined(separator: "\n") + "\n"
-    }
-
-    private func renderGeneral() -> String {
-        """
-{
-    \"isEnabled\": \(jsonBool(general.isEnabled)),
-    \"excludedBundleIDs\": \(jsonStringArray(general.excludedBundleIDs)),
-    \"excludedWindowTitles\": \(jsonStringArray(general.excludedWindowTitles))
-  }
-"""
-    }
-
-    private func renderAppearance() -> String {
-        """
-{
-    \"renderTriggerAreas\": \(jsonBool(appearance.renderTriggerAreas)),
-    \"triggerOpacity\": \(jsonNumber(appearance.triggerOpacity)),
-    \"triggerGap\": \(jsonNumber(appearance.triggerGap)),
-    \"triggerStrokeColor\": \(jsonString(appearance.triggerStrokeColor)),
-    \"renderWindowHighlight\": \(jsonBool(appearance.renderWindowHighlight)),
-    \"highlightFillOpacity\": \(jsonNumber(appearance.highlightFillOpacity)),
-    \"highlightStrokeWidth\": \(jsonNumber(appearance.highlightStrokeWidth)),
-    \"highlightStrokeColor\": \(jsonString(appearance.highlightStrokeColor))
-  }
-"""
-    }
-
-    private func renderDragTriggers() -> String {
-        let modifierGroups = dragTriggers.modifierGroups
-            .map { "    " + jsonStringArray($0.map(\.rawValue)) }
-            .joined(separator: ",\n")
-
-        return """
-{
-    \"middleMouseButtonNumber\": \(jsonNumber(dragTriggers.middleMouseButtonNumber)),
-    \"enableMiddleMouseDrag\": \(jsonBool(dragTriggers.enableMiddleMouseDrag)),
-    \"enableModifierLeftMouseDrag\": \(jsonBool(dragTriggers.enableModifierLeftMouseDrag)),
-    \"modifierGroups\": [
-\(modifierGroups)
-    ],
-    \"activationDelaySeconds\": \(jsonNumber(dragTriggers.activationDelaySeconds)),
-    \"activationMoveThreshold\": \(jsonNumber(dragTriggers.activationMoveThreshold))
-  }
-"""
-    }
-
-    private func renderHotkeys() -> String {
-        let renderedBindings = hotkeys.bindings.map { binding in
-            """
-      {
-        \"isEnabled\": \(jsonBool(binding.isEnabled)),
-        \"shortcut\": \(renderShortcut(binding.shortcut)),
-        \"action\": \(renderAction(binding.action))
-      }
-"""
-        }.joined(separator: ",\n")
-
-        return """
-{
-    \"bindings\": [
-\(renderedBindings)
-    ]
-  }
-"""
-    }
-
-    private func renderLayouts() -> String {
-        let renderedLayouts = layouts.enumerated().map { index, layout in
-            """
-      {
-        // Layout \(index + 1)
-        \"name\": \(jsonString(layout.name)),
-        \"gridColumns\": \(jsonNumber(layout.gridColumns)),
-        \"gridRows\": \(jsonNumber(layout.gridRows)),
-        \"windowSelection\": {
-          \"x\": \(jsonNumber(layout.windowSelection.x)),
-          \"y\": \(jsonNumber(layout.windowSelection.y)),
-          \"w\": \(jsonNumber(layout.windowSelection.w)),
-          \"h\": \(jsonNumber(layout.windowSelection.h))
-        },
-        \"triggerRegion\": \(renderTriggerRegion(layout.triggerRegion)),
-        \"includeInCycle\": \(jsonBool(layout.includeInCycle))
-      }
-"""
-        }.joined(separator: ",\n")
-
-        return """
-[
-\(renderedLayouts)
-  ]
-"""
-    }
-
-    private func renderShortcut(_ shortcut: KeyboardShortcut?) -> String {
-        guard let shortcut else {
-            return "null"
-        }
-
-        return """
-{
-          \"modifiers\": \(jsonStringArray(shortcut.modifiers.map(\.rawValue))),
-          \"key\": \(jsonString(shortcut.key))
-        }
-"""
-    }
-
-    private func renderAction(_ action: HotkeyActionConfiguration) -> String {
-        var lines = [
-            "{",
-            "          \"kind\": \(jsonString(action.kind.rawValue))",
-        ]
-
-        if let layout = action.layout {
-            lines[1].append(",")
-            lines.append("          \"layout\": \(jsonNumber(layout))")
-        }
-
-        lines.append("        }")
-        return lines.joined(separator: "\n")
-    }
-
-    private func renderTriggerRegion(_ triggerRegion: TriggerRegion) -> String {
-        switch triggerRegion {
-        case let .screen(selection):
-            return """
-{
-          \"kind\": \"screen\",
-          \"gridSelection\": {
-            \"x\": \(jsonNumber(selection.x)),
-            \"y\": \(jsonNumber(selection.y)),
-            \"w\": \(jsonNumber(selection.w)),
-            \"h\": \(jsonNumber(selection.h))
-          }
-        }
-"""
-        case let .menuBar(selection):
-            return """
-{
-          \"kind\": \"menuBar\",
-          \"menuBarSelection\": {
-            \"x\": \(jsonNumber(selection.x)),
-            \"w\": \(jsonNumber(selection.w))
-          }
-        }
-"""
-        }
-    }
-
-    private func jsonString(_ value: String) -> String {
-        let data = try? JSONSerialization.data(withJSONObject: [value], options: [])
-        let encoded = String(decoding: data ?? Data("[]".utf8), as: UTF8.self)
-        return String(encoded.dropFirst().dropLast())
-    }
-
-    private func jsonStringArray(_ values: [String]) -> String {
-        let rendered = values.map(jsonString).joined(separator: ", ")
-        return "[\(rendered)]"
-    }
-
-    private func jsonBool(_ value: Bool) -> String {
-        value ? "true" : "false"
-    }
-
-    private func jsonNumber<T: LosslessStringConvertible>(_ value: T) -> String {
-        String(value)
-    }
 }
 
-private struct AppearanceConfiguration: Decodable {
+private struct AppearanceConfiguration: Codable {
     let renderTriggerAreas: Bool
     let triggerOpacity: Double
     let triggerGap: Double
@@ -450,11 +212,11 @@ private struct AppearanceConfiguration: Decodable {
     }
 }
 
-private struct HotkeyConfiguration: Decodable {
+private struct HotkeyConfiguration: Codable {
     let bindings: [HotkeyBindingConfiguration]
 }
 
-private struct HotkeyBindingConfiguration: Decodable {
+private struct HotkeyBindingConfiguration: Codable {
     let isEnabled: Bool
     let shortcut: KeyboardShortcut?
     let action: HotkeyActionConfiguration
@@ -466,8 +228,8 @@ private struct HotkeyBindingConfiguration: Decodable {
     }
 }
 
-private struct HotkeyActionConfiguration: Decodable {
-    enum Kind: String, Decodable {
+private struct HotkeyActionConfiguration: Codable {
+    enum Kind: String, Codable {
         case applyLayout
         case cycleNext
         case cyclePrevious
@@ -505,7 +267,7 @@ private struct HotkeyActionConfiguration: Decodable {
     }
 }
 
-private struct LayoutConfiguration: Decodable {
+private struct LayoutConfiguration: Codable {
     let name: String
     let gridColumns: Int
     let gridRows: Int

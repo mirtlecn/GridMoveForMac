@@ -7,6 +7,8 @@ enum UICopy {
     static let reloadConfigMenuTitle = "Reload config"
     static let customizeMenuTitle = "Customize"
     static let customizeAppMenuTitle = "Customize…"
+    static let configReloadFailedTitle = "GridMove config reload failed"
+    static let configReloadFailedBody = "GridMove kept running with the built-in default configuration."
     static let quitMenuTitle = "Quit"
     static let quitAppMenuTitle = "Quit GridMove"
     static let onboardingWindowTitle = "GridMove Setup"

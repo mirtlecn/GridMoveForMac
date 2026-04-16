@@ -43,3 +43,35 @@ import Testing
     #expect(delegate.openConfigurationDirectory() == true)
     #expect(openedURL == store.directoryURL)
 }
+
+@MainActor
+@Test func appDelegateNotifiesUserWhenManualReloadFallsBackToDefault() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-notify-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+    try """
+    {
+      "general": {
+        "isEnabled":
+    """.write(to: store.fileURL, atomically: true, encoding: .utf8)
+
+    var receivedTitle: String?
+    var receivedBody: String?
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        notifyUser: { title, body in
+            receivedTitle = title
+            receivedBody = body
+        }
+    )
+
+    delegate.reloadConfigurationFromDisk(notifyOnFallback: true)
+
+    #expect(delegate.configuration == .defaultValue)
+    #expect(receivedTitle == UICopy.configReloadFailedTitle)
+    #expect(receivedBody == UICopy.configReloadFailedBody)
+}

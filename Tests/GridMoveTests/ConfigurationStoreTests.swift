@@ -14,12 +14,16 @@ import Testing
     #expect(FileManager.default.fileExists(atPath: store.fileURL.path))
     #expect(store.fileURL.lastPathComponent == "config.json")
     let initialText = try String(contentsOf: store.fileURL, encoding: .utf8)
-    #expect(initialText.contains("// Hotkey bindings. action.kind supports: cycleNext, cyclePrevious, applyLayout."))
-    #expect(initialText.contains("\"triggerStrokeColor\": \"#"))
-    #expect(initialText.contains("\"highlightStrokeColor\": \"#"))
+    #expect(initialText.contains("\"triggerStrokeColor\""))
+    #expect(initialText.contains("#007AFF33"))
+    #expect(initialText.contains("\"highlightStrokeColor\""))
+    #expect(initialText.contains("#FFFFFFEB"))
     #expect(!initialText.contains("\"id\":"))
-    #expect(initialText.contains("\"layout\": 4"))
-    #expect(initialText.contains("\"includeInCycle\": false"))
+    #expect(initialText.contains("\"layout\""))
+    #expect(initialText.contains("4"))
+    #expect(initialText.contains("\"includeInCycle\""))
+    #expect(initialText.contains("false"))
+    #expect(!initialText.contains("//"))
 
     var updatedConfiguration = initialConfiguration
     updatedConfiguration.general.excludedWindowTitles = ["Test Title"]
@@ -59,9 +63,9 @@ import Testing
     #expect(reloadedText == invalidJSON)
 }
 
-@Test func configurationStoreLoadsCommentedJSONWithoutUserVisibleIDs() async throws {
+@Test func configurationStoreLoadsPureJSONWithoutUserVisibleIDs() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
-        .appendingPathComponent("codex-gridmove-commented-json-\(UUID().uuidString)", isDirectory: true)
+        .appendingPathComponent("codex-gridmove-pure-json-\(UUID().uuidString)", isDirectory: true)
     defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
 
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
@@ -69,7 +73,6 @@ import Testing
 
     let json = """
     {
-      // Global enable switch and window exclusion rules.
       "general": {
         "isEnabled": true,
         "excludedBundleIDs": ["com.apple.Spotlight"],
@@ -144,6 +147,32 @@ import Testing
     #expect(configuration.layouts[1].includeInCycle == false)
     #expect(configuration.appearance.triggerStrokeColor.hexString == "#007AFF33")
     #expect(configuration.appearance.highlightStrokeColor.hexString == "#FFFFFFEB")
+}
+
+@Test func configurationStoreRejectsCommentedJSON() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-comment-json-reject-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+
+    let json = """
+    {
+      // comments are not allowed
+      "general": {
+        "isEnabled": true,
+        "excludedBundleIDs": ["com.apple.Spotlight"],
+        "excludedWindowTitles": []
+      }
+    }
+    """
+
+    try json.write(to: store.fileURL, atomically: true, encoding: .utf8)
+    let result = try store.loadWithStatus()
+
+    #expect(result.didFallBackToDefault == true)
+    #expect(result.configuration == .defaultValue)
 }
 
 @Test func defaultConfigurationKeepsExpectedShortcutAndModifierDefaults() async throws {

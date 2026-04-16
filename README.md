@@ -81,11 +81,13 @@ If multiple layouts share the same name, use the layout identifier instead. Ambi
 
 The app writes a default JSON configuration to `~/.config/GridMove/config.json` on first launch. The initial values mirror the migrated `~/.hammerspoon` layouts, trigger regions, modifier groups, and shortcut defaults.
 
-If the config file contains invalid JSON, invalid comments, or an unsupported shape, GridMove keeps the file unchanged, logs the error, and falls back to the built-in default configuration for the current launch.
+If the config file contains invalid JSON or an unsupported shape, GridMove keeps the file unchanged, logs the error, and falls back to the built-in default configuration for the current launch.
 
 You can open the config directory from the menu bar with `Customize` and reload the file from disk with `Reload config`.
 
-The generated file uses JSON with comments. Layout objects do not store internal identifiers. Their 1-based position in the `layouts` array is the layout number. Hotkey actions that apply a layout use `action.layout` with that layout number. Stroke colors use `#RRGGBBAA`.
+The generated file uses plain JSON. Layout objects do not store internal identifiers. Their 1-based position in the `layouts` array is the layout number. Hotkey actions that apply a layout use `action.layout` with that layout number. Stroke colors use `#RRGGBBAA`.
+
+If a manual `Reload config` falls back to the built-in default configuration, GridMove also posts a local system notification.
 
 Example:
 

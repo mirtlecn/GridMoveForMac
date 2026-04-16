@@ -1,10 +1,12 @@
 import AppKit
 import Foundation
+@preconcurrency import UserNotifications
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let configurationStore: ConfigurationStore
     private let openURL: (URL) -> Bool
+    private let notifyUser: (String, String) -> Void
     private let layoutEngine = LayoutEngine()
     private lazy var windowController = WindowController(layoutEngine: layoutEngine)
     private let overlayController = OverlayController()
@@ -46,15 +48,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     init(
         configurationStore: ConfigurationStore = ConfigurationStore(),
-        openURL: @escaping (URL) -> Bool = { NSWorkspace.shared.open($0) }
+        openURL: @escaping (URL) -> Bool = { NSWorkspace.shared.open($0) },
+        notifyUser: @escaping (String, String) -> Void = { title, body in
+            AppDelegate.postSystemNotification(title: title, body: body)
+        }
     ) {
         self.configurationStore = configurationStore
         self.openURL = openURL
+        self.notifyUser = notifyUser
         super.init()
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        reloadConfigurationFromDisk()
+        reloadConfigurationFromDisk(notifyOnFallback: false)
         configureMainMenu()
 
         menuController = MenuBarController(
@@ -67,7 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.performMenuAction(action)
             },
             onReloadConfiguration: { [weak self] in
-                self?.reloadConfigurationFromDisk()
+                self?.reloadConfigurationFromDisk(notifyOnFallback: true)
             },
             onCustomize: { [weak self] in
                 _ = self?.openConfigurationDirectory()
@@ -126,12 +132,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    func reloadConfigurationFromDisk() {
+    func reloadConfigurationFromDisk(notifyOnFallback: Bool = false) {
         do {
-            applyConfiguration(try configurationStore.load())
+            let result = try configurationStore.loadWithStatus()
+            applyConfiguration(result.configuration)
+            if result.didFallBackToDefault && notifyOnFallback {
+                notifyUser(
+                    UICopy.configReloadFailedTitle,
+                    UICopy.configReloadFailedBody
+                )
+            }
         } catch {
             AppLogger.shared.error("Failed to load configuration: \(error.localizedDescription)")
             applyConfiguration(.defaultValue)
+            if notifyOnFallback {
+                notifyUser(
+                    UICopy.configReloadFailedTitle,
+                    UICopy.configReloadFailedBody
+                )
+            }
         }
     }
 
@@ -269,7 +288,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func reloadConfigurationFromMenu() {
-        reloadConfigurationFromDisk()
+        reloadConfigurationFromDisk(notifyOnFallback: true)
     }
 
     @objc private func customizeFromMenu() {
@@ -292,6 +311,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             makeMenuActionItems(configuration: configuration),
             isEnabled: configuration.general.isEnabled
         )
+    }
+
+    nonisolated private static func postSystemNotification(title: String, body: String) {
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options: [.alert, .sound]) { granted, error in
+            if let error {
+                AppLogger.shared.error("Failed to request notification authorization: \(error.localizedDescription, privacy: .public)")
+                return
+            }
+
+            guard granted else {
+                return
+            }
+
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+            content.sound = .default
+
+            let request = UNNotificationRequest(
+                identifier: "gridmove-config-reload-failed",
+                content: content,
+                trigger: nil
+            )
+            center.add(request) { error in
+                if let error {
+                    AppLogger.shared.error("Failed to post notification: \(error.localizedDescription, privacy: .public)")
+                }
+            }
+        }
     }
 }
 
