@@ -22,6 +22,7 @@ plist_path="${contents_path}/Info.plist"
 dmg_path="${app_bundle_path:r}.dmg"
 staging_root="${app_bundle_path:h}/.dmg-staging"
 staging_path="${staging_root}/${app_name}"
+icon_path="${resources_path}/AppIcon.icns"
 
 if [[ ! -x "${release_binary}" ]]; then
   echo "missing release binary: ${release_binary}" >&2
@@ -32,6 +33,7 @@ rm -rf "${app_bundle_path}" "${dmg_path}" "${staging_root}"
 mkdir -p "${macos_path}" "${resources_path}"
 
 cp "${release_binary}" "${macos_path}/${app_name}"
+zsh "$(dirname "$0")/generate_app_icon.sh" "${app_name}" "${icon_path}"
 
 cat > "${plist_path}" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
@@ -44,6 +46,8 @@ cat > "${plist_path}" <<EOF
   <string>${app_name}</string>
   <key>CFBundleExecutable</key>
   <string>${app_name}</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
   <key>CFBundleIdentifier</key>
   <string>${bundle_id}</string>
   <key>CFBundleInfoDictionaryVersion</key>

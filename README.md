@@ -34,6 +34,7 @@ This creates:
 - `dist/GridMove.dmg`
 
 Before packaging, `make build` removes the local runtime configuration at `~/Library/Application Support/GridMove/config.plist` so the packaged app starts from a clean default state.
+The packaged app bundle includes a generated app icon derived from the menu bar glyph.
 
 The default signing mode is ad-hoc signing for local testing. To use a real certificate, override `SIGN_IDENTITY`:
 
