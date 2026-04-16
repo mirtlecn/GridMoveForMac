@@ -17,7 +17,11 @@ import Testing
     let delegate = AppDelegate(configurationStore: store, openURL: { _ in true })
     delegate.reloadConfigurationFromDisk()
 
-    #expect(delegate.configuration == savedConfiguration)
+    #expect(delegate.configuration.general.isEnabled == false)
+    #expect(delegate.configuration.layouts.map(\.name) == savedConfiguration.layouts.map(\.name))
+    #expect(delegate.configuration.layouts.map(\.id) == (1...savedConfiguration.layouts.count).map { "layout-\($0)" })
+    #expect(delegate.configuration.hotkeys.bindings.map(\.id) == (1...savedConfiguration.hotkeys.bindings.count).map { "binding-\($0)" })
+    #expect(delegate.configuration.hotkeys.bindings[2].action == .applyLayout(layoutID: "layout-8"))
 }
 
 @MainActor

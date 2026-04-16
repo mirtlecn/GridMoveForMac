@@ -81,120 +81,110 @@ If multiple layouts share the same name, use the layout identifier instead. Ambi
 
 The app writes a default JSON configuration to `~/.config/GridMove/config.json` on first launch. The initial values mirror the migrated `~/.hammerspoon` layouts, trigger regions, modifier groups, and shortcut defaults.
 
-If the config file contains invalid JSON or an unsupported shape, GridMove keeps the file unchanged, logs the error, and falls back to the built-in default configuration for the current launch.
+If the config file contains invalid JSON, invalid comments, or an unsupported shape, GridMove keeps the file unchanged, logs the error, and falls back to the built-in default configuration for the current launch.
 
 You can open the config directory from the menu bar with `Customize` and reload the file from disk with `Reload config`.
+
+The generated file uses JSON with comments. Layout objects do not store internal identifiers. Their 1-based position in the `layouts` array is the layout number. Hotkey actions that apply a layout use `action.layout` with that layout number. Stroke colors use `#RRGGBBAA`.
 
 Example:
 
 ```json
 {
-  "appearance": {
-    "highlightFillOpacity": 0.08,
-    "highlightStrokeColor": {
-      "alpha": 0.92,
-      "blue": 1,
-      "green": 1,
-      "red": 1
-    },
-    "highlightStrokeWidth": 3,
-    "renderTriggerAreas": true,
-    "renderWindowHighlight": true,
-    "triggerGap": 2,
-    "triggerOpacity": 0.2,
-    "triggerStrokeColor": {
-      "alpha": 0.2,
-      "blue": 1,
-      "green": 0.48,
-      "red": 0
-    }
+  // Global enable switch and window exclusion rules.
+  "general": {
+    "isEnabled": true,
+    "excludedBundleIDs": ["com.apple.Spotlight"],
+    "excludedWindowTitles": []
   },
+  // Overlay rendering. Stroke colors use #RRGGBBAA.
+  "appearance": {
+    "renderTriggerAreas": true,
+    "triggerOpacity": 0.2,
+    "triggerGap": 2,
+    "triggerStrokeColor": "#007AFF33",
+    "renderWindowHighlight": true,
+    "highlightFillOpacity": 0.08,
+    "highlightStrokeWidth": 3,
+    "highlightStrokeColor": "#FFFFFFEB"
+  },
+  // Drag trigger settings. modifierGroups is a list of modifier key groups.
   "dragTriggers": {
-    "activationDelaySeconds": 0.3,
-    "activationMoveThreshold": 10,
+    "middleMouseButtonNumber": 2,
     "enableMiddleMouseDrag": true,
     "enableModifierLeftMouseDrag": true,
-    "middleMouseButtonNumber": 2,
-    "modifierGroups": [
-      ["ctrl", "cmd", "shift", "alt"]
-    ]
+    "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
+    "activationDelaySeconds": 0.3,
+    "activationMoveThreshold": 10
   },
-  "general": {
-    "excludedBundleIDs": [
-      "com.apple.Spotlight"
-    ],
-    "excludedWindowTitles": [],
-    "isEnabled": true
-  },
+  // Hotkey bindings. action.kind supports: cycleNext, cyclePrevious, applyLayout.
+  // For applyLayout, action.layout is the 1-based layout number in the layouts array.
   "hotkeys": {
     "bindings": [
       {
-        "action": {
-          "kind": "cycleNext"
-        },
-        "id": "CYCLE-NEXT-EXAMPLE",
         "isEnabled": true,
         "shortcut": {
-          "key": "l",
-          "modifiers": ["ctrl", "cmd", "shift", "alt"]
+          "modifiers": ["ctrl", "cmd", "shift", "alt"],
+          "key": "l"
+        },
+        "action": {
+          "kind": "cycleNext"
         }
       },
       {
-        "action": {
-          "kind": "applyLayout",
-          "layoutID": "layout-4"
-        },
-        "id": "CENTER-EXAMPLE",
         "isEnabled": true,
         "shortcut": {
-          "key": "\\",
-          "modifiers": ["ctrl", "cmd", "shift", "alt"]
+          "modifiers": ["ctrl", "cmd", "shift", "alt"],
+          "key": "\\"
+        },
+        "action": {
+          "kind": "applyLayout",
+          "layout": 4
         }
       }
     ]
   },
+  // Layouts are applied and cycled in array order. includeInCycle=false skips next/previous cycle.
   "layouts": [
     {
+      "name": "Center",
       "gridColumns": 12,
       "gridRows": 6,
-      "id": "layout-4",
-      "includeInCycle": true,
-      "name": "Center",
-      "triggerRegion": {
-        "gridSelection": {
-          "h": 2,
-          "w": 2,
-          "x": 5,
-          "y": 2
-        },
-        "kind": "screen"
-      },
       "windowSelection": {
-        "h": 4,
-        "w": 6,
         "x": 3,
-        "y": 1
-      }
+        "y": 1,
+        "w": 6,
+        "h": 4
+      },
+      "triggerRegion": {
+        "kind": "screen",
+        "gridSelection": {
+          "x": 5,
+          "y": 2,
+          "w": 2,
+          "h": 2
+        }
+      },
+      "includeInCycle": true
     },
     {
+      "name": "Fill all screen (Menu bar)",
       "gridColumns": 12,
       "gridRows": 6,
-      "id": "layout-11",
-      "includeInCycle": false,
-      "name": "Fill all screen (Menu bar)",
+      "windowSelection": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 6
+      },
       "triggerRegion": {
         "kind": "menuBar",
         "menuBarSelection": {
-          "w": 4,
-          "x": 1
+          "x": 1,
+          "w": 4
         }
       },
-      "windowSelection": {
-        "h": 6,
-        "w": 12,
-        "x": 0,
-        "y": 0
-      }
+      "includeInCycle": false
     }
   ]
 }

@@ -235,6 +235,13 @@ struct RGBAColor: Codable, Equatable, Hashable {
     var blue: Double
     var alpha: Double
 
+    init(red: Double, green: Double, blue: Double, alpha: Double) {
+        self.red = red
+        self.green = green
+        self.blue = blue
+        self.alpha = alpha
+    }
+
     var nsColor: NSColor {
         NSColor(
             red: red,
@@ -243,6 +250,60 @@ struct RGBAColor: Codable, Equatable, Hashable {
             alpha: alpha
         )
     }
+
+    var hexString: String {
+        let redValue = RGBAColor.hexComponent(for: red)
+        let greenValue = RGBAColor.hexComponent(for: green)
+        let blueValue = RGBAColor.hexComponent(for: blue)
+        let alphaValue = RGBAColor.hexComponent(for: alpha)
+        return String(format: "#%02X%02X%02X%02X", redValue, greenValue, blueValue, alphaValue)
+    }
+
+    init(hexString: String) throws {
+        let trimmed = hexString.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.hasPrefix("#") else {
+            throw RGBAColorHexError.invalidFormat(hexString)
+        }
+
+        let hex = String(trimmed.dropFirst())
+        let components: [UInt8]
+        switch hex.count {
+        case 6:
+            var parsed = try RGBAColor.parseHexComponents(hex)
+            parsed.append(255)
+            components = parsed
+        case 8:
+            components = try RGBAColor.parseHexComponents(hex)
+        default:
+            throw RGBAColorHexError.invalidLength(hexString)
+        }
+
+        red = Double(components[0]) / 255
+        green = Double(components[1]) / 255
+        blue = Double(components[2]) / 255
+        alpha = Double(components[3]) / 255
+    }
+
+    private static func parseHexComponents(_ hex: String) throws -> [UInt8] {
+        try stride(from: 0, to: hex.count, by: 2).map { index in
+            let startIndex = hex.index(hex.startIndex, offsetBy: index)
+            let endIndex = hex.index(startIndex, offsetBy: 2)
+            let component = String(hex[startIndex..<endIndex])
+            guard let value = UInt8(component, radix: 16) else {
+                throw RGBAColorHexError.invalidFormat("#\(hex)")
+            }
+            return value
+        }
+    }
+
+    private static func hexComponent(for value: Double) -> UInt8 {
+        UInt8(max(0, min(255, Int((value * 255).rounded()))))
+    }
+}
+
+enum RGBAColorHexError: Error {
+    case invalidFormat(String)
+    case invalidLength(String)
 }
 
 struct GeneralSettings: Codable, Equatable {

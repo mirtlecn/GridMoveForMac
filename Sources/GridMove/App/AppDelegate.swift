@@ -18,7 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         layoutEngine: layoutEngine,
         windowController: windowController,
         overlayController: overlayController,
-        configurationProvider: { [weak self] in self?.configuration ?? .defaultValue },
+        configurationProvider: { [weak self] in self?.configuration ?? AppConfiguration.defaultValue },
         accessibilityTrustedProvider: { [weak self] in
             self?.accessibilityMonitor.hasAccess ?? false
         },
@@ -30,7 +30,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var shortcutController = ShortcutController(
         layoutEngine: layoutEngine,
         windowController: windowController,
-        configurationProvider: { [weak self] in self?.configuration ?? .defaultValue },
+        configurationProvider: { [weak self] in self?.configuration ?? AppConfiguration.defaultValue },
         accessibilityTrustedProvider: { [weak self] in
             self?.accessibilityMonitor.hasAccess ?? false
         },

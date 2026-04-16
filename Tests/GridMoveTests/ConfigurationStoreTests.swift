@@ -13,6 +13,13 @@ import Testing
     #expect(initialConfiguration.layouts.count == 11)
     #expect(FileManager.default.fileExists(atPath: store.fileURL.path))
     #expect(store.fileURL.lastPathComponent == "config.json")
+    let initialText = try String(contentsOf: store.fileURL, encoding: .utf8)
+    #expect(initialText.contains("// Hotkey bindings. action.kind supports: cycleNext, cyclePrevious, applyLayout."))
+    #expect(initialText.contains("\"triggerStrokeColor\": \"#"))
+    #expect(initialText.contains("\"highlightStrokeColor\": \"#"))
+    #expect(!initialText.contains("\"id\":"))
+    #expect(initialText.contains("\"layout\": 4"))
+    #expect(initialText.contains("\"includeInCycle\": false"))
 
     var updatedConfiguration = initialConfiguration
     updatedConfiguration.general.excludedWindowTitles = ["Test Title"]
@@ -22,7 +29,12 @@ import Testing
     try store.save(updatedConfiguration)
     let reloadedConfiguration = try store.load()
 
-    #expect(reloadedConfiguration == updatedConfiguration)
+    #expect(reloadedConfiguration.general == updatedConfiguration.general)
+    #expect(reloadedConfiguration.appearance.triggerGap == updatedConfiguration.appearance.triggerGap)
+    #expect(reloadedConfiguration.dragTriggers.modifierGroups == updatedConfiguration.dragTriggers.modifierGroups)
+    #expect(reloadedConfiguration.layouts.map(\.name) == updatedConfiguration.layouts.map(\.name))
+    #expect(reloadedConfiguration.layouts.map(\.id) == (1...updatedConfiguration.layouts.count).map { "layout-\($0)" })
+    #expect(reloadedConfiguration.hotkeys.bindings.map(\.id) == (1...updatedConfiguration.hotkeys.bindings.count).map { "binding-\($0)" })
 }
 
 @Test func configurationStoreReturnsDefaultAndPreservesBrokenJSON() async throws {
@@ -45,6 +57,93 @@ import Testing
 
     #expect(configuration == .defaultValue)
     #expect(reloadedText == invalidJSON)
+}
+
+@Test func configurationStoreLoadsCommentedJSONWithoutUserVisibleIDs() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-commented-json-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+
+    let json = """
+    {
+      // Global enable switch and window exclusion rules.
+      "general": {
+        "isEnabled": true,
+        "excludedBundleIDs": ["com.apple.Spotlight"],
+        "excludedWindowTitles": []
+      },
+      "appearance": {
+        "renderTriggerAreas": true,
+        "triggerOpacity": 0.2,
+        "triggerGap": 2,
+        "triggerStrokeColor": "#007AFF33",
+        "renderWindowHighlight": true,
+        "highlightFillOpacity": 0.08,
+        "highlightStrokeWidth": 3,
+        "highlightStrokeColor": "#FFFFFFEB"
+      },
+      "dragTriggers": {
+        "middleMouseButtonNumber": 2,
+        "enableMiddleMouseDrag": true,
+        "enableModifierLeftMouseDrag": true,
+        "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
+        "activationDelaySeconds": 0.3,
+        "activationMoveThreshold": 10
+      },
+      "hotkeys": {
+        "bindings": [
+          {
+            "isEnabled": true,
+            "shortcut": {
+              "modifiers": ["ctrl", "cmd", "shift", "alt"],
+              "key": "\\\\"
+            },
+            "action": {
+              "kind": "applyLayout",
+              "layout": 2
+            }
+          }
+        ]
+      },
+      "layouts": [
+        {
+          "name": "Left 1/3",
+          "gridColumns": 12,
+          "gridRows": 6,
+          "windowSelection": { "x": 0, "y": 0, "w": 4, "h": 6 },
+          "triggerRegion": {
+            "kind": "screen",
+            "gridSelection": { "x": 0, "y": 0, "w": 2, "h": 6 }
+          },
+          "includeInCycle": true
+        },
+        {
+          "name": "Center",
+          "gridColumns": 12,
+          "gridRows": 6,
+          "windowSelection": { "x": 3, "y": 1, "w": 6, "h": 4 },
+          "triggerRegion": {
+            "kind": "menuBar",
+            "menuBarSelection": { "x": 1, "w": 4 }
+          },
+          "includeInCycle": false
+        }
+      ]
+    }
+    """
+
+    try json.write(to: store.fileURL, atomically: true, encoding: .utf8)
+    let configuration = try store.load()
+
+    #expect(configuration.layouts.map(\.id) == ["layout-1", "layout-2"])
+    #expect(configuration.hotkeys.bindings.map(\.id) == ["binding-1"])
+    #expect(configuration.hotkeys.bindings[0].action == .applyLayout(layoutID: "layout-2"))
+    #expect(configuration.layouts[1].includeInCycle == false)
+    #expect(configuration.appearance.triggerStrokeColor.hexString == "#007AFF33")
+    #expect(configuration.appearance.highlightStrokeColor.hexString == "#FFFFFFEB")
 }
 
 @Test func defaultConfigurationKeepsExpectedShortcutAndModifierDefaults() async throws {
@@ -206,4 +305,12 @@ import Testing
     #expect(try decoder.decode(HotkeyAction.self, from: encoder.encode(applyLayout)) == applyLayout)
     #expect(try decoder.decode(HotkeyAction.self, from: encoder.encode(cycleNext)) == cycleNext)
     #expect(try decoder.decode(HotkeyAction.self, from: encoder.encode(cyclePrevious)) == cyclePrevious)
+}
+
+@Test func rgbaColorSupportsHexStrings() async throws {
+    let eightDigit = try RGBAColor(hexString: "#FFFFFFEB")
+    let sixDigit = try RGBAColor(hexString: "#007AFF")
+
+    #expect(eightDigit.hexString == "#FFFFFFEB")
+    #expect(sixDigit.hexString == "#007AFFFF")
 }
