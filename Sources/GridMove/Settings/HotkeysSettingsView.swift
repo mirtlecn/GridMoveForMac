@@ -6,7 +6,7 @@ struct HotkeysSettingsView: View {
     var body: some View {
         Form {
             Section {
-                Text("To change a shortcut, double-click the key combination, then type a new shortcut.")
+                Text("To Change A Shortcut, Double-Click The Key Combination, Then Type A New Shortcut.")
                     .foregroundStyle(.secondary)
 
                 hotkeyList

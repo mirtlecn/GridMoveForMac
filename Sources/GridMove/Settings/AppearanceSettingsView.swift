@@ -11,9 +11,9 @@ struct AppearanceSettingsView: View {
         var title: String {
             switch self {
             case .windowOverlay:
-                return "Window overlay"
+                return "Window Overlay"
             case .triggerOverlay:
-                return "Trigger overlay"
+                return "Trigger Overlay"
             }
         }
     }
@@ -57,7 +57,7 @@ struct AppearanceSettingsView: View {
 
             HStack {
                 Spacer()
-                Button("Reset to defaults") {
+                Button("Reset to Defaults") {
                     switch selectedTab {
                     case .windowOverlay:
                         viewModel.resetWindowAppearanceToDefaults()
@@ -74,7 +74,7 @@ struct AppearanceSettingsView: View {
         SettingsGroupedRows {
             SettingsGroupedRow {
                 SettingsSwitchRow(
-                    title: "Render window area",
+                    title: "Render Window Area",
                     subtitle: "Show the current or target window preview while dragging.",
                     isOn: Binding(
                         get: { viewModel.configuration.appearance.renderWindowHighlight },
@@ -89,7 +89,7 @@ struct AppearanceSettingsView: View {
 
             SettingsGroupedRow {
                 LabeledSliderRow(
-                    title: "Fill opacity",
+                    title: "Fill Opacity",
                     value: Binding(
                         get: { viewModel.configuration.appearance.highlightFillOpacity },
                         set: { newValue in
@@ -106,7 +106,7 @@ struct AppearanceSettingsView: View {
 
             SettingsGroupedRow {
                 LabeledNumberFieldRow(
-                    title: "Stroke width",
+                    title: "Stroke Width",
                     value: Binding(
                         get: { viewModel.configuration.appearance.highlightStrokeWidth },
                         set: { newValue in
@@ -122,7 +122,7 @@ struct AppearanceSettingsView: View {
 
             SettingsGroupedRow {
                 colorPickerRow(
-                    title: "Stroke color",
+                    title: "Stroke Color",
                     color: Binding(
                         get: { Color(viewModel.configuration.appearance.highlightStrokeColor.nsColor) },
                         set: { newColor in
@@ -142,7 +142,7 @@ struct AppearanceSettingsView: View {
         SettingsGroupedRows {
             SettingsGroupedRow {
                 SettingsSwitchRow(
-                    title: "Render trigger area",
+                    title: "Render Trigger Area",
                     subtitle: "Show trigger regions while dragging across the screen or menu bar.",
                     isOn: Binding(
                         get: { viewModel.configuration.appearance.renderTriggerAreas },
@@ -157,7 +157,7 @@ struct AppearanceSettingsView: View {
 
             SettingsGroupedRow {
                 LabeledSliderRow(
-                    title: "Stroke opacity",
+                    title: "Stroke Opacity",
                     value: Binding(
                         get: { viewModel.configuration.appearance.triggerOpacity },
                         set: { newValue in
@@ -174,7 +174,7 @@ struct AppearanceSettingsView: View {
 
             SettingsGroupedRow {
                 LabeledNumberFieldRow(
-                    title: "Grid gap",
+                    title: "Grid Gap",
                     value: Binding(
                         get: { viewModel.configuration.appearance.triggerGap },
                         set: { newValue in
@@ -190,7 +190,7 @@ struct AppearanceSettingsView: View {
 
             SettingsGroupedRow {
                 colorPickerRow(
-                    title: "Stroke color",
+                    title: "Stroke Color",
                     color: Binding(
                         get: { Color(viewModel.configuration.appearance.triggerStrokeColor.nsColor) },
                         set: { newColor in

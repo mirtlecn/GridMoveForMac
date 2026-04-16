@@ -12,9 +12,9 @@ struct LayoutsSettingsView: View {
         var title: String {
             switch self {
             case .windowOverlay:
-                return "Window overlay"
+                return "Window Overlay"
             case .triggerOverlay:
-                return "Trigger overlay"
+                return "Trigger Overlay"
             }
         }
     }
@@ -70,7 +70,7 @@ struct LayoutsSettingsView: View {
 
                 HStack {
                     Spacer()
-                    Button("Add a layout") {
+                    Button("Add Layout") {
                         viewModel.addLayout()
                     }
                     .buttonStyle(.bordered)
@@ -104,7 +104,7 @@ struct LayoutsSettingsView: View {
                     previewSection(draft: draft)
 
                     HStack(spacing: 10) {
-                        Button(viewModel.layoutDeleteArmed ? "Confirm delete" : "Delete") {
+                        Button(viewModel.layoutDeleteArmed ? "Confirm Delete" : "Delete") {
                             viewModel.deleteSelectedLayout()
                         }
                         .buttonStyle(.bordered)
@@ -132,7 +132,7 @@ struct LayoutsSettingsView: View {
         SettingsGroupedRows {
             SettingsGroupedRow {
                 layoutToggleRow(
-                    title: "Include in cycle",
+                    title: "Include in Cycle",
                     isOn: Binding(
                         get: { viewModel.layoutDraft?.includeInCycle ?? draft.includeInCycle },
                         set: { isOn in
@@ -147,7 +147,7 @@ struct LayoutsSettingsView: View {
             SettingsGroupedRow {
                 layoutTextFieldRow(
                     title: "Name",
-                    placeholder: "Optional name",
+                    placeholder: "Optional Name",
                     text: Binding(
                         get: { viewModel.layoutDraft?.name ?? draft.name },
                         set: { newValue in

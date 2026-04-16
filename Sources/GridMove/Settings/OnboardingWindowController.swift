@@ -34,7 +34,7 @@ final class OnboardingWindowController: NSWindowController {
             return
         }
 
-        let titleLabel = NSTextField(labelWithString: "Accessibility access is required")
+        let titleLabel = NSTextField(labelWithString: "Accessibility Access Is Required")
         titleLabel.font = .boldSystemFont(ofSize: 18)
 
         let bodyLabel = NSTextField(wrappingLabelWithString:

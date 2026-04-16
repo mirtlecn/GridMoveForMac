@@ -14,7 +14,7 @@ struct GeneralSettingsView: View {
                 ) {
                     SettingsDescriptionLabel(
                         title: "Enable",
-                        subtitle: "Allow drag triggers, layout hotkeys, and command line layout actions."
+                        subtitle: "Allow Drag Triggers, Layout Hotkeys, And Command Line Layout Actions."
                     )
                 }
             }
@@ -28,7 +28,7 @@ struct GeneralSettingsView: View {
                 ) {
                     SettingsDescriptionLabel(
                         title: "Middle Mouse",
-                        subtitle: "Press middle mouse for a short time to activate the grid."
+                        subtitle: "Press Middle Mouse For A Short Time To Activate The Grid."
                     )
                 }
                 .controlSize(.mini)
@@ -42,7 +42,7 @@ struct GeneralSettingsView: View {
                     ) {
                         SettingsDescriptionLabel(
                             title: "Modifier + Left Mouse",
-                            subtitle: "Hold pre-set modifier, then press left mouse to activate."
+                            subtitle: "Hold Pre-Set Modifier, Then Press Left Mouse To Activate."
                         )
                     }
                     .controlSize(.mini)

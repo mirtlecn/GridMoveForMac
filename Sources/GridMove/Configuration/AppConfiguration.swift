@@ -45,7 +45,7 @@ struct KeyboardShortcut: Codable, Equatable, Hashable {
 
     var displayString: String {
         let modifierString = normalizedModifiers.map(\.displayName).joined(separator: " + ")
-        let keyString = key == "return" ? "return" : key
+        let keyString = key == "return" ? "Return" : key.uppercased()
         return modifierString.isEmpty ? keyString : "\(modifierString) + \(keyString)"
     }
 
@@ -378,8 +378,8 @@ struct AppConfiguration: Codable, Equatable {
             LayoutPreset(id: "layout-7", name: "Right 1/3", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 6), triggerRegion: .screen(GridSelection(x: 10, y: 2, w: 2, h: 2)), includeInCycle: true),
             LayoutPreset(id: "layout-8", name: "Right 1/3 Top", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 3), triggerRegion: .screen(GridSelection(x: 10, y: 0, w: 2, h: 2)), includeInCycle: true),
             LayoutPreset(id: "layout-9", name: "Right 1/3 Bottom", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 3, w: 4, h: 3), triggerRegion: .screen(GridSelection(x: 10, y: 4, w: 2, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-10", name: "Fill all screen", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .screen(GridSelection(x: 5, y: 0, w: 2, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-11", name: "Fill all screen (Menu Bar)", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .menuBar(MenuBarSelection(x: 1, w: 4)), includeInCycle: false),
+            LayoutPreset(id: "layout-10", name: "Fill All Screen", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .screen(GridSelection(x: 5, y: 0, w: 2, h: 2)), includeInCycle: true),
+            LayoutPreset(id: "layout-11", name: "Fill All Screen (Menu Bar)", gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .menuBar(MenuBarSelection(x: 1, w: 4)), includeInCycle: false),
         ]
     }
 

@@ -137,8 +137,8 @@ final class SettingsViewModel: ObservableObject {
     var hotkeyActionOptions: [(String, HotkeyAction)] {
         configuration.layouts.map { ("Apply \(layoutDisplayLabel(for: $0))", HotkeyAction.applyLayout(layoutID: $0.id)) }
         + [
-            ("Apply next layout", .cycleNext),
-            ("Apply previous layout", .cyclePrevious),
+            ("Apply Next Layout", .cycleNext),
+            ("Apply Previous Layout", .cyclePrevious),
         ]
     }
 
