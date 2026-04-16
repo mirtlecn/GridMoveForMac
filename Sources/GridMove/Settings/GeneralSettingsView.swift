@@ -39,7 +39,7 @@ struct GeneralSettingsView: View {
                     }
                     .controlSize(.mini)
 
-                    VStack(alignment: .leading, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 8) {
                         Toggle(
                             isOn: Binding(
                                 get: { viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag },
@@ -53,31 +53,30 @@ struct GeneralSettingsView: View {
                         }
                         .controlSize(.mini)
 
-                        List(selection: $viewModel.selectedModifierGroupID) {
-                            ForEach(viewModel.modifierGroupItems) { item in
-                                Text(item.title)
-                                    .tag(item.id)
+                        SettingsActionList {
+                            List(selection: $viewModel.selectedModifierGroupID) {
+                                ForEach(viewModel.modifierGroupItems) { item in
+                                    Text(item.title)
+                                        .tag(item.id)
+                                }
                             }
-                        }
-                        .frame(minHeight: 92, maxHeight: 116)
-
-                        HStack(spacing: 8) {
+                            .environment(\.defaultMinListRowHeight, 28)
+                            .frame(minHeight: 92, maxHeight: 118)
+                        } actions: {
                             Button {
                                 viewModel.modifierGroupSheetPresented = true
                             } label: {
-                                Label("Add", systemImage: "plus")
+                                Image(systemName: "plus")
                             }
-                            .labelStyle(.iconOnly)
-                            .buttonStyle(.borderless)
+                            .buttonStyle(.plain)
 
                             if viewModel.selectedModifierGroupID != nil {
                                 Button {
                                     viewModel.removeSelectedModifierGroup()
                                 } label: {
-                                    Label("Delete", systemImage: "minus")
+                                    Image(systemName: "minus")
                                 }
-                                .labelStyle(.iconOnly)
-                                .buttonStyle(.borderless)
+                                .buttonStyle(.plain)
                             }
                         }
                     }
@@ -86,54 +85,44 @@ struct GeneralSettingsView: View {
                 .disabled(!viewModel.configuration.general.isEnabled)
 
                 Section("Excluded Windows") {
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack(spacing: 12) {
-                            Text("Value")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            Text("Type")
-                                .font(.subheadline.weight(.semibold))
-                                .foregroundStyle(.secondary)
-                        }
-
-                        List(selection: $viewModel.selectedExcludedWindowID) {
-                            ForEach(viewModel.excludedWindowItems) { item in
-                                HStack(spacing: 12) {
-                                    Text(item.value)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                    Text(item.kind.columnTitle)
-                                        .foregroundStyle(.secondary)
-                                }
-                                .tag(item.id)
+                    SettingsActionList {
+                        Table(viewModel.excludedWindowItems, selection: $viewModel.selectedExcludedWindowID) {
+                            TableColumn("Value") { item in
+                                Text(item.value)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
                             }
-                        }
-                        .frame(minHeight: 140, maxHeight: 180)
+                            .width(min: 280)
 
-                        HStack(spacing: 8) {
+                            TableColumn("Type") { item in
+                                Text(item.kind.columnTitle)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .width(min: 120, max: 160)
+                        }
+                        .frame(minHeight: 150, maxHeight: 190)
+                    } actions: {
+                        Button {
+                            viewModel.openExcludedWindowSheet()
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .buttonStyle(.plain)
+
+                        if viewModel.selectedExcludedWindowID != nil {
                             Button {
-                                viewModel.openExcludedWindowSheet()
+                                viewModel.removeSelectedExcludedWindow()
                             } label: {
-                                Label("Add", systemImage: "plus")
+                                Image(systemName: "minus")
                             }
-                            .labelStyle(.iconOnly)
-                            .buttonStyle(.borderless)
-
-                            if viewModel.selectedExcludedWindowID != nil {
-                                Button {
-                                    viewModel.removeSelectedExcludedWindow()
-                                } label: {
-                                    Label("Delete", systemImage: "minus")
-                                }
-                                .labelStyle(.iconOnly)
-                                .buttonStyle(.borderless)
-                            }
+                            .buttonStyle(.plain)
                         }
                     }
                 }
             }
             .formStyle(.grouped)
             .scrollContentBackground(.hidden)
+            .controlSize(.small)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .background(Color(nsColor: .windowBackgroundColor))
@@ -154,5 +143,31 @@ private struct SettingsDescriptionLabel: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.vertical, 1)
+    }
+}
+
+private struct SettingsActionList<Content: View, Actions: View>: View {
+    @ViewBuilder let content: Content
+    @ViewBuilder let actions: Actions
+
+    var body: some View {
+        VStack(spacing: 0) {
+            content
+
+            HStack(spacing: 10) {
+                actions
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .font(.body.weight(.medium))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(Color(nsColor: .controlBackgroundColor))
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(Color(nsColor: .separatorColor).opacity(0.45), lineWidth: 1)
+        )
     }
 }
