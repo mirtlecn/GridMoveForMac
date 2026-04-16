@@ -42,6 +42,12 @@ The default signing mode is ad-hoc signing for local testing. To use a real cert
 make build SIGN_IDENTITY="Developer ID Application: Example Name (TEAMID)"
 ```
 
+`make build` runs the Swift test suite before packaging. To run tests without packaging, use:
+
+```bash
+make test
+```
+
 ## Run
 
 ```bash

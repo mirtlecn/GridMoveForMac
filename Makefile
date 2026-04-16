@@ -7,9 +7,9 @@ SIGN_IDENTITY ?= -
 APP_BUNDLE_ID ?= local.mirtle.GridMove
 CONFIG_PLIST := $(HOME)/Library/Application Support/GridMove/config.plist
 
-.PHONY: build test run release sign-app verify-app clean
+.PHONY: build test check run release sign-app verify-app clean
 
-build: release
+build: test release
 	rm -f "$(CONFIG_PLIST)"
 	rm -rf "$(DIST_DIR)/$(APP_NAME)" "$(DIST_DIR)/$(APP_NAME)-macos.tar.gz" "$(DIST_DIR)/$(APP_NAME).zip" "$(DIST_DIR)/$(APP_NAME).dmg"
 	./scripts/package_app.sh \
@@ -22,6 +22,8 @@ build: release
 
 test:
 	swift test
+
+check: test
 
 run:
 	swift run
