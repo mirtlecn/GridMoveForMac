@@ -11,7 +11,7 @@ CONFIG_PLIST := $(HOME)/Library/Application Support/GridMove/config.plist
 
 build: release
 	rm -f "$(CONFIG_PLIST)"
-	rm -rf "$(DIST_DIR)/$(APP_NAME)" "$(DIST_DIR)/$(APP_NAME)-macos.tar.gz"
+	rm -rf "$(DIST_DIR)/$(APP_NAME)" "$(DIST_DIR)/$(APP_NAME)-macos.tar.gz" "$(DIST_DIR)/$(APP_NAME).zip" "$(DIST_DIR)/$(APP_NAME).dmg"
 	./scripts/package_app.sh \
 		"$(APP_NAME)" \
 		"$(APP_BUNDLE)" \

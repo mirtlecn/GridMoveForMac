@@ -19,14 +19,16 @@ contents_path="${app_bundle_path}/Contents"
 macos_path="${contents_path}/MacOS"
 resources_path="${contents_path}/Resources"
 plist_path="${contents_path}/Info.plist"
-zip_path="${app_bundle_path:r}.zip"
+dmg_path="${app_bundle_path:r}.dmg"
+staging_root="${app_bundle_path:h}/.dmg-staging"
+staging_path="${staging_root}/${app_name}"
 
 if [[ ! -x "${release_binary}" ]]; then
   echo "missing release binary: ${release_binary}" >&2
   exit 1
 fi
 
-rm -rf "${app_bundle_path}" "${zip_path}"
+rm -rf "${app_bundle_path}" "${dmg_path}" "${staging_root}"
 mkdir -p "${macos_path}" "${resources_path}"
 
 cp "${release_binary}" "${macos_path}/${app_name}"
@@ -73,7 +75,18 @@ plutil -lint "${plist_path}" >/dev/null
 codesign --force --deep --sign "${sign_identity}" --timestamp=none "${app_bundle_path}"
 codesign --verify --deep --strict --verbose=2 "${app_bundle_path}"
 
-ditto -c -k --sequesterRsrc --keepParent "${app_bundle_path}" "${zip_path}"
+mkdir -p "${staging_path}"
+cp -R "${app_bundle_path}" "${staging_path}/${app_name}.app"
+ln -s /Applications "${staging_path}/Applications"
+
+hdiutil create \
+  -volname "${app_name}" \
+  -srcfolder "${staging_path}" \
+  -ov \
+  -format UDZO \
+  "${dmg_path}" >/dev/null
+
+rm -rf "${staging_root}"
 
 echo "app bundle: ${app_bundle_path}"
-echo "zip archive: ${zip_path}"
+echo "disk image: ${dmg_path}"

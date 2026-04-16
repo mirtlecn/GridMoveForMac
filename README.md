@@ -31,7 +31,7 @@ make build
 This creates:
 
 - `dist/GridMove.app`
-- `dist/GridMove.zip`
+- `dist/GridMove.dmg`
 
 Before packaging, `make build` removes the local runtime configuration at `~/Library/Application Support/GridMove/config.plist` so the packaged app starts from a clean default state.
 
