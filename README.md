@@ -63,7 +63,7 @@ On first launch, grant Accessibility access in System Settings. The app stays in
 
 ## CLI
 
-The compiled executable also supports direct command line actions:
+The compiled executable can send layout commands to an already running GridMove app:
 
 ```bash
 .build/release/GridMove -next
@@ -73,6 +73,8 @@ The compiled executable also supports direct command line actions:
 .build/release/GridMove -layout "Center" -window-id 12345
 .build/release/GridMove -help
 ```
+
+Start GridMove first before using CLI layout actions. If GridMove is not running, the CLI prints an error and exits.
 
 The `-layout` argument accepts either the layout name or the layout identifier. If `-window-id <cg-window-id>` is provided, GridMove targets that exact on-screen window. Otherwise CLI actions operate on the currently focused window only.
 If multiple layouts share the same name, use the layout identifier instead. Ambiguous layout names are rejected.
