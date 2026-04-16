@@ -50,8 +50,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         menuController = MenuBarController(
             dragGridEnabled: configuration.general.isEnabled,
+            actionItems: makeMenuActionItems(configuration: configuration),
             onToggleDragGrid: { [weak self] isEnabled in
                 self?.updateGlobalEnabledState(isEnabled)
+            },
+            onPerformAction: { [weak self] action in
+                self?.performMenuAction(action)
             },
             onOpenSettings: { [weak self] in
                 self?.showSettings()
@@ -117,6 +121,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             AppLogger.shared.error("Failed to load configuration: \(error.localizedDescription)")
             configuration = .defaultValue
         }
+        menuController?.updateActionItems(makeMenuActionItems(configuration: configuration), isEnabled: configuration.general.isEnabled)
     }
 
     private func showSettings() {
@@ -127,6 +132,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 onConfigurationSaved: { [weak self] configuration in
                     self?.configuration = configuration
                     self?.applyGlobalEnabledState()
+                    self?.menuController?.updateActionItems(
+                        self?.makeMenuActionItems(configuration: configuration) ?? [],
+                        isEnabled: configuration.general.isEnabled
+                    )
                     self?.settingsController?.updateConfiguration(configuration)
                 }
             )
@@ -149,6 +158,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             AppLogger.shared.error("Failed to save configuration: \(error.localizedDescription)")
         }
         applyGlobalEnabledState()
+        menuController?.updateActionItems(makeMenuActionItems(configuration: configuration), isEnabled: isEnabled)
         settingsController?.updateConfiguration(configuration)
     }
 
@@ -169,6 +179,71 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         )
         onboardingController?.show()
+    }
+
+    private func makeMenuActionItems(configuration: AppConfiguration) -> [MenuBarController.ActionItem] {
+        let cycleItems: [MenuBarController.ActionItem] = [
+            MenuBarController.ActionItem(
+                title: "Switch to Previous Layout",
+                action: .cyclePrevious,
+                shortcut: configuration.hotkeys.firstShortcut(for: .cyclePrevious)
+            ),
+            MenuBarController.ActionItem(
+                title: "Switch to Next Layout",
+                action: .cycleNext,
+                shortcut: configuration.hotkeys.firstShortcut(for: .cycleNext)
+            ),
+        ]
+
+        let layoutItems = configuration.layouts.map { layout in
+            MenuBarController.ActionItem(
+                title: "Switch to \(layout.name)",
+                action: .applyLayout(layoutID: layout.id),
+                shortcut: configuration.hotkeys.firstShortcut(for: .applyLayout(layoutID: layout.id))
+            )
+        }
+
+        return cycleItems + layoutItems
+    }
+
+    private func performMenuAction(_ action: HotkeyAction) {
+        guard configuration.general.isEnabled else {
+            return
+        }
+
+        guard let window = windowController.windowForLayoutAction(configuration: configuration) else {
+            return
+        }
+
+        switch action {
+        case let .applyLayout(layoutID):
+            windowController.applyLayout(
+                layoutID: layoutID,
+                to: window,
+                preferredScreen: nil,
+                configuration: configuration
+            )
+        case .cycleNext:
+            guard let layoutID = layoutEngine.nextLayoutID(for: window.identity, layouts: configuration.layouts) else {
+                return
+            }
+            windowController.applyLayout(
+                layoutID: layoutID,
+                to: window,
+                preferredScreen: nil,
+                configuration: configuration
+            )
+        case .cyclePrevious:
+            guard let layoutID = layoutEngine.previousLayoutID(for: window.identity, layouts: configuration.layouts) else {
+                return
+            }
+            windowController.applyLayout(
+                layoutID: layoutID,
+                to: window,
+                preferredScreen: nil,
+                configuration: configuration
+            )
+        }
     }
 
     private func configureMainMenu() {

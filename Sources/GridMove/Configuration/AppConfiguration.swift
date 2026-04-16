@@ -316,6 +316,12 @@ struct DragTriggerSettings: Codable, Equatable {
 
 struct HotkeySettings: Codable, Equatable {
     var bindings: [ShortcutBinding]
+
+    func firstShortcut(for action: HotkeyAction) -> KeyboardShortcut? {
+        bindings.first {
+            $0.isEnabled && $0.action == action && $0.shortcut != nil
+        }?.shortcut
+    }
 }
 
 struct AppConfiguration: Codable, Equatable {

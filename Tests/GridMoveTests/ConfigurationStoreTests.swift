@@ -84,6 +84,34 @@ import Testing
     )
 }
 
+@Test func hotkeySettingsReturnsFirstConfiguredShortcutForAction() async throws {
+    let settings = HotkeySettings(bindings: [
+        ShortcutBinding(isEnabled: true, shortcut: nil, action: .cycleNext),
+        ShortcutBinding(isEnabled: false, shortcut: KeyboardShortcut(modifiers: [.alt], key: "l"), action: .cycleNext),
+        ShortcutBinding(isEnabled: true, shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "l"), action: .cycleNext),
+        ShortcutBinding(isEnabled: true, shortcut: KeyboardShortcut(modifiers: [.alt], key: "j"), action: .cyclePrevious),
+    ])
+
+    #expect(settings.firstShortcut(for: .cycleNext) == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "l"))
+    #expect(settings.firstShortcut(for: .cyclePrevious) == KeyboardShortcut(modifiers: [.alt], key: "j"))
+}
+
+@Test func menuActionItemDisplaysShortcutSuffixWhenPresent() async throws {
+    let itemWithShortcut = MenuBarController.ActionItem(
+        title: "Switch to Center",
+        action: .applyLayout(layoutID: "layout-4"),
+        shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "\\")
+    )
+    let itemWithoutShortcut = MenuBarController.ActionItem(
+        title: "Switch to Center",
+        action: .applyLayout(layoutID: "layout-4"),
+        shortcut: nil
+    )
+
+    #expect(itemWithShortcut.displayTitle == "Switch to Center (⌃⌘⇧⌥\\)")
+    #expect(itemWithoutShortcut.displayTitle == "Switch to Center")
+}
+
 @Test func generalSettingsDecodeMissingEnableFlagWithDefaultValue() async throws {
     let plist = """
     <?xml version="1.0" encoding="UTF-8"?>
