@@ -3,19 +3,20 @@ import Carbon.HIToolbox
 
 @MainActor
 final class ShortcutRecorderControl: NSButton {
-    var shortcut: KeyboardShortcut = KeyboardShortcut(modifiers: [.alt], key: "a") {
+    var shortcut: KeyboardShortcut? {
         didSet { updateTitle() }
     }
 
-    var onShortcutChange: ((KeyboardShortcut) -> Void)?
+    var onShortcutChange: ((KeyboardShortcut?) -> Void)?
     private var isRecording = false
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
-        bezelStyle = .rounded
-        controlSize = .large
-        target = self
-        action = #selector(beginRecording)
+        isBordered = false
+        setButtonType(.momentaryChange)
+        focusRingType = .none
+        alignment = .right
+        font = .monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .medium)
         updateTitle()
     }
 
@@ -30,9 +31,17 @@ final class ShortcutRecorderControl: NSButton {
 
     override var acceptsFirstResponder: Bool { true }
 
-    @objc private func beginRecording() {
+    override func mouseDown(with event: NSEvent) {
+        if event.clickCount >= 2 {
+            beginRecording()
+        } else {
+            window?.makeFirstResponder(nil)
+        }
+    }
+
+    private func beginRecording() {
         isRecording = true
-        title = "Press Shortcut"
+        title = "Type Shortcut"
         window?.makeFirstResponder(self)
     }
 
@@ -49,7 +58,9 @@ final class ShortcutRecorderControl: NSButton {
         }
 
         let keyCode = CGKeyCode(event.keyCode)
-        if keyCode == CGKeyCode(kVK_Escape) {
+        if keyCode == CGKeyCode(kVK_Escape) || keyCode == CGKeyCode(kVK_Delete) || keyCode == CGKeyCode(kVK_ForwardDelete) {
+            shortcut = nil
+            onShortcutChange?(nil)
             isRecording = false
             updateTitle()
             return
@@ -75,6 +86,11 @@ final class ShortcutRecorderControl: NSButton {
     }
 
     private func updateTitle() {
-        title = shortcut.displayString
+        if isRecording {
+            title = "Type Shortcut"
+            return
+        }
+
+        title = shortcut?.symbolDisplayString ?? "Not Set"
     }
 }

@@ -334,7 +334,7 @@ struct TriggerRegionEditorRepresentable: NSViewRepresentable {
 }
 
 struct ShortcutRecorderRepresentable: NSViewRepresentable {
-    @Binding var shortcut: KeyboardShortcut
+    @Binding var shortcut: KeyboardShortcut?
 
     func makeNSView(context: Context) -> ShortcutRecorderControl {
         let control = ShortcutRecorderControl()

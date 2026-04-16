@@ -32,14 +32,16 @@ import Testing
         $0.action == .cycleNext || $0.action == .cyclePrevious
     }
     let hasAltLayoutBinding = configuration.hotkeys.bindings.contains { binding in
-        binding.shortcut.modifiers == [.alt]
+        binding.shortcut?.modifiers == [.alt]
     }
     let hasHyperLayoutFourBinding = configuration.hotkeys.bindings.contains { binding in
         binding.shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "\\")
             && binding.action == .applyLayout(layoutID: "layout-4")
     }
     let hasFullscreenOrCloseBinding = configuration.hotkeys.bindings.contains { binding in
-        let key = binding.shortcut.key
+        guard let key = binding.shortcut?.key else {
+            return false
+        }
         return key == "/" || key == "x"
     }
 

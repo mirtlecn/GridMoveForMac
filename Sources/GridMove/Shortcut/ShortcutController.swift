@@ -103,8 +103,11 @@ final class ShortcutController {
         let modifiers = normalizedModifiers(from: event.flags)
 
         guard let binding = configuration.hotkeys.bindings.first(where: {
-            ShortcutKeyMap.keyCode(for: $0.shortcut.key) == keyCode
-                && Set($0.shortcut.modifiers) == modifiers
+            guard $0.isEnabled, let shortcut = $0.shortcut else {
+                return false
+            }
+            return ShortcutKeyMap.keyCode(for: shortcut.key) == keyCode
+                && Set(shortcut.modifiers) == modifiers
         }) else {
             return Unmanaged.passUnretained(event)
         }

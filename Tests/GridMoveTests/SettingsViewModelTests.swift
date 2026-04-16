@@ -125,3 +125,24 @@ import Testing
     #expect(viewModel.configuration.appearance.highlightFillOpacity == AppConfiguration.defaultValue.appearance.highlightFillOpacity)
     #expect(viewModel.configuration.appearance.highlightStrokeWidth == AppConfiguration.defaultValue.appearance.highlightStrokeWidth)
 }
+
+@MainActor
+@Test func settingsViewModelAddsSelectableEmptyHotkeyBinding() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let viewModel = SettingsViewModel(
+        configurationStore: store,
+        configurationProvider: { AppConfiguration.defaultValue },
+        onConfigurationSaved: { _ in }
+    )
+
+    let initialCount = viewModel.hotkeyItems.count
+    viewModel.addHotkeyBinding()
+
+    #expect(viewModel.hotkeyItems.count == initialCount + 1)
+    #expect(viewModel.hotkeyItems.first?.shortcut == nil)
+    #expect(viewModel.selectedHotkeyBindingID == viewModel.hotkeyItems.first?.id)
+}

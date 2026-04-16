@@ -75,6 +75,7 @@ final class SettingsViewModel: ObservableObject {
     @Published var modifierGroupSheetPresented = false
     @Published var selectedModifierGroupID: String?
     @Published var selectedExcludedWindowID: String?
+    @Published var selectedHotkeyBindingID: String?
 
     private let configurationStore: ConfigurationStore
     private let onConfigurationSaved: (AppConfiguration) -> Void
@@ -114,6 +115,18 @@ final class SettingsViewModel: ObservableObject {
 
     var directActionOptions: [(String, HotkeyAction)] {
         configuration.layouts.map { ($0.name, HotkeyAction.applyLayout(layoutID: $0.id)) }
+    }
+
+    var hotkeyItems: [ShortcutBinding] {
+        configuration.hotkeys.bindings
+    }
+
+    var hotkeyActionOptions: [(String, HotkeyAction)] {
+        configuration.layouts.map { ("Switch to \($0.name)", HotkeyAction.applyLayout(layoutID: $0.id)) }
+        + [
+            ("Switch to next layout", .cycleNext),
+            ("Switch to previous layout", .cyclePrevious),
+        ]
     }
 
     var modifierGroupItems: [ModifierGroupItem] {
@@ -417,6 +430,21 @@ final class SettingsViewModel: ObservableObject {
         persistConfiguration(status: "Hotkey removed.")
     }
 
+    func addHotkeyBinding() {
+        let defaultAction = configuration.layouts.first.map { HotkeyAction.applyLayout(layoutID: $0.id) } ?? .cycleNext
+        let binding = ShortcutBinding(isEnabled: true, shortcut: nil, action: defaultAction)
+        configuration.hotkeys.bindings.insert(binding, at: 0)
+        selectedHotkeyBindingID = binding.id
+        persistConfiguration(status: "Hotkey added.")
+    }
+
+    func deleteSelectedHotkeyBinding() {
+        guard let selectedHotkeyBindingID else {
+            return
+        }
+        deleteBinding(selectedHotkeyBindingID)
+    }
+
     func addDirectActionBinding() {
         let action = directActionOptions.first?.1 ?? .applyLayout(layoutID: configuration.layouts.first?.id ?? "layout-1")
         configuration.hotkeys.bindings.append(
@@ -478,6 +506,11 @@ final class SettingsViewModel: ObservableObject {
         if let selectedExcludedWindowID,
            !excludedWindowItems.contains(where: { $0.id == selectedExcludedWindowID }) {
             self.selectedExcludedWindowID = nil
+        }
+
+        if let selectedHotkeyBindingID,
+           !configuration.hotkeys.bindings.contains(where: { $0.id == selectedHotkeyBindingID }) {
+            self.selectedHotkeyBindingID = nil
         }
     }
 }

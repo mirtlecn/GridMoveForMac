@@ -48,6 +48,12 @@ struct KeyboardShortcut: Codable, Equatable, Hashable {
         let keyString = key == "return" ? "return" : key
         return modifierString.isEmpty ? keyString : "\(modifierString) + \(keyString)"
     }
+
+    var symbolDisplayString: String {
+        let modifierSymbols = normalizedModifiers.map(\.symbol).joined()
+        let keySymbol = ShortcutKeyMap.symbolDisplayString(for: key)
+        return modifierSymbols + keySymbol
+    }
 }
 
 enum HotkeyAction: Codable, Equatable, Hashable {
@@ -105,13 +111,38 @@ enum HotkeyAction: Codable, Equatable, Hashable {
 
 struct ShortcutBinding: Codable, Equatable, Hashable, Identifiable {
     var id: String
-    var shortcut: KeyboardShortcut
+    var isEnabled: Bool
+    var shortcut: KeyboardShortcut?
     var action: HotkeyAction
 
-    init(id: String = UUID().uuidString, shortcut: KeyboardShortcut, action: HotkeyAction) {
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case isEnabled
+        case shortcut
+        case action
+    }
+
+    init(id: String = UUID().uuidString, isEnabled: Bool = true, shortcut: KeyboardShortcut?, action: HotkeyAction) {
         self.id = id
+        self.isEnabled = isEnabled
         self.shortcut = shortcut
         self.action = action
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? true
+        shortcut = try container.decodeIfPresent(KeyboardShortcut.self, forKey: .shortcut)
+        action = try container.decode(HotkeyAction.self, forKey: .action)
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(isEnabled, forKey: .isEnabled)
+        try container.encodeIfPresent(shortcut, forKey: .shortcut)
+        try container.encode(action, forKey: .action)
     }
 }
 
@@ -408,6 +439,21 @@ private extension RGBAColor {
     }
 }
 
+private extension ModifierKey {
+    var symbol: String {
+        switch self {
+        case .ctrl:
+            return "⌃"
+        case .cmd:
+            return "⌘"
+        case .shift:
+            return "⇧"
+        case .alt:
+            return "⌥"
+        }
+    }
+}
+
 enum ShortcutKeyMap {
     static func keyCode(for key: String) -> CGKeyCode? {
         switch key.lowercased() {
@@ -458,6 +504,19 @@ enum ShortcutKeyMap {
 
     static func displayString(for key: String) -> String {
         key == "return" ? "return" : key
+    }
+
+    static func symbolDisplayString(for key: String) -> String {
+        switch key.lowercased() {
+        case "return", "enter":
+            return "↩"
+        case "escape", "esc":
+            return "⎋"
+        case "space":
+            return "␠"
+        default:
+            return key.uppercased()
+        }
     }
 
     static func keyName(for keyCode: CGKeyCode) -> String? {
