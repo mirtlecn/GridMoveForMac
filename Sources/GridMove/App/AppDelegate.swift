@@ -7,6 +7,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let layoutEngine = LayoutEngine()
     private lazy var windowController = WindowController(layoutEngine: layoutEngine)
     private let overlayController = OverlayController()
+    private lazy var accessibilityMonitor = AccessibilityAccessMonitor(
+        statusProvider: { [weak self] in
+            self?.windowController.isAccessibilityTrusted(prompt: false) ?? false
+        }
+    )
 
     private lazy var dragGridController = DragGridController(
         layoutEngine: layoutEngine,
@@ -14,7 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         overlayController: overlayController,
         configurationProvider: { [weak self] in self?.configuration ?? .defaultValue },
         accessibilityTrustedProvider: { [weak self] in
-            self?.windowController.isAccessibilityTrusted(prompt: false) ?? false
+            self?.accessibilityMonitor.hasAccess ?? false
         },
         onAccessibilityRevoked: { [weak self] in
             self?.forceAccessibilityReevaluation()
@@ -26,7 +31,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowController: windowController,
         configurationProvider: { [weak self] in self?.configuration ?? .defaultValue },
         accessibilityTrustedProvider: { [weak self] in
-            self?.windowController.isAccessibilityTrusted(prompt: false) ?? false
+            self?.accessibilityMonitor.hasAccess ?? false
         },
         onAccessibilityRevoked: { [weak self] in
             self?.forceAccessibilityReevaluation()
@@ -38,7 +43,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var settingsController: SettingsWindowController?
     private var onboardingController: OnboardingWindowController?
     private var accessibilityPollingTimer: Timer?
-    private var hasAccessibilityAccess: Bool?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         loadConfigurationFromDisk()
@@ -68,13 +72,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func evaluateAccessibilityState() {
-        let isTrusted = windowController.isAccessibilityTrusted(prompt: false)
-        guard hasAccessibilityAccess != isTrusted else {
+        let didChange = accessibilityMonitor.refresh()
+        restartAccessibilityPolling()
+
+        guard didChange else {
             return
         }
 
-        hasAccessibilityAccess = isTrusted
-        if isTrusted {
+        if accessibilityMonitor.hasAccess {
             onboardingController?.close()
             onboardingController = nil
             dragGridController.start()
@@ -88,13 +93,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func forceAccessibilityReevaluation() {
-        hasAccessibilityAccess = nil
+        accessibilityMonitor.invalidate()
         evaluateAccessibilityState()
     }
 
     private func startAccessibilityPollingIfNeeded() {
+        restartAccessibilityPolling()
+    }
+
+    private func restartAccessibilityPolling() {
         accessibilityPollingTimer?.invalidate()
-        accessibilityPollingTimer = Timer.scheduledTimer(withTimeInterval: 2, repeats: true) { [weak self] _ in
+        accessibilityPollingTimer = Timer.scheduledTimer(withTimeInterval: accessibilityMonitor.pollingInterval, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.evaluateAccessibilityState()
             }
