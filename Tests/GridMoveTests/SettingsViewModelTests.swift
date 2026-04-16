@@ -146,3 +146,116 @@ import Testing
     #expect(viewModel.hotkeyItems.first?.shortcut == nil)
     #expect(viewModel.selectedHotkeyBindingID == viewModel.hotkeyItems.first?.id)
 }
+
+@MainActor
+@Test func settingsViewModelAddsLayoutAndOpensDetailEditor() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let viewModel = SettingsViewModel(
+        configurationStore: store,
+        configurationProvider: { AppConfiguration.defaultValue },
+        onConfigurationSaved: { _ in }
+    )
+
+    let initialCount = viewModel.configuration.layouts.count
+    viewModel.addLayout()
+
+    #expect(viewModel.configuration.layouts.count == initialCount + 1)
+    #expect(viewModel.layoutPageMode == .detail)
+    #expect(viewModel.layoutDraft?.name == "")
+    #expect(viewModel.selectedLayoutDisplayID == "layout_12")
+}
+
+@MainActor
+@Test func settingsViewModelFormatsLayoutDisplayLabels() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var configuration = AppConfiguration.defaultValue
+    configuration.layouts[0].name = ""
+    let viewModel = SettingsViewModel(
+        configurationStore: store,
+        configurationProvider: { configuration },
+        onConfigurationSaved: { _ in }
+    )
+
+    #expect(viewModel.layoutItems[0].title == "layout_1")
+    #expect(viewModel.layoutItems[1].title == "layout_2: Left 1/2")
+}
+
+@MainActor
+@Test func settingsViewModelTracksLayoutDraftChangesAndSave() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let viewModel = SettingsViewModel(
+        configurationStore: store,
+        configurationProvider: { AppConfiguration.defaultValue },
+        onConfigurationSaved: { _ in }
+    )
+
+    viewModel.openLayoutDetail(id: AppConfiguration.defaultValue.layouts[0].id)
+    #expect(viewModel.hasUnsavedLayoutChanges == false)
+
+    viewModel.updateLayoutDraft { $0.name = "Primary" }
+    #expect(viewModel.hasUnsavedLayoutChanges == true)
+
+    viewModel.saveLayoutDraft()
+    #expect(viewModel.hasUnsavedLayoutChanges == false)
+    #expect(viewModel.configuration.layouts[0].name == "Primary")
+}
+
+@MainActor
+@Test func settingsViewModelReordersLayoutsAndUpdatesDisplayOrder() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let viewModel = SettingsViewModel(
+        configurationStore: store,
+        configurationProvider: { AppConfiguration.defaultValue },
+        onConfigurationSaved: { _ in }
+    )
+
+    let movedLayoutID = viewModel.configuration.layouts[2].id
+    let targetLayoutID = viewModel.configuration.layouts[0].id
+    viewModel.moveLayout(id: movedLayoutID, before: targetLayoutID)
+
+    #expect(viewModel.configuration.layouts.first?.id == movedLayoutID)
+    #expect(viewModel.layoutItems.first?.title == "layout_1: Left 2/3")
+}
+
+@MainActor
+@Test func settingsViewModelDeletesLayoutWithConfirmation() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let viewModel = SettingsViewModel(
+        configurationStore: store,
+        configurationProvider: { AppConfiguration.defaultValue },
+        onConfigurationSaved: { _ in }
+    )
+
+    let initialCount = viewModel.configuration.layouts.count
+    viewModel.openLayoutDetail(id: AppConfiguration.defaultValue.layouts[0].id)
+    viewModel.deleteSelectedLayout()
+
+    #expect(viewModel.layoutDeleteArmed == true)
+    #expect(viewModel.configuration.layouts.count == initialCount)
+
+    viewModel.deleteSelectedLayout()
+
+    #expect(viewModel.layoutDeleteArmed == false)
+    #expect(viewModel.layoutPageMode == .list)
+    #expect(viewModel.configuration.layouts.count == initialCount - 1)
+}

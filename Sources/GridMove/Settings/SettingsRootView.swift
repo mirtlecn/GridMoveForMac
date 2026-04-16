@@ -66,11 +66,11 @@ struct SettingsRootView: View {
     private var detailColumn: some View {
         VStack(spacing: 0) {
             SettingsDetailHeaderBar(
-                title: viewModel.selectedSection.title,
-                canNavigateBack: viewModel.canNavigateBack,
-                canNavigateForward: viewModel.canNavigateForward,
-                onNavigateBack: { viewModel.navigateBack() },
-                onNavigateForward: { viewModel.navigateForward() }
+                title: headerTitle,
+                canNavigateBack: canNavigateBack,
+                canNavigateForward: canNavigateForward,
+                onNavigateBack: handleNavigateBack,
+                onNavigateForward: handleNavigateForward
             )
             Divider()
             detailView
@@ -92,5 +92,42 @@ struct SettingsRootView: View {
         case .about:
             AboutSettingsView()
         }
+    }
+
+    private var headerTitle: String {
+        if viewModel.selectedSection == .layouts, viewModel.layoutPageMode == .detail {
+            return viewModel.selectedLayoutDisplayID
+        }
+        return viewModel.selectedSection.title
+    }
+
+    private var canNavigateBack: Bool {
+        if viewModel.selectedSection == .layouts, viewModel.layoutPageMode == .detail {
+            return true
+        }
+        return viewModel.canNavigateBack
+    }
+
+    private var canNavigateForward: Bool {
+        if viewModel.selectedSection == .layouts {
+            return viewModel.canNavigateToLayoutDetail || viewModel.canNavigateForward
+        }
+        return viewModel.canNavigateForward
+    }
+
+    private func handleNavigateBack() {
+        if viewModel.selectedSection == .layouts, viewModel.layoutPageMode == .detail {
+            viewModel.showLayoutsList()
+            return
+        }
+        viewModel.navigateBack()
+    }
+
+    private func handleNavigateForward() {
+        if viewModel.selectedSection == .layouts, viewModel.canNavigateToLayoutDetail {
+            viewModel.reopenLayoutDetail()
+            return
+        }
+        viewModel.navigateForward()
     }
 }

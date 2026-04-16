@@ -4,6 +4,11 @@ import SwiftUI
 
 @MainActor
 final class SettingsViewModel: ObservableObject {
+    enum LayoutPageMode: Equatable {
+        case list
+        case detail
+    }
+
     enum Section: String, CaseIterable, Identifiable {
         case general
         case layouts
@@ -51,6 +56,12 @@ final class SettingsViewModel: ObservableObject {
         let kind: EntryKind
     }
 
+    struct LayoutListItem: Identifiable, Equatable {
+        let id: String
+        let displayID: String
+        let title: String
+    }
+
     enum EntryKind: String, Identifiable {
         case bundleID
         case windowTitle
@@ -70,7 +81,8 @@ final class SettingsViewModel: ObservableObject {
     @Published var selectedLayoutID: String?
     @Published var layoutDraft: LayoutPreset?
     @Published var statusMessage: String = ""
-    @Published var resetArmed = false
+    @Published var layoutPageMode: LayoutPageMode = .list
+    @Published var layoutDeleteArmed = false
     @Published var excludedWindowSheetPresented = false
     @Published var modifierGroupSheetPresented = false
     @Published var selectedModifierGroupID: String?
@@ -81,6 +93,7 @@ final class SettingsViewModel: ObservableObject {
     private let onConfigurationSaved: (AppConfiguration) -> Void
     private var backStack: [Section] = []
     private var forwardStack: [Section] = []
+    private var layoutForwardSelectionID: String?
 
     init(
         configurationStore: ConfigurationStore,
@@ -122,11 +135,42 @@ final class SettingsViewModel: ObservableObject {
     }
 
     var hotkeyActionOptions: [(String, HotkeyAction)] {
-        configuration.layouts.map { ("Switch to \($0.name)", HotkeyAction.applyLayout(layoutID: $0.id)) }
+        configuration.layouts.map { ("Switch to \(layoutDisplayLabel(for: $0))", HotkeyAction.applyLayout(layoutID: $0.id)) }
         + [
             ("Switch to next layout", .cycleNext),
             ("Switch to previous layout", .cyclePrevious),
         ]
+    }
+
+    var layoutItems: [LayoutListItem] {
+        configuration.layouts.enumerated().map { index, layout in
+            LayoutListItem(
+                id: layout.id,
+                displayID: makeLayoutDisplayID(for: index),
+                title: layoutDisplayLabel(for: layout, index: index)
+            )
+        }
+    }
+
+    var selectedLayoutDisplayID: String {
+        guard let selectedLayoutID,
+              let index = configuration.layouts.firstIndex(where: { $0.id == selectedLayoutID }) else {
+            return "Layouts"
+        }
+        return makeLayoutDisplayID(for: index)
+    }
+
+    var hasUnsavedLayoutChanges: Bool {
+        guard let selectedLayoutID,
+              let layoutDraft,
+              let layout = configuration.layouts.first(where: { $0.id == selectedLayoutID }) else {
+            return false
+        }
+        return layout != layoutDraft
+    }
+
+    var canDeleteSelectedLayout: Bool {
+        configuration.layouts.count > 1 && selectedLayoutID != nil
     }
 
     var modifierGroupItems: [ModifierGroupItem] {
@@ -236,7 +280,7 @@ final class SettingsViewModel: ObservableObject {
             layoutDraft = configuration.layouts.first
         }
 
-        resetArmed = false
+        layoutDeleteArmed = false
         synchronizeSelectionState()
     }
 
@@ -315,7 +359,7 @@ final class SettingsViewModel: ObservableObject {
     func selectLayout(id: String?) {
         selectedLayoutID = id
         layoutDraft = configuration.layouts.first(where: { $0.id == id })
-        resetArmed = false
+        layoutDeleteArmed = false
     }
 
     func updateLayoutDraft(_ mutate: (inout LayoutPreset) -> Void) {
@@ -328,14 +372,13 @@ final class SettingsViewModel: ObservableObject {
         draft.windowSelection = clamp(draft.windowSelection, columns: draft.gridColumns, rows: draft.gridRows)
         draft.triggerRegion = clamp(draft.triggerRegion, columns: draft.gridColumns, rows: draft.gridRows)
         layoutDraft = draft
-        resetArmed = false
+        layoutDeleteArmed = false
     }
 
     func addLayout() {
-        let nextIndex = configuration.layouts.count + 1
         let preset = LayoutPreset(
             id: UUID().uuidString,
-            name: "Layout \(nextIndex)",
+            name: "",
             gridColumns: 12,
             gridRows: 6,
             windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4),
@@ -345,43 +388,71 @@ final class SettingsViewModel: ObservableObject {
         configuration.layouts.append(preset)
         selectedLayoutID = preset.id
         layoutDraft = preset
+        layoutPageMode = .detail
+        layoutForwardSelectionID = nil
         persistConfiguration(status: "Layout added.")
     }
 
-    func removeSelectedLayout() {
+    func openLayoutDetail(id: String) {
+        selectLayout(id: id)
+        layoutPageMode = .detail
+        layoutForwardSelectionID = nil
+    }
+
+    func showLayoutsList() {
+        guard layoutPageMode == .detail else {
+            return
+        }
+        layoutForwardSelectionID = selectedLayoutID
+        layoutPageMode = .list
+        layoutDeleteArmed = false
+    }
+
+    func reopenLayoutDetail() {
+        guard layoutPageMode == .list,
+              let layoutForwardSelectionID else {
+            return
+        }
+        openLayoutDetail(id: layoutForwardSelectionID)
+    }
+
+    var canNavigateToLayoutDetail: Bool {
+        layoutPageMode == .list && layoutForwardSelectionID != nil
+    }
+
+    func deleteSelectedLayout() {
         guard configuration.layouts.count > 1, let selectedLayoutID else {
             statusMessage = "At least one layout is required."
             return
         }
 
+        guard layoutDeleteArmed else {
+            layoutDeleteArmed = true
+            return
+        }
+
         configuration.removeLayout(id: selectedLayoutID)
         self.selectedLayoutID = configuration.layouts.first?.id
-        layoutDraft = configuration.layouts.first
+        layoutDraft = configuration.layouts.first(where: { $0.id == self.selectedLayoutID })
+        layoutPageMode = .list
+        layoutDeleteArmed = false
+        layoutForwardSelectionID = nil
         persistConfiguration(status: "Layout removed.")
     }
 
-    func moveLayouts(fromOffsets source: IndexSet, toOffset destination: Int) {
-        configuration.layouts.move(fromOffsets: source, toOffset: destination)
-        selectedLayoutID = layoutDraft?.id ?? configuration.layouts.first?.id
+    func moveLayout(id: String, before targetID: String) {
+        guard id != targetID,
+              let sourceIndex = configuration.layouts.firstIndex(where: { $0.id == id }),
+              let targetIndex = configuration.layouts.firstIndex(where: { $0.id == targetID }) else {
+            return
+        }
+
+        let movedLayout = configuration.layouts.remove(at: sourceIndex)
+        let adjustedTargetIndex = sourceIndex < targetIndex ? targetIndex - 1 : targetIndex
+        configuration.layouts.insert(movedLayout, at: adjustedTargetIndex)
+
+        selectedLayoutID = layoutDraft?.id ?? selectedLayoutID ?? configuration.layouts.first?.id
         persistConfiguration(status: "Layout order updated.")
-    }
-
-    func resetLayoutDraft() {
-        guard let selectedLayoutID else {
-            return
-        }
-
-        if !resetArmed {
-            resetArmed = true
-            return
-        }
-
-        guard let defaultPreset = AppConfiguration.defaultLayouts.first(where: { $0.id == selectedLayoutID }) else {
-            return
-        }
-
-        layoutDraft = defaultPreset
-        statusMessage = "Layout reset to default. Save to persist."
     }
 
     func saveLayoutDraft() {
@@ -389,6 +460,7 @@ final class SettingsViewModel: ObservableObject {
             return
         }
         configuration.layouts[index] = layoutDraft
+        layoutDeleteArmed = false
         persistConfiguration(status: "Layout saved.")
     }
 
@@ -467,6 +539,20 @@ final class SettingsViewModel: ObservableObject {
         persistConfiguration(status: "Next layout hotkey added.")
     }
 
+    func layoutDisplayLabel(for layout: LayoutPreset) -> String {
+        if let index = configuration.layouts.firstIndex(where: { $0.id == layout.id }) {
+            return layoutDisplayLabel(for: layout, index: index)
+        }
+        return layout.id
+    }
+
+    func layoutDisplayLabel(for layoutID: String) -> String {
+        guard let index = configuration.layouts.firstIndex(where: { $0.id == layoutID }) else {
+            return layoutID
+        }
+        return layoutDisplayLabel(for: configuration.layouts[index], index: index)
+    }
+
     private func clamp(_ selection: GridSelection, columns: Int, rows: Int) -> GridSelection {
         let x = min(max(selection.x, 0), max(columns - 1, 0))
         let y = min(max(selection.y, 0), max(rows - 1, 0))
@@ -512,5 +598,26 @@ final class SettingsViewModel: ObservableObject {
            !configuration.hotkeys.bindings.contains(where: { $0.id == selectedHotkeyBindingID }) {
             self.selectedHotkeyBindingID = nil
         }
+
+        if let selectedLayoutID,
+           !configuration.layouts.contains(where: { $0.id == selectedLayoutID }) {
+            self.selectedLayoutID = configuration.layouts.first?.id
+            layoutDraft = configuration.layouts.first
+            layoutPageMode = .list
+            layoutDeleteArmed = false
+        }
+    }
+
+    private func makeLayoutDisplayID(for index: Int) -> String {
+        "layout_\(index + 1)"
+    }
+
+    private func layoutDisplayLabel(for layout: LayoutPreset, index: Int) -> String {
+        let displayID = makeLayoutDisplayID(for: index)
+        let trimmedName = layout.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else {
+            return displayID
+        }
+        return "\(displayID): \(trimmedName)"
     }
 }
