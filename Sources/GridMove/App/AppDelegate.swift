@@ -195,9 +195,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ),
         ]
 
-        let layoutItems = configuration.layouts.map { layout in
+        let layoutItems = configuration.layouts.enumerated().map { index, layout in
             MenuBarController.ActionItem(
-                title: UICopy.applyLayout(layout.name),
+                title: UICopy.applyLayout(
+                    UICopy.layoutMenuName(
+                        name: layout.name,
+                        fallbackIdentifier: "layout_\(index + 1)"
+                    )
+                ),
                 action: .applyLayout(layoutID: layout.id),
                 shortcut: configuration.hotkeys.firstShortcut(for: .applyLayout(layoutID: layout.id))
             )

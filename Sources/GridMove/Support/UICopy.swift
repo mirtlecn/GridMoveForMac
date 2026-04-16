@@ -108,4 +108,9 @@ enum UICopy {
     static func applyLayout(_ name: String) -> String {
         "Apply \(name)"
     }
+
+    static func layoutMenuName(name: String, fallbackIdentifier: String) -> String {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmedName.isEmpty ? fallbackIdentifier : trimmedName
+    }
 }

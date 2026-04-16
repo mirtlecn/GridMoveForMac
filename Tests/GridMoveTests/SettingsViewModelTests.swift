@@ -7,6 +7,8 @@ import Testing
     #expect(SettingsViewModel.Section.allCases.count == 5)
     #expect(SettingsViewModel.Section.allCases.last == .about)
     #expect(SettingsViewModel.Section.appearance.title == "Appearance")
+    #expect(UICopy.layoutMenuName(name: "Center", fallbackIdentifier: "layout_1") == "Center")
+    #expect(UICopy.layoutMenuName(name: "   ", fallbackIdentifier: "layout_1") == "layout_1")
 }
 
 @MainActor
