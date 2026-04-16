@@ -1,8 +1,8 @@
 APP_NAME := GridMove
 DIST_DIR := dist
 APP_BUNDLE := $(DIST_DIR)/$(APP_NAME).app
-APP_VERSION ?= 0.1.0
-BUILD_NUMBER ?= 1
+APP_VERSION ?= 0.1.1
+BUILD_NUMBER ?= 2
 SIGN_IDENTITY ?= -
 APP_BUNDLE_ID ?= cn.mirtle.GridMove
 
