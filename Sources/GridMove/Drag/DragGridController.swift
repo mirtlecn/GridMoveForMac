@@ -434,8 +434,12 @@ final class DragGridController {
         event.unflippedLocation
     }
 
+    static func matchesAnyModifierGroup(flags: Set<ModifierKey>, groups: [[ModifierKey]]) -> Bool {
+        groups.contains { !$0.isEmpty && Set($0) == flags }
+    }
+
     private func matchesAnyModifierGroup(flags: Set<ModifierKey>, groups: [[ModifierKey]]) -> Bool {
-        groups.contains { Set($0) == flags }
+        Self.matchesAnyModifierGroup(flags: flags, groups: groups)
     }
 
     private func ensureAccessibilityIsStillGranted() -> Bool {

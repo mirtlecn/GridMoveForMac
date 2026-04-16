@@ -58,8 +58,30 @@ import Testing
     #expect(!hasAltLayoutBinding)
     #expect(hasHyperLayoutFourBinding)
     #expect(!hasFullscreenOrCloseBinding)
-    #expect(configuration.dragTriggers.modifierGroups == [[.ctrl, .cmd]])
+    #expect(configuration.dragTriggers.modifierGroups == [[.ctrl, .cmd, .shift, .alt]])
     #expect(configuration.appearance.triggerStrokeColor.alpha == 0.2)
+}
+
+@MainActor
+@Test func emptyModifierGroupDoesNotMatchPlainLeftClick() async throws {
+    #expect(
+        DragGridController.matchesAnyModifierGroup(
+            flags: [],
+            groups: [[]]
+        ) == false
+    )
+    #expect(
+        DragGridController.matchesAnyModifierGroup(
+            flags: [],
+            groups: [[.ctrl, .cmd, .shift, .alt]]
+        ) == false
+    )
+    #expect(
+        DragGridController.matchesAnyModifierGroup(
+            flags: [.ctrl, .cmd, .shift, .alt],
+            groups: [[], [.ctrl, .cmd, .shift, .alt]]
+        ) == true
+    )
 }
 
 @Test func generalSettingsDecodeMissingEnableFlagWithDefaultValue() async throws {

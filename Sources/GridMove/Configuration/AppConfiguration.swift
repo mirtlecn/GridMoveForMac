@@ -391,7 +391,7 @@ struct AppConfiguration: Codable, Equatable {
             enableMiddleMouseDrag: true,
             enableModifierLeftMouseDrag: true,
             modifierGroups: [
-                [.ctrl, .cmd],
+                [.ctrl, .cmd, .shift, .alt],
             ],
             activationDelaySeconds: 0.3,
             activationMoveThreshold: 10
