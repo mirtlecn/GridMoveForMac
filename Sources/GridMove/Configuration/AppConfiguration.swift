@@ -43,18 +43,6 @@ struct KeyboardShortcut: Codable, Equatable, Hashable {
         ModifierKey.allCases.filter { modifiers.contains($0) }
     }
 
-    var displayString: String {
-        let modifierString = normalizedModifiers.map(\.displayName).joined(separator: " + ")
-        let keyString = key == "return" ? "Return" : key.uppercased()
-        return modifierString.isEmpty ? keyString : "\(modifierString) + \(keyString)"
-    }
-
-    var symbolDisplayString: String {
-        let modifierSymbols = normalizedModifiers.map(\.symbol).joined()
-        let keySymbol = ShortcutKeyMap.symbolDisplayString(for: key)
-        return modifierSymbols + keySymbol
-    }
-
     var menuKeyEquivalent: String {
         switch key.lowercased() {
         case "return", "enter":
@@ -528,21 +516,6 @@ private extension RGBAColor {
     }
 }
 
-private extension ModifierKey {
-    var symbol: String {
-        switch self {
-        case .ctrl:
-            return "⌃"
-        case .cmd:
-            return "⌘"
-        case .shift:
-            return "⇧"
-        case .alt:
-            return "⌥"
-        }
-    }
-}
-
 enum ShortcutKeyMap {
     static func keyCode(for key: String) -> CGKeyCode? {
         switch key.lowercased() {
@@ -588,23 +561,6 @@ enum ShortcutKeyMap {
             return CGKeyCode(kVK_Escape)
         default:
             return nil
-        }
-    }
-
-    static func displayString(for key: String) -> String {
-        key == "return" ? "return" : key
-    }
-
-    static func symbolDisplayString(for key: String) -> String {
-        switch key.lowercased() {
-        case "return", "enter":
-            return "↩"
-        case "escape", "esc":
-            return "⎋"
-        case "space":
-            return "␠"
-        default:
-            return key.uppercased()
         }
     }
 

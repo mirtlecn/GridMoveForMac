@@ -1,5 +1,10 @@
 # GridMove UI Logic
 
+> Note
+> This document records the UI design intent and interaction ideas for GridMove.
+> It is not a real-time description of the current implementation.
+> The source of truth for current behavior is the code in `Sources/GridMove/`.
+
 本文档记录当前主要 UI 的功能逻辑、页面结构、分组关系、状态依赖和交互行为。
 
 本文档不记录视觉样式、间距、字号、最小尺寸等表现层细节。

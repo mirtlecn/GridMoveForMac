@@ -93,13 +93,11 @@ Example:
 
 ```json
 {
-  // Global enable switch and window exclusion rules.
   "general": {
     "isEnabled": true,
     "excludedBundleIDs": ["com.apple.Spotlight"],
     "excludedWindowTitles": []
   },
-  // Overlay rendering. Stroke colors use #RRGGBBAA.
   "appearance": {
     "renderTriggerAreas": true,
     "triggerOpacity": 0.2,
@@ -110,7 +108,6 @@ Example:
     "highlightStrokeWidth": 3,
     "highlightStrokeColor": "#FFFFFFEB"
   },
-  // Drag trigger settings. modifierGroups is a list of modifier key groups.
   "dragTriggers": {
     "middleMouseButtonNumber": 2,
     "enableMiddleMouseDrag": true,
@@ -119,8 +116,6 @@ Example:
     "activationDelaySeconds": 0.3,
     "activationMoveThreshold": 10
   },
-  // Hotkey bindings. action.kind supports: cycleNext, cyclePrevious, applyLayout.
-  // For applyLayout, action.layout is the 1-based layout number in the layouts array.
   "hotkeys": {
     "bindings": [
       {
@@ -146,7 +141,6 @@ Example:
       }
     ]
   },
-  // Layouts are applied and cycled in array order. includeInCycle=false skips next/previous cycle.
   "layouts": [
     {
       "name": "Center",
@@ -191,5 +185,9 @@ Example:
   ]
 }
 ```
+
+`hotkeys.bindings[*].action.kind` supports `cycleNext`, `cyclePrevious`, and `applyLayout`.
+For `applyLayout`, `action.layout` is the 1-based layout number in the `layouts` array.
+`layouts[*].includeInCycle = false` excludes that layout from next/previous cycling.
 
 When GridMove is disabled, drag triggers, keyboard shortcuts, and CLI layout actions are all blocked until it is enabled again.

@@ -35,7 +35,7 @@ final class ConfigurationStore {
                 let data = try Data(contentsOf: fileURL)
                 let configurationFile = try makeDecoder().decode(ConfigurationFile.self, from: data)
                 return LoadResult(
-                    configuration: try configurationFile.makeAppConfiguration(),
+                    configuration: try ConfigurationSchemaConverter.makeAppConfiguration(from: configurationFile),
                     didFallBackToDefault: false
                 )
             } catch {
@@ -51,8 +51,7 @@ final class ConfigurationStore {
 
     func save(_ configuration: AppConfiguration) throws {
         try ensureDirectoryExists()
-        let normalizedConfiguration = normalizeConfiguration(configuration)
-        let configurationFile = ConfigurationFile(configuration: normalizedConfiguration)
+        let configurationFile = ConfigurationSchemaConverter.makeConfigurationFile(from: configuration)
         let data = try makeEncoder().encode(configurationFile)
         try data.write(to: fileURL, options: .atomic)
     }
@@ -70,8 +69,71 @@ final class ConfigurationStore {
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         return encoder
     }
+}
 
-    private func normalizeConfiguration(_ configuration: AppConfiguration) -> AppConfiguration {
+private struct ConfigurationFile: Codable {
+    let general: GeneralSettings
+    let appearance: AppearanceConfiguration
+    let dragTriggers: DragTriggerSettings
+    let hotkeys: HotkeyConfiguration
+    let layouts: [LayoutConfiguration]
+}
+
+private enum ConfigurationSchemaConverter {
+    static func makeConfigurationFile(from configuration: AppConfiguration) -> ConfigurationFile {
+        let normalizedConfiguration = normalizeConfiguration(configuration)
+        return ConfigurationFile(
+            general: normalizedConfiguration.general,
+            appearance: AppearanceConfiguration(settings: normalizedConfiguration.appearance),
+            dragTriggers: normalizedConfiguration.dragTriggers,
+            hotkeys: HotkeyConfiguration(
+                bindings: normalizedConfiguration.hotkeys.bindings.map { binding in
+                    HotkeyBindingConfiguration(
+                        isEnabled: binding.isEnabled,
+                        shortcut: binding.shortcut,
+                        action: HotkeyActionConfiguration(
+                            action: binding.action,
+                            layouts: normalizedConfiguration.layouts
+                        )
+                    )
+                }
+            ),
+            layouts: normalizedConfiguration.layouts.map(LayoutConfiguration.init(layout:))
+        )
+    }
+
+    static func makeAppConfiguration(from configurationFile: ConfigurationFile) throws -> AppConfiguration {
+        let generatedLayouts = configurationFile.layouts.enumerated().map { index, layout in
+            LayoutPreset(
+                id: "layout-\(index + 1)",
+                name: layout.name,
+                gridColumns: layout.gridColumns,
+                gridRows: layout.gridRows,
+                windowSelection: layout.windowSelection,
+                triggerRegion: layout.triggerRegion,
+                includeInCycle: layout.includeInCycle
+            )
+        }
+
+        let generatedBindings = try configurationFile.hotkeys.bindings.enumerated().map { index, binding in
+            ShortcutBinding(
+                id: "binding-\(index + 1)",
+                isEnabled: binding.isEnabled,
+                shortcut: binding.shortcut,
+                action: try binding.action.makeAction(layouts: generatedLayouts)
+            )
+        }
+
+        return AppConfiguration(
+            general: configurationFile.general,
+            appearance: try configurationFile.appearance.makeSettings(),
+            dragTriggers: configurationFile.dragTriggers,
+            hotkeys: HotkeySettings(bindings: generatedBindings),
+            layouts: generatedLayouts
+        )
+    }
+
+    private static func normalizeConfiguration(_ configuration: AppConfiguration) -> AppConfiguration {
         let normalizedLayouts = configuration.layouts.enumerated().map { index, layout in
             LayoutPreset(
                 id: "layout-\(index + 1)",
@@ -84,26 +146,16 @@ final class ConfigurationStore {
             )
         }
 
-        let originalIDs = configuration.layouts.map(\.id)
-        let newIDs = normalizedLayouts.map(\.id)
-        let layoutIDMap = Dictionary(uniqueKeysWithValues: zip(originalIDs, newIDs))
+        let layoutIDMap = Dictionary(
+            uniqueKeysWithValues: zip(configuration.layouts.map(\.id), normalizedLayouts.map(\.id))
+        )
 
         let normalizedBindings = configuration.hotkeys.bindings.enumerated().map { index, binding in
-            let normalizedAction: HotkeyAction
-            switch binding.action {
-            case let .applyLayout(layoutID):
-                normalizedAction = .applyLayout(layoutID: layoutIDMap[layoutID] ?? layoutID)
-            case .cycleNext:
-                normalizedAction = .cycleNext
-            case .cyclePrevious:
-                normalizedAction = .cyclePrevious
-            }
-
-            return ShortcutBinding(
+            ShortcutBinding(
                 id: "binding-\(index + 1)",
                 isEnabled: binding.isEnabled,
                 shortcut: binding.shortcut,
-                action: normalizedAction
+                action: normalizeAction(binding.action, layoutIDMap: layoutIDMap)
             )
         }
 
@@ -116,65 +168,16 @@ final class ConfigurationStore {
         )
     }
 
-}
-
-private struct ConfigurationFile: Codable {
-    let general: GeneralSettings
-    let appearance: AppearanceConfiguration
-    let dragTriggers: DragTriggerSettings
-    let hotkeys: HotkeyConfiguration
-    let layouts: [LayoutConfiguration]
-
-    init(configuration: AppConfiguration) {
-        general = configuration.general
-        appearance = AppearanceConfiguration(settings: configuration.appearance)
-        dragTriggers = configuration.dragTriggers
-        hotkeys = HotkeyConfiguration(
-            bindings: configuration.hotkeys.bindings.map { binding in
-                HotkeyBindingConfiguration(
-                    isEnabled: binding.isEnabled,
-                    shortcut: binding.shortcut,
-                    action: HotkeyActionConfiguration(
-                        action: binding.action,
-                        layouts: configuration.layouts
-                    )
-                )
-            }
-        )
-        layouts = configuration.layouts.map(LayoutConfiguration.init(layout:))
-    }
-
-    func makeAppConfiguration() throws -> AppConfiguration {
-        let generatedLayouts = layouts.enumerated().map { index, layout in
-            LayoutPreset(
-                id: "layout-\(index + 1)",
-                name: layout.name,
-                gridColumns: layout.gridColumns,
-                gridRows: layout.gridRows,
-                windowSelection: layout.windowSelection,
-                triggerRegion: layout.triggerRegion,
-                includeInCycle: layout.includeInCycle
-            )
+    private static func normalizeAction(_ action: HotkeyAction, layoutIDMap: [String: String]) -> HotkeyAction {
+        switch action {
+        case let .applyLayout(layoutID):
+            return .applyLayout(layoutID: layoutIDMap[layoutID] ?? layoutID)
+        case .cycleNext:
+            return .cycleNext
+        case .cyclePrevious:
+            return .cyclePrevious
         }
-
-        let generatedBindings = try hotkeys.bindings.enumerated().map { index, binding in
-            ShortcutBinding(
-                id: "binding-\(index + 1)",
-                isEnabled: binding.isEnabled,
-                shortcut: binding.shortcut,
-                action: try binding.action.makeAction(layouts: generatedLayouts)
-            )
-        }
-
-        return AppConfiguration(
-            general: general,
-            appearance: try appearance.makeSettings(),
-            dragTriggers: dragTriggers,
-            hotkeys: HotkeySettings(bindings: generatedBindings),
-            layouts: generatedLayouts
-        )
     }
-
 }
 
 private struct AppearanceConfiguration: Codable {
