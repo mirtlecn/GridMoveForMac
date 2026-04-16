@@ -2,14 +2,17 @@ import AppKit
 import SwiftUI
 
 @MainActor
-final class SettingsWindowController: NSWindowController {
+final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private let viewModel: SettingsViewModel
+    private let onClose: () -> Void
 
     init(
         configurationStore: ConfigurationStore,
         configurationProvider: @escaping () -> AppConfiguration,
-        onConfigurationSaved: @escaping (AppConfiguration) -> Void
+        onConfigurationSaved: @escaping (AppConfiguration) -> Void,
+        onClose: @escaping () -> Void = {}
     ) {
+        self.onClose = onClose
         viewModel = SettingsViewModel(
             configurationStore: configurationStore,
             configurationProvider: configurationProvider,
@@ -32,6 +35,7 @@ final class SettingsWindowController: NSWindowController {
         }
         window.contentViewController = NSHostingController(rootView: SettingsRootView(viewModel: viewModel))
         super.init(window: window)
+        window.delegate = self
     }
 
     @available(*, unavailable)
@@ -47,5 +51,13 @@ final class SettingsWindowController: NSWindowController {
 
     func updateConfiguration(_ configuration: AppConfiguration) {
         viewModel.replaceConfiguration(configuration)
+    }
+
+    func windowWillClose(_ notification: Notification) {
+        handleWindowClose()
+    }
+
+    func handleWindowClose() {
+        onClose()
     }
 }

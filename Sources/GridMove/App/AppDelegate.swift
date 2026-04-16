@@ -149,6 +149,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         isEnabled: configuration.general.isEnabled
                     )
                     self?.settingsController?.updateConfiguration(configuration)
+                },
+                onClose: { [weak self] in
+                    self?.settingsController = nil
                 }
             )
         }
