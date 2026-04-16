@@ -2,6 +2,34 @@ import Foundation
 import Testing
 @testable import GridMove
 
+private struct RemoteCommandRelayStub: RemoteCommandRelaying {
+    var reply: RemoteCommandReply?
+    var receivedCommands: Locked<[RemoteCommand]> = Locked([])
+
+    func send(command: RemoteCommand, timeout: TimeInterval) -> RemoteCommandReply? {
+        _ = timeout
+        receivedCommands.withLock { commands in
+            commands.append(command)
+        }
+        return reply
+    }
+}
+
+private final class Locked<Value: Sendable>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value: Value
+
+    init(_ value: Value) {
+        self.value = value
+    }
+
+    func withLock<T>(_ body: (inout Value) -> T) -> T {
+        lock.lock()
+        defer { lock.unlock() }
+        return body(&value)
+    }
+}
+
 @Test func commandLineActionParserAcceptsSupportedArguments() async throws {
     #expect(try CommandLineInvocation.parse(arguments: []) == nil)
     #expect(try CommandLineInvocation.parse(arguments: ["-help"]) == CommandLineInvocation(action: .help, targetWindowID: nil))
@@ -34,20 +62,18 @@ import Testing
 
 @MainActor
 @Test func commandLineRunnerResolvesLayoutByNameOrIdentifier() async throws {
-    let runner = CommandLineRunner()
     let layouts = AppConfiguration.defaultValue.layouts
 
-    #expect(try runner.resolveLayout(identifier: "layout-4", in: layouts).id == "layout-4")
-    #expect(try runner.resolveLayout(identifier: "Center", in: layouts).id == "layout-4")
-    #expect(try runner.resolveLayout(identifier: "fill all screen", in: layouts).id == "layout-10")
+    #expect(try LayoutIdentifierResolver.resolveLayout(identifier: "layout-4", in: layouts).id == "layout-4")
+    #expect(try LayoutIdentifierResolver.resolveLayout(identifier: "Center", in: layouts).id == "layout-4")
+    #expect(try LayoutIdentifierResolver.resolveLayout(identifier: "fill all screen", in: layouts).id == "layout-10")
     #expect(throws: CommandLineLayoutResolutionError.unknownLayout("unknown")) {
-        try runner.resolveLayout(identifier: "unknown", in: layouts)
+        try LayoutIdentifierResolver.resolveLayout(identifier: "unknown", in: layouts)
     }
 }
 
 @MainActor
 @Test func commandLineRunnerRejectsAmbiguousLayoutNames() async throws {
-    let runner = CommandLineRunner()
     let layouts = [
         LayoutPreset(
             id: "layout-a",
@@ -70,22 +96,35 @@ import Testing
     ]
 
     #expect(throws: CommandLineLayoutResolutionError.ambiguousLayoutName("Center", matches: layouts)) {
-        try runner.resolveLayout(identifier: "Center", in: layouts)
+        try LayoutIdentifierResolver.resolveLayout(identifier: "Center", in: layouts)
     }
 }
 
 @MainActor
-@Test func commandLineRunnerRejectsActionsWhenDisabled() async throws {
-    let temporaryDirectory = FileManager.default.temporaryDirectory
-        .appendingPathComponent("codex-gridmove-cli-tests-\(UUID().uuidString)", isDirectory: true)
-    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+@Test func commandLineRunnerFailsWhenAppIsNotRunning() async throws {
+    let relay = RemoteCommandRelayStub(reply: nil)
+    let runner = CommandLineRunner(commandRelay: relay)
 
-    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
-    var configuration = AppConfiguration.defaultValue
-    configuration.general.isEnabled = false
-    try store.save(configuration)
+    #expect(runner.run(invocation: CommandLineInvocation(action: .cycleNext, targetWindowID: nil)) == EXIT_FAILURE)
+    #expect(relay.receivedCommands.withLock { $0.count } == 1)
+}
 
-    let runner = CommandLineRunner(configurationStore: store)
+@MainActor
+@Test func commandLineRunnerSendsCommandToRunningApp() async throws {
+    let relay = RemoteCommandRelayStub(reply: RemoteCommandReply(success: true, message: nil))
+    let runner = CommandLineRunner(commandRelay: relay)
+
+    #expect(runner.run(invocation: CommandLineInvocation(action: .cycleNext, targetWindowID: 42)) == EXIT_SUCCESS)
+    let commands = relay.receivedCommands.withLock { $0 }
+    #expect(commands.count == 1)
+    #expect(commands.first?.action == .cycleNext)
+    #expect(commands.first?.targetWindowID == 42)
+}
+
+@MainActor
+@Test func commandLineRunnerSurfacesRemoteFailureMessage() async throws {
+    let relay = RemoteCommandRelayStub(reply: RemoteCommandReply(success: false, message: "No focused target window found."))
+    let runner = CommandLineRunner(commandRelay: relay)
 
     #expect(runner.run(invocation: CommandLineInvocation(action: .cycleNext, targetWindowID: nil)) == EXIT_FAILURE)
 }

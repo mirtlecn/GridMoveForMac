@@ -1,150 +1,36 @@
-import AppKit
 import Foundation
-
-enum CommandLineLayoutResolutionError: Error, Equatable {
-    case unknownLayout(String)
-    case ambiguousLayoutName(String, matches: [LayoutPreset])
-
-    var message: String {
-        switch self {
-        case let .unknownLayout(identifier):
-            return "Unknown layout: \(identifier)"
-        case let .ambiguousLayoutName(identifier, matches):
-            let matchList = matches.map { "- \($0.name) [\($0.id)]" }.joined(separator: "\n")
-            return """
-            Ambiguous layout name: \(identifier)
-            Matched layouts:
-            \(matchList)
-            Please use -layout <layout-id>.
-            """
-        }
-    }
-}
 
 @MainActor
 final class CommandLineRunner {
-    private let configurationStore: ConfigurationStore
-    private let layoutEngine: LayoutEngine
-    private let windowController: WindowController
+    private let commandRelay: RemoteCommandRelaying
 
-    init(
-        configurationStore: ConfigurationStore = ConfigurationStore(),
-        layoutEngine: LayoutEngine = LayoutEngine(),
-        windowController: WindowController? = nil
-    ) {
-        self.configurationStore = configurationStore
-        self.layoutEngine = layoutEngine
-        self.windowController = windowController ?? WindowController(layoutEngine: layoutEngine)
+    init(commandRelay: RemoteCommandRelaying = DistributedCommandRelay()) {
+        self.commandRelay = commandRelay
     }
 
     func run(invocation: CommandLineInvocation) -> Int32 {
-        let configuration: AppConfiguration
-        do {
-            configuration = try configurationStore.load()
-        } catch {
-            writeToStandardError("Failed to load configuration: \(error.localizedDescription)\n")
-            return EXIT_FAILURE
-        }
-
-        switch invocation.action {
-        case .help:
+        if invocation.action == .help {
             writeToStandardOutput(CommandLineAction.usage + "\n")
             return EXIT_SUCCESS
-        case .cycleNext, .cyclePrevious, .applyLayout:
-            break
         }
 
-        guard configuration.general.isEnabled else {
-            writeToStandardError("GridMove is disabled. Enable it from the menu bar or Settings.\n")
+        let command = RemoteCommand(
+            invocationID: UUID().uuidString,
+            action: invocation.action,
+            targetWindowID: invocation.targetWindowID
+        )
+
+        guard let reply = commandRelay.send(command: command, timeout: 1.0) else {
+            writeToStandardError("GridMove is not running. Start GridMove first.\n")
             return EXIT_FAILURE
         }
 
-        guard windowController.isAccessibilityTrusted(prompt: false) else {
-            writeToStandardError("Accessibility access is required.\n")
-            return EXIT_FAILURE
-        }
-
-        let window: ManagedWindow?
-        if let targetWindowID = invocation.targetWindowID {
-            window = windowController.window(cgWindowID: targetWindowID, configuration: configuration)
-            if let window {
-                AppLogger.debugTargeting("cli target by window-id \(targetWindowID) -> \(window.debugDescription)")
-            } else {
-                AppLogger.debugTargeting("cli target by window-id \(targetWindowID) -> none")
-            }
-        } else {
-            window = windowController.focusedWindow(configuration: configuration)
-            if let window {
-                AppLogger.debugTargeting("cli target by focusedWindow -> \(window.debugDescription)")
-            } else {
-                AppLogger.debugTargeting("cli target by focusedWindow -> none")
-            }
-        }
-
-        guard let window else {
-            if let targetWindowID = invocation.targetWindowID {
-                writeToStandardError("No target window found for window ID \(targetWindowID).\n")
-            } else {
-                writeToStandardError("No focused target window found.\n")
-            }
-            return EXIT_FAILURE
-        }
-
-        let layoutID: String
-        switch invocation.action {
-        case .cycleNext:
-            guard let nextLayoutID = layoutEngine.nextLayoutID(for: window.identity, layouts: configuration.layouts) else {
-                writeToStandardError("No layout available for cycling.\n")
-                return EXIT_FAILURE
-            }
-            layoutID = nextLayoutID
-        case .cyclePrevious:
-            guard let previousLayoutID = layoutEngine.previousLayoutID(for: window.identity, layouts: configuration.layouts) else {
-                writeToStandardError("No layout available for cycling.\n")
-                return EXIT_FAILURE
-            }
-            layoutID = previousLayoutID
-        case let .applyLayout(identifier):
-            let layout: LayoutPreset
-            do {
-                layout = try resolveLayout(identifier: identifier, in: configuration.layouts)
-            } catch let error as CommandLineLayoutResolutionError {
-                writeToStandardError(error.message + "\n")
-                return EXIT_FAILURE
-            } catch {
-                writeToStandardError("Failed to resolve layout: \(error.localizedDescription)\n")
-                return EXIT_FAILURE
-            }
-            layoutID = layout.id
-        case .help:
+        if reply.success {
             return EXIT_SUCCESS
         }
 
-        windowController.applyLayout(
-            layoutID: layoutID,
-            to: window,
-            preferredScreen: nil,
-            configuration: configuration
-        )
-
-        RunLoop.main.run(until: Date().addingTimeInterval(0.6))
-        return EXIT_SUCCESS
-    }
-
-    func resolveLayout(identifier: String, in layouts: [LayoutPreset]) throws -> LayoutPreset {
-        if let layoutByID = layouts.first(where: { $0.id.caseInsensitiveCompare(identifier) == .orderedSame }) {
-            return layoutByID
-        }
-
-        let matchedLayouts = layouts.filter { $0.name.caseInsensitiveCompare(identifier) == .orderedSame }
-        if let matchedLayout = matchedLayouts.onlyElement {
-            return matchedLayout
-        }
-        if !matchedLayouts.isEmpty {
-            throw CommandLineLayoutResolutionError.ambiguousLayoutName(identifier, matches: matchedLayouts)
-        }
-
-        throw CommandLineLayoutResolutionError.unknownLayout(identifier)
+        writeToStandardError((reply.message ?? "GridMove command failed.") + "\n")
+        return EXIT_FAILURE
     }
 
     private func writeToStandardOutput(_ message: String) {
@@ -153,11 +39,5 @@ final class CommandLineRunner {
 
     private func writeToStandardError(_ message: String) {
         FileHandle.standardError.write(Data(message.utf8))
-    }
-}
-
-private extension Collection {
-    var onlyElement: Element? {
-        count == 1 ? first : nil
     }
 }

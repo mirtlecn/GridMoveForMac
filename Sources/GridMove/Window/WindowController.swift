@@ -56,34 +56,28 @@ final class WindowController {
 
     func focusedWindow(configuration: AppConfiguration) -> ManagedWindow? {
         let systemWide = AXUIElementCreateSystemWide()
-        guard
-            let focusedApplication: AXUIElement = copyAttribute(kAXFocusedApplicationAttribute as CFString, from: systemWide),
-            let focusedWindow: AXUIElement = copyAttribute(kAXFocusedWindowAttribute as CFString, from: focusedApplication),
-            let window = managedWindow(from: focusedWindow, cgWindowID: nil),
-            !isWindowExcluded(window, configuration: configuration)
-        else {
-            AppLogger.debugTargeting("focusedWindow -> none")
-            return nil
+        let frontmostApplication = NSWorkspace.shared.frontmostApplication
+
+        if let focusedApplication: AXUIElement = copyAttribute(kAXFocusedApplicationAttribute as CFString, from: systemWide) {
+            if let window = focusedWindow(from: focusedApplication, configuration: configuration) {
+                return window
+            }
         }
-        AppLogger.debugTargeting("focusedWindow -> \(window.debugDescription)")
-        return window
+
+        if let frontmostApplication {
+            let frontmostElement = AXUIElementCreateApplication(frontmostApplication.processIdentifier)
+            if let window = focusedWindow(from: frontmostElement, configuration: configuration) {
+                return window
+            }
+        }
+        return nil
     }
 
     func windowForLayoutAction(configuration: AppConfiguration) -> ManagedWindow? {
         if let focusedWindow = focusedWindow(configuration: configuration) {
-            AppLogger.debugTargeting("windowForLayoutAction -> focused \(focusedWindow.debugDescription)")
             return focusedWindow
         }
-
-        let mouseLocation = NSEvent.mouseLocation
-        guard let window = windowUnderCursor(at: mouseLocation, configuration: configuration) else {
-            AppLogger.debugTargeting("windowForLayoutAction -> none under cursor at \(mouseLocation.debugDescription)")
-            return nil
-        }
-
-        focus(window)
-        AppLogger.debugTargeting("windowForLayoutAction -> cursor \(window.debugDescription)")
-        return window
+        return nil
     }
 
     func window(cgWindowID: CGWindowID, configuration: AppConfiguration) -> ManagedWindow? {
@@ -246,6 +240,25 @@ final class WindowController {
         }
 
         return !isOperable(window)
+    }
+
+    private func focusedWindow(
+        from application: AXUIElement,
+        configuration: AppConfiguration
+    ) -> ManagedWindow? {
+        guard let focusedWindowElement: AXUIElement = copyAttribute(kAXFocusedWindowAttribute as CFString, from: application) else {
+            return nil
+        }
+
+        guard let window = managedWindow(from: focusedWindowElement, cgWindowID: nil) else {
+            return nil
+        }
+
+        if isWindowExcluded(window, configuration: configuration) {
+            return nil
+        }
+
+        return window
     }
 
     private func isDesktopWindow(_ window: ManagedWindow) -> Bool {
@@ -506,6 +519,7 @@ final class WindowController {
         }
         return value as? T
     }
+
 }
 
 extension ManagedWindow {

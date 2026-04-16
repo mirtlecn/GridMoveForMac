@@ -6,6 +6,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let configurationStore = ConfigurationStore()
     private let layoutEngine = LayoutEngine()
     private lazy var windowController = WindowController(layoutEngine: layoutEngine)
+    private lazy var actionExecutor = LayoutActionExecutor(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        configurationProvider: { [weak self] in self?.configuration ?? .defaultValue }
+    )
+    private let commandRelay = DistributedCommandRelay()
     private let overlayController = OverlayController()
     private lazy var accessibilityMonitor = AccessibilityAccessMonitor(
         statusProvider: { [weak self] in
@@ -47,6 +53,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         loadConfigurationFromDisk()
         configureMainMenu()
+        commandRelay.startListening { [weak self] command in
+            MainActor.assumeIsolated {
+                self?.handleRemoteCommand(command) ?? RemoteCommandReply(success: false, message: "GridMove is not available.")
+            }
+        }
 
         menuController = MenuBarController(
             dragGridEnabled: configuration.general.isEnabled,
@@ -73,6 +84,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         dragGridController.stop()
         shortcutController.stop()
         accessibilityPollingTimer?.invalidate()
+        commandRelay.stopListening()
     }
 
     private func evaluateAccessibilityState() {
@@ -212,46 +224,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func performMenuAction(_ action: HotkeyAction) {
-        guard configuration.general.isEnabled else {
-            AppLogger.debugTargeting("menu action \(action.debugDescription) -> skipped because app is disabled")
-            return
-        }
+        _ = actionExecutor.execute(hotkeyAction: action)
+    }
 
-        guard let window = windowController.windowForLayoutAction(configuration: configuration) else {
-            AppLogger.debugTargeting("menu action \(action.debugDescription) -> no target window")
-            return
-        }
-
-        AppLogger.debugTargeting("menu action \(action.debugDescription) -> target \(window.debugDescription)")
-
-        switch action {
-        case let .applyLayout(layoutID):
-            windowController.applyLayout(
-                layoutID: layoutID,
-                to: window,
-                preferredScreen: nil,
-                configuration: configuration
-            )
-        case .cycleNext:
-            guard let layoutID = layoutEngine.nextLayoutID(for: window.identity, layouts: configuration.layouts) else {
-                return
-            }
-            windowController.applyLayout(
-                layoutID: layoutID,
-                to: window,
-                preferredScreen: nil,
-                configuration: configuration
-            )
-        case .cyclePrevious:
-            guard let layoutID = layoutEngine.previousLayoutID(for: window.identity, layouts: configuration.layouts) else {
-                return
-            }
-            windowController.applyLayout(
-                layoutID: layoutID,
-                to: window,
-                preferredScreen: nil,
-                configuration: configuration
-            )
+    private func handleRemoteCommand(_ command: RemoteCommand) -> RemoteCommandReply {
+        let result = actionExecutor.execute(commandAction: command.action, targetWindowID: command.targetWindowID)
+        switch result {
+        case .success:
+            return RemoteCommandReply(success: true, message: nil)
+        case let .failure(message):
+            return RemoteCommandReply(success: false, message: message)
         }
     }
 
@@ -281,18 +263,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func quitApplication() {
         NSApp.terminate(nil)
-    }
-}
-
-private extension HotkeyAction {
-    var debugDescription: String {
-        switch self {
-        case let .applyLayout(layoutID):
-            return "applyLayout(\(layoutID))"
-        case .cycleNext:
-            return "cycleNext"
-        case .cyclePrevious:
-            return "cyclePrevious"
-        }
     }
 }
