@@ -62,22 +62,27 @@ final class WindowController {
             let window = managedWindow(from: focusedWindow, cgWindowID: nil),
             !isWindowExcluded(window, configuration: configuration)
         else {
+            AppLogger.debugTargeting("focusedWindow -> none")
             return nil
         }
+        AppLogger.debugTargeting("focusedWindow -> \(window.debugDescription)")
         return window
     }
 
     func windowForLayoutAction(configuration: AppConfiguration) -> ManagedWindow? {
         if let focusedWindow = focusedWindow(configuration: configuration) {
+            AppLogger.debugTargeting("windowForLayoutAction -> focused \(focusedWindow.debugDescription)")
             return focusedWindow
         }
 
         let mouseLocation = NSEvent.mouseLocation
         guard let window = windowUnderCursor(at: mouseLocation, configuration: configuration) else {
+            AppLogger.debugTargeting("windowForLayoutAction -> none under cursor at \(mouseLocation.debugDescription)")
             return nil
         }
 
         focus(window)
+        AppLogger.debugTargeting("windowForLayoutAction -> cursor \(window.debugDescription)")
         return window
     }
 
@@ -87,18 +92,22 @@ final class WindowController {
         guard let matchedWindowInfo = windowInfos.first(where: {
             ($0[kCGWindowNumber as String] as? CGWindowID) == cgWindowID
         }) else {
+            AppLogger.debugTargeting("window(cgWindowID: \(cgWindowID)) -> no matching CG window info")
             return nil
         }
 
         guard let managedWindow = resolveWindow(from: matchedWindowInfo, point: nil) else {
+            AppLogger.debugTargeting("window(cgWindowID: \(cgWindowID)) -> failed to resolve AX window")
             return nil
         }
 
         guard !isWindowExcluded(managedWindow, configuration: configuration) else {
+            AppLogger.debugTargeting("window(cgWindowID: \(cgWindowID)) -> excluded \(managedWindow.debugDescription)")
             return nil
         }
 
         focus(managedWindow)
+        AppLogger.debugTargeting("window(cgWindowID: \(cgWindowID)) -> \(managedWindow.debugDescription)")
         return managedWindow
     }
 
@@ -149,6 +158,7 @@ final class WindowController {
     }
 
     func focus(_ window: ManagedWindow) {
+        AppLogger.debugTargeting("focus -> \(window.debugDescription)")
         if let runningApplication = NSRunningApplication(processIdentifier: window.pid) {
             runningApplication.activate()
         }
@@ -495,5 +505,21 @@ final class WindowController {
             return nil
         }
         return value as? T
+    }
+}
+
+extension ManagedWindow {
+    var debugDescription: String {
+        let resolvedAppName = appName ?? "UnknownApp"
+        let resolvedBundleID = bundleIdentifier ?? "UnknownBundle"
+        let resolvedWindowID = cgWindowID.map(String.init) ?? "nil"
+        let sanitizedTitle = title.isEmpty ? "<empty>" : title
+        return "app=\(resolvedAppName) bundle=\(resolvedBundleID) title=\(sanitizedTitle) pid=\(pid) windowID=\(resolvedWindowID) identity=\(identity)"
+    }
+}
+
+private extension CGPoint {
+    var debugDescription: String {
+        "(\(Int(x.rounded())), \(Int(y.rounded())))"
     }
 }

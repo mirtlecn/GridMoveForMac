@@ -67,8 +67,18 @@ final class CommandLineRunner {
         let window: ManagedWindow?
         if let targetWindowID = invocation.targetWindowID {
             window = windowController.window(cgWindowID: targetWindowID, configuration: configuration)
+            if let window {
+                AppLogger.debugTargeting("cli target by window-id \(targetWindowID) -> \(window.debugDescription)")
+            } else {
+                AppLogger.debugTargeting("cli target by window-id \(targetWindowID) -> none")
+            }
         } else {
             window = windowController.focusedWindow(configuration: configuration)
+            if let window {
+                AppLogger.debugTargeting("cli target by focusedWindow -> \(window.debugDescription)")
+            } else {
+                AppLogger.debugTargeting("cli target by focusedWindow -> none")
+            }
         }
 
         guard let window else {

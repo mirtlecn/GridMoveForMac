@@ -208,12 +208,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func performMenuAction(_ action: HotkeyAction) {
         guard configuration.general.isEnabled else {
+            AppLogger.debugTargeting("menu action \(action.debugDescription) -> skipped because app is disabled")
             return
         }
 
         guard let window = windowController.windowForLayoutAction(configuration: configuration) else {
+            AppLogger.debugTargeting("menu action \(action.debugDescription) -> no target window")
             return
         }
+
+        AppLogger.debugTargeting("menu action \(action.debugDescription) -> target \(window.debugDescription)")
 
         switch action {
         case let .applyLayout(layoutID):
@@ -272,5 +276,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func quitApplication() {
         NSApp.terminate(nil)
+    }
+}
+
+private extension HotkeyAction {
+    var debugDescription: String {
+        switch self {
+        case let .applyLayout(layoutID):
+            return "applyLayout(\(layoutID))"
+        case .cycleNext:
+            return "cycleNext"
+        case .cyclePrevious:
+            return "cyclePrevious"
+        }
     }
 }
