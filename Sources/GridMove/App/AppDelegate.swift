@@ -50,6 +50,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var onboardingController: OnboardingWindowController?
     private var accessibilityPollingTimer: Timer?
 
+    var settingsWindowControllerForTesting: SettingsWindowController? {
+        settingsController
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         loadConfigurationFromDisk()
         configureMainMenu()
@@ -85,6 +89,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         shortcutController.stop()
         accessibilityPollingTimer?.invalidate()
         commandRelay.stopListening()
+    }
+
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        handleApplicationReopen()
     }
 
     private func evaluateAccessibilityState() {
@@ -159,6 +167,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsController?.updateConfiguration(configuration)
         settingsController?.show()
         NSApp.activate(ignoringOtherApps: true)
+    }
+
+    func handleApplicationReopen() -> Bool {
+        showSettings()
+        return false
     }
 
     private func updateGlobalEnabledState(_ isEnabled: Bool) {
