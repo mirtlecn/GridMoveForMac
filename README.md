@@ -48,6 +48,12 @@ make build SIGN_IDENTITY="Developer ID Application: Example Name (TEAMID)"
 make test
 ```
 
+To run the debug build locally, use:
+
+```bash
+make dev
+```
+
 ## Run
 
 ```bash

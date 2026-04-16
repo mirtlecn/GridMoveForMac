@@ -7,7 +7,7 @@ SIGN_IDENTITY ?= -
 APP_BUNDLE_ID ?= local.mirtle.GridMove
 CONFIG_PLIST := $(HOME)/Library/Application Support/GridMove/config.plist
 
-.PHONY: build test check run release sign-app verify-app clean
+.PHONY: build test check dev run release sign-app verify-app clean
 
 build: test release
 	rm -f "$(CONFIG_PLIST)"
@@ -24,6 +24,9 @@ test:
 	swift test
 
 check: test
+
+dev:
+	swift run
 
 run:
 	swift run

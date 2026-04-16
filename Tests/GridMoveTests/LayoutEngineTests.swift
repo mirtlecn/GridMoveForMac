@@ -17,8 +17,8 @@ import Testing
         "Right 1/3",
         "Right 1/3 Top",
         "Right 1/3 Bottom",
-        "Fill all screen",
-        "Fill all screen (Menu Bar)",
+        "Fill All Screen",
+        "Fill All Screen (Menu Bar)",
     ])
     #expect(layouts[0].windowSelection == GridSelection(x: 0, y: 0, w: 4, h: 6))
     #expect(layouts[0].triggerRegion == .screen(GridSelection(x: 0, y: 0, w: 2, h: 6)))
