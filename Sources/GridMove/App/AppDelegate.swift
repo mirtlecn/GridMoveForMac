@@ -314,6 +314,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     nonisolated private static func postSystemNotification(title: String, body: String) {
+        if Bundle.main.bundleURL.pathExtension == "app", Bundle.main.bundleIdentifier != nil {
+            postUserNotificationCenterNotification(title: title, body: body)
+            return
+        }
+
+        postAppleScriptNotification(title: title, body: body)
+    }
+
+    nonisolated private static func postUserNotificationCenterNotification(title: String, body: String) {
         let center = UNUserNotificationCenter.current()
         center.requestAuthorization(options: [.alert, .sound]) { granted, error in
             if let error {
@@ -341,6 +350,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 }
             }
         }
+    }
+
+    nonisolated private static func postAppleScriptNotification(title: String, body: String) {
+        let scriptSource = """
+        display notification "\(escapeAppleScript(body))" with title "\(escapeAppleScript(title))"
+        """
+
+        var error: NSDictionary?
+        NSAppleScript(source: scriptSource)?.executeAndReturnError(&error)
+        if let error {
+            AppLogger.shared.error("Failed to post AppleScript notification: \(error.description, privacy: .public)")
+        }
+    }
+
+    nonisolated private static func escapeAppleScript(_ value: String) -> String {
+        value
+            .replacingOccurrences(of: "\\", with: "\\\\")
+            .replacingOccurrences(of: "\"", with: "\\\"")
     }
 }
 
