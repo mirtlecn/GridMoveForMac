@@ -58,7 +58,7 @@ import Testing
     #expect(!hasAltLayoutBinding)
     #expect(hasHyperLayoutFourBinding)
     #expect(!hasFullscreenOrCloseBinding)
-    #expect(configuration.dragTriggers.modifierGroups == [[.ctrl, .cmd, .shift, .alt], [.alt]])
+    #expect(configuration.dragTriggers.modifierGroups == [[.ctrl, .cmd]])
     #expect(configuration.appearance.triggerStrokeColor.alpha == 0.2)
 }
 
