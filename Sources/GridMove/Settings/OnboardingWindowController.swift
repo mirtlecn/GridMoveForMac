@@ -14,6 +14,8 @@ final class OnboardingWindowController: NSWindowController {
             defer: false
         )
         window.title = "GridMove Setup"
+        window.level = .floating
+        window.collectionBehavior = [.moveToActiveSpace, .fullScreenAuxiliary]
         super.init(window: window)
         buildInterface()
     }
@@ -24,7 +26,9 @@ final class OnboardingWindowController: NSWindowController {
     }
 
     func show() {
+        NSApp.activate(ignoringOtherApps: true)
         window?.center()
+        window?.orderFrontRegardless()
         window?.makeKeyAndOrderFront(nil)
     }
 
