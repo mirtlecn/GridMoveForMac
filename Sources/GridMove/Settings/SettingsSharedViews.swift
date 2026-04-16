@@ -54,7 +54,7 @@ struct CycleHotkeyRow: View {
 
     var body: some View {
         HStack(spacing: 16) {
-            Text(binding.action == .cyclePrevious ? "Previous Layout" : "Next Layout")
+            Text(binding.action == .cyclePrevious ? "Apply Previous Layout" : "Apply Next Layout")
                 .foregroundStyle(.primary)
                 .frame(maxWidth: .infinity, alignment: .leading)
 

@@ -120,11 +120,14 @@ enum HotkeyAction: Codable, Equatable, Hashable {
     func displayName(layouts: [LayoutPreset]) -> String {
         switch self {
         case let .applyLayout(layoutID):
-            return layouts.first(where: { $0.id == layoutID })?.name ?? "Unknown Layout"
+            if let name = layouts.first(where: { $0.id == layoutID })?.name {
+                return "Apply \(name)"
+            }
+            return "Apply Unknown Layout"
         case .cycleNext:
-            return "Next Layout"
+            return "Apply Next Layout"
         case .cyclePrevious:
-            return "Previous Layout"
+            return "Apply Previous Layout"
         }
     }
 }

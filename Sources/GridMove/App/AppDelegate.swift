@@ -184,12 +184,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func makeMenuActionItems(configuration: AppConfiguration) -> [MenuBarController.ActionItem] {
         let cycleItems: [MenuBarController.ActionItem] = [
             MenuBarController.ActionItem(
-                title: "Switch to Previous Layout",
+                title: "Apply Previous Layout",
                 action: .cyclePrevious,
                 shortcut: configuration.hotkeys.firstShortcut(for: .cyclePrevious)
             ),
             MenuBarController.ActionItem(
-                title: "Switch to Next Layout",
+                title: "Apply Next Layout",
                 action: .cycleNext,
                 shortcut: configuration.hotkeys.firstShortcut(for: .cycleNext)
             ),
@@ -197,7 +197,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let layoutItems = configuration.layouts.map { layout in
             MenuBarController.ActionItem(
-                title: "Switch to \(layout.name)",
+                title: "Apply \(layout.name)",
                 action: .applyLayout(layoutID: layout.id),
                 shortcut: configuration.hotkeys.firstShortcut(for: .applyLayout(layoutID: layout.id))
             )
