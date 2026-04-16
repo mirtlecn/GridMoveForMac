@@ -25,13 +25,7 @@ GridMove is a native macOS menu bar app that migrates the current Hammerspoon wi
 ## Build
 
 ```bash
-swift build
-```
-
-## Package A Test App
-
-```bash
-make package-app
+make build
 ```
 
 This creates:
@@ -39,12 +33,12 @@ This creates:
 - `dist/GridMove.app`
 - `dist/GridMove.zip`
 
-Before packaging, `make package-app` removes the local runtime configuration at `~/Library/Application Support/GridMove/config.plist` so the packaged app starts from a clean default state.
+Before packaging, `make build` removes the local runtime configuration at `~/Library/Application Support/GridMove/config.plist` so the packaged app starts from a clean default state.
 
 The default signing mode is ad-hoc signing for local testing. To use a real certificate, override `SIGN_IDENTITY`:
 
 ```bash
-make package-app SIGN_IDENTITY="Developer ID Application: Example Name (TEAMID)"
+make build SIGN_IDENTITY="Developer ID Application: Example Name (TEAMID)"
 ```
 
 ## Run
