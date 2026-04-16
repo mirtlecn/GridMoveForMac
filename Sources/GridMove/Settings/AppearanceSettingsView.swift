@@ -88,50 +88,50 @@ struct AppearanceSettingsView: View {
             Divider()
 
             SettingsGroupedRow {
-                LabeledSliderRow(
-                    title: "Fill opacity",
-                    value: Binding(
-                        get: { viewModel.configuration.appearance.highlightFillOpacity },
-                        set: { newValue in
-                            viewModel.updateAppearance { $0.highlightFillOpacity = newValue }
-                        }
-                    ),
-                    range: 0 ... 1
-                )
-            }
-            .allowsHitTesting(viewModel.configuration.appearance.renderWindowHighlight)
-            .opacity(viewModel.configuration.appearance.renderWindowHighlight ? 1 : 0.45)
+                AppearanceSettingsInsetGroup {
+                    AppearanceSettingsValueRow {
+                        LabeledSliderRow(
+                            title: "Fill opacity",
+                            value: Binding(
+                                get: { viewModel.configuration.appearance.highlightFillOpacity },
+                                set: { newValue in
+                                    viewModel.updateAppearance { $0.highlightFillOpacity = newValue }
+                                }
+                            ),
+                            range: 0 ... 1
+                        )
+                    }
 
-            Divider()
+                    Divider()
 
-            SettingsGroupedRow {
-                LabeledNumberFieldRow(
-                    title: "Stroke width",
-                    value: Binding(
-                        get: { viewModel.configuration.appearance.highlightStrokeWidth },
-                        set: { newValue in
-                            viewModel.updateAppearance { $0.highlightStrokeWidth = newValue }
-                        }
-                    )
-                )
-            }
-            .allowsHitTesting(viewModel.configuration.appearance.renderWindowHighlight)
-            .opacity(viewModel.configuration.appearance.renderWindowHighlight ? 1 : 0.45)
+                    AppearanceSettingsValueRow {
+                        LabeledNumberFieldRow(
+                            title: "Stroke width",
+                            value: Binding(
+                                get: { viewModel.configuration.appearance.highlightStrokeWidth },
+                                set: { newValue in
+                                    viewModel.updateAppearance { $0.highlightStrokeWidth = newValue }
+                                }
+                            )
+                        )
+                    }
 
-            Divider()
+                    Divider()
 
-            SettingsGroupedRow {
-                colorPickerRow(
-                    title: "Stroke color",
-                    color: Binding(
-                        get: { Color(viewModel.configuration.appearance.highlightStrokeColor.nsColor) },
-                        set: { newColor in
-                            viewModel.updateAppearance {
-                                $0.highlightStrokeColor = resolvedColor(from: newColor, fallback: .white)
-                            }
-                        }
-                    )
-                )
+                    AppearanceSettingsValueRow {
+                        colorPickerRow(
+                            title: "Stroke color",
+                            color: Binding(
+                                get: { Color(viewModel.configuration.appearance.highlightStrokeColor.nsColor) },
+                                set: { newColor in
+                                    viewModel.updateAppearance {
+                                        $0.highlightStrokeColor = resolvedColor(from: newColor, fallback: .white)
+                                    }
+                                }
+                            )
+                        )
+                    }
+                }
             }
             .allowsHitTesting(viewModel.configuration.appearance.renderWindowHighlight)
             .opacity(viewModel.configuration.appearance.renderWindowHighlight ? 1 : 0.45)
@@ -156,50 +156,50 @@ struct AppearanceSettingsView: View {
             Divider()
 
             SettingsGroupedRow {
-                LabeledSliderRow(
-                    title: "Stroke opacity",
-                    value: Binding(
-                        get: { viewModel.configuration.appearance.triggerOpacity },
-                        set: { newValue in
-                            viewModel.updateAppearance { $0.triggerOpacity = newValue }
-                        }
-                    ),
-                    range: 0 ... 1
-                )
-            }
-            .allowsHitTesting(viewModel.configuration.appearance.renderTriggerAreas)
-            .opacity(viewModel.configuration.appearance.renderTriggerAreas ? 1 : 0.45)
+                AppearanceSettingsInsetGroup {
+                    AppearanceSettingsValueRow {
+                        LabeledSliderRow(
+                            title: "Stroke opacity",
+                            value: Binding(
+                                get: { viewModel.configuration.appearance.triggerOpacity },
+                                set: { newValue in
+                                    viewModel.updateAppearance { $0.triggerOpacity = newValue }
+                                }
+                            ),
+                            range: 0 ... 1
+                        )
+                    }
 
-            Divider()
+                    Divider()
 
-            SettingsGroupedRow {
-                LabeledNumberFieldRow(
-                    title: "Grid gap",
-                    value: Binding(
-                        get: { viewModel.configuration.appearance.triggerGap },
-                        set: { newValue in
-                            viewModel.updateAppearance { $0.triggerGap = newValue }
-                        }
-                    )
-                )
-            }
-            .allowsHitTesting(viewModel.configuration.appearance.renderTriggerAreas)
-            .opacity(viewModel.configuration.appearance.renderTriggerAreas ? 1 : 0.45)
+                    AppearanceSettingsValueRow {
+                        LabeledNumberFieldRow(
+                            title: "Grid gap",
+                            value: Binding(
+                                get: { viewModel.configuration.appearance.triggerGap },
+                                set: { newValue in
+                                    viewModel.updateAppearance { $0.triggerGap = newValue }
+                                }
+                            )
+                        )
+                    }
 
-            Divider()
+                    Divider()
 
-            SettingsGroupedRow {
-                colorPickerRow(
-                    title: "Stroke color",
-                    color: Binding(
-                        get: { Color(viewModel.configuration.appearance.triggerStrokeColor.nsColor) },
-                        set: { newColor in
-                            viewModel.updateAppearance {
-                                $0.triggerStrokeColor = resolvedColor(from: newColor, fallback: .systemBlue)
-                            }
-                        }
-                    )
-                )
+                    AppearanceSettingsValueRow {
+                        colorPickerRow(
+                            title: "Stroke color",
+                            color: Binding(
+                                get: { Color(viewModel.configuration.appearance.triggerStrokeColor.nsColor) },
+                                set: { newColor in
+                                    viewModel.updateAppearance {
+                                        $0.triggerStrokeColor = resolvedColor(from: newColor, fallback: .systemBlue)
+                                    }
+                                }
+                            )
+                        )
+                    }
+                }
             }
             .allowsHitTesting(viewModel.configuration.appearance.renderTriggerAreas)
             .opacity(viewModel.configuration.appearance.renderTriggerAreas ? 1 : 0.45)
@@ -262,5 +262,31 @@ struct AppearanceSettingsView: View {
             blue: resolved.blueComponent,
             alpha: resolved.alphaComponent
         )
+    }
+}
+
+private struct AppearanceSettingsInsetGroup<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(spacing: 0) {
+            content
+        }
+        .background(Color(nsColor: .windowBackgroundColor))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color(nsColor: .separatorColor).opacity(0.45), lineWidth: 1)
+        )
+    }
+}
+
+private struct AppearanceSettingsValueRow<Content: View>: View {
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        content
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
     }
 }
