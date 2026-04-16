@@ -143,7 +143,7 @@ struct ModifierGroupSheetView: View {
 
     var body: some View {
         SettingsSheetContainer {
-            HStack(alignment: .center, spacing: 18) {
+            HStack(alignment: .center, spacing: 14) {
                 ForEach(ModifierKey.allCases, id: \.self) { key in
                     Toggle(
                         key.displayName,
@@ -159,6 +159,7 @@ struct ModifierGroupSheetView: View {
                         )
                     )
                     .toggleStyle(.checkbox)
+                    .font(.body)
                 }
             }
 
@@ -166,14 +167,14 @@ struct ModifierGroupSheetView: View {
                 Spacer()
                 Button("Cancel") { dismiss() }
                     .buttonStyle(.bordered)
-                    .controlSize(.large)
+                    .controlSize(.regular)
 
                 Button("Add") {
                     onConfirm(ModifierKey.allCases.filter { selectedKeys.contains($0) })
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .controlSize(.regular)
                 .disabled(selectedKeys.isEmpty)
             }
         }
@@ -210,14 +211,14 @@ struct ExcludedWindowSheetView: View {
                 Spacer()
                 Button("Cancel") { dismiss() }
                     .buttonStyle(.bordered)
-                    .controlSize(.large)
+                    .controlSize(.regular)
 
                 Button("Add") {
                     onConfirm(kind, value)
                     dismiss()
                 }
                 .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .controlSize(.regular)
                 .disabled(value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
@@ -248,23 +249,23 @@ struct SettingsSwitchRow: View {
     @Binding var isOn: Bool
 
     var body: some View {
-        HStack(alignment: .top, spacing: 16) {
+        HStack(alignment: .top, spacing: 14) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.headline)
+                    .font(.body.weight(.medium))
                 Text(subtitle)
-                    .font(.subheadline)
+                    .font(.footnote)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Spacer(minLength: 16)
+            Spacer(minLength: 12)
 
             Toggle("", isOn: $isOn)
                 .labelsHidden()
                 .toggleStyle(.switch)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 2)
     }
 }
 

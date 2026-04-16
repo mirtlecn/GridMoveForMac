@@ -4,11 +4,11 @@ struct GeneralSettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 8) {
             Text("General")
-                .font(.largeTitle.weight(.bold))
-                .padding(.horizontal, 24)
-                .padding(.top, 20)
+                .font(.title.weight(.semibold))
+                .padding(.horizontal, 20)
+                .padding(.top, 16)
 
             Form {
                 Section {
@@ -39,7 +39,7 @@ struct GeneralSettingsView: View {
                     }
                     .controlSize(.mini)
 
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Toggle(
                             isOn: Binding(
                                 get: { viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag },
@@ -57,11 +57,12 @@ struct GeneralSettingsView: View {
                             List(selection: $viewModel.selectedModifierGroupID) {
                                 ForEach(viewModel.modifierGroupItems) { item in
                                     Text(item.title)
+                                        .font(.body)
                                         .tag(item.id)
                                 }
                             }
                             .environment(\.defaultMinListRowHeight, 28)
-                            .frame(minHeight: 92, maxHeight: 118)
+                            .frame(minHeight: 88, maxHeight: 112)
                         } actions: {
                             Button {
                                 viewModel.modifierGroupSheetPresented = true
@@ -89,6 +90,7 @@ struct GeneralSettingsView: View {
                         Table(viewModel.excludedWindowItems, selection: $viewModel.selectedExcludedWindowID) {
                             TableColumn("Value") { item in
                                 Text(item.value)
+                                    .font(.body)
                                     .lineLimit(1)
                                     .truncationMode(.middle)
                             }
@@ -96,11 +98,12 @@ struct GeneralSettingsView: View {
 
                             TableColumn("Type") { item in
                                 Text(item.kind.columnTitle)
+                                    .font(.footnote)
                                     .foregroundStyle(.secondary)
                             }
                             .width(min: 120, max: 160)
                         }
-                        .frame(minHeight: 150, maxHeight: 190)
+                        .frame(minHeight: 144, maxHeight: 176)
                     } actions: {
                         Button {
                             viewModel.openExcludedWindowSheet()
@@ -136,13 +139,12 @@ private struct SettingsDescriptionLabel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
-                .font(.headline)
+                .font(.body.weight(.medium))
             Text(subtitle)
-                .font(.subheadline)
+                .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.vertical, 1)
     }
 }
 
@@ -159,9 +161,9 @@ private struct SettingsActionList<Content: View, Actions: View>: View {
                     .foregroundStyle(.secondary)
                 Spacer()
             }
-            .font(.body.weight(.medium))
+            .font(.body)
             .padding(.horizontal, 10)
-            .padding(.vertical, 6)
+            .padding(.vertical, 5)
             .background(Color(nsColor: .controlBackgroundColor))
         }
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))

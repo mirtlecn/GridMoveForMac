@@ -29,21 +29,25 @@ struct SettingsRootView: View {
     private var sidebar: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("GridMove")
-                .font(.title2.weight(.bold))
-                .padding(.horizontal, 14)
-                .padding(.top, 32)
+                .font(.title3.weight(.semibold))
+                .padding(.horizontal, 12)
+                .padding(.top, 18)
 
             Spacer()
-                .frame(height: 20)
+                .frame(height: 14)
 
             List(selection: $viewModel.selectedSection) {
                 ForEach(SettingsViewModel.Section.allCases) { section in
-                    Label(section.title, systemImage: section.systemImage)
+                    SettingsSidebarRowLabel(
+                        title: section.title,
+                        systemImage: section.systemImage
+                    )
                         .tag(section)
                 }
             }
             .listStyle(.sidebar)
             .scrollContentBackground(.hidden)
+            .environment(\.defaultMinListRowHeight, 36)
 
             Spacer()
         }
