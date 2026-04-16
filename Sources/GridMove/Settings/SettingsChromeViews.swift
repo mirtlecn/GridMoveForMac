@@ -1,5 +1,54 @@
 import SwiftUI
 
+struct SettingsDetailHeaderBar: View {
+    let title: String
+    let canNavigateBack: Bool
+    let canNavigateForward: Bool
+    let onNavigateBack: () -> Void
+    let onNavigateForward: () -> Void
+
+    var body: some View {
+        HStack(spacing: 14) {
+            HStack(spacing: 0) {
+                Button(action: onNavigateBack) {
+                    Image(systemName: "chevron.left")
+                        .font(.body.weight(.semibold))
+                        .frame(width: 22, height: 22)
+                }
+                .buttonStyle(.plain)
+                .disabled(!canNavigateBack)
+
+                Divider()
+                    .frame(height: 24)
+                    .padding(.horizontal, 10)
+
+                Button(action: onNavigateForward) {
+                    Image(systemName: "chevron.right")
+                        .font(.body.weight(.semibold))
+                        .frame(width: 22, height: 22)
+                }
+                .buttonStyle(.plain)
+                .disabled(!canNavigateForward)
+            }
+            .foregroundStyle(.secondary)
+            .padding(.horizontal, 14)
+            .frame(height: 40)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color(nsColor: .controlBackgroundColor))
+            )
+
+            Text(title)
+                .font(.title3.weight(.semibold))
+
+            Spacer()
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+}
+
 struct SettingsSidebarRowLabel: View {
     let title: String
     let systemImage: String
@@ -153,9 +202,6 @@ struct SettingsTableHeaderRow: View {
 struct AboutSettingsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 20) {
-            Text("About")
-                .font(.largeTitle.weight(.bold))
-
             SettingsPageSection(title: "About") {
                 Text("About content will be added later.")
                     .foregroundStyle(.secondary)

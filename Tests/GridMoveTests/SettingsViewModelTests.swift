@@ -59,3 +59,35 @@ import Testing
     #expect(viewModel.modifierGroupItems.count == initialCount)
     #expect(!viewModel.modifierGroupItems.contains(where: { $0.keys == [.cmd, .shift] }))
 }
+
+@MainActor
+@Test func settingsViewModelTracksSectionNavigationHistory() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let viewModel = SettingsViewModel(
+        configurationStore: store,
+        configurationProvider: { AppConfiguration.defaultValue },
+        onConfigurationSaved: { _ in }
+    )
+
+    #expect(viewModel.selectedSection == .general)
+    #expect(viewModel.canNavigateBack == false)
+    #expect(viewModel.canNavigateForward == false)
+
+    viewModel.navigateToSection(.layouts)
+    viewModel.navigateToSection(.hotkeys)
+
+    #expect(viewModel.selectedSection == .hotkeys)
+    #expect(viewModel.canNavigateBack == true)
+    #expect(viewModel.canNavigateForward == false)
+
+    viewModel.navigateBack()
+    #expect(viewModel.selectedSection == .layouts)
+    #expect(viewModel.canNavigateForward == true)
+
+    viewModel.navigateForward()
+    #expect(viewModel.selectedSection == .hotkeys)
+}

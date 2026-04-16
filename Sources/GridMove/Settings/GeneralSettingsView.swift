@@ -4,131 +4,126 @@ struct GeneralSettingsView: View {
     @ObservedObject var viewModel: SettingsViewModel
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("General")
-                .font(.title.weight(.semibold))
-                .padding(.horizontal, 20)
-                .padding(.top, 16)
-
-            Form {
-                Section {
-                    Toggle(
-                        isOn: Binding(
-                            get: { viewModel.configuration.general.isEnabled },
-                            set: { viewModel.updateGeneralEnabled($0) }
-                        )
-                    ) {
-                        SettingsDescriptionLabel(
-                            title: "Enable",
-                            subtitle: "Allow drag triggers, layout hotkeys, and command line layout actions."
-                        )
-                    }
+        Form {
+            Section {
+                Toggle(
+                    isOn: Binding(
+                        get: { viewModel.configuration.general.isEnabled },
+                        set: { viewModel.updateGeneralEnabled($0) }
+                    )
+                ) {
+                    SettingsDescriptionLabel(
+                        title: "Enable",
+                        subtitle: "Allow drag triggers, layout hotkeys, and command line layout actions."
+                    )
                 }
+            }
 
-                Section("Press And Drag") {
+            Section("Press And Drag") {
+                Toggle(
+                    isOn: Binding(
+                        get: { viewModel.configuration.dragTriggers.enableMiddleMouseDrag },
+                        set: { viewModel.updateDragTriggers(enableMiddleMouseDrag: $0) }
+                    )
+                ) {
+                    SettingsDescriptionLabel(
+                        title: "Middle Mouse",
+                        subtitle: "Press middle mouse for a short time to activate the grid."
+                    )
+                }
+                .controlSize(.mini)
+
+                VStack(alignment: .leading, spacing: 6) {
                     Toggle(
                         isOn: Binding(
-                            get: { viewModel.configuration.dragTriggers.enableMiddleMouseDrag },
-                            set: { viewModel.updateDragTriggers(enableMiddleMouseDrag: $0) }
+                            get: { viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag },
+                            set: { viewModel.updateDragTriggers(enableModifierLeftMouseDrag: $0) }
                         )
                     ) {
                         SettingsDescriptionLabel(
-                            title: "Middle Mouse",
-                            subtitle: "Press middle mouse for a short time to activate the grid."
+                            title: "Modifier + Left Mouse",
+                            subtitle: "Hold pre-set modifier, then press left mouse to activate."
                         )
                     }
                     .controlSize(.mini)
 
-                    VStack(alignment: .leading, spacing: 6) {
-                        Toggle(
-                            isOn: Binding(
-                                get: { viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag },
-                                set: { viewModel.updateDragTriggers(enableModifierLeftMouseDrag: $0) }
-                            )
-                        ) {
-                            SettingsDescriptionLabel(
-                                title: "Modifier + Left Mouse",
-                                subtitle: "Hold pre-set modifier, then press left mouse to activate."
-                            )
-                        }
-                        .controlSize(.mini)
-
-                        SettingsActionList {
-                            List(selection: $viewModel.selectedModifierGroupID) {
-                                ForEach(viewModel.modifierGroupItems) { item in
-                                    Text(item.title)
-                                        .font(.body)
-                                        .tag(item.id)
-                                }
-                            }
-                            .environment(\.defaultMinListRowHeight, 28)
-                            .frame(minHeight: 88, maxHeight: 112)
-                        } actions: {
-                            Button {
-                                viewModel.modifierGroupSheetPresented = true
-                            } label: {
-                                Image(systemName: "plus")
-                            }
-                            .buttonStyle(.plain)
-
-                            if viewModel.selectedModifierGroupID != nil {
-                                Button {
-                                    viewModel.removeSelectedModifierGroup()
-                                } label: {
-                                    Image(systemName: "minus")
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                    }
-                    .disabled(!viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag)
-                }
-                .disabled(!viewModel.configuration.general.isEnabled)
-
-                Section("Excluded Windows") {
                     SettingsActionList {
-                        Table(viewModel.excludedWindowItems, selection: $viewModel.selectedExcludedWindowID) {
-                            TableColumn("Value") { item in
-                                Text(item.value)
-                                    .font(.body)
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-                            }
-                            .width(min: 280)
-
-                            TableColumn("Type") { item in
-                                Text(item.kind.columnTitle)
+                        List(selection: $viewModel.selectedModifierGroupID) {
+                            ForEach(viewModel.modifierGroupItems) { item in
+                                Text(item.title)
                                     .font(.footnote)
-                                    .foregroundStyle(.secondary)
+                                    .tag(item.id)
                             }
-                            .width(min: 120, max: 160)
                         }
-                        .frame(minHeight: 144, maxHeight: 176)
+                        .environment(\.defaultMinListRowHeight, 24)
+                        .frame(minHeight: 84, maxHeight: 104)
                     } actions: {
                         Button {
-                            viewModel.openExcludedWindowSheet()
+                            viewModel.modifierGroupSheetPresented = true
                         } label: {
                             Image(systemName: "plus")
                         }
                         .buttonStyle(.plain)
 
-                        if viewModel.selectedExcludedWindowID != nil {
+                        if viewModel.selectedModifierGroupID != nil {
                             Button {
-                                viewModel.removeSelectedExcludedWindow()
+                                viewModel.removeSelectedModifierGroup()
                             } label: {
                                 Image(systemName: "minus")
                             }
                             .buttonStyle(.plain)
                         }
                     }
+                    .opacity(viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag ? 1 : 0.5)
+                    .allowsHitTesting(viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag)
                 }
             }
-            .formStyle(.grouped)
-            .scrollContentBackground(.hidden)
-            .controlSize(.small)
+            .disabled(!viewModel.configuration.general.isEnabled)
+
+            Section("Excluded Windows") {
+                SettingsActionList {
+                    Table(viewModel.excludedWindowItems, selection: $viewModel.selectedExcludedWindowID) {
+                        TableColumn("Value") { item in
+                            Text(item.value)
+                                .font(.footnote)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                        }
+                        .width(min: 280)
+
+                        TableColumn("Type") { item in
+                            Text(item.kind.columnTitle)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
+                        .width(min: 120, max: 160)
+                    }
+                    .frame(minHeight: 144, maxHeight: 176)
+                } actions: {
+                    Button {
+                        viewModel.openExcludedWindowSheet()
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .buttonStyle(.plain)
+
+                    if viewModel.selectedExcludedWindowID != nil {
+                        Button {
+                            viewModel.removeSelectedExcludedWindow()
+                        } label: {
+                            Image(systemName: "minus")
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.top, 2)
         .background(Color(nsColor: .windowBackgroundColor))
+        .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .controlSize(.small)
     }
 }
 

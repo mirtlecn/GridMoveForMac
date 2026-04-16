@@ -78,6 +78,8 @@ final class SettingsViewModel: ObservableObject {
 
     private let configurationStore: ConfigurationStore
     private let onConfigurationSaved: (AppConfiguration) -> Void
+    private var backStack: [Section] = []
+    private var forwardStack: [Section] = []
 
     init(
         configurationStore: ConfigurationStore,
@@ -152,6 +154,42 @@ final class SettingsViewModel: ObservableObject {
             layoutDraft = configuration.layouts.first
         }
         synchronizeSelectionState()
+    }
+
+    var canNavigateBack: Bool {
+        !backStack.isEmpty
+    }
+
+    var canNavigateForward: Bool {
+        !forwardStack.isEmpty
+    }
+
+    func navigateToSection(_ section: Section) {
+        guard section != selectedSection else {
+            return
+        }
+
+        backStack.append(selectedSection)
+        forwardStack.removeAll()
+        selectedSection = section
+    }
+
+    func navigateBack() {
+        guard let previousSection = backStack.popLast() else {
+            return
+        }
+
+        forwardStack.append(selectedSection)
+        selectedSection = previousSection
+    }
+
+    func navigateForward() {
+        guard let nextSection = forwardStack.popLast() else {
+            return
+        }
+
+        backStack.append(selectedSection)
+        selectedSection = nextSection
     }
 
     func openExcludedWindowSheet() {
