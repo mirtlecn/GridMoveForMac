@@ -54,6 +54,26 @@ struct KeyboardShortcut: Codable, Equatable, Hashable {
         let keySymbol = ShortcutKeyMap.symbolDisplayString(for: key)
         return modifierSymbols + keySymbol
     }
+
+    var menuKeyEquivalent: String {
+        switch key.lowercased() {
+        case "return", "enter":
+            return "\r"
+        case "escape", "esc":
+            return String(Character(UnicodeScalar(NSDeleteCharacter)!))
+        default:
+            return key.lowercased()
+        }
+    }
+
+    var menuModifierMask: NSEvent.ModifierFlags {
+        var result: NSEvent.ModifierFlags = []
+        if normalizedModifiers.contains(.ctrl) { result.insert(.control) }
+        if normalizedModifiers.contains(.alt) { result.insert(.option) }
+        if normalizedModifiers.contains(.shift) { result.insert(.shift) }
+        if normalizedModifiers.contains(.cmd) { result.insert(.command) }
+        return result
+    }
 }
 
 enum HotkeyAction: Codable, Equatable, Hashable {

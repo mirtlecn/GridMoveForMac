@@ -6,18 +6,12 @@ final class MenuBarController: NSObject {
         let title: String
         let action: HotkeyAction
         let shortcut: KeyboardShortcut?
-
-        var displayTitle: String {
-            guard let shortcut else {
-                return title
-            }
-            return "\(title) (\(shortcut.symbolDisplayString))"
-        }
     }
 
     private let statusItem: NSStatusItem
     private let menu = NSMenu()
     private let dragGridMenuItem = NSMenuItem(title: "Enable", action: nil, keyEquivalent: "")
+    private let enableSeparatorItem = NSMenuItem.separator()
     private var actionMenuItems: [NSMenuItem] = []
     private var actionItems: [ActionItem]
 
@@ -54,6 +48,7 @@ final class MenuBarController: NSObject {
         dragGridMenuItem.target = self
         dragGridMenuItem.action = #selector(toggleDragGrid)
         menu.addItem(dragGridMenuItem)
+        menu.addItem(enableSeparatorItem)
 
         rebuildActionItems(isEnabled: dragGridEnabled)
 
@@ -95,14 +90,19 @@ final class MenuBarController: NSObject {
             return
         }
 
-        let insertIndex = menu.items.firstIndex(of: dragGridMenuItem).map { $0 + 1 } ?? menu.numberOfItems
+        let insertIndex = menu.items.firstIndex(of: enableSeparatorItem).map { $0 + 1 } ?? menu.numberOfItems
         var nextIndex = insertIndex
 
         for item in actionItems {
-            let menuItem = NSMenuItem(title: item.displayTitle, action: #selector(performAction(_:)), keyEquivalent: "")
+            let menuItem = NSMenuItem(
+                title: item.title,
+                action: #selector(performAction(_:)),
+                keyEquivalent: item.shortcut?.menuKeyEquivalent ?? ""
+            )
             menuItem.target = self
             menuItem.representedObject = item.action
             menuItem.isEnabled = isEnabled
+            menuItem.keyEquivalentModifierMask = item.shortcut?.menuModifierMask ?? []
             menu.insertItem(menuItem, at: nextIndex)
             actionMenuItems.append(menuItem)
             nextIndex += 1

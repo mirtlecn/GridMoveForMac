@@ -96,20 +96,13 @@ import Testing
     #expect(settings.firstShortcut(for: .cyclePrevious) == KeyboardShortcut(modifiers: [.alt], key: "j"))
 }
 
-@Test func menuActionItemDisplaysShortcutSuffixWhenPresent() async throws {
-    let itemWithShortcut = MenuBarController.ActionItem(
-        title: "Switch to Center",
-        action: .applyLayout(layoutID: "layout-4"),
-        shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "\\")
-    )
-    let itemWithoutShortcut = MenuBarController.ActionItem(
-        title: "Switch to Center",
-        action: .applyLayout(layoutID: "layout-4"),
-        shortcut: nil
-    )
+@Test func keyboardShortcutProvidesMenuShortcutComponents() async throws {
+    let standardShortcut = KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "\\")
+    let returnShortcut = KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "return")
 
-    #expect(itemWithShortcut.displayTitle == "Switch to Center (⌃⌘⇧⌥\\)")
-    #expect(itemWithoutShortcut.displayTitle == "Switch to Center")
+    #expect(standardShortcut.menuKeyEquivalent == "\\")
+    #expect(standardShortcut.menuModifierMask == [.control, .option, .shift, .command])
+    #expect(returnShortcut.menuKeyEquivalent == "\r")
 }
 
 @Test func generalSettingsDecodeMissingEnableFlagWithDefaultValue() async throws {
