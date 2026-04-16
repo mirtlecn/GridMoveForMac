@@ -64,6 +64,45 @@ struct SettingsSidebarRowLabel: View {
     }
 }
 
+struct SettingsPreviewConfigurationPage<Preview: View, Controls: View>: View {
+    let preview: Preview
+    let controls: Controls
+
+    init(
+        @ViewBuilder preview: () -> Preview,
+        @ViewBuilder controls: () -> Controls
+    ) {
+        self.preview = preview()
+        self.controls = controls()
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                preview
+            }
+            .frame(maxWidth: 760, alignment: .leading)
+            .padding(.horizontal, 22)
+            .padding(.top, 22)
+            .padding(.bottom, 18)
+
+            Divider()
+
+            ScrollView {
+                VStack(alignment: .leading, spacing: 18) {
+                    controls
+                }
+                .frame(maxWidth: 760, alignment: .leading)
+                .padding(.horizontal, 22)
+                .padding(.vertical, 18)
+                .frame(maxWidth: .infinity, alignment: .top)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color(nsColor: .windowBackgroundColor))
+    }
+}
+
 struct SettingsPageSection<Content: View>: View {
     let title: String?
     @ViewBuilder let content: Content

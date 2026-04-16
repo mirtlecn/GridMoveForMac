@@ -17,7 +17,7 @@ final class SettingsViewModel: ObservableObject {
             switch self {
             case .general: return "General"
             case .layouts: return "Layouts"
-            case .appearance: return "Themes"
+            case .appearance: return "Appearance"
             case .hotkeys: return "Hotkeys"
             case .about: return "About"
             }
@@ -384,6 +384,24 @@ final class SettingsViewModel: ObservableObject {
         configuration.appearance.triggerGap = max(0, configuration.appearance.triggerGap)
         configuration.appearance.highlightStrokeWidth = max(1, configuration.appearance.highlightStrokeWidth)
         persistConfiguration(status: "Appearance updated.")
+    }
+
+    func resetTriggerAppearanceToDefaults() {
+        let defaults = AppConfiguration.defaultValue.appearance
+        configuration.appearance.renderTriggerAreas = defaults.renderTriggerAreas
+        configuration.appearance.triggerOpacity = defaults.triggerOpacity
+        configuration.appearance.triggerGap = defaults.triggerGap
+        configuration.appearance.triggerStrokeColor = defaults.triggerStrokeColor
+        persistConfiguration(status: "Trigger appearance reset.")
+    }
+
+    func resetWindowAppearanceToDefaults() {
+        let defaults = AppConfiguration.defaultValue.appearance
+        configuration.appearance.renderWindowHighlight = defaults.renderWindowHighlight
+        configuration.appearance.highlightFillOpacity = defaults.highlightFillOpacity
+        configuration.appearance.highlightStrokeWidth = defaults.highlightStrokeWidth
+        configuration.appearance.highlightStrokeColor = defaults.highlightStrokeColor
+        persistConfiguration(status: "Window appearance reset.")
     }
 
     func replaceBinding(_ binding: ShortcutBinding) {

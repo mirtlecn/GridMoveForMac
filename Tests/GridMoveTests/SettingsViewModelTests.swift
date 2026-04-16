@@ -6,6 +6,7 @@ import Testing
 @Test func settingsViewModelExposesFiveSidebarSections() async throws {
     #expect(SettingsViewModel.Section.allCases.count == 5)
     #expect(SettingsViewModel.Section.allCases.last == .about)
+    #expect(SettingsViewModel.Section.appearance.title == "Appearance")
 }
 
 @MainActor
@@ -90,4 +91,37 @@ import Testing
 
     viewModel.navigateForward()
     #expect(viewModel.selectedSection == .hotkeys)
+}
+
+@MainActor
+@Test func settingsViewModelResetsAppearanceTabsToDefaults() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let viewModel = SettingsViewModel(
+        configurationStore: store,
+        configurationProvider: { AppConfiguration.defaultValue },
+        onConfigurationSaved: { _ in }
+    )
+
+    viewModel.updateAppearance {
+        $0.renderTriggerAreas = false
+        $0.triggerOpacity = 0.7
+        $0.triggerGap = 9
+        $0.renderWindowHighlight = false
+        $0.highlightFillOpacity = 0.5
+        $0.highlightStrokeWidth = 8
+    }
+
+    viewModel.resetTriggerAppearanceToDefaults()
+    #expect(viewModel.configuration.appearance.renderTriggerAreas == AppConfiguration.defaultValue.appearance.renderTriggerAreas)
+    #expect(viewModel.configuration.appearance.triggerOpacity == AppConfiguration.defaultValue.appearance.triggerOpacity)
+    #expect(viewModel.configuration.appearance.triggerGap == AppConfiguration.defaultValue.appearance.triggerGap)
+
+    viewModel.resetWindowAppearanceToDefaults()
+    #expect(viewModel.configuration.appearance.renderWindowHighlight == AppConfiguration.defaultValue.appearance.renderWindowHighlight)
+    #expect(viewModel.configuration.appearance.highlightFillOpacity == AppConfiguration.defaultValue.appearance.highlightFillOpacity)
+    #expect(viewModel.configuration.appearance.highlightStrokeWidth == AppConfiguration.defaultValue.appearance.highlightStrokeWidth)
 }

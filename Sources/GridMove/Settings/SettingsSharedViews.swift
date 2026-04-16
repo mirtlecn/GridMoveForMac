@@ -490,24 +490,29 @@ private struct SharedGridPreviewContent: View {
                 bounds: geometry.frame(in: .local),
                 outerPadding: GridPreviewGeometry.defaultOuterPadding
             )
+            let menuBarIconSize = max(8, previewGeometry.menuBarRect.height * 0.42)
+            let menuBarTextSize = max(8, previewGeometry.menuBarRect.height * 0.34)
+            let menuBarHorizontalPadding = max(8, previewGeometry.menuBarRect.height * 0.38)
 
             ZStack {
                 RoundedRectangle(cornerRadius: 20)
-                    .fill(Color(nsColor: .windowBackgroundColor).opacity(0.95))
+                    .fill(PreviewPalette.previewBackground)
 
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(Color(nsColor: .controlBackgroundColor).opacity(0.9))
-                    .overlay(alignment: .leading) {
-                        Image(systemName: "apple.logo")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(Color.white.opacity(0.78))
-                        .padding(.leading, 10)
-                    }
-                    .overlay(alignment: .trailing) {
-                        Text("12:00")
-                            .font(.system(size: 10, weight: .semibold, design: .rounded))
-                            .foregroundStyle(Color.white.opacity(0.72))
-                        .padding(.trailing, 10)
+                    .fill(PreviewPalette.menuBarBackground)
+                    .overlay {
+                        HStack(spacing: 0) {
+                            Image(systemName: "apple.logo")
+                                .font(.system(size: menuBarIconSize, weight: .semibold))
+                                .foregroundStyle(PreviewPalette.menuBarForeground)
+
+                            Spacer(minLength: 0)
+
+                            Text("12:00")
+                                .font(.system(size: menuBarTextSize, weight: .semibold, design: .rounded))
+                                .foregroundStyle(PreviewPalette.menuBarForeground)
+                        }
+                        .padding(.horizontal, menuBarHorizontalPadding)
                     }
                     .frame(width: previewGeometry.menuBarRect.width, height: previewGeometry.menuBarRect.height)
                     .position(x: previewGeometry.menuBarRect.midX, y: previewGeometry.menuBarRect.midY)
@@ -515,7 +520,7 @@ private struct SharedGridPreviewContent: View {
                 ForEach(0 ..< rows, id: \.self) { segment in
                     let segmentRect = previewGeometry.menuBarSegmentRect(segment: segment)
                     RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.white.opacity(0.08))
+                        .fill(PreviewPalette.menuBarSegmentFill)
                         .frame(width: segmentRect.width, height: segmentRect.height)
                         .position(x: segmentRect.midX, y: segmentRect.midY)
                 }
@@ -531,7 +536,7 @@ private struct SharedGridPreviewContent: View {
                 }
 
                 RoundedRectangle(cornerRadius: 16)
-                    .stroke(Color.secondary.opacity(0.35), lineWidth: 1)
+                    .stroke(PreviewPalette.canvasBorder, lineWidth: 1)
                     .frame(width: previewGeometry.canvasRect.width, height: previewGeometry.canvasRect.height)
                     .position(x: previewGeometry.canvasRect.midX, y: previewGeometry.canvasRect.midY)
 
@@ -543,9 +548,7 @@ private struct SharedGridPreviewContent: View {
     }
 
     private func cellFillColor(column: Int, row: Int) -> Color {
-        let base = NSColor.controlBackgroundColor.blended(withFraction: 0.2, of: .black) ?? .controlBackgroundColor
-        let alternate = NSColor.controlBackgroundColor.blended(withFraction: 0.08, of: .white) ?? .controlBackgroundColor
-        return Color(nsColor: (row + column).isMultiple(of: 2) ? base : alternate)
+        (row + column).isMultiple(of: 2) ? PreviewPalette.primaryCellFill : PreviewPalette.secondaryCellFill
     }
 
     private func overlayView(for overlay: GridPreviewOverlayItem, geometry: GridPreviewGeometry) -> some View {
@@ -571,53 +574,12 @@ private struct SharedGridPreviewContent: View {
     }
 }
 
-struct AppearancePreviewSwiftUIView: View {
-    let configuration: AppConfiguration
-
-    private let previewColumns = 12
-    private let previewRows = 6
-    private let previewWindowSelection = GridSelection(x: 3, y: 1, w: 6, h: 4)
-    private let previewTriggerSelection = GridSelection(x: 5, y: 2, w: 2, h: 2)
-
-    var body: some View {
-        SharedGridPreview(
-            columns: previewColumns,
-            rows: previewRows,
-            overlays: appearancePreviewOverlays
-        )
-    }
-
-    private var appearancePreviewOverlays: [GridPreviewOverlayItem] {
-        var overlays: [GridPreviewOverlayItem] = []
-
-        if configuration.appearance.renderWindowHighlight {
-            overlays.append(
-                GridPreviewOverlayItem(
-                    id: "window",
-                    region: .screen(previewWindowSelection),
-                    style: GridPreviewOverlayStyle(
-                        strokeColor: Color(configuration.appearance.highlightStrokeColor.nsColor),
-                        fillOpacity: configuration.appearance.highlightFillOpacity,
-                        strokeWidth: configuration.appearance.highlightStrokeWidth
-                    )
-                )
-            )
-        }
-
-        if configuration.appearance.renderTriggerAreas {
-            overlays.append(
-                GridPreviewOverlayItem(
-                    id: "trigger",
-                    region: .screen(previewTriggerSelection),
-                    style: GridPreviewOverlayStyle(
-                        strokeColor: Color(configuration.appearance.triggerStrokeColor.nsColor),
-                        fillOpacity: min(max(configuration.appearance.triggerOpacity * 0.45, 0.08), 0.35),
-                        strokeWidth: 2
-                    )
-                )
-            )
-        }
-
-        return overlays
-    }
+private enum PreviewPalette {
+    static let previewBackground = Color(red: 0.18, green: 0.18, blue: 0.19)
+    static let menuBarBackground = Color(red: 0.23, green: 0.23, blue: 0.24)
+    static let menuBarForeground = Color.white.opacity(0.74)
+    static let menuBarSegmentFill = Color.white.opacity(0.08)
+    static let primaryCellFill = Color(red: 0.11, green: 0.11, blue: 0.12)
+    static let secondaryCellFill = Color(red: 0.24, green: 0.24, blue: 0.25)
+    static let canvasBorder = Color.white.opacity(0.28)
 }
