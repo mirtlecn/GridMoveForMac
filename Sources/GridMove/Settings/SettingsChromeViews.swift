@@ -200,14 +200,26 @@ struct SettingsTableHeaderRow: View {
 }
 
 struct AboutSettingsView: View {
+    private var appVersion: String {
+        if let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
+           !version.isEmpty {
+            return version
+        }
+        return "0.1.0"
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            SettingsPageSection(title: "About") {
-                Text("About content will be added later.")
-                    .foregroundStyle(.secondary)
+        Form {
+            Section {
+                LabeledContent("Version", value: appVersion)
+                    .font(.body)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(28)
+        .padding(.top, 2)
+        .background(Color(nsColor: .windowBackgroundColor))
+        .formStyle(.grouped)
+        .scrollContentBackground(.hidden)
+        .controlSize(.small)
     }
 }
