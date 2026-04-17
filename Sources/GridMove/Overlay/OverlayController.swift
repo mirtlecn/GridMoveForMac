@@ -22,6 +22,7 @@ final class OverlayController {
     private var panel: OverlayPanel?
     private var screenIdentifier: String?
     private var flashGeneration: UInt64 = 0
+    private var badgeGeneration: UInt64 = 0
     private var pendingPostFlashOverlayState: OverlayContentState?
 
     func update(
@@ -118,16 +119,6 @@ final class OverlayController {
         configuration: AppConfiguration,
         keepsOverlayVisibleAfterFlash: Bool
     ) {
-        cancelPendingFlash()
-
-        let steadyState = OverlayContentState(
-            screen: screen,
-            slots: slots,
-            highlightFrame: highlightFrame,
-            badge: nil,
-            configuration: configuration
-        )
-        pendingPostFlashOverlayState = keepsOverlayVisibleAfterFlash ? steadyState : nil
         showOverlay(
             screen: screen,
             slots: slots,
@@ -135,31 +126,25 @@ final class OverlayController {
             configuration: configuration,
             badge: OverlayBadgeState(text: text)
         )
-        panel?.alphaValue = 1.0
 
-        flashGeneration &+= 1
-        let expectedGeneration = flashGeneration
+        badgeGeneration &+= 1
+        let expectedGeneration = badgeGeneration
 
-        NSAnimationContext.runAnimationGroup { context in
-            context.duration = FlashDuration.seconds
-            self.panel?.animator().alphaValue = 0.0
-        } completionHandler: { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + FlashDuration.seconds) { [weak self] in
             Task { @MainActor in
                 guard let self else { return }
-                if self.flashGeneration == expectedGeneration {
-                    if let pendingPostFlashOverlayState = self.pendingPostFlashOverlayState {
-                        self.panel?.alphaValue = 1.0
-                        self.showOverlay(
-                            screen: pendingPostFlashOverlayState.screen,
-                            slots: pendingPostFlashOverlayState.slots,
-                            highlightFrame: pendingPostFlashOverlayState.highlightFrame,
-                            configuration: pendingPostFlashOverlayState.configuration,
-                            badge: pendingPostFlashOverlayState.badge
-                        )
-                        self.pendingPostFlashOverlayState = nil
-                    } else {
-                        self.dismissPanel()
-                    }
+                guard self.badgeGeneration == expectedGeneration else { return }
+
+                if keepsOverlayVisibleAfterFlash {
+                    self.showOverlay(
+                        screen: screen,
+                        slots: slots,
+                        highlightFrame: highlightFrame,
+                        configuration: configuration,
+                        badge: nil
+                    )
+                } else {
+                    self.dismiss()
                 }
             }
         }
@@ -174,6 +159,7 @@ final class OverlayController {
 
     private func cancelPendingFlash() {
         flashGeneration &+= 1
+        badgeGeneration &+= 1
         pendingPostFlashOverlayState = nil
         panel?.alphaValue = 1.0
     }
@@ -219,6 +205,7 @@ final class OverlayController {
         panel = nil
         screenIdentifier = nil
         pendingPostFlashOverlayState = nil
+        badgeGeneration &+= 1
     }
 }
 
