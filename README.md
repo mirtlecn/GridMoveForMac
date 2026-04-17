@@ -6,7 +6,7 @@ GridMove is a native macOS menu bar app for applying window layouts and moving w
 
 - Global keyboard shortcuts for cycling layouts and applying layout indexes within the active group
 - Drag-triggered layout selection and move-only mode
-- Layout groups that can be switched from the menu bar or from layout mode with a Shift tap
+- Layout groups that can be switched from the menu bar, from layout mode with a Shift tap, or from layout mode with vertical mouse-wheel scrolling
 - Per-display layout sets with `all`, `main`, single-display, and multi-display targeting
 - Trigger regions on the screen grid or menu bar strip
 - Accessibility-based window lookup, focus, move, resize, and fullscreen exit
@@ -77,7 +77,7 @@ The example below uses `jsonc` only for explanation. Real files must be plain JS
     "excludedWindowTitles": [
       // Exact-match window titles to ignore.
     ],
-    "activeLayoutGroup": "built-in" // The currently selected layout group. Menu-bar changes and layout-mode Shift cycling both update this value.
+    "activeLayoutGroup": "built-in" // The currently selected layout group. Menu-bar changes, layout-mode Shift cycling, and layout-mode mouse-wheel cycling all update this value.
   },
   "appearance": {
     "renderTriggerAreas": false, // Show trigger-region overlay while in layout mode. The default is off.
@@ -128,7 +128,7 @@ The example below uses `jsonc` only for explanation. Real files must be plain JS
 ```jsonc
 {
   "name": "built-in",
-  "includeInGroupCycle": true, // Missing includeInGroupCycle means this group still participates in Shift-based group cycling while layout mode is active.
+  "includeInGroupCycle": true, // Missing includeInGroupCycle means this group still participates in layout-mode group cycling, including Shift taps and mouse-wheel scrolling.
   "sets": [
     {
       "monitor": "all", // Allowed values: "all", "main", "<display-id>", ["<display-id>", ...]. Trigger overlays resolve sets by explicit ID or ID array, then main, then all.
@@ -175,6 +175,19 @@ The example below uses `jsonc` only for explanation. Real files must be plain JS
   ]
 }
 ```
+
+Manual reload behavior:
+
+- full success applies the config and posts a success notification
+- partial success applies the config, skips invalid matching layout files, and posts a warning notification
+- full failure keeps the current in-memory config and posts a failure notification
+
+Layout-mode group cycling behavior:
+
+- `Shift` tap cycles to the next eligible group
+- mouse-wheel up cycles to the previous eligible group
+- mouse-wheel down cycles to the next eligible group
+- one scroll gesture triggers at most one group change after a small accumulated-distance threshold, then must stop briefly before the next group change
 
 
 ## Additional docs
