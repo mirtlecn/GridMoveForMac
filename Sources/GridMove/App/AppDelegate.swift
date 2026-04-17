@@ -1,13 +1,11 @@
 import AppKit
 import Foundation
-@preconcurrency import UserNotifications
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private let configurationStore: ConfigurationStore
+    private let configurationCoordinator: ConfigurationRuntimeCoordinator
     private let openURL: (URL) -> Bool
-    private let notifyUser: (String, String) -> Void
-    private let currentMonitorMapProvider: () -> [String: String]
+    private let userNotifier: UserNotifier
     private let injectedAccessibilityStatusProvider: (() -> Bool)?
     private let injectedAccessibilityPromptRequester: (() -> Bool)?
     private let layoutEngine = LayoutEngine()
@@ -67,15 +65,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         accessibilityStatusProvider: (() -> Bool)? = nil,
         accessibilityPromptRequester: (() -> Bool)? = nil,
         notifyUser: @escaping (String, String) -> Void = { title, body in
-            AppDelegate.postSystemNotification(title: title, body: body)
+            UserNotifier().notify(title: title, body: body)
         }
     ) {
-        self.configurationStore = configurationStore
+        self.configurationCoordinator = ConfigurationRuntimeCoordinator(
+            configurationStore: configurationStore,
+            currentMonitorMapProvider: currentMonitorMapProvider
+        )
         self.openURL = openURL
-        self.currentMonitorMapProvider = currentMonitorMapProvider
         self.injectedAccessibilityStatusProvider = accessibilityStatusProvider
         self.injectedAccessibilityPromptRequester = accessibilityPromptRequester
-        self.notifyUser = notifyUser
+        self.userNotifier = UserNotifier(notifyHandler: notifyUser)
         super.init()
     }
 
@@ -184,30 +184,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func reloadConfigurationFromDisk(notifyOnFallback: Bool = false) {
         do {
-            let result = try configurationStore.loadWithStatus()
-            var configuration = result.configuration
-            let didUpdateMonitorMetadata = synchronizeMonitorMetadata(configuration: &configuration)
-            if didUpdateMonitorMetadata && result.didFallBackToDefault == false {
-                do {
-                    try configurationStore.save(configuration)
-                } catch {
-                    AppLogger.shared.error("Failed to save monitor metadata: \(error.localizedDescription)")
-                }
-            }
-            applyConfiguration(configuration)
+            let result = try configurationCoordinator.loadConfiguration()
+            applyConfiguration(result.configuration)
             if result.didFallBackToDefault && notifyOnFallback {
-                notifyUser(
-                    UICopy.configReloadFailedTitle,
-                    UICopy.configReloadFailedBody
+                userNotifier.notify(
+                    title: UICopy.configReloadFailedTitle,
+                    body: UICopy.configReloadFailedBody
                 )
             }
         } catch {
             AppLogger.shared.error("Failed to load configuration: \(error.localizedDescription)")
             applyConfiguration(.defaultValue)
             if notifyOnFallback {
-                notifyUser(
-                    UICopy.configReloadFailedTitle,
-                    UICopy.configReloadFailedBody
+                userNotifier.notify(
+                    title: UICopy.configReloadFailedTitle,
+                    body: UICopy.configReloadFailedBody
                 )
             }
         }
@@ -382,26 +373,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @discardableResult
     func openConfigurationDirectory() -> Bool {
-        openURL(configurationStore.directoryURL)
+        openURL(configurationCoordinator.directoryURL)
     }
 
     @discardableResult
     private func updateConfiguration(_ mutate: (inout AppConfiguration) -> Void) -> Bool {
-        var candidateConfiguration = configuration
-        mutate(&candidateConfiguration)
-        synchronizeMonitorMetadata(configuration: &candidateConfiguration)
-
         do {
-            try configurationStore.save(candidateConfiguration)
+            let candidateConfiguration = try configurationCoordinator.saveUpdatedConfiguration(
+                from: configuration,
+                mutate: mutate
+            )
+            applyConfiguration(candidateConfiguration)
+            return true
         } catch {
             AppLogger.shared.error("Failed to save configuration: \(error.localizedDescription)")
             menuController?.updateToggleStates(makeToggleSettingsState(configuration: configuration))
             menuController?.setEnabled(configuration.general.isEnabled)
             return false
         }
-
-        applyConfiguration(candidateConfiguration)
-        return true
     }
 
     private func applyConfiguration(_ configuration: AppConfiguration) {
@@ -469,16 +458,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
-    @discardableResult
-    private func synchronizeMonitorMetadata(configuration: inout AppConfiguration) -> Bool {
-        let monitorMap = currentMonitorMapProvider()
-        guard configuration.monitors != monitorMap else {
-            return false
-        }
-        configuration.monitors = monitorMap
-        return true
-    }
-
     private func currentAccessibilityStatus() -> Bool {
         injectedAccessibilityStatusProvider?() ?? windowController.isAccessibilityTrusted(prompt: false)
     }
@@ -489,62 +468,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func validateAccessibilityAccessForAction() -> Bool {
         refreshAccessibilityState(promptOnMissing: true)
-    }
-
-    nonisolated private static func postSystemNotification(title: String, body: String) {
-        if Bundle.main.bundleURL.pathExtension == "app", Bundle.main.bundleIdentifier != nil {
-            postUserNotificationCenterNotification(title: title, body: body)
-            return
-        }
-
-        postAppleScriptNotification(title: title, body: body)
-    }
-
-    nonisolated private static func postUserNotificationCenterNotification(title: String, body: String) {
-        let center = UNUserNotificationCenter.current()
-        center.requestAuthorization(options: [.alert, .sound]) { granted, error in
-            if let error {
-                AppLogger.shared.error("Failed to request notification authorization: \(error.localizedDescription, privacy: .public)")
-                return
-            }
-
-            guard granted else {
-                return
-            }
-
-            let content = UNMutableNotificationContent()
-            content.title = title
-            content.body = body
-            content.sound = .default
-
-            let request = UNNotificationRequest(
-                identifier: "gridmove-config-reload-failed",
-                content: content,
-                trigger: nil
-            )
-            center.add(request) { error in
-                if let error {
-                    AppLogger.shared.error("Failed to post notification: \(error.localizedDescription, privacy: .public)")
-                }
-            }
-        }
-    }
-
-    nonisolated private static func postAppleScriptNotification(title: String, body: String) {
-        let scriptSource = """
-        display notification "\(escapeAppleScript(body))" with title "\(escapeAppleScript(title))"
-        """
-
-        var error: NSDictionary?
-        NSAppleScript(source: scriptSource)?.executeAndReturnError(&error)
-        if let error {
-            AppLogger.shared.error("Failed to post AppleScript notification: \(error.description, privacy: .public)")
-        }
-    }
-
-    nonisolated private static func escapeAppleScript(_ value: String) -> String {
-        value
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "\"", with: "\\\"")
     }
 }
