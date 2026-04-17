@@ -107,18 +107,53 @@ enum LayoutGroupResolver {
     static func targetScreen(
         for entry: ResolvedLayoutEntry,
         currentScreen: NSScreen?,
-        configuration _: AppConfiguration
+        configuration: AppConfiguration
     ) -> NSScreen? {
         guard let targetDisplayID = targetDisplayID(
-            for: entry.set.monitor,
+            for: entry,
             currentDisplayID: currentScreen.map(MonitorDiscovery.displayID(for:)),
             mainDisplayID: NSScreen.screens.first(where: MonitorDiscovery.isMainScreen(_:)).map(MonitorDiscovery.displayID(for:)),
-            availableDisplayIDs: NSScreen.screens.map(MonitorDiscovery.displayID(for:))
+            availableDisplayIDs: NSScreen.screens.map(MonitorDiscovery.displayID(for:)),
+            configuration: configuration
         ) else {
             return nil
         }
 
         return NSScreen.screens.first(where: { MonitorDiscovery.displayID(for: $0) == targetDisplayID })
+    }
+
+    static func targetDisplayID(
+        for entry: ResolvedLayoutEntry,
+        currentDisplayID: String?,
+        mainDisplayID: String?,
+        availableDisplayIDs: [String],
+        configuration: AppConfiguration
+    ) -> String? {
+        if let group = activeGroup(in: configuration),
+           group.name == entry.groupName {
+            let candidateDisplayIDs = availableDisplayIDs.filter { displayID in
+                resolvedSet(
+                    in: group,
+                    forDisplayID: displayID,
+                    mainDisplayID: mainDisplayID
+                ) == entry.set
+            }
+
+            if let currentDisplayID, candidateDisplayIDs.contains(currentDisplayID) {
+                return currentDisplayID
+            }
+
+            if let candidateDisplayID = candidateDisplayIDs.first {
+                return candidateDisplayID
+            }
+        }
+
+        return targetDisplayID(
+            for: entry.set.monitor,
+            currentDisplayID: currentDisplayID,
+            mainDisplayID: mainDisplayID,
+            availableDisplayIDs: availableDisplayIDs
+        )
     }
 
     static func targetDisplayID(
@@ -149,6 +184,28 @@ enum LayoutGroupResolver {
             }
             return displayIDs.first(where: { availableDisplayIDs.contains($0) })
         }
+    }
+
+    private static func resolvedSet(
+        in group: LayoutGroup,
+        forDisplayID displayID: String,
+        mainDisplayID: String?
+    ) -> LayoutSet? {
+        if let explicitSet = group.sets.first(where: { set in
+            if case let .displays(displayIDs) = set.monitor {
+                return displayIDs.contains(displayID)
+            }
+            return false
+        }) {
+            return explicitSet
+        }
+
+        if displayID == mainDisplayID,
+           let mainSet = group.sets.first(where: { $0.monitor == .main }) {
+            return mainSet
+        }
+
+        return group.sets.first(where: { $0.monitor == .all })
     }
 }
 

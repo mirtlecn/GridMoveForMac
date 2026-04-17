@@ -297,6 +297,134 @@ import Testing
     #expect(LayoutGroupResolver.entry(at: 5, configuration: configuration) == nil)
 }
 
+@Test func layoutGroupResolverTargetsDisplayCompatibleWithSelectedSet() async throws {
+    var configuration = AppConfiguration.defaultValue
+    configuration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
+
+    let fullscreenMainEntry = try #require(LayoutGroupResolver.entry(at: 1, configuration: configuration))
+    let fullscreenOtherEntry = try #require(LayoutGroupResolver.entry(at: 4, configuration: configuration))
+
+    #expect(
+        LayoutGroupResolver.targetDisplayID(
+            for: fullscreenMainEntry,
+            currentDisplayID: "other",
+            mainDisplayID: "main",
+            availableDisplayIDs: ["main", "other"],
+            configuration: configuration
+        ) == "main"
+    )
+    #expect(
+        LayoutGroupResolver.targetDisplayID(
+            for: fullscreenOtherEntry,
+            currentDisplayID: "main",
+            mainDisplayID: "main",
+            availableDisplayIDs: ["main", "other"],
+            configuration: configuration
+        ) == "other"
+    )
+    #expect(
+        LayoutGroupResolver.targetDisplayID(
+            for: fullscreenOtherEntry,
+            currentDisplayID: "other",
+            mainDisplayID: "main",
+            availableDisplayIDs: ["main", "other"],
+            configuration: configuration
+        ) == "other"
+    )
+
+    configuration.general.activeLayoutGroup = AppConfiguration.builtInGroupName
+    let builtInEntry = try #require(LayoutGroupResolver.entry(at: 1, configuration: configuration))
+    #expect(
+        LayoutGroupResolver.targetDisplayID(
+            for: builtInEntry,
+            currentDisplayID: "main",
+            mainDisplayID: "main",
+            availableDisplayIDs: ["main", "other"],
+            configuration: configuration
+        ) == "main"
+    )
+}
+
+@Test func layoutGroupResolverKeepsOtherScreenWithinFallbackAllSetAcrossThreeDisplays() async throws {
+    var configuration = AppConfiguration.defaultValue
+    configuration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
+    let fullscreenOtherEntry = try #require(LayoutGroupResolver.entry(at: 4, configuration: configuration))
+
+    #expect(
+        LayoutGroupResolver.targetDisplayID(
+            for: fullscreenOtherEntry,
+            currentDisplayID: "main",
+            mainDisplayID: "main",
+            availableDisplayIDs: ["main", "other-a", "other-b"],
+            configuration: configuration
+        ) == "other-a"
+    )
+    #expect(
+        LayoutGroupResolver.targetDisplayID(
+            for: fullscreenOtherEntry,
+            currentDisplayID: "other-b",
+            mainDisplayID: "main",
+            availableDisplayIDs: ["main", "other-a", "other-b"],
+            configuration: configuration
+        ) == "other-b"
+    )
+}
+
+@Test func layoutGroupResolverDoesNotReuseDisplayOwnedByExplicitSetWhenApplyingFallbackAllLayout() async throws {
+    let explicitLayout = LayoutPreset(
+        id: "layout-explicit",
+        name: "Explicit",
+        gridColumns: 12,
+        gridRows: 6,
+        windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
+        triggerRegion: nil,
+        includeInLayoutIndex: true
+    )
+    let fallbackLayout = LayoutPreset(
+        id: "layout-fallback",
+        name: "Fallback",
+        gridColumns: 12,
+        gridRows: 6,
+        windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
+        triggerRegion: nil,
+        includeInLayoutIndex: true
+    )
+    let configuration = AppConfiguration(
+        general: .init(
+            isEnabled: true,
+            excludedBundleIDs: [],
+            excludedWindowTitles: [],
+            activeLayoutGroup: "mixed",
+            mouseButtonNumber: 3
+        ),
+        appearance: AppConfiguration.defaultValue.appearance,
+        dragTriggers: AppConfiguration.defaultValue.dragTriggers,
+        hotkeys: .init(bindings: []),
+        layoutGroups: [
+            LayoutGroup(
+                name: "mixed",
+                includeInGroupCycle: true,
+                sets: [
+                    LayoutSet(monitor: .displays(["other-a"]), layouts: [explicitLayout]),
+                    LayoutSet(monitor: .all, layouts: [fallbackLayout]),
+                ]
+            ),
+        ],
+        monitors: [:]
+    )
+    let fallbackEntry = try #require(LayoutGroupResolver.entry(for: "layout-fallback", configuration: configuration))
+
+    #expect(
+        LayoutGroupResolver.targetDisplayID(
+            for: fallbackEntry,
+            currentDisplayID: "other-a",
+            mainDisplayID: "main",
+            availableDisplayIDs: ["main", "other-a", "other-b"],
+            configuration: configuration
+        ) == "main"
+    )
+}
+
 @Test func layoutEngineKeepsOnlyTenRecentWindowLayoutRecords() async throws {
     let engine = LayoutEngine()
     let layouts = AppConfiguration.defaultValue.layouts

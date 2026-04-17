@@ -361,8 +361,8 @@ Display set resolution:
 - priority is explicit display ID or ID array, then `main`, then `all`
 - drag overlays and trigger hit testing only use the resolved set for the current display
 - `cycleNext` and `cyclePrevious` only use the resolved set for the target window's current display, skip layouts whose `includeInLayoutIndex` is `false`, and never move the window across displays
-- menu and CLI direct layout application resolve the target display directly from the matched layout set's `monitor` value
-- `monitor: all` keeps the target window on its current display
+- menu, shortcut, and CLI direct layout application first resolve which displays map to the selected layout set inside the active group, then keep the current display only when it belongs to that set
+- `monitor: all` keeps the current display only when that display still resolves to the selected set; if another set owns the current display, it picks the first currently connected display that resolves to the selected set
 - `monitor: main` always targets the current system main display
 - `monitor: "<display-id>"` always targets that display
 - `monitor: ["<display-id>", ...]` keeps the current display when it is included; otherwise it picks the first currently connected display in declaration order
