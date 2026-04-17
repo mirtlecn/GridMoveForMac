@@ -60,6 +60,12 @@ final class SettingsViewModel: ObservableObject {
         let id: String
         let displayID: String
         let title: String
+        let name: String
+        let subtitle: String
+        let gridColumns: Int
+        let gridRows: Int
+        let windowSelection: GridSelection
+        let includeInCycle: Bool
     }
 
     enum EntryKind: String, Identifiable {
@@ -144,10 +150,23 @@ final class SettingsViewModel: ObservableObject {
 
     var layoutItems: [LayoutListItem] {
         configuration.layouts.enumerated().map { index, layout in
-            LayoutListItem(
+            let trimmedName = layout.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            let displayID = makeLayoutDisplayID(for: index)
+            let subtitleParts = [
+                trimmedName.isEmpty ? nil : displayID,
+                "\(layout.gridColumns) x \(layout.gridRows)",
+                layout.includeInCycle ? nil : UICopy.notInCycle,
+            ].compactMap { $0 }
+            return LayoutListItem(
                 id: layout.id,
-                displayID: makeLayoutDisplayID(for: index),
-                title: layoutDisplayLabel(for: layout, index: index)
+                displayID: displayID,
+                title: layoutDisplayLabel(for: layout, index: index),
+                name: trimmedName,
+                subtitle: subtitleParts.joined(separator: " • "),
+                gridColumns: layout.gridColumns,
+                gridRows: layout.gridRows,
+                windowSelection: layout.windowSelection,
+                includeInCycle: layout.includeInCycle
             )
         }
     }

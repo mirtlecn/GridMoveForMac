@@ -36,11 +36,11 @@ struct LayoutsSettingsView: View {
     }
 
     private var listPage: some View {
-        VStack(spacing: 0) {
-            List {
+        List {
+            Section {
                 ForEach(viewModel.layoutItems) { item in
                     LayoutListRow(
-                        title: item.title,
+                        item: item,
                         onOpen: { viewModel.openLayoutDetail(id: item.id) }
                     )
                     .onDrag {
@@ -57,20 +57,18 @@ struct LayoutsSettingsView: View {
                     )
                 }
             }
-
-            Divider()
-
-            HStack {
-                Spacer()
+        }
+        .listStyle(.bordered(alternatesRowBackgrounds: false))
+        .onDrop(of: [UTType.text], isTargeted: nil) { _ in
+            draggedLayoutID = nil
+            return false
+        }
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
                 Button(UICopy.addLayout) {
                     viewModel.addLayout()
                 }
             }
-            .padding(16)
-        }
-        .onDrop(of: [UTType.text], isTargeted: nil) { _ in
-            draggedLayoutID = nil
-            return false
         }
     }
 
@@ -218,23 +216,74 @@ struct LayoutsSettingsView: View {
 }
 
 private struct LayoutListRow: View {
-    let title: String
+    let item: SettingsViewModel.LayoutListItem
     let onOpen: () -> Void
 
     var body: some View {
         Button(action: onOpen) {
             HStack(spacing: 12) {
-                Text(title)
-                    .foregroundStyle(.primary)
+                LayoutThumbnailView(
+                    columns: item.gridColumns,
+                    rows: item.gridRows,
+                    selection: item.windowSelection,
+                    isIncludedInCycle: item.includeInCycle
+                )
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(item.name.isEmpty ? item.displayID : item.name)
+                        .foregroundStyle(.primary)
+
+                    Text(item.subtitle)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
 
                 Spacer(minLength: 12)
 
                 Image(systemName: "chevron.right")
                     .foregroundStyle(.secondary)
             }
+            .padding(.vertical, 4)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct LayoutThumbnailView: View {
+    let columns: Int
+    let rows: Int
+    let selection: GridSelection
+    let isIncludedInCycle: Bool
+
+    var body: some View {
+        GeometryReader { geometry in
+            let size = geometry.size
+            let cellWidth = size.width / CGFloat(max(columns, 1))
+            let cellHeight = size.height / CGFloat(max(rows, 1))
+
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(.quaternary)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(.separator.opacity(0.6), lineWidth: 1)
+                }
+                .overlay(alignment: .topLeading) {
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(isIncludedInCycle ? Color.accentColor : Color.secondary.opacity(0.45))
+                        .frame(
+                            width: cellWidth * CGFloat(selection.w),
+                            height: cellHeight * CGFloat(selection.h)
+                        )
+                        .offset(
+                            x: cellWidth * CGFloat(selection.x),
+                            y: cellHeight * CGFloat(selection.y)
+                        )
+                        .padding(4)
+                }
+        }
+        .frame(width: 32, height: 32)
+        .accessibilityHidden(true)
     }
 }
 

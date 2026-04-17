@@ -27,6 +27,7 @@ import Testing
     #expect(UICopy.openAccessibilitySettings == "Open accessibility settings")
     #expect(UICopy.typeShortcut == "Type shortcut")
     #expect(UICopy.notSet == "Not set")
+    #expect(UICopy.notInCycle == "Not in cycle")
     #expect(UICopy.windowTitle == "Window title")
     #expect(UICopy.defaultLayoutNames[7] == "Right 1/3 top")
     #expect(UICopy.defaultLayoutNames[10] == "Fill all screen (Menu bar)")

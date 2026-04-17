@@ -57,6 +57,7 @@ enum UICopy {
     static let delete = "Delete"
     static let save = "Save"
     static let includeInCycle = "Include in cycle"
+    static let notInCycle = "Not in cycle"
     static let name = "Name"
     static let optionalName = "Optional name"
     static let grid = "Grid"
