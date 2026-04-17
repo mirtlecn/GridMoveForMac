@@ -181,11 +181,6 @@ private enum ConfigurationSchemaConverter {
         }
 
         for group in configuration.layoutGroups {
-            let layoutNames = configuration.flattenedLayouts(in: group).map { $0.name.lowercased() }
-            guard Set(layoutNames).count == layoutNames.count else {
-                throw ConfigurationFileError.duplicateLayoutName(group.name)
-            }
-
             var explicitDisplayIDs: Set<String> = []
             var hasMainSet = false
             var hasAllSet = false
@@ -372,6 +367,5 @@ private enum ConfigurationFileError: Error {
     case invalidLayoutReference(Int)
     case missingActiveLayoutGroup(String)
     case duplicateLayoutGroupName
-    case duplicateLayoutName(String)
     case overlappingMonitorBindings(String)
 }

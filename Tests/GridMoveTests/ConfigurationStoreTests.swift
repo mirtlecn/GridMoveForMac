@@ -171,6 +171,79 @@ import Testing
     #expect(configuration.appearance.highlightStrokeColor.hexString == "#FFFFFFEB")
 }
 
+@Test func configurationStoreAllowsDuplicateLayoutNamesWithinOneGroup() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-duplicate-layout-names-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
+
+    let json = """
+    {
+      "general": {
+        "isEnabled": true,
+        "excludedBundleIDs": ["com.apple.Spotlight"],
+        "excludedWindowTitles": [],
+        "activeLayoutGroup": "work"
+      },
+      "appearance": {
+        "renderTriggerAreas": false,
+        "triggerOpacity": 0.2,
+        "triggerGap": 2,
+        "triggerStrokeColor": "#007AFF33",
+        "renderWindowHighlight": true,
+        "highlightFillOpacity": 0.08,
+        "highlightStrokeWidth": 3,
+        "highlightStrokeColor": "#FFFFFFEB"
+      },
+      "dragTriggers": {
+        "middleMouseButtonNumber": 2,
+        "enableMiddleMouseDrag": true,
+        "enableModifierLeftMouseDrag": true,
+        "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
+        "activationDelaySeconds": 0.3,
+        "activationMoveThreshold": 10
+      },
+      "hotkeys": {
+        "bindings": []
+      },
+      "layoutGroups": [
+        {
+          "name": "work",
+          "sets": [
+            {
+              "monitor": "main",
+              "layouts": [
+                {
+                  "name": "Center",
+                  "gridColumns": 12,
+                  "gridRows": 6,
+                  "windowSelection": { "x": 0, "y": 0, "w": 6, "h": 6 }
+                },
+                {
+                  "name": "Center",
+                  "gridColumns": 12,
+                  "gridRows": 6,
+                  "windowSelection": { "x": 6, "y": 0, "w": 6, "h": 6 }
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      "monitors": {}
+    }
+    """
+
+    try json.write(to: store.fileURL, atomically: true, encoding: .utf8)
+    let result = try store.loadWithStatus()
+
+    #expect(result.didFallBackToDefault == false)
+    #expect(result.configuration.general.activeLayoutGroup == "work")
+    #expect(result.configuration.layoutGroups[0].sets[0].layouts.map(\.name) == ["Center", "Center"])
+}
+
 @Test func configurationStoreRejectsCommentedJSON() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-comment-json-reject-\(UUID().uuidString)", isDirectory: true)

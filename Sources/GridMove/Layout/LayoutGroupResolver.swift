@@ -73,7 +73,18 @@ enum LayoutGroupResolver {
             return entry
         }
         if !matchedLayouts.isEmpty {
-            throw CommandLineLayoutResolutionError.ambiguousLayoutName(identifier, matches: matchedLayouts.map(\.layout))
+            let layoutIndexByID = Dictionary(
+                uniqueKeysWithValues: indexedActiveEntries(in: configuration).enumerated().map { offset, entry in
+                    (entry.layout.id, offset + 1)
+                }
+            )
+            let matches = matchedLayouts.map { entry in
+                LayoutNameMatch(
+                    name: entry.layout.name,
+                    layoutIndex: layoutIndexByID[entry.layout.id]
+                )
+            }
+            throw CommandLineLayoutResolutionError.ambiguousLayoutName(identifier, matches: matches)
         }
         throw CommandLineLayoutResolutionError.unknownLayout(identifier)
     }

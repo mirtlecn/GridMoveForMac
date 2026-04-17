@@ -105,8 +105,13 @@ final class LayoutActionExecutor {
             return .success
         case let .applyLayoutByName(name):
             let currentScreen = screen(for: window)
-            guard let entry = try? LayoutGroupResolver.resolveNamedLayout(identifier: name, configuration: configuration) else {
-                return .failure("No layout named \(name).")
+            let entry: ResolvedLayoutEntry
+            do {
+                entry = try LayoutGroupResolver.resolveNamedLayout(identifier: name, configuration: configuration)
+            } catch let error as CommandLineLayoutResolutionError {
+                return .failure(error.message)
+            } catch {
+                return .failure("Failed to resolve layout: \(error.localizedDescription)")
             }
             guard let targetScreen = LayoutGroupResolver.targetScreen(for: entry, currentScreen: currentScreen, configuration: configuration) else {
                 return .failure("No target display found for layout \(name).")

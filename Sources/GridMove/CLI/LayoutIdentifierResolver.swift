@@ -1,8 +1,13 @@
 import Foundation
 
+struct LayoutNameMatch: Equatable {
+    let name: String
+    let layoutIndex: Int?
+}
+
 enum CommandLineLayoutResolutionError: Error, Equatable {
     case unknownLayout(String)
-    case ambiguousLayoutName(String, matches: [LayoutPreset])
+    case ambiguousLayoutName(String, matches: [LayoutNameMatch])
     case invalidLayoutIndex(String)
 
     var message: String {
@@ -10,12 +15,17 @@ enum CommandLineLayoutResolutionError: Error, Equatable {
         case let .unknownLayout(identifier):
             return "Unknown layout: \(identifier)"
         case let .ambiguousLayoutName(identifier, matches):
-            let matchList = matches.map { "- \($0.name)" }.joined(separator: "\n")
+            let matchList = matches.map { match in
+                if let layoutIndex = match.layoutIndex {
+                    return "- \(match.name) [index \(layoutIndex)]"
+                }
+                return "- \(match.name) [no layout index]"
+            }.joined(separator: "\n")
             return """
             Ambiguous layout name: \(identifier)
-            Matched layouts:
+            Matched layouts in the active group:
             \(matchList)
-            Please use -layout <layout-index>.
+            Please use -layout <number>.
             """
         case let .invalidLayoutIndex(value):
             return "Unknown layout index: \(value)"
@@ -47,7 +57,14 @@ enum LayoutIdentifierResolver {
             return matchedLayout
         }
         if !matchedLayouts.isEmpty {
-            throw CommandLineLayoutResolutionError.ambiguousLayoutName(identifier, matches: matchedLayouts)
+            let indexedLayoutIDs = layouts.filter(\.includeInLayoutIndex).map(\.id)
+            let matches = matchedLayouts.map { layout in
+                LayoutNameMatch(
+                    name: layout.name,
+                    layoutIndex: indexedLayoutIDs.firstIndex(of: layout.id).map { $0 + 1 }
+                )
+            }
+            throw CommandLineLayoutResolutionError.ambiguousLayoutName(identifier, matches: matches)
         }
 
         throw CommandLineLayoutResolutionError.unknownLayout(identifier)

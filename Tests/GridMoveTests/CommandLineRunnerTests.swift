@@ -101,7 +101,15 @@ private final class Locked<Value: Sendable>: @unchecked Sendable {
         ),
     ]
 
-    #expect(throws: CommandLineLayoutResolutionError.ambiguousLayoutName("Center", matches: layouts)) {
+    #expect(
+        throws: CommandLineLayoutResolutionError.ambiguousLayoutName(
+            "Center",
+            matches: [
+                LayoutNameMatch(name: "Center", layoutIndex: 1),
+                LayoutNameMatch(name: "Center", layoutIndex: 2),
+            ]
+        )
+    ) {
         try LayoutIdentifierResolver.resolveLayout(identifier: "Center", in: layouts)
     }
 }
@@ -119,6 +127,72 @@ private final class Locked<Value: Sendable>: @unchecked Sendable {
     #expect(throws: CommandLineLayoutResolutionError.unknownLayout("layout_4")) {
         try LayoutIdentifierResolver.resolveLayout(identifier: "layout_4", in: configuration)
     }
+}
+
+@MainActor
+@Test func commandLineRunnerReportsDuplicateNamesWithGroupIndexes() async throws {
+    var configuration = AppConfiguration.defaultValue
+    configuration.general.activeLayoutGroup = "work"
+    configuration.layoutGroups = [
+        LayoutGroup(
+            name: "work",
+            sets: [
+                LayoutSet(
+                    monitor: .main,
+                    layouts: [
+                        LayoutPreset(
+                            id: "layout-1",
+                            name: "Center",
+                            gridColumns: 12,
+                            gridRows: 6,
+                            windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6),
+                            triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 2, h: 2)),
+                            includeInLayoutIndex: true
+                        ),
+                        LayoutPreset(
+                            id: "layout-2",
+                            name: "Center",
+                            gridColumns: 12,
+                            gridRows: 6,
+                            windowSelection: GridSelection(x: 6, y: 0, w: 6, h: 6),
+                            triggerRegion: nil,
+                            includeInLayoutIndex: false
+                        ),
+                        LayoutPreset(
+                            id: "layout-3",
+                            name: "Center",
+                            gridColumns: 12,
+                            gridRows: 6,
+                            windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4),
+                            triggerRegion: .screen(GridSelection(x: 5, y: 2, w: 2, h: 2)),
+                            includeInLayoutIndex: true
+                        ),
+                    ]
+                )
+            ]
+        )
+    ]
+
+    #expect(throws: CommandLineLayoutResolutionError.ambiguousLayoutName(
+        "Center",
+        matches: [
+            LayoutNameMatch(name: "Center", layoutIndex: 1),
+            LayoutNameMatch(name: "Center", layoutIndex: nil),
+            LayoutNameMatch(name: "Center", layoutIndex: 2),
+        ]
+    )) {
+        try LayoutIdentifierResolver.resolveLayout(identifier: "Center", in: configuration)
+    }
+
+    let error = try #require(
+        throws: CommandLineLayoutResolutionError.self,
+        performing: {
+            try LayoutIdentifierResolver.resolveLayout(identifier: "Center", in: configuration)
+        }
+    )
+    #expect(error.message.contains("[index 1]"))
+    #expect(error.message.contains("[index 2]"))
+    #expect(error.message.contains("[no layout index]"))
 }
 
 @MainActor

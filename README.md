@@ -115,7 +115,7 @@ The real file must be plain JSON and does not support comments. The example belo
           "monitor": "all", // Allowed values: "all", "main", "<display-id>", ["<display-id>", ...]
           "layouts": [
             {
-              "name": "Center", // Names must be unique within one group. CLI uses these names.
+              "name": "Center", // CLI name lookup uses this value inside the active layout group.
               "gridColumns": 12,
               "gridRows": 6,
               "windowSelection": {
@@ -169,6 +169,7 @@ Notes:
 - `hotkeys.bindings[*].action.layout` is a 1-based index within the active layout group's indexed layouts.
 - CLI `-layout <number>` uses the same 1-based index within the active layout group's indexed layouts.
 - CLI `-layout "<name>"` matches a layout name inside the active layout group.
+- if more than one layout in the active group shares the same name, CLI name lookup fails and reports the conflicting layout indexes.
 - layouts with `includeInLayoutIndex = false` are excluded from layout-index shortcuts and from layout cycling.
 - GridMove resolves one active set per display in this order: explicit display ID or ID array, then `main`, then `all`.
 - if trigger regions overlap on one display, the later declared layout wins.

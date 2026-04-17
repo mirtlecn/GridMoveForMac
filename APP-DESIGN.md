@@ -50,6 +50,7 @@ CLI layout lookup rules:
 
 - `-layout <number>` resolves the 1-based layout index inside the active layout group's indexed layouts
 - `-layout "<name>"` resolves a layout by name inside the active layout group
+- duplicate layout names are allowed inside one group; CLI name lookup fails when more than one layout matches and reports the conflicting layout indexes
 - internal layout IDs are not part of the CLI interface
 
 ## 4. Configuration Model
