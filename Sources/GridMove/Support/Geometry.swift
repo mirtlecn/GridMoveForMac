@@ -84,7 +84,7 @@ enum Geometry {
             return nil
         }
 
-        return UUID(uuid).uuidString.lowercased()
+        return (CFUUIDCreateString(nil, uuid) as String?)?.lowercased()
     }
 
     static func displayFingerprint(for displayID: CGDirectDisplayID) -> String? {
