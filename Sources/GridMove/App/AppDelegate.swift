@@ -4,10 +4,7 @@ import Foundation
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let configurationCoordinator: ConfigurationRuntimeCoordinator
-    private let deferredConfigurationSaveQueue = DispatchQueue(
-        label: "GridMove.ConfigurationPersistence",
-        qos: .utility
-    )
+    private let deferredConfigurationSaver: DeferredConfigurationSaver
     private let menuActionBuilder = MenuActionBuilder()
     private let openURL: (URL) -> Bool
     private let userNotifier: UserNotifier
@@ -69,6 +66,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private(set) var configuration = AppConfiguration.defaultValue
     private var menuController: MenuBarController?
+    private var pendingDeferredConfigurationSaveTask: Task<Void, Never>?
 
     init(
         configurationStore: ConfigurationStore = ConfigurationStore(),
@@ -83,6 +81,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         self.configurationCoordinator = ConfigurationRuntimeCoordinator(
             configurationStore: configurationStore,
             currentMonitorMapProvider: currentMonitorMapProvider
+        )
+        self.deferredConfigurationSaver = DeferredConfigurationSaver(
+            baseDirectoryURL: configurationStore.directoryURL
         )
         self.openURL = openURL
         self.injectedAccessibilityStatusProvider = accessibilityStatusProvider
@@ -244,14 +245,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func persistConfigurationAsync(_ configuration: AppConfiguration) {
         // Layout-mode Shift cycling runs inside the event-tap path, so persistence must stay off that hot path.
-        let workItem = DispatchWorkItem { [configurationCoordinator] in
-            do {
-                try configurationCoordinator.saveConfiguration(configuration)
-            } catch {
-                AppLogger.shared.error("Failed to save deferred configuration: \(error.localizedDescription)")
-            }
+        pendingDeferredConfigurationSaveTask = Task {
+            await deferredConfigurationSaver.persist(configuration)
         }
-        deferredConfigurationSaveQueue.async(execute: workItem)
     }
 
     private func synchronizeRuntimeControllers() {
@@ -400,8 +396,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         cycleToNextLayoutGroup()
     }
 
-    func waitForDeferredConfigurationSaveForTesting() {
-        deferredConfigurationSaveQueue.sync { }
+    func waitForDeferredConfigurationSaveForTesting() async {
+        await pendingDeferredConfigurationSaveTask?.value
+        await deferredConfigurationSaver.waitForPendingSaves()
     }
 
     private func makeLayoutGroupState(configuration: AppConfiguration) -> MenuBarController.LayoutGroupState {

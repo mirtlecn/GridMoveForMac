@@ -63,7 +63,7 @@ import Testing
     #expect(updatedConfiguration.general.activeLayoutGroup == AppConfiguration.fullscreenGroupName)
     #expect(delegate.configuration.general.activeLayoutGroup == AppConfiguration.fullscreenGroupName)
 
-    delegate.waitForDeferredConfigurationSaveForTesting()
+    await delegate.waitForDeferredConfigurationSaveForTesting()
 
     let persistedConfiguration = try store.load()
     #expect(persistedConfiguration.general.activeLayoutGroup == AppConfiguration.fullscreenGroupName)
