@@ -79,8 +79,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         currentMonitorMapProvider: @escaping () -> [String: String] = { MonitorDiscovery.currentMonitorMap() },
         accessibilityStatusProvider: (() -> Bool)? = nil,
         accessibilityPromptRequester: (() -> Bool)? = nil,
-        notifyUser: @escaping (String, String) -> Void = { title, body in
-            UserNotifier().notify(title: title, body: body)
+        notifyUser: @escaping (UserNotifier.Kind, String, String) -> Void = { kind, title, body in
+            UserNotifier().notify(kind: kind, title: title, body: body)
         }
     ) {
         self.configurationCoordinator = ConfigurationRuntimeCoordinator(
@@ -166,17 +166,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     applyConfiguration(result.configuration)
                     if result.skippedLayoutDiagnostics.isEmpty {
                         userNotifier.notify(
+                            kind: .configReloadSucceeded,
                             title: UICopy.configReloadSucceededTitle,
                             body: UICopy.configReloadSucceededBody()
                         )
                     } else {
                         userNotifier.notify(
+                            kind: .configReloadSkippedLayouts,
                             title: UICopy.configReloadSkippedLayoutsTitle,
                             body: UICopy.configReloadSkippedLayoutsBody(diagnostics: result.skippedLayoutDiagnostics)
                         )
                     }
                 } else {
                     userNotifier.notify(
+                        kind: .configReloadFailed,
                         title: UICopy.configReloadFailedTitle,
                         body: UICopy.configReloadFailedBody(
                             diagnostic: result.diagnostic,
@@ -192,6 +195,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 applyConfiguration(.defaultValue)
             case .manual:
                 userNotifier.notify(
+                    kind: .configReloadFailed,
                     title: UICopy.configReloadFailedTitle,
                     body: UICopy.configReloadFailedBody(diagnostic: nil)
                 )

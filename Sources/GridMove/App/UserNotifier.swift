@@ -2,26 +2,36 @@ import Foundation
 @preconcurrency import UserNotifications
 
 final class UserNotifier {
-    private let notifyHandler: (String, String) -> Void
+    enum Kind: String {
+        case configReloadSucceeded = "gridmove-config-reload-succeeded"
+        case configReloadSkippedLayouts = "gridmove-config-reload-skipped-layouts"
+        case configReloadFailed = "gridmove-config-reload-failed"
 
-    init(notifyHandler: @escaping (String, String) -> Void = UserNotifier.postSystemNotification) {
+        var requestIdentifier: String {
+            "\(rawValue)-\(UUID().uuidString)"
+        }
+    }
+
+    private let notifyHandler: (Kind, String, String) -> Void
+
+    init(notifyHandler: @escaping (Kind, String, String) -> Void = UserNotifier.postSystemNotification) {
         self.notifyHandler = notifyHandler
     }
 
-    func notify(title: String, body: String) {
-        notifyHandler(title, body)
+    func notify(kind: Kind, title: String, body: String) {
+        notifyHandler(kind, title, body)
     }
 
-    nonisolated private static func postSystemNotification(title: String, body: String) {
+    nonisolated private static func postSystemNotification(kind: Kind, title: String, body: String) {
         if Bundle.main.bundleURL.pathExtension == "app", Bundle.main.bundleIdentifier != nil {
-            postUserNotificationCenterNotification(title: title, body: body)
+            postUserNotificationCenterNotification(kind: kind, title: title, body: body)
             return
         }
 
         postAppleScriptNotification(title: title, body: body)
     }
 
-    nonisolated private static func postUserNotificationCenterNotification(title: String, body: String) {
+    nonisolated private static func postUserNotificationCenterNotification(kind: Kind, title: String, body: String) {
         let center = UNUserNotificationCenter.current()
         center.requestAuthorization(options: [.alert, .sound]) { granted, error in
             if let error {
@@ -39,7 +49,7 @@ final class UserNotifier {
             content.sound = .default
 
             let request = UNNotificationRequest(
-                identifier: "gridmove-config-reload-failed",
+                identifier: kind.requestIdentifier,
                 content: content,
                 trigger: nil
             )

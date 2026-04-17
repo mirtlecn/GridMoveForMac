@@ -176,12 +176,14 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     savedConfiguration.general.isEnabled = false
     savedConfiguration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
     try store.save(savedConfiguration)
+    var receivedKind: UserNotifier.Kind?
     var receivedTitle: String?
     var receivedBody: String?
     let delegate = AppDelegate(
         configurationStore: store,
         openURL: { _ in true },
-        notifyUser: { title, body in
+        notifyUser: { kind, title, body in
+            receivedKind = kind
             receivedTitle = title
             receivedBody = body
         }
@@ -204,6 +206,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(delegate.configuration.layoutGroups == savedConfiguration.layoutGroups)
     #expect(delegate.configuration.hotkeys.bindings.map(\.shortcut) == savedConfiguration.hotkeys.bindings.map(\.shortcut))
     #expect(delegate.configuration.hotkeys.bindings.map(\.action) == savedConfiguration.hotkeys.bindings.map(\.action))
+    #expect(receivedKind == .configReloadFailed)
     #expect(receivedTitle == UICopy.configReloadFailedTitle)
     #expect(receivedBody == UICopy.configReloadFailedBody(diagnostic: expectedResult.diagnostic, skippedLayoutDiagnostics: expectedResult.skippedLayoutDiagnostics))
 }
@@ -248,6 +251,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         encoding: .utf8
     )
 
+    var receivedKind: UserNotifier.Kind?
     var receivedTitle: String?
     var receivedBody: String?
     let invalidLayoutURL = store.layoutDirectoryURL.appendingPathComponent("2.grid.json")
@@ -256,7 +260,8 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         configurationStore: store,
         openURL: { _ in true },
         currentMonitorMapProvider: { ["Built-in Retina Display": "12345"] },
-        notifyUser: { title, body in
+        notifyUser: { kind, title, body in
+            receivedKind = kind
             receivedTitle = title
             receivedBody = body
         }
@@ -270,6 +275,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(delegate.configuration.layoutGroupNames() == ["built-in"])
     #expect(delegate.configuration.layouts.map(\.name) == ["Modified built-in"])
     #expect(delegate.configuration.monitors == ["Built-in Retina Display": "12345"])
+    #expect(receivedKind == .configReloadSkippedLayouts)
     #expect(receivedTitle == UICopy.configReloadSkippedLayoutsTitle)
     #expect(receivedBody?.contains("2.grid.json") == true)
     #expect(FileManager.default.fileExists(atPath: invalidLayoutURL.path))
@@ -330,12 +336,14 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         encoding: .utf8
     )
 
+    var receivedKind: UserNotifier.Kind?
     var receivedTitle: String?
     var receivedBody: String?
     let delegate = AppDelegate(
         configurationStore: store,
         openURL: { _ in true },
-        notifyUser: { title, body in
+        notifyUser: { kind, title, body in
+            receivedKind = kind
             receivedTitle = title
             receivedBody = body
         }
@@ -346,6 +354,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 
     #expect(delegate.configuration.layoutGroups.count == 2)
     #expect(delegate.configuration.layouts.map(\.name).contains("Modified built-in"))
+    #expect(receivedKind == .configReloadSucceeded)
     #expect(receivedTitle == UICopy.configReloadSucceededTitle)
     #expect(receivedBody == UICopy.configReloadSucceededBody())
 }
@@ -462,12 +471,14 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         to: store
     )
 
+    var receivedKind: UserNotifier.Kind?
     var receivedTitle: String?
     var receivedBody: String?
     let delegate = AppDelegate(
         configurationStore: store,
         openURL: { _ in true },
-        notifyUser: { title, body in
+        notifyUser: { kind, title, body in
+            receivedKind = kind
             receivedTitle = title
             receivedBody = body
         }
@@ -481,6 +492,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(expectedResult.source == .lastKnownGood)
     #expect(expectedResult.skippedLayoutDiagnostics.count == 1)
     #expect(delegate.configuration.general == savedConfiguration.general)
+    #expect(receivedKind == .configReloadFailed)
     #expect(receivedTitle == UICopy.configReloadFailedTitle)
     #expect(receivedBody == UICopy.configReloadFailedBody(diagnostic: expectedResult.diagnostic, skippedLayoutDiagnostics: expectedResult.skippedLayoutDiagnostics))
     #expect(receivedBody?.contains("1.grid.json") == true)
