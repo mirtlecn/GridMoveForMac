@@ -64,11 +64,23 @@ struct AppearanceConfiguration: Codable {
     let triggerOpacity: Double
     let triggerGap: Double
     let triggerStrokeColor: String
-    let layoutGap: Double
+    let layoutGap: Int
     let renderWindowHighlight: Bool
     let highlightFillOpacity: Double
     let highlightStrokeWidth: Double
     let highlightStrokeColor: String
+
+    private enum CodingKeys: String, CodingKey {
+        case renderTriggerAreas
+        case triggerOpacity
+        case triggerGap
+        case triggerStrokeColor
+        case layoutGap
+        case renderWindowHighlight
+        case highlightFillOpacity
+        case highlightStrokeWidth
+        case highlightStrokeColor
+    }
 
     init(settings: AppearanceSettings) {
         renderTriggerAreas = settings.renderTriggerAreas
@@ -80,6 +92,19 @@ struct AppearanceConfiguration: Codable {
         highlightFillOpacity = settings.highlightFillOpacity
         highlightStrokeWidth = settings.highlightStrokeWidth
         highlightStrokeColor = settings.highlightStrokeColor.hexString
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        renderTriggerAreas = try container.decode(Bool.self, forKey: .renderTriggerAreas)
+        triggerOpacity = try container.decode(Double.self, forKey: .triggerOpacity)
+        triggerGap = try container.decode(Double.self, forKey: .triggerGap)
+        triggerStrokeColor = try container.decode(String.self, forKey: .triggerStrokeColor)
+        layoutGap = AppearanceValueNormalizer.decodeLayoutGap(from: container, forKey: .layoutGap)
+        renderWindowHighlight = try container.decode(Bool.self, forKey: .renderWindowHighlight)
+        highlightFillOpacity = try container.decode(Double.self, forKey: .highlightFillOpacity)
+        highlightStrokeWidth = try container.decode(Double.self, forKey: .highlightStrokeWidth)
+        highlightStrokeColor = try container.decode(String.self, forKey: .highlightStrokeColor)
     }
 
     func makeSettings() throws -> AppearanceSettings {

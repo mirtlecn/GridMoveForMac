@@ -39,12 +39,25 @@ import Testing
     let preset = AppConfiguration.defaultValue.layouts[7]
     let usableFrame = CGRect(x: 0, y: 0, width: 1200, height: 600)
 
-    let frame = engine.frame(for: preset, in: usableFrame)
+    let frame = try #require(engine.frame(for: preset, in: usableFrame))
 
     #expect(frame.origin.x == 800)
     #expect(frame.origin.y == 300)
     #expect(frame.size.width == 400)
     #expect(frame.size.height == 300)
+}
+
+@Test func layoutFrameShrinksByConfiguredLayoutGap() async throws {
+    let engine = LayoutEngine()
+    let preset = AppConfiguration.defaultValue.layouts[1]
+    let usableFrame = CGRect(x: 0, y: 0, width: 1200, height: 600)
+
+    let frame = try #require(engine.frame(for: preset, in: usableFrame, layoutGap: 10))
+
+    #expect(frame.origin.x == 10)
+    #expect(frame.origin.y == 10)
+    #expect(frame.size.width == 580)
+    #expect(frame.size.height == 580)
 }
 
 @Test func coordinateConversionsRoundTripBetweenQuartzAndAppKit() async throws {
@@ -203,6 +216,31 @@ import Testing
     #expect(fullscreenSlot.hitTestFrames.allSatisfy { !$0.contains(CGPoint(x: 100, y: 100)) })
     #expect(fullscreenSlot.hitTestFrames.contains { $0.contains(CGPoint(x: 900, y: 100)) })
     #expect(leftHalfSlot.hitTestFrames == [leftHalfSlot.triggerFrame])
+}
+
+@Test func triggerSlotsSkipLayoutsWhoseTargetFrameCollapsesAfterApplyingLayoutGap() async throws {
+    let engine = LayoutEngine()
+    let layouts = [
+        LayoutPreset(
+            id: "layout-a",
+            name: "Left half",
+            gridColumns: 12,
+            gridRows: 6,
+            windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6),
+            triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 6, h: 6)),
+            includeInLayoutIndex: true
+        ),
+    ]
+
+    let slots = engine.resolveTriggerSlots(
+        screenFrame: CGRect(x: 0, y: 0, width: 120, height: 60),
+        usableFrame: CGRect(x: 0, y: 0, width: 120, height: 60),
+        layouts: layouts,
+        triggerGap: 0,
+        layoutGap: 40
+    )
+
+    #expect(slots.isEmpty)
 }
 
 @Test func targetDisplayIDFollowsMonitorTargetingRules() async throws {

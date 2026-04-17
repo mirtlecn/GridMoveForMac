@@ -16,19 +16,34 @@ final class LayoutEngine {
     private var windowLayoutIDs: [String: String] = [:]
     private var recentWindowIdentities: [String] = []
 
-    func frame(for preset: LayoutPreset, on screen: NSScreen, layoutGap: Double = 0) -> CGRect {
+    func frame(for preset: LayoutPreset, on screen: NSScreen, layoutGap: Int = 0) -> CGRect? {
         frame(for: preset, in: screen.visibleFrame, layoutGap: layoutGap)
     }
 
-    func frame(for preset: LayoutPreset, in usableFrame: CGRect, layoutGap: Double = 0) -> CGRect {
-        frame(
-            for: preset.windowSelection,
-            columns: preset.gridColumns,
-            rows: preset.gridRows,
-            in: usableFrame
+    func frame(for preset: LayoutPreset, in usableFrame: CGRect, layoutGap: Int = 0) -> CGRect? {
+        insetLayoutFrame(
+            frame(
+                for: preset.windowSelection,
+                columns: preset.gridColumns,
+                rows: preset.gridRows,
+                in: usableFrame
+            ),
+            layoutGap: layoutGap
         )
-        .insetBy(dx: layoutGap, dy: layoutGap)
-        .integral
+    }
+
+    private func insetLayoutFrame(_ frame: CGRect, layoutGap: Int) -> CGRect? {
+        let insetFrame = frame.insetBy(dx: CGFloat(layoutGap), dy: CGFloat(layoutGap))
+        guard !insetFrame.isNull, !insetFrame.isEmpty, insetFrame.width > 0, insetFrame.height > 0 else {
+            return nil
+        }
+
+        let integralFrame = insetFrame.integral
+        guard !integralFrame.isNull, !integralFrame.isEmpty, integralFrame.width > 0, integralFrame.height > 0 else {
+            return nil
+        }
+
+        return integralFrame
     }
 
     func frame(
@@ -45,7 +60,7 @@ final class LayoutEngine {
         ).integral
     }
 
-    func resolveTriggerSlots(on screen: NSScreen, layouts: [LayoutPreset], triggerGap: Double, layoutGap: Double = 0) -> [ResolvedTriggerSlot] {
+    func resolveTriggerSlots(on screen: NSScreen, layouts: [LayoutPreset], triggerGap: Double, layoutGap: Int = 0) -> [ResolvedTriggerSlot] {
         resolveTriggerSlots(
             screenFrame: screen.frame,
             usableFrame: screen.visibleFrame,
@@ -55,7 +70,7 @@ final class LayoutEngine {
         )
     }
 
-    func resolveTriggerSlots(in usableFrame: CGRect, layouts: [LayoutPreset], triggerGap: Double, layoutGap: Double = 0) -> [ResolvedTriggerSlot] {
+    func resolveTriggerSlots(in usableFrame: CGRect, layouts: [LayoutPreset], triggerGap: Double, layoutGap: Int = 0) -> [ResolvedTriggerSlot] {
         resolveTriggerSlots(screenFrame: usableFrame, usableFrame: usableFrame, layouts: layouts, triggerGap: triggerGap, layoutGap: layoutGap)
     }
 
@@ -64,7 +79,7 @@ final class LayoutEngine {
         usableFrame: CGRect,
         layouts: [LayoutPreset],
         triggerGap: Double,
-        layoutGap: Double = 0
+        layoutGap: Int = 0
     ) -> [ResolvedTriggerSlot] {
         let rawSlots: [ResolvedTriggerSlot] = layouts.compactMap { preset -> ResolvedTriggerSlot? in
             guard let triggerFrame = triggerFrame(
@@ -76,11 +91,15 @@ final class LayoutEngine {
                 return nil
             }
 
+            guard let targetFrame = frame(for: preset, in: usableFrame, layoutGap: layoutGap) else {
+                return nil
+            }
+
             return ResolvedTriggerSlot(
                 layoutID: preset.id,
                 triggerFrame: triggerFrame,
                 hitTestFrames: [triggerFrame],
-                targetFrame: frame(for: preset, in: usableFrame, layoutGap: layoutGap)
+                targetFrame: targetFrame
             )
         }
         return resolveOverlappingHitTestFrames(in: rawSlots)

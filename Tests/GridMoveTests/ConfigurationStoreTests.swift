@@ -69,6 +69,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     updatedConfiguration.general.excludedWindowTitles = ["Test Title"]
     updatedConfiguration.general.activeLayoutGroup = AppConfiguration.builtInGroupName
     updatedConfiguration.appearance.triggerGap = 6
+    updatedConfiguration.appearance.layoutGap = 4
     updatedConfiguration.dragTriggers.preferLayoutMode = false
     updatedConfiguration.dragTriggers.modifierGroups = [[.alt]]
     updatedConfiguration.monitors = ["Built-in Retina Display": "12345"]
@@ -79,6 +80,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(reloadedConfiguration.general == updatedConfiguration.general)
     #expect(reloadedConfiguration.general.mouseButtonNumber == updatedConfiguration.general.mouseButtonNumber)
     #expect(reloadedConfiguration.appearance.triggerGap == updatedConfiguration.appearance.triggerGap)
+    #expect(reloadedConfiguration.appearance.layoutGap == updatedConfiguration.appearance.layoutGap)
     #expect(reloadedConfiguration.dragTriggers.preferLayoutMode == updatedConfiguration.dragTriggers.preferLayoutMode)
     #expect(reloadedConfiguration.dragTriggers.modifierGroups == updatedConfiguration.dragTriggers.modifierGroups)
     #expect(reloadedConfiguration.monitors == updatedConfiguration.monitors)
@@ -1026,6 +1028,59 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     let settings = try JSONDecoder().decode(AppearanceSettings.self, from: data)
 
     #expect(settings.triggerStrokeColor.alpha == 0.2)
+    #expect(settings.layoutGap == 1)
+}
+
+@Test func appearanceSettingsDecodeInvalidLayoutGapFallsBackToDefaultValue() async throws {
+    let json = """
+    {
+      "renderTriggerAreas": false,
+      "triggerOpacity": 0.2,
+      "triggerGap": 2,
+      "triggerStrokeColor": {
+        "red": 0,
+        "green": 0.4784313725,
+        "blue": 1,
+        "alpha": 0.2
+      },
+      "layoutGap": "invalid",
+      "renderWindowHighlight": true,
+      "highlightFillOpacity": 0.08,
+      "highlightStrokeWidth": 3,
+      "highlightStrokeColor": {
+        "red": 1,
+        "green": 1,
+        "blue": 1,
+        "alpha": 0.92
+      }
+    }
+    """
+
+    let data = try #require(json.data(using: .utf8))
+    let settings = try JSONDecoder().decode(AppearanceSettings.self, from: data)
+
+    #expect(settings.layoutGap == 1)
+}
+
+@Test func appearanceConfigurationDecodeInvalidLayoutGapFallsBackToDefaultValue() async throws {
+    let json = """
+    {
+      "renderTriggerAreas": false,
+      "triggerOpacity": 0.2,
+      "triggerGap": 2,
+      "triggerStrokeColor": "#007AFF33",
+      "layoutGap": "invalid",
+      "renderWindowHighlight": true,
+      "highlightFillOpacity": 0.08,
+      "highlightStrokeWidth": 3,
+      "highlightStrokeColor": "#FFFFFFEB"
+    }
+    """
+
+    let data = try #require(json.data(using: .utf8))
+    let configuration = try JSONDecoder().decode(AppearanceConfiguration.self, from: data)
+
+    #expect(configuration.layoutGap == 1)
 }
 
 @Test func triggerRegionRoundTripsThroughJSON() async throws {

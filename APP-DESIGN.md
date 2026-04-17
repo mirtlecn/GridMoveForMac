@@ -103,7 +103,7 @@ The built-in default configuration currently resolves to the following values.
 - `triggerOpacity = 0.2`
 - `triggerGap = 2`
 - `triggerStrokeColor = system accent color with alpha 0.2`
-- `layoutGap = 1`
+- `layoutGap = 1` (integer, points)
 - `renderWindowHighlight = true`
 - `highlightFillOpacity = 0.08`
 - `highlightStrokeWidth = 3`
@@ -183,7 +183,7 @@ Compatibility behavior:
 - missing `includeInMenu` defaults to `true`
 - missing `includeInLayoutIndex` defaults to `true`
 - missing or invalid `general.mouseButtonNumber` defaults to `3`
-- missing `layoutGap` defaults to `1`
+- missing or invalid `layoutGap` defaults to `1`
 
 ## 5. Accessibility Lifecycle
 
@@ -385,7 +385,7 @@ Appearance is controlled by configuration:
 - trigger area visibility
 - trigger stroke opacity and color
 - trigger gap
-- layout gap (applied to window layout frames and overlay highlight)
+- layout gap (integer, applied to window layout frames and overlay highlight; layouts whose target frame collapses on the current screen are skipped)
 - window highlight visibility
 - window fill opacity
 - window stroke width and color
