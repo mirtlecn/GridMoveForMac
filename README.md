@@ -98,7 +98,7 @@ The examples below use `jsonc` for annotation only. Real files must be plain JSO
     ]
   },
   "monitors": {
-    "Built-in Retina Display": "69732928" // Filled or refreshed by GridMove on successful reload/startup.
+    "Built-in Retina Display": "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4" // Filled or refreshed by GridMove on successful reload/startup with a persistent display UUID, or a vendor/model/serial fallback fingerprint when needed.
   }
 }
 ```
@@ -111,7 +111,7 @@ The examples below use `jsonc` for annotation only. Real files must be plain JSO
   "includeInGroupCycle": true, // Missing includeInGroupCycle means this group still participates in layout-mode group cycling, including Shift taps and mouse-wheel scrolling.
   "sets": [
     {
-      "monitor": "all", // Allowed values: "all", "main", "<display-id>", ["<display-id>", ...]. Trigger overlays resolve sets by explicit ID or ID array, then main, then all.
+      "monitor": "all", // Allowed values: "all", "main", "<display-id>", ["<display-id>", ...]. Explicit display IDs use persistent display UUIDs when available, then a vendor/model/serial fallback fingerprint. Trigger overlays resolve sets by explicit ID or ID array, then main, then all.
       "layouts": [
         {
           "name": "Center", // CLI -layout "<name>" looks up this value inside the active layout group.

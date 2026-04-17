@@ -1,4 +1,5 @@
 import AppKit
+import CoreGraphics
 import Foundation
 
 enum Geometry {
@@ -51,12 +52,54 @@ enum Geometry {
             && abs(lhs.size.height - rhs.size.height) <= tolerance
     }
 
-    static func screenIdentifier(for screen: NSScreen) -> String {
+    static func cgDisplayID(for screen: NSScreen) -> CGDirectDisplayID? {
         if let screenNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber {
-            return screenNumber.stringValue
+            return CGDirectDisplayID(screenNumber.uint32Value)
+        }
+
+        if let screenNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? UInt32 {
+            return CGDirectDisplayID(screenNumber)
+        }
+
+        return nil
+    }
+
+    static func screenIdentifier(for screen: NSScreen) -> String {
+        if let displayID = cgDisplayID(for: screen) {
+            if let uuid = stableDisplayUUID(for: displayID) {
+                return uuid
+            }
+
+            if let fingerprint = displayFingerprint(for: displayID) {
+                return fingerprint
+            }
         }
 
         let frame = screen.frame
         return "\(frame.origin.x),\(frame.origin.y),\(frame.width),\(frame.height)"
+    }
+
+    static func stableDisplayUUID(for displayID: CGDirectDisplayID) -> String? {
+        guard let uuid = CGDisplayCreateUUIDFromDisplayID(displayID)?.takeRetainedValue() else {
+            return nil
+        }
+
+        return UUID(uuid).uuidString.lowercased()
+    }
+
+    static func displayFingerprint(for displayID: CGDirectDisplayID) -> String? {
+        displayFingerprint(
+            vendorID: CGDisplayVendorNumber(displayID),
+            modelID: CGDisplayModelNumber(displayID),
+            serialNumber: CGDisplaySerialNumber(displayID)
+        )
+    }
+
+    static func displayFingerprint(vendorID: UInt32, modelID: UInt32, serialNumber: UInt32) -> String? {
+        guard vendorID != 0 || modelID != 0 || serialNumber != 0 else {
+            return nil
+        }
+
+        return "fallback:\(vendorID)-\(modelID)-\(serialNumber)"
     }
 }

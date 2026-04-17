@@ -64,6 +64,52 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 }
 
 @MainActor
+@Test func appDelegateReloadMigratesExplicitMonitorIDsUsingCurrentMonitorMetadata() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-monitor-id-migration-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var savedConfiguration = AppConfiguration.defaultValue
+    savedConfiguration.monitors = [
+        "Built-in Retina Display": "12345",
+        "DELL U2720Q": "67890",
+    ]
+    savedConfiguration.layoutGroups = [
+        LayoutGroup(
+            name: "built-in",
+            includeInGroupCycle: true,
+            sets: [
+                LayoutSet(
+                    monitor: .displays(["12345"]),
+                    layouts: AppConfiguration.defaultValue.layoutGroups[0].sets[0].layouts
+                ),
+            ]
+        ),
+    ]
+    try store.save(savedConfiguration)
+
+    let currentMonitorMap = [
+        "Built-in Retina Display": "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4",
+        "DELL U2720Q": "fallback:1552-41002-424242",
+    ]
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        currentMonitorMapProvider: { currentMonitorMap }
+    )
+
+    delegate.reloadConfigurationFromDisk(mode: .launch)
+
+    #expect(delegate.configuration.layoutGroups[0].sets[0].monitor == .displays(["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"]))
+    #expect(delegate.configuration.monitors == currentMonitorMap)
+
+    let persistedConfiguration = try store.load()
+    #expect(persistedConfiguration.layoutGroups[0].sets[0].monitor == .displays(["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"]))
+    #expect(persistedConfiguration.monitors == currentMonitorMap)
+}
+
+@MainActor
 @Test func appDelegateCyclesLayoutGroupInMemoryBeforeDeferredSave() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-group-cycle-\(UUID().uuidString)", isDirectory: true)

@@ -97,7 +97,7 @@ final class WindowController {
     private var mainDisplayHeight: CGFloat {
         let mainDisplayID = CGMainDisplayID()
         if let mainScreen = NSScreen.screens.first(where: {
-            ($0.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber)?.uint32Value == mainDisplayID
+            Geometry.cgDisplayID(for: $0) == mainDisplayID
         }) {
             return mainScreen.frame.height
         }

@@ -7,10 +7,10 @@ enum MonitorDiscovery {
     }
 
     static func isMainScreen(_ screen: NSScreen) -> Bool {
-        guard let screenNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else {
+        guard let displayID = Geometry.cgDisplayID(for: screen) else {
             return false
         }
-        return screenNumber.uint32Value == CGMainDisplayID()
+        return displayID == CGMainDisplayID()
     }
 
     static func currentMonitorMap() -> [String: String] {

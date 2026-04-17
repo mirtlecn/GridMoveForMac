@@ -1103,8 +1103,26 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 
     #expect(try decoder.decode(LayoutSetMonitor.self, from: encoder.encode(LayoutSetMonitor.all)) == .all)
     #expect(try decoder.decode(LayoutSetMonitor.self, from: encoder.encode(LayoutSetMonitor.main)) == .main)
-    #expect(try decoder.decode(LayoutSetMonitor.self, from: encoder.encode(LayoutSetMonitor.displays(["12345"]))) == .displays(["12345"]))
-    #expect(try decoder.decode(LayoutSetMonitor.self, from: encoder.encode(LayoutSetMonitor.displays(["12345", "67890"]))) == .displays(["12345", "67890"]))
+    #expect(
+        try decoder.decode(
+            LayoutSetMonitor.self,
+            from: encoder.encode(LayoutSetMonitor.displays(["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"]))
+        ) == .displays(["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"])
+    )
+    #expect(
+        try decoder.decode(
+            LayoutSetMonitor.self,
+            from: encoder.encode(
+                LayoutSetMonitor.displays([
+                    "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4",
+                    "fallback:1552-41002-424242",
+                ])
+            )
+        ) == .displays([
+            "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4",
+            "fallback:1552-41002-424242",
+        ])
+    )
 }
 
 @Test func hotkeyActionRoundTripsThroughJSON() async throws {
