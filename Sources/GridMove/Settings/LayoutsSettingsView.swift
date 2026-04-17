@@ -36,28 +36,34 @@ struct LayoutsSettingsView: View {
     }
 
     private var listPage: some View {
-        List {
-            Section {
-                ForEach(viewModel.layoutItems) { item in
-                    LayoutListRow(
-                        item: item,
-                        onOpen: { viewModel.openLayoutDetail(id: item.id) }
-                    )
-                    .onDrag {
-                        draggedLayoutID = item.id
-                        return NSItemProvider(object: item.id as NSString)
-                    }
-                    .onDrop(
-                        of: [UTType.text],
-                        delegate: LayoutListDropDelegate(
-                            targetID: item.id,
-                            draggedLayoutID: $draggedLayoutID,
-                            moveLayout: viewModel.moveLayout(id:before:)
+        VStack {
+            List {
+                Section {
+                    ForEach(viewModel.layoutItems) { item in
+                        LayoutListRow(
+                            item: item,
+                            onOpen: { viewModel.openLayoutDetail(id: item.id) }
                         )
-                    )
+                        .onDrag {
+                            draggedLayoutID = item.id
+                            return NSItemProvider(object: item.id as NSString)
+                        }
+                        .onDrop(
+                            of: [UTType.text],
+                            delegate: LayoutListDropDelegate(
+                                targetID: item.id,
+                                draggedLayoutID: $draggedLayoutID,
+                                moveLayout: viewModel.moveLayout(id:before:)
+                            )
+                        )
+                    }
                 }
             }
+            .frame(maxWidth: 780, maxHeight: .infinity)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 24)
         .listStyle(.bordered(alternatesRowBackgrounds: false))
         .onDrop(of: [UTType.text], isTargeted: nil) { _ in
             draggedLayoutID = nil
@@ -222,12 +228,7 @@ private struct LayoutListRow: View {
     var body: some View {
         Button(action: onOpen) {
             HStack(spacing: 12) {
-                LayoutThumbnailView(
-                    columns: item.gridColumns,
-                    rows: item.gridRows,
-                    selection: item.windowSelection,
-                    isIncludedInCycle: item.includeInCycle
-                )
+                LayoutListIconView(isIncludedInCycle: item.includeInCycle)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(item.name.isEmpty ? item.displayID : item.name)
@@ -250,37 +251,21 @@ private struct LayoutListRow: View {
     }
 }
 
-private struct LayoutThumbnailView: View {
-    let columns: Int
-    let rows: Int
-    let selection: GridSelection
+private struct LayoutListIconView: View {
     let isIncludedInCycle: Bool
 
     var body: some View {
-        GeometryReader { geometry in
-            let size = geometry.size
-            let cellWidth = size.width / CGFloat(max(columns, 1))
-            let cellHeight = size.height / CGFloat(max(rows, 1))
-
+        ZStack {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(.quaternary)
                 .overlay {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
                         .stroke(.separator.opacity(0.6), lineWidth: 1)
                 }
-                .overlay(alignment: .topLeading) {
-                    RoundedRectangle(cornerRadius: 4, style: .continuous)
-                        .fill(isIncludedInCycle ? Color.accentColor : Color.secondary.opacity(0.45))
-                        .frame(
-                            width: cellWidth * CGFloat(selection.w),
-                            height: cellHeight * CGFloat(selection.h)
-                        )
-                        .offset(
-                            x: cellWidth * CGFloat(selection.x),
-                            y: cellHeight * CGFloat(selection.y)
-                        )
-                        .padding(4)
-                }
+
+            Image(systemName: "rectangle.split.3x1")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(isIncludedInCycle ? Color.accentColor : Color.secondary)
         }
         .frame(width: 32, height: 32)
         .accessibilityHidden(true)
