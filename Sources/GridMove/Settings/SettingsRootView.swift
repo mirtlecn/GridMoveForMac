@@ -43,12 +43,6 @@ struct SettingsRootView: View {
                 }
                 .disabled(!canNavigateForward)
             }
-
-            ToolbarItem(placement: .principal) {
-                Text(headerTitle)
-                    .font(.headline)
-                    .lineLimit(1)
-            }
         }
         .sheet(isPresented: $viewModel.excludedWindowSheetPresented) {
             ExcludedWindowSheetView { kind, value in

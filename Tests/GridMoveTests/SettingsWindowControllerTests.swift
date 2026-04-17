@@ -41,7 +41,8 @@ import Testing
 
     #expect(controller.window?.toolbar != nil)
     #expect(controller.window?.toolbarStyle == .automatic)
-    #expect(controller.window?.titleVisibility == .hidden)
+    #expect(!(controller.window?.title.isEmpty ?? true))
+    #expect(controller.window?.titleVisibility != .hidden)
     #expect(controller.window?.minSize.width == 860)
     #expect((controller.window?.minSize.height ?? 0) >= 660)
 }

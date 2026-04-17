@@ -31,12 +31,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         window.title = UICopy.settingsWindowTitle
         window.minSize = NSSize(width: 860, height: 660)
         window.toolbar = toolbar
-        window.titlebarAppearsTransparent = true
-        window.titleVisibility = .hidden
         window.toolbarStyle = .automatic
-        if #available(macOS 11.0, *) {
-            window.titlebarSeparatorStyle = .none
-        }
         window.contentViewController = NSHostingController(rootView: SettingsRootView(viewModel: viewModel))
         super.init(window: window)
         window.delegate = self
