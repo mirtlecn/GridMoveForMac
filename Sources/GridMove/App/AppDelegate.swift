@@ -4,6 +4,7 @@ import Foundation
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let configurationCoordinator: ConfigurationRuntimeCoordinator
+    private let menuActionBuilder = MenuActionBuilder()
     private let openURL: (URL) -> Bool
     private let userNotifier: UserNotifier
     private let injectedAccessibilityStatusProvider: (() -> Bool)?
@@ -15,14 +16,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowController: windowController,
         configurationProvider: { [weak self] in self?.configuration ?? .defaultValue },
         accessibilityAccessValidator: { [weak self] in
-            self?.validateAccessibilityAccessForAction() ?? false
+            self?.accessibilityCoordinator.evaluate(promptOnMissing: true) ?? false
         }
     )
     private let commandRelay = DistributedCommandRelay()
     private let overlayController = OverlayController()
-    private lazy var accessibilityMonitor = AccessibilityAccessMonitor(
+    private lazy var accessibilityCoordinator = AccessibilityRuntimeCoordinator(
         statusProvider: { [weak self] in
             self?.currentAccessibilityStatus() ?? false
+        },
+        promptRequester: { [weak self] in
+            self?.requestAccessibilityPrompt() ?? false
+        },
+        onStateDidUpdate: { [weak self] in
+            self?.synchronizeRuntimeControllers()
         }
     )
 
@@ -32,13 +39,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         overlayController: overlayController,
         configurationProvider: { [weak self] in self?.configuration ?? AppConfiguration.defaultValue },
         accessibilityTrustedProvider: { [weak self] in
-            self?.accessibilityMonitor.hasAccess ?? false
+            self?.accessibilityCoordinator.hasAccess ?? false
         },
         accessibilityAccessValidator: { [weak self] in
-            self?.validateAccessibilityAccessForAction() ?? false
+            self?.accessibilityCoordinator.evaluate(promptOnMissing: true) ?? false
         },
         onAccessibilityRevoked: { [weak self] in
-            self?.forceAccessibilityReevaluation()
+            self?.accessibilityCoordinator.invalidateAndEvaluate(promptOnMissing: true)
         }
     )
 
@@ -46,17 +53,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         actionExecutor: actionExecutor,
         configurationProvider: { [weak self] in self?.configuration ?? AppConfiguration.defaultValue },
         accessibilityTrustedProvider: { [weak self] in
-            self?.accessibilityMonitor.hasAccess ?? false
+            self?.accessibilityCoordinator.hasAccess ?? false
         },
         onAccessibilityRevoked: { [weak self] in
-            self?.forceAccessibilityReevaluation()
+            self?.accessibilityCoordinator.invalidateAndEvaluate(promptOnMissing: true)
         }
     )
 
     private(set) var configuration = AppConfiguration.defaultValue
     private var menuController: MenuBarController?
-    private var accessibilityPollingTimer: Timer?
-    private var currentAccessibilityPollingInterval: TimeInterval?
 
     init(
         configurationStore: ConfigurationStore = ConfigurationStore(),
@@ -122,64 +127,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         )
 
-        evaluateAccessibilityState()
-        startAccessibilityPollingIfNeeded()
+        _ = accessibilityCoordinator.evaluate(promptOnMissing: true)
+        accessibilityCoordinator.startPollingIfNeeded()
     }
 
     func applicationWillTerminate(_ notification: Notification) {
         dragGridController.stop()
         shortcutController.stop()
-        accessibilityPollingTimer?.invalidate()
-        currentAccessibilityPollingInterval = nil
+        accessibilityCoordinator.stop()
         commandRelay.stopListening()
     }
 
     func evaluateAccessibilityState() {
-        _ = refreshAccessibilityState(promptOnMissing: true)
-    }
-
-    private func forceAccessibilityReevaluation() {
-        accessibilityMonitor.invalidate()
-        evaluateAccessibilityState()
-    }
-
-    private func startAccessibilityPollingIfNeeded() {
-        synchronizeAccessibilityPolling()
-    }
-
-    private func synchronizeAccessibilityPolling() {
-        guard let nextPollingInterval = accessibilityMonitor.pollingInterval else {
-            accessibilityPollingTimer?.invalidate()
-            accessibilityPollingTimer = nil
-            currentAccessibilityPollingInterval = nil
-            return
-        }
-
-        guard accessibilityPollingTimer == nil || currentAccessibilityPollingInterval != nextPollingInterval else {
-            return
-        }
-
-        accessibilityPollingTimer?.invalidate()
-        accessibilityPollingTimer = Timer.scheduledTimer(withTimeInterval: nextPollingInterval, repeats: true) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.evaluateAccessibilityState()
-            }
-        }
-        currentAccessibilityPollingInterval = nextPollingInterval
-    }
-
-    @discardableResult
-    private func refreshAccessibilityState(promptOnMissing: Bool) -> Bool {
-        let currentAccess = currentAccessibilityStatus()
-        let didChange = accessibilityMonitor.refresh(currentAccess: currentAccess)
-        synchronizeAccessibilityPolling()
-        synchronizeRuntimeControllers()
-
-        if promptOnMissing && didChange && !currentAccess {
-            _ = requestAccessibilityPrompt()
-        }
-
-        return currentAccess
+        _ = accessibilityCoordinator.evaluate(promptOnMissing: true)
     }
 
     func reloadConfigurationFromDisk(notifyOnFallback: Bool = false) {
@@ -264,7 +224,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func synchronizeRuntimeControllers() {
-        let shouldListenForGlobalInput = accessibilityMonitor.hasAccess && configuration.general.isEnabled
+        let shouldListenForGlobalInput = accessibilityCoordinator.hasAccess && configuration.general.isEnabled
         if shouldListenForGlobalInput {
             dragGridController.start()
             shortcutController.start()
@@ -279,45 +239,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func makeMenuActionItems(configuration: AppConfiguration) -> [MenuBarController.ActionItem] {
-        let cycleItems: [MenuBarController.ActionItem] = [
-            MenuBarController.ActionItem(
-                title: UICopy.applyPreviousLayout,
-                action: .cyclePrevious,
-                shortcut: configuration.hotkeys.firstShortcut(for: .cyclePrevious)
-            ),
-            MenuBarController.ActionItem(
-                title: UICopy.applyNextLayout,
-                action: .cycleNext,
-                shortcut: configuration.hotkeys.firstShortcut(for: .cycleNext)
-            ),
-        ]
-
-        let indexedLayoutIDs = Dictionary(
-            uniqueKeysWithValues: LayoutGroupResolver.indexedActiveEntries(in: configuration).enumerated().map { offset, entry in
-                (entry.layout.id, offset + 1)
-            }
-        )
-        let layoutItems: [MenuBarController.ActionItem] = LayoutGroupResolver.activeGroup(in: configuration)?.sets.flatMap { set in
-            set.layouts.compactMap { layout in
-                guard layout.includeInMenu else {
-                    return nil
-                }
-                return MenuBarController.ActionItem(
-                    title: UICopy.applyLayout(
-                        UICopy.layoutMenuName(
-                            name: layout.name,
-                            fallbackIdentifier: layout.id
-                        )
-                    ),
-                    action: .applyLayoutByID(layoutID: layout.id),
-                    shortcut: indexedLayoutIDs[layout.id].flatMap {
-                        configuration.hotkeys.firstShortcut(for: .applyLayoutByIndex(layout: $0))
-                    }
-                )
-            }
-        } ?? []
-
-        return cycleItems + layoutItems
+        menuActionBuilder.buildActionItems(configuration: configuration)
     }
 
     private func performMenuAction(_ action: HotkeyAction) {
@@ -420,15 +342,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     var shouldMonitorGlobalInputForTesting: Bool {
-        accessibilityMonitor.hasAccess && configuration.general.isEnabled
+        accessibilityCoordinator.hasAccess && configuration.general.isEnabled
     }
 
     var isAccessibilityPollingActiveForTesting: Bool {
-        accessibilityPollingTimer != nil
+        accessibilityCoordinator.isPollingActive
     }
 
     var accessibilityPollingIntervalForTesting: TimeInterval? {
-        currentAccessibilityPollingInterval
+        accessibilityCoordinator.pollingInterval
     }
 
     func menuActionItemsForTesting() -> [MenuBarController.ActionItem] {
@@ -464,9 +386,5 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func requestAccessibilityPrompt() -> Bool {
         injectedAccessibilityPromptRequester?() ?? windowController.isAccessibilityTrusted(prompt: true)
-    }
-
-    private func validateAccessibilityAccessForAction() -> Bool {
-        refreshAccessibilityState(promptOnMissing: true)
     }
 }
