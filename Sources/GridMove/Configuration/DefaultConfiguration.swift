@@ -8,13 +8,6 @@ extension AppConfiguration {
         "com.apple.notificationcenterui",
     ]
 
-    static let builtInExcludedWindowTitles = [
-        "Notification Center",
-        "通知中心",
-        "Spotlight",
-        "聚焦",
-    ]
-
     static var defaultLayouts: [LayoutPreset] {
         [
             LayoutPreset(id: "layout-1", name: UICopy.defaultLayoutNames[0], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 4, h: 6), triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 2, h: 6)), includeInLayoutIndex: true),

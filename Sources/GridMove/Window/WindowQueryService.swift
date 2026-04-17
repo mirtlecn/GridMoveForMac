@@ -6,7 +6,6 @@ import Foundation
 final class WindowQueryService {
     private let mainDisplayHeightProvider: () -> CGFloat
     private let builtInExcludedBundleIDs = Set(AppConfiguration.builtInExcludedBundleIDs)
-    private let builtInExcludedTitles = Set(AppConfiguration.builtInExcludedWindowTitles)
 
     init(mainDisplayHeightProvider: @escaping () -> CGFloat) {
         self.mainDisplayHeightProvider = mainDisplayHeightProvider
@@ -117,6 +116,14 @@ final class WindowQueryService {
     }
 
     private func isWindowExcluded(_ window: ManagedWindow, configuration: AppConfiguration) -> Bool {
+        if isExcludedByIdentityRules(window, configuration: configuration) {
+            return true
+        }
+
+        return !isOperable(window)
+    }
+
+    private func isExcludedByIdentityRules(_ window: ManagedWindow, configuration: AppConfiguration) -> Bool {
         if isDesktopWindow(window) {
             return true
         }
@@ -126,7 +133,7 @@ final class WindowQueryService {
             return true
         }
 
-        if builtInExcludedTitles.contains(window.title) || configuration.general.excludedWindowTitles.contains(window.title) {
+        if configuration.general.excludedWindowTitles.contains(window.title) {
             return true
         }
 
@@ -134,7 +141,11 @@ final class WindowQueryService {
             return true
         }
 
-        return !isOperable(window)
+        return false
+    }
+
+    func isExcludedByIdentityRulesForTesting(_ window: ManagedWindow, configuration: AppConfiguration) -> Bool {
+        isExcludedByIdentityRules(window, configuration: configuration)
     }
 
     private func focusedWindow(from application: AXUIElement, configuration: AppConfiguration) -> ManagedWindow? {
