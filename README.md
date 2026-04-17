@@ -55,7 +55,7 @@ Config file location is `~/.config/GridMove/config.json`.
 On first launch, GridMove writes a default file to that path if it does not exist.
 The built-in default file contains two groups: `built-in` and `fullscreen`.
 
-The real file must be plain JSON and does not support comments. The example below uses `jsonc` only for explanation.
+The example below uses `jsonc` only for explanation. The real file must be plain JSON and does not support comments.
 
 ```jsonc
 {
@@ -101,7 +101,7 @@ The real file must be plain JSON and does not support comments. The example belo
         },
         "action": {
           "kind": "applyLayoutByIndex", // Allowed values are applyLayoutByIndex, cycleNext, cyclePrevious.
-          "layout": 4 // Required only for applyLayoutByIndex. This is a 1-based index within the active layout group's indexed layouts.
+          "layout": 4 // Required only for applyLayoutByIndex. This is a 1-based index within the active layout group's indexed layouts, and CLI -layout <number> uses the same numbering.
         }
       }
       // The default file contains more bindings in the same shape.
@@ -110,13 +110,13 @@ The real file must be plain JSON and does not support comments. The example belo
   "layoutGroups": [
     {
       "name": "built-in",
-      "includeInGroupCycle": true, // Missing includeInGroupCycle means this group still participates in Shift-based group cycling.
+      "includeInGroupCycle": true, // Missing includeInGroupCycle means this group still participates in Shift-based group cycling while drag interaction stays in layout mode.
       "sets": [
         {
-          "monitor": "all", // Allowed values: "all", "main", "<display-id>", ["<display-id>", ...]
+          "monitor": "all", // Allowed values: "all", "main", "<display-id>", ["<display-id>", ...]. Display matching prefers explicit ID or ID array, then main, then all.
           "layouts": [
             {
-              "name": "Center", // CLI name lookup uses this value inside the active layout group.
+              "name": "Center", // CLI -layout "<name>" looks up this value inside the active layout group.
               "gridColumns": 12,
               "gridRows": 6,
               "windowSelection": {
@@ -136,8 +136,8 @@ The real file must be plain JSON and does not support comments. The example belo
                 // If kind is menuBar, use:
                 // "menuBarSelection": { "x": 1, "w": 4 }
               },
-              "includeInLayoutIndex": true,
-              "includeInMenu": true // Missing includeInMenu means the layout still appears in the menu bar.
+              "includeInLayoutIndex": true, // false excludes the layout from layout-index shortcuts and from cycle order.
+              "includeInMenu": true // false hides the layout from the menu bar only.
             },
             {
               "name": "Centered no trigger",
@@ -149,8 +149,8 @@ The real file must be plain JSON and does not support comments. The example belo
                 "w": 6,
                 "h": 4
               },
-              "includeInLayoutIndex": false, // Excluded from layout-index shortcuts and from cycle order.
-              "includeInMenu": false // Missing triggerRegion means trigger is unavailable; menu visibility is controlled separately.
+              "includeInLayoutIndex": false,
+              "includeInMenu": false // Missing triggerRegion means drag trigger is unavailable; menu and CLI can still use the layout.
             }
           ]
         }
@@ -162,26 +162,6 @@ The real file must be plain JSON and does not support comments. The example belo
   }
 }
 ```
-
-Notes:
-
-- `layoutGroups[*].sets[*].layouts` order matters.
-- `layoutGroups[*].includeInGroupCycle` controls whether layout-mode Shift cycling can switch to that group.
-- the built-in default file includes `built-in` and `fullscreen`; startup keeps `built-in` active until the user switches the group
-- `hotkeys.bindings[*].action.layout` is a 1-based index within the active layout group's indexed layouts.
-- CLI `-layout <number>` uses the same 1-based index within the active layout group's indexed layouts.
-- CLI `-layout "<name>"` matches a layout name inside the active layout group.
-- if more than one layout in the active group shares the same name, CLI name lookup fails and reports the conflicting layout indexes.
-- layouts with `includeInLayoutIndex = false` are excluded from layout-index shortcuts and from layout cycling.
-- GridMove resolves one active set per display in this order: explicit display ID or ID array, then `main`, then `all`.
-- if trigger regions overlap on one display, the later declared layout wins.
-- `cycleNext` and `cyclePrevious` only cycle inside the target window's current display set. They never move the window to another display.
-- Menu and CLI direct layout application may move the target window to another display if the matched layout belongs to another set.
-- `includeInMenu` controls only menu-bar visibility.
-- layouts hidden from the menu can still be used by trigger and CLI paths, and can still be reached by layout-index shortcuts only when `includeInLayoutIndex = true`.
-- while a drag interaction is in layout mode, pressing and releasing `Shift` alone switches to the next group whose `includeInGroupCycle` is `true`, saves that group as `general.activeLayoutGroup`, refreshes the active trigger set immediately, and returns to the pre-threshold highlight state until the pointer moves far enough again.
-- Internal layout IDs and binding IDs are not stored in `config.json`. GridMove regenerates them when loading.
-- If the file is invalid JSON, contains comments, or references a missing layout index, GridMove falls back to built-in defaults for the current launch and keeps the broken file unchanged.
 
 
 ## Additional docs

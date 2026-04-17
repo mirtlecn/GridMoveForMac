@@ -66,6 +66,7 @@ Important properties:
 - `general.activeLayoutGroup` selects the currently active layout group
 - `layoutGroups[*].includeInGroupCycle` controls whether layout-mode Shift cycling can switch to that group
 - `layoutGroups[*].sets[*].monitor` routes layouts to `all`, `main`, one display ID, or multiple display IDs
+- `layoutGroups[*].sets[*].layouts` order drives menu order, layout-index numbering, and same-display trigger precedence
 - `layoutGroups[*].sets[*].layouts[*].includeInMenu` controls whether a layout appears in the menu bar
 
 Current drag-trigger configuration fields:
@@ -157,7 +158,7 @@ Default layout names in order:
 
 Compatibility behavior:
 
-- if config decoding fails, the file is left untouched
+- if config decoding fails, including invalid JSON, comments, or an invalid persisted layout index, the file is left untouched
 - the app falls back to built-in defaults for the current launch
 - missing `preferLayoutMode` defaults to `true`
 - missing `includeInGroupCycle` defaults to `true`
@@ -313,6 +314,7 @@ Menu actions:
 - keep a separator between the drag-preference items and the `Layout group` submenu
 - only include layouts whose `includeInMenu` value is `true`
 - always go through `LayoutActionExecutor`
+- layouts hidden from the menu remain available to trigger and CLI paths, and remain available to layout-index shortcuts only when `includeInLayoutIndex` is `true`
 
 Keyboard shortcuts:
 
