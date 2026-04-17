@@ -1,12 +1,26 @@
 APP_NAME := GridMove
 DIST_DIR := dist
 APP_BUNDLE := $(DIST_DIR)/$(APP_NAME).app
-APP_VERSION ?= 0.1.0
-BUILD_NUMBER ?= 1
+VERSION_FILE := VERSION
+APP_VERSION ?= $(shell tr -d '\n' < $(VERSION_FILE))
+BUILD_NUMBER ?= $(APP_VERSION)
 SIGN_IDENTITY ?= -
 APP_BUNDLE_ID ?= cn.mirtle.GridMove
+APP_AUTHOR ?= Mirtle
+APP_AUTHOR_URL ?= https://github.com/mirtlecn
+APP_COMMIT_SHA ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
+PACKAGE_VERSION_INFO ?= $(APP_VERSION)+$(APP_COMMIT_SHA)
+RELEASE_VERSION ?= $(word 2,$(MAKECMDGOALS))
 
-.PHONY: build test dev run sign-app verify-app clean
+ifeq ($(firstword $(MAKECMDGOALS)),release)
+ifneq ($(RELEASE_VERSION),)
+.PHONY: $(RELEASE_VERSION)
+$(RELEASE_VERSION):
+	@:
+endif
+endif
+
+.PHONY: build test dev run sign-app verify-app clean update-version release
 
 build: clean test
 	swift build -c release	
@@ -16,7 +30,19 @@ build: clean test
 		"$(APP_BUNDLE_ID)" \
 		"$(APP_VERSION)" \
 		"$(BUILD_NUMBER)" \
-		"$(SIGN_IDENTITY)"
+		"$(SIGN_IDENTITY)" \
+		"$(APP_AUTHOR)" \
+		"$(APP_AUTHOR_URL)" \
+		"$(PACKAGE_VERSION_INFO)"
+
+update-version:
+	@if [[ -z "$(VERSION)" ]]; then echo 'usage: make update-version VERSION=v0.1.1'; exit 1; fi
+	./scripts/update_version.sh "$(VERSION_FILE)" "$(VERSION)"
+
+release:
+	@if [[ -z "$(RELEASE_VERSION)" ]]; then echo 'usage: make release v0.1.1'; exit 1; fi
+	$(MAKE) update-version VERSION="$(RELEASE_VERSION)"
+	$(MAKE) build PACKAGE_VERSION_INFO="$(APP_VERSION)"
 
 test:
 	swift test

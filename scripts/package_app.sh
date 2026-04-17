@@ -2,8 +2,8 @@
 
 set -euo pipefail
 
-if [[ $# -ne 6 ]]; then
-  echo "usage: $0 <app-name> <app-bundle-path> <bundle-id> <version> <build-number> <sign-identity>" >&2
+if [[ $# -ne 9 ]]; then
+  echo "usage: $0 <app-name> <app-bundle-path> <bundle-id> <version> <build-number> <sign-identity> <author-name> <author-url> <version-info>" >&2
   exit 1
 fi
 
@@ -13,6 +13,9 @@ bundle_id="$3"
 version="$4"
 build_number="$5"
 sign_identity="$6"
+author_name="$7"
+author_url="$8"
+version_info="$9"
 
 release_binary=".build/release/${app_name}"
 contents_path="${app_bundle_path}/Contents"
@@ -52,6 +55,8 @@ cat > "${plist_path}" <<EOF
   <string>${bundle_id}</string>
   <key>CFBundleInfoDictionaryVersion</key>
   <string>6.0</string>
+  <key>CFBundleGetInfoString</key>
+  <string>${app_name} ${version_info}</string>
   <key>CFBundleName</key>
   <string>${app_name}</string>
   <key>CFBundlePackageType</key>
@@ -60,6 +65,8 @@ cat > "${plist_path}" <<EOF
   <string>${version}</string>
   <key>CFBundleVersion</key>
   <string>${build_number}</string>
+  <key>NSHumanReadableCopyright</key>
+  <string>Created by ${author_name} (${author_url})</string>
   <key>LSMinimumSystemVersion</key>
   <string>14.0</string>
   <key>LSUIElement</key>

@@ -20,6 +20,8 @@ make test
 make dev
 # build and package
 make build
+# update VERSION and build a release package
+make release v0.1.1
 ```
 
 The default signing mode is ad-hoc signing for local testing. To use a real certificate, override `SIGN_IDENTITY`:
@@ -27,6 +29,8 @@ The default signing mode is ad-hoc signing for local testing. To use a real cert
 ```bash
 make build SIGN_IDENTITY="Developer ID Application: Example Name (TEAMID)"
 ```
+
+`VERSION` is the single source of truth for the main app version. `make build` keeps `CFBundleShortVersionString` and `CFBundleVersion` at the main version and records `<main-version>+<short-commit>` in the package info string. `make release v0.1.1` updates `VERSION`, then builds a release package whose package info string is just `0.1.1`.
 
 ## CLI
 
