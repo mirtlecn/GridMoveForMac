@@ -27,7 +27,9 @@ final class ConfigurationRuntimeCoordinator {
         let result = try configurationStore.loadWithStatus()
         var configuration = result.configuration
         let didUpdateMonitorMetadata = synchronizeMonitorMetadata(configuration: &configuration)
-        if didUpdateMonitorMetadata && result.source == .persistedConfiguration {
+        if didUpdateMonitorMetadata,
+           result.source == .persistedConfiguration,
+           result.skippedLayoutDiagnostics.isEmpty {
             do {
                 try configurationStore.save(configuration)
             } catch {

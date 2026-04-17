@@ -236,10 +236,12 @@ import Testing
 
     var receivedTitle: String?
     var receivedBody: String?
+    let invalidLayoutURL = store.layoutDirectoryURL.appendingPathComponent("2.grid.json")
+    let invalidLayoutTextBeforeReload = try String(contentsOf: invalidLayoutURL, encoding: .utf8)
     let delegate = AppDelegate(
         configurationStore: store,
         openURL: { _ in true },
-        currentMonitorMapProvider: { [:] },
+        currentMonitorMapProvider: { ["Built-in Retina Display": "12345"] },
         notifyUser: { title, body in
             receivedTitle = title
             receivedBody = body
@@ -253,8 +255,68 @@ import Testing
     #expect(expectedResult.skippedLayoutDiagnostics.count == 1)
     #expect(delegate.configuration.layoutGroupNames() == ["built-in"])
     #expect(delegate.configuration.layouts.map(\.name) == ["Modified built-in"])
+    #expect(delegate.configuration.monitors == ["Built-in Retina Display": "12345"])
     #expect(receivedTitle == UICopy.configReloadSkippedLayoutsTitle)
     #expect(receivedBody?.contains("2.grid.json") == true)
+    #expect(FileManager.default.fileExists(atPath: invalidLayoutURL.path))
+    #expect(try String(contentsOf: invalidLayoutURL, encoding: .utf8) == invalidLayoutTextBeforeReload)
+}
+
+@MainActor
+@Test func appDelegateLaunchKeepsInvalidLayoutFilesWhenPartialLoadSucceeds() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-launch-partial-reload-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    _ = try store.load()
+
+    try """
+    {
+      "name": "built-in",
+      "sets": [
+        {
+          "monitor": "all",
+          "layouts": [
+            {
+              "name": "Modified built-in",
+              "gridColumns": 12,
+              "gridRows": 6,
+              "windowSelection": { "x": 0, "y": 0, "w": 12, "h": 6 }
+            }
+          ]
+        }
+      ]
+    }
+    """.write(
+        to: store.layoutDirectoryURL.appendingPathComponent("1.grid.json"),
+        atomically: true,
+        encoding: .utf8
+    )
+    let invalidLayoutURL = store.layoutDirectoryURL.appendingPathComponent("2.grid.json")
+    try """
+    {
+      "name":
+    """.write(
+        to: invalidLayoutURL,
+        atomically: true,
+        encoding: .utf8
+    )
+
+    let invalidLayoutTextBeforeLaunch = try String(contentsOf: invalidLayoutURL, encoding: .utf8)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        currentMonitorMapProvider: { ["Built-in Retina Display": "12345"] }
+    )
+
+    delegate.reloadConfigurationFromDisk(mode: .launch)
+
+    #expect(delegate.configuration.layoutGroupNames() == ["built-in"])
+    #expect(delegate.configuration.layouts.map(\.name) == ["Modified built-in"])
+    #expect(delegate.configuration.monitors == ["Built-in Retina Display": "12345"])
+    #expect(FileManager.default.fileExists(atPath: invalidLayoutURL.path))
+    #expect(try String(contentsOf: invalidLayoutURL, encoding: .utf8) == invalidLayoutTextBeforeLaunch)
 }
 
 @MainActor
