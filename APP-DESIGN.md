@@ -58,6 +58,7 @@ Important properties:
 - stroke colors are stored as `#RRGGBBAA`
 - `general.activeLayoutGroup` selects the currently active layout group
 - `layoutGroups[*].sets[*].monitor` routes layouts to `all`, `main`, one display ID, or multiple display IDs
+- `layoutGroups[*].sets[*].layouts[*].includeInMenu` controls whether a layout appears in the menu bar
 
 Current drag-trigger configuration fields:
 
@@ -124,10 +125,12 @@ The built-in default configuration currently resolves to the following values.
 - `layout-1` to `layout-10` participate in layout cycling
 - `layout-11` does not participate in layout cycling
 - the `fullscreen` group uses these layouts:
+  - `Fullscreen main`: full screen with a full-screen trigger
   - `Main left 1/2`: left half with a left-quarter screen trigger
   - `Main right 1/2`: right half with a right-quarter screen trigger
-  - `Main fullscreen`: full screen with a menu-bar trigger
-  - `Other fullscreen`: full screen with a menu-bar trigger for non-main displays
+  - `Fullscreen main (menu bar)`: full screen with a menu-bar trigger and hidden from the menu bar list
+  - `Fullscreen other`: full screen with a full-screen trigger
+  - `Fullscreen other (menu bar)`: full screen with a menu-bar trigger and hidden from the menu bar list
 
 Default layout names in order:
 
@@ -149,6 +152,7 @@ Compatibility behavior:
 - the app falls back to built-in defaults for the current launch
 - missing `preferLayoutMode` defaults to `true`
 - missing `triggerRegion` means the layout is menu, shortcut, and CLI only
+- missing `includeInMenu` defaults to `true`
 
 ## 5. Accessibility Lifecycle
 
@@ -251,6 +255,7 @@ Behavior:
 - before the threshold is crossed, highlight the current window frame
 - after the threshold is crossed, use hovered trigger slot to apply layouts
 - remember the last applied layout to avoid redundant reapplication
+- if trigger regions overlap on one display, the later declared layout wins
 
 Cross-screen behavior:
 
@@ -287,6 +292,7 @@ Menu actions:
 - are built from current configuration
 - include a `Layout group` submenu that switches `general.activeLayoutGroup`
 - keep a separator between the drag-preference items and the `Layout group` submenu
+- only include layouts whose `includeInMenu` value is `true`
 - always go through `LayoutActionExecutor`
 
 Keyboard shortcuts:
@@ -312,6 +318,7 @@ Display set resolution:
 - drag overlays and trigger hit testing only use the resolved set for the current display
 - `cycleNext` and `cyclePrevious` only use the resolved set for the target window's current display and never move the window across displays
 - menu and CLI direct layout application may move the window across displays when the chosen layout belongs to another resolved set
+- menu actions target layouts by internal layout ID so same-name layouts in different sets still go to the intended display
 
 ## 9. Overlay Behavior
 

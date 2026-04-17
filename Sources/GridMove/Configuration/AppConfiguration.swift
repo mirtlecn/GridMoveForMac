@@ -67,6 +67,7 @@ struct KeyboardShortcut: Codable, Equatable, Hashable {
 enum HotkeyAction: Codable, Equatable, Hashable {
     case applyLayoutByIndex(layout: Int)
     case applyLayoutByName(name: String)
+    case applyLayoutByID(layoutID: String)
     case cycleNext
     case cyclePrevious
 
@@ -74,11 +75,13 @@ enum HotkeyAction: Codable, Equatable, Hashable {
         case kind
         case layout
         case name
+        case layoutID
     }
 
     private enum Kind: String, Codable {
         case applyLayoutByIndex
         case applyLayoutByName
+        case applyLayoutByID
         case cycleNext
         case cyclePrevious
     }
@@ -94,6 +97,8 @@ enum HotkeyAction: Codable, Equatable, Hashable {
             self = .applyLayoutByIndex(layout: layout)
         case .applyLayoutByName:
             self = .applyLayoutByName(name: try container.decode(String.self, forKey: .name))
+        case .applyLayoutByID:
+            self = .applyLayoutByID(layoutID: try container.decode(String.self, forKey: .layoutID))
         case .cycleNext:
             self = .cycleNext
         case .cyclePrevious:
@@ -110,6 +115,9 @@ enum HotkeyAction: Codable, Equatable, Hashable {
         case let .applyLayoutByName(name):
             try container.encode(Kind.applyLayoutByName, forKey: .kind)
             try container.encode(name, forKey: .name)
+        case let .applyLayoutByID(layoutID):
+            try container.encode(Kind.applyLayoutByID, forKey: .kind)
+            try container.encode(layoutID, forKey: .layoutID)
         case .cycleNext:
             try container.encode(Kind.cycleNext, forKey: .kind)
         case .cyclePrevious:
@@ -126,6 +134,11 @@ enum HotkeyAction: Codable, Equatable, Hashable {
             return UICopy.applyLayout(UICopy.unknownLayout)
         case let .applyLayoutByName(name):
             return UICopy.applyLayout(name)
+        case let .applyLayoutByID(layoutID):
+            if let layout = layouts.first(where: { $0.id == layoutID }) {
+                return UICopy.applyLayout(layout.name)
+            }
+            return UICopy.applyLayout(UICopy.unknownLayout)
         case .cycleNext:
             return UICopy.applyNextLayout
         case .cyclePrevious:
@@ -229,6 +242,62 @@ struct LayoutPreset: Codable, Equatable, Hashable, Identifiable {
     var windowSelection: GridSelection
     var triggerRegion: TriggerRegion?
     var includeInCycle: Bool
+    var includeInMenu: Bool
+
+    init(
+        id: String,
+        name: String,
+        gridColumns: Int,
+        gridRows: Int,
+        windowSelection: GridSelection,
+        triggerRegion: TriggerRegion?,
+        includeInCycle: Bool,
+        includeInMenu: Bool = true
+    ) {
+        self.id = id
+        self.name = name
+        self.gridColumns = gridColumns
+        self.gridRows = gridRows
+        self.windowSelection = windowSelection
+        self.triggerRegion = triggerRegion
+        self.includeInCycle = includeInCycle
+        self.includeInMenu = includeInMenu
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case name
+        case gridColumns
+        case gridRows
+        case windowSelection
+        case triggerRegion
+        case includeInCycle
+        case includeInMenu
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        gridColumns = try container.decode(Int.self, forKey: .gridColumns)
+        gridRows = try container.decode(Int.self, forKey: .gridRows)
+        windowSelection = try container.decode(GridSelection.self, forKey: .windowSelection)
+        triggerRegion = try container.decodeIfPresent(TriggerRegion.self, forKey: .triggerRegion)
+        includeInCycle = try container.decode(Bool.self, forKey: .includeInCycle)
+        includeInMenu = try container.decodeIfPresent(Bool.self, forKey: .includeInMenu) ?? true
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(name, forKey: .name)
+        try container.encode(gridColumns, forKey: .gridColumns)
+        try container.encode(gridRows, forKey: .gridRows)
+        try container.encode(windowSelection, forKey: .windowSelection)
+        try container.encodeIfPresent(triggerRegion, forKey: .triggerRegion)
+        try container.encode(includeInCycle, forKey: .includeInCycle)
+        try container.encode(includeInMenu, forKey: .includeInMenu)
+    }
 }
 
 enum LayoutSetMonitor: Codable, Equatable, Hashable {
@@ -590,6 +659,15 @@ struct AppConfiguration: Codable, Equatable {
                         layouts: [
                             LayoutPreset(
                                 id: "layout-12",
+                                name: "Fullscreen main",
+                                gridColumns: 12,
+                                gridRows: 6,
+                                windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
+                                triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 12, h: 6)),
+                                includeInCycle: true
+                            ),
+                            LayoutPreset(
+                                id: "layout-13",
                                 name: "Main left 1/2",
                                 gridColumns: 12,
                                 gridRows: 6,
@@ -598,7 +676,7 @@ struct AppConfiguration: Codable, Equatable {
                                 includeInCycle: true
                             ),
                             LayoutPreset(
-                                id: "layout-13",
+                                id: "layout-14",
                                 name: "Main right 1/2",
                                 gridColumns: 12,
                                 gridRows: 6,
@@ -607,13 +685,14 @@ struct AppConfiguration: Codable, Equatable {
                                 includeInCycle: true
                             ),
                             LayoutPreset(
-                                id: "layout-14",
-                                name: "Main fullscreen",
+                                id: "layout-15",
+                                name: "Fullscreen main (menu bar)",
                                 gridColumns: 12,
                                 gridRows: 6,
                                 windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
                                 triggerRegion: .menuBar(MenuBarSelection(x: 0, w: 6)),
-                                includeInCycle: true
+                                includeInCycle: true,
+                                includeInMenu: false
                             ),
                         ]
                     ),
@@ -621,13 +700,23 @@ struct AppConfiguration: Codable, Equatable {
                         monitor: .all,
                         layouts: [
                             LayoutPreset(
-                                id: "layout-15",
-                                name: "Other fullscreen",
+                                id: "layout-16",
+                                name: "Fullscreen other",
+                                gridColumns: 12,
+                                gridRows: 6,
+                                windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
+                                triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 12, h: 6)),
+                                includeInCycle: true
+                            ),
+                            LayoutPreset(
+                                id: "layout-17",
+                                name: "Fullscreen other (menu bar)",
                                 gridColumns: 12,
                                 gridRows: 6,
                                 windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
                                 triggerRegion: .menuBar(MenuBarSelection(x: 0, w: 6)),
-                                includeInCycle: true
+                                includeInCycle: true,
+                                includeInMenu: false
                             ),
                         ]
                     ),

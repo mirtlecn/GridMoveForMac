@@ -50,6 +50,38 @@ import Testing
 }
 
 @MainActor
+@Test func appDelegateMenuActionsHideLayoutsExcludedFromMenu() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-menu-actions-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var configuration = AppConfiguration.defaultValue
+    configuration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
+    try store.save(configuration)
+
+    let delegate = AppDelegate(configurationStore: store, openURL: { _ in true })
+    delegate.reloadConfigurationFromDisk()
+
+    let actionItems = delegate.menuActionItemsForTesting()
+    let layoutActionTitles = actionItems.dropFirst(2).map(\.title)
+    let layoutActions = actionItems.dropFirst(2).map(\.action)
+
+    #expect(layoutActionTitles == [
+        "Apply Fullscreen main",
+        "Apply Main left 1/2",
+        "Apply Main right 1/2",
+        "Apply Fullscreen other",
+    ])
+    #expect(layoutActions == [
+        .applyLayoutByID(layoutID: "layout-12"),
+        .applyLayoutByID(layoutID: "layout-13"),
+        .applyLayoutByID(layoutID: "layout-14"),
+        .applyLayoutByID(layoutID: "layout-16"),
+    ])
+}
+
+@MainActor
 @Test func appDelegateCustomizeOpensConfigurationDirectory() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-customize-\(UUID().uuidString)", isDirectory: true)

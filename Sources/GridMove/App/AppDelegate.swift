@@ -301,7 +301,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ),
         ]
 
-        let layoutItems = LayoutGroupResolver.flattenedActiveEntries(in: configuration).enumerated().map { index, entry in
+        let layoutItems = LayoutGroupResolver.flattenedActiveEntries(in: configuration)
+            .filter { $0.layout.includeInMenu }
+            .enumerated()
+            .map { index, entry in
             MenuBarController.ActionItem(
                 title: UICopy.applyLayout(
                     UICopy.layoutMenuName(
@@ -309,7 +312,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         fallbackIdentifier: "layout_\(index + 1)"
                     )
                 ),
-                action: .applyLayoutByName(name: entry.layout.name),
+                action: .applyLayoutByID(layoutID: entry.layout.id),
                 shortcut: nil
             )
         }
@@ -428,6 +431,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     var accessibilityPollingIntervalForTesting: TimeInterval? {
         currentAccessibilityPollingInterval
+    }
+
+    func menuActionItemsForTesting() -> [MenuBarController.ActionItem] {
+        makeMenuActionItems(configuration: configuration)
     }
 
     func recordLayoutIDForTesting(_ layoutID: String, windowIdentity: String) {

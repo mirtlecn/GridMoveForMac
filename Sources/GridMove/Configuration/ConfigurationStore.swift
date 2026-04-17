@@ -160,7 +160,8 @@ private enum ConfigurationSchemaConverter {
                         gridRows: layoutConfiguration.gridRows,
                         windowSelection: layoutConfiguration.windowSelection,
                         triggerRegion: layoutConfiguration.triggerRegion,
-                        includeInCycle: layoutConfiguration.includeInCycle
+                        includeInCycle: layoutConfiguration.includeInCycle,
+                        includeInMenu: layoutConfiguration.includeInMenu
                     )
                 }
                 return LayoutSet(monitor: setConfiguration.monitor, layouts: layouts)
@@ -286,7 +287,7 @@ private struct HotkeyActionConfiguration: Codable {
         case .cyclePrevious:
             kind = .cyclePrevious
             layout = nil
-        case .applyLayoutByName:
+        case .applyLayoutByName, .applyLayoutByID:
             preconditionFailure("Menu-only actions must not be written into hotkey configuration.")
         }
     }
@@ -333,6 +334,17 @@ private struct LayoutConfiguration: Codable {
     let windowSelection: GridSelection
     let triggerRegion: TriggerRegion?
     let includeInCycle: Bool
+    let includeInMenu: Bool
+
+    private enum CodingKeys: String, CodingKey {
+        case name
+        case gridColumns
+        case gridRows
+        case windowSelection
+        case triggerRegion
+        case includeInCycle
+        case includeInMenu
+    }
 
     init(layout: LayoutPreset) {
         name = layout.name
@@ -341,6 +353,18 @@ private struct LayoutConfiguration: Codable {
         windowSelection = layout.windowSelection
         triggerRegion = layout.triggerRegion
         includeInCycle = layout.includeInCycle
+        includeInMenu = layout.includeInMenu
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decode(String.self, forKey: .name)
+        gridColumns = try container.decode(Int.self, forKey: .gridColumns)
+        gridRows = try container.decode(Int.self, forKey: .gridRows)
+        windowSelection = try container.decode(GridSelection.self, forKey: .windowSelection)
+        triggerRegion = try container.decodeIfPresent(TriggerRegion.self, forKey: .triggerRegion)
+        includeInCycle = try container.decode(Bool.self, forKey: .includeInCycle)
+        includeInMenu = try container.decodeIfPresent(Bool.self, forKey: .includeInMenu) ?? true
     }
 }
 

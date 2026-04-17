@@ -137,7 +137,7 @@ final class LayoutEngine {
     }
 
     func triggerSlot(containing point: CGPoint, slots: [ResolvedTriggerSlot]) -> ResolvedTriggerSlot? {
-        slots.first { $0.triggerFrame.contains(point) }
+        slots.last { $0.triggerFrame.contains(point) }
     }
 
     func layoutPreset(for layoutID: String, in layouts: [LayoutPreset]) -> LayoutPreset? {

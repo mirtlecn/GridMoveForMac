@@ -162,6 +162,8 @@ import Testing
     #expect(configuration.dragTriggers.preferLayoutMode == true)
     #expect(configuration.layouts[1].triggerRegion == nil)
     #expect(configuration.layouts[1].includeInCycle == false)
+    #expect(configuration.layouts[0].includeInMenu == true)
+    #expect(configuration.layouts[1].includeInMenu == true)
     #expect(configuration.monitors == ["Built-in Retina Display": "12345"])
     #expect(configuration.appearance.triggerStrokeColor.hexString == "#007AFF33")
     #expect(configuration.appearance.highlightStrokeColor.hexString == "#FFFFFFEB")
@@ -222,6 +224,18 @@ import Testing
     #expect(configuration.layoutGroups[0].sets[0].monitor == .all)
     #expect(configuration.layoutGroups[1].name == AppConfiguration.fullscreenGroupName)
     #expect(configuration.layoutGroups[1].sets.map(\.monitor) == [.main, .all])
+    #expect(configuration.layoutGroups[1].sets[0].layouts.map(\.name) == [
+        "Fullscreen main",
+        "Main left 1/2",
+        "Main right 1/2",
+        "Fullscreen main (menu bar)",
+    ])
+    #expect(configuration.layoutGroups[1].sets[1].layouts.map(\.name) == [
+        "Fullscreen other",
+        "Fullscreen other (menu bar)",
+    ])
+    #expect(configuration.layoutGroups[1].sets[0].layouts[3].includeInMenu == false)
+    #expect(configuration.layoutGroups[1].sets[1].layouts[1].includeInMenu == false)
     #expect(!hasAltLayoutBinding)
     #expect(hasHyperLayoutFourBinding)
     #expect(!hasFullscreenOrCloseBinding)

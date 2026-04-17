@@ -31,6 +31,7 @@ import Testing
     #expect(layouts[10].windowSelection == GridSelection(x: 0, y: 0, w: 12, h: 6))
     #expect(layouts[10].triggerRegion == .menuBar(MenuBarSelection(x: 0, w: 6)))
     #expect(layouts[10].includeInCycle == false)
+    #expect(layouts[10].includeInMenu == true)
 }
 
 @Test func layoutFrameUsesTopOriginCoordinates() async throws {
@@ -130,6 +131,40 @@ import Testing
     ])
     #expect(engine.nextLayoutID(for: "window-a", layouts: configuration.layouts) == "layout-1")
     #expect(engine.previousLayoutID(for: "window-a", layouts: configuration.layouts) == "layout-10")
+}
+
+@Test func triggerSlotPrefersLaterDeclaredOverlap() async throws {
+    let engine = LayoutEngine()
+    let layouts = [
+        LayoutPreset(
+            id: "layout-a",
+            name: "Fullscreen",
+            gridColumns: 12,
+            gridRows: 6,
+            windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
+            triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 12, h: 6)),
+            includeInCycle: true
+        ),
+        LayoutPreset(
+            id: "layout-b",
+            name: "Left 1/2",
+            gridColumns: 12,
+            gridRows: 6,
+            windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6),
+            triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 6, h: 6)),
+            includeInCycle: true
+        ),
+    ]
+
+    let slots = engine.resolveTriggerSlots(
+        screenFrame: CGRect(x: 0, y: 0, width: 1200, height: 630),
+        usableFrame: CGRect(x: 0, y: 0, width: 1200, height: 600),
+        layouts: layouts,
+        triggerGap: 0
+    )
+
+    let matchedSlot = try #require(engine.triggerSlot(containing: CGPoint(x: 100, y: 100), slots: slots))
+    #expect(matchedSlot.layoutID == "layout-b")
 }
 
 @Test func layoutEngineKeepsOnlyTenRecentWindowLayoutRecords() async throws {

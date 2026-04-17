@@ -88,6 +88,21 @@ final class LayoutActionExecutor {
         }
 
         switch hotkeyAction {
+        case let .applyLayoutByID(layoutID):
+            let currentScreen = screen(for: window)
+            guard let entry = LayoutGroupResolver.entry(for: layoutID, configuration: configuration) else {
+                return .failure("No layout found for ID \(layoutID).")
+            }
+            guard let targetScreen = LayoutGroupResolver.targetScreen(for: entry, currentScreen: currentScreen) else {
+                return .failure("No target display found for layout \(entry.layout.name).")
+            }
+            windowController.applyLayout(
+                layoutID: entry.layout.id,
+                to: window,
+                preferredScreen: targetScreen,
+                configuration: configuration
+            )
+            return .success
         case let .applyLayoutByName(name):
             let currentScreen = screen(for: window)
             guard let entry = try? LayoutGroupResolver.resolveNamedLayout(identifier: name, configuration: configuration) else {

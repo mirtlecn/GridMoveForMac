@@ -135,7 +135,8 @@ The real file must be plain JSON and does not support comments. The example belo
                 // If kind is menuBar, use:
                 // "menuBarSelection": { "x": 1, "w": 4 }
               },
-              "includeInCycle": true
+              "includeInCycle": true,
+              "includeInMenu": true // Missing includeInMenu means the layout still appears in the menu bar.
             },
             {
               "name": "Centered no trigger",
@@ -147,7 +148,8 @@ The real file must be plain JSON and does not support comments. The example belo
                 "w": 6,
                 "h": 4
               },
-              "includeInCycle": false // Missing triggerRegion means menu/shortcut/CLI only.
+              "includeInCycle": false,
+              "includeInMenu": false // Missing triggerRegion means menu/shortcut/CLI only.
             }
           ]
         }
@@ -166,8 +168,10 @@ Notes:
 - the built-in default file includes `built-in` and `fullscreen`; startup keeps `built-in` active until the user switches the group
 - `hotkeys.bindings[*].action.layout` is 1-based within the current display's resolved set, not across the whole group.
 - GridMove resolves one active set per display in this order: explicit display ID or ID array, then `main`, then `all`.
+- if trigger regions overlap on one display, the later declared layout wins.
 - `cycleNext` and `cyclePrevious` only cycle inside the target window's current display set. They never move the window to another display.
 - Menu and CLI direct layout application may move the target window to another display if the matched layout belongs to another set.
+- `includeInMenu` controls only menu-bar visibility. Hidden layouts can still be used by trigger, shortcut, and CLI paths.
 - Internal layout IDs and binding IDs are not stored in `config.json`. GridMove regenerates them when loading.
 - If the file is invalid JSON, contains comments, or references a missing layout index, GridMove falls back to built-in defaults for the current launch and keeps the broken file unchanged.
 
