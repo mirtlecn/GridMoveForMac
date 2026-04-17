@@ -1,5 +1,13 @@
+import Foundation
 import Testing
 @testable import GridMove
+
+@MainActor
+private func makePreferenceStore() -> ConfigurationStore {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-preference-\(UUID().uuidString)", isDirectory: true)
+    return ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+}
 
 @MainActor
 @Test func menuBarControllerKeepsSettingsAndAddsPreferenceEntry() async throws {
@@ -20,7 +28,7 @@ import Testing
 
 @MainActor
 @Test func preferenceWindowControllerUsesFiveTabsInExpectedOrder() async throws {
-    let controller = PreferenceWindowController()
+    let controller = PreferenceWindowController(configurationStore: makePreferenceStore())
 
     #expect(controller.tabTitlesForTesting == [
         UICopy.generalSectionTitle,
@@ -33,7 +41,7 @@ import Testing
 
 @MainActor
 @Test func preferenceGeneralTabExposesExpectedSections() async throws {
-    let controller = PreferenceWindowController()
+    let controller = PreferenceWindowController(configurationStore: makePreferenceStore())
 
     #expect(controller.generalSectionTitlesForTesting == [
         UICopy.enableTitle,
@@ -45,11 +53,20 @@ import Testing
 @MainActor
 @Test func preferenceWindowControllerInvokesOnCloseCallback() async throws {
     var didClose = false
-    let controller = PreferenceWindowController {
+    let controller = PreferenceWindowController(
+        configurationStore: makePreferenceStore(),
+        onClose: {
         didClose = true
-    }
+    })
 
     controller.handleWindowClose()
 
     #expect(didClose == true)
+}
+
+@MainActor
+@Test func preferenceWindowControllerListsAllDefaultHotkeyActions() async throws {
+    let controller = PreferenceWindowController(configurationStore: makePreferenceStore())
+
+    #expect(controller.hotkeyRowCountForTesting == AppConfiguration.defaultValue.layouts.count + 2)
 }

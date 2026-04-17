@@ -164,6 +164,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                         self?.makeMenuActionItems(configuration: configuration) ?? [],
                         isEnabled: configuration.general.isEnabled
                     )
+                    self?.preferenceController?.updateConfiguration(configuration)
                     self?.settingsController?.updateConfiguration(configuration)
                 },
                 onClose: { [weak self] in
@@ -180,12 +181,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func showPreference() {
         if preferenceController == nil {
             preferenceController = PreferenceWindowController(
+                configurationStore: configurationStore,
+                configurationProvider: { [weak self] in self?.configuration ?? .defaultValue },
+                onConfigurationSaved: { [weak self] configuration in
+                    self?.configuration = configuration
+                    self?.applyGlobalEnabledState()
+                    self?.menuController?.updateActionItems(
+                        self?.makeMenuActionItems(configuration: configuration) ?? [],
+                        isEnabled: configuration.general.isEnabled
+                    )
+                    self?.settingsController?.updateConfiguration(configuration)
+                    self?.preferenceController?.updateConfiguration(configuration)
+                },
                 onClose: { [weak self] in
                     self?.preferenceController = nil
                 }
             )
         }
 
+        preferenceController?.updateConfiguration(configuration)
         preferenceController?.show()
         NSApp.activate(ignoringOtherApps: true)
     }
@@ -208,6 +222,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         applyGlobalEnabledState()
         menuController?.updateActionItems(makeMenuActionItems(configuration: configuration), isEnabled: isEnabled)
+        preferenceController?.updateConfiguration(configuration)
         settingsController?.updateConfiguration(configuration)
     }
 

@@ -1,0 +1,60 @@
+import Foundation
+import Testing
+@testable import GridMove
+
+@MainActor
+private func makePreferenceViewModel() -> (PreferenceViewModel, URL) {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-preference-viewmodel-\(UUID().uuidString)", isDirectory: true)
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let viewModel = PreferenceViewModel(
+        configurationStore: store,
+        configurationProvider: { AppConfiguration.defaultValue },
+        onConfigurationSaved: { _ in }
+    )
+    return (viewModel, temporaryDirectory)
+}
+
+@MainActor
+@Test func preferenceViewModelUpdatesGeneralToggleAndPersists() async throws {
+    let (viewModel, temporaryDirectory) = makePreferenceViewModel()
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    viewModel.updateGeneralEnabled(false)
+
+    #expect(viewModel.configuration.general.isEnabled == false)
+}
+
+@MainActor
+@Test func preferenceViewModelAddsHotkeyBindingFromPlaceholderRow() async throws {
+    let (viewModel, temporaryDirectory) = makePreferenceViewModel()
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let rowID = try #require(
+        viewModel.hotkeyRows.first(where: { $0.bindingID == nil && $0.shortcut == nil })?.id
+    )
+    let initialCount = viewModel.configuration.hotkeys.bindings.count
+
+    viewModel.updateHotkeyShortcut(
+        id: rowID,
+        shortcut: KeyboardShortcut(modifiers: [.cmd, .shift], key: "9")
+    )
+
+    #expect(viewModel.configuration.hotkeys.bindings.count == initialCount + 1)
+}
+
+@MainActor
+@Test func preferenceViewModelCanAddAndDeleteExtraHotkeyRows() async throws {
+    let (viewModel, temporaryDirectory) = makePreferenceViewModel()
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let initialCount = viewModel.configuration.hotkeys.bindings.count
+    viewModel.addHotkeyRow(defaultAction: .cycleNext)
+    let extraRow = try #require(viewModel.hotkeyRows.last(where: { $0.isAdditional }))
+
+    #expect(viewModel.configuration.hotkeys.bindings.count == initialCount + 1)
+
+    viewModel.deleteHotkeyRow(id: extraRow.id)
+
+    #expect(viewModel.configuration.hotkeys.bindings.count == initialCount)
+}

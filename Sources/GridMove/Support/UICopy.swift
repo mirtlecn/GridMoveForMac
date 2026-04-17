@@ -38,7 +38,9 @@ enum UICopy {
     static let bundleIDTitle = "Bundle ID"
     static let windowTitle = "Window title"
     static let preferencePlaceholderMessage = "This tab will be implemented in a later step."
-    static let generalPreviewNote = "This phase only builds the new AppKit preference shell. Controls do not save yet."
+    static let addExcludedWindowTitle = "Add excluded window"
+    static let addModifierGroupTitle = "Add modifier group"
+    static let build = "Build"
 
     static let hotkeysHelpText = "To change a shortcut, double-click the key combination, then type a new shortcut."
     static let applyNextLayout = "Apply next layout"

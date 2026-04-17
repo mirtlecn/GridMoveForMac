@@ -52,7 +52,8 @@
 - 打开新的原生 AppKit Preference 窗口
 - 如果窗口已存在，则激活并显示已有窗口
 - 当前阶段包含 5 个 tab：`General`、`Layouts`、`Appearance`、`Hotkeys`、`About`
-- 当前阶段只有 `General` 有静态页面内容，其余页面先显示占位内容
+- 当前阶段 `General`、`Hotkeys`、`About` 已接入真实内容
+- 当前阶段 `Layouts`、`Appearance` 仍显示占位内容
 
 ### 3.1 Enable
 

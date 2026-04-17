@@ -2,15 +2,21 @@ import AppKit
 
 @MainActor
 final class PreferenceTabViewController: NSTabViewController {
-    let generalController = PreferenceGeneralViewController()
+    private let viewModel: PreferenceViewModel
+    let generalController: PreferenceGeneralViewController
+    let hotkeysController: PreferenceHotkeysViewController
+    let aboutController = PreferenceAboutViewController()
 
-    override init(nibName nibNameOrNil: NSNib.Name?, bundle nibBundleOrNil: Bundle?) {
-        super.init(nibName: nibNameOrNil, bundle: nibBundleOrNil)
+    init(viewModel: PreferenceViewModel) {
+        self.viewModel = viewModel
+        generalController = PreferenceGeneralViewController(viewModel: viewModel)
+        hotkeysController = PreferenceHotkeysViewController(viewModel: viewModel)
+        super.init(nibName: nil, bundle: nil)
         configureTabs()
     }
 
-    convenience init() {
-        self.init(nibName: nil, bundle: nil)
+    override init(nibName nibNameOrNil: NSNib.Name?, bundle nibBundleOrNil: Bundle?) {
+        fatalError("init(nibName:bundle:) has not been implemented")
     }
 
     @available(*, unavailable)
@@ -44,7 +50,11 @@ final class PreferenceTabViewController: NSTabViewController {
         switch tab {
         case .general:
             viewController = generalController
-        case .layouts, .appearance, .hotkeys, .about:
+        case .hotkeys:
+            viewController = hotkeysController
+        case .about:
+            viewController = aboutController
+        case .layouts, .appearance:
             viewController = PreferencePlaceholderViewController(
                 title: tab.title,
                 message: UICopy.preferencePlaceholderMessage
@@ -54,15 +64,33 @@ final class PreferenceTabViewController: NSTabViewController {
         viewController.title = tab.title
         return viewController
     }
+
+    func updateConfiguration(_ configuration: AppConfiguration) {
+        viewModel.replaceConfiguration(configuration)
+        generalController.reloadFromViewModel()
+        hotkeysController.reloadFromViewModel()
+    }
 }
 
 @MainActor
 final class PreferenceWindowController: NSWindowController, NSWindowDelegate {
-    private let tabController = PreferenceTabViewController()
+    private let viewModel: PreferenceViewModel
+    private let tabController: PreferenceTabViewController
     private let onClose: () -> Void
 
-    init(onClose: @escaping () -> Void = {}) {
+    init(
+        configurationStore: ConfigurationStore = ConfigurationStore(),
+        configurationProvider: @escaping () -> AppConfiguration = { AppConfiguration.defaultValue },
+        onConfigurationSaved: @escaping (AppConfiguration) -> Void = { _ in },
+        onClose: @escaping () -> Void = {}
+    ) {
         self.onClose = onClose
+        viewModel = PreferenceViewModel(
+            configurationStore: configurationStore,
+            configurationProvider: configurationProvider,
+            onConfigurationSaved: onConfigurationSaved
+        )
+        tabController = PreferenceTabViewController(viewModel: viewModel)
 
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 860, height: 640),
@@ -96,9 +124,17 @@ final class PreferenceWindowController: NSWindowController, NSWindowDelegate {
         tabController.generalController.sectionTitlesForTesting
     }
 
+    var hotkeyRowCountForTesting: Int {
+        tabController.hotkeysController.rowCountForTesting
+    }
+
     func show() {
         window?.center()
         window?.makeKeyAndOrderFront(nil)
+    }
+
+    func updateConfiguration(_ configuration: AppConfiguration) {
+        tabController.updateConfiguration(configuration)
     }
 
     func windowWillClose(_ notification: Notification) {

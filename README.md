@@ -83,7 +83,7 @@ If multiple layouts share the same name, use the layout identifier instead. Ambi
 
 The app writes a default plist configuration on first launch. The initial values mirror the migrated `~/.hammerspoon` layouts, trigger regions, modifier groups, and shortcut defaults.
 
-A temporary `Preference` window is also available from the menu bar while the settings UI is being rewritten. Phase 1 provides the new AppKit tab shell and a static `General` tab only.
+A temporary `Preference` window is also available from the menu bar while the settings UI is being rewritten. The current rewrite phase provides working `General`, `Hotkeys`, and `About` tabs in the new AppKit shell, while `Layouts` and `Appearance` still use placeholders.
 
 The Settings window includes:
 

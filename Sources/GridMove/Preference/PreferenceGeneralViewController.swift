@@ -7,34 +7,36 @@ final class PreferenceGeneralViewController: NSViewController {
         case excludedWindows
     }
 
-    private struct ExcludedWindowRow {
-        let value: String
-        let typeTitle: String
-    }
+    private let viewModel: PreferenceViewModel
 
-    private let defaultConfiguration = AppConfiguration.defaultValue
-    private lazy var modifierGroupRows = defaultConfiguration.dragTriggers.modifierGroups.map { group in
-        group.map { modifierSymbol(for: $0) }.joined()
-    }
-
-    private lazy var excludedWindowRows: [ExcludedWindowRow] = {
-        let bundleRows = defaultConfiguration.general.excludedBundleIDs.map {
-            ExcludedWindowRow(value: $0, typeTitle: UICopy.bundleIDTitle)
-        }
-        let titleRows = defaultConfiguration.general.excludedWindowTitles.map {
-            ExcludedWindowRow(value: $0, typeTitle: UICopy.windowTitle)
-        }
-        return bundleRows + titleRows
-    }()
-
+    private let enableCheckbox = NSButton(checkboxWithTitle: UICopy.enableTitle, target: nil, action: nil)
+    private let middleMouseCheckbox = NSButton(checkboxWithTitle: UICopy.middleMouseTitle, target: nil, action: nil)
+    private let modifierLeftMouseCheckbox = NSButton(checkboxWithTitle: UICopy.modifierLeftMouseTitle, target: nil, action: nil)
     private let modifierGroupsTableView = NSTableView()
     private let excludedWindowsTableView = NSTableView()
+    private let modifierGroupsContainer = NSStackView()
+    private let mouseTriggersBodyView = NSStackView()
+    private var modifierGroupAddButton = NSButton()
+    private var modifierGroupRemoveButton = NSButton()
+    private var excludedWindowAddButton = NSButton()
+    private var excludedWindowRemoveButton = NSButton()
 
     let sectionTitlesForTesting = [
         UICopy.enableTitle,
         UICopy.mouseTriggersSectionTitle,
         UICopy.excludedWindowsSectionTitle,
     ]
+
+    init(viewModel: PreferenceViewModel) {
+        self.viewModel = viewModel
+        super.init(nibName: nil, bundle: nil)
+        title = UICopy.generalSectionTitle
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
     override func loadView() {
         let rootView = NSView()
@@ -56,7 +58,6 @@ final class PreferenceGeneralViewController: NSViewController {
         contentStack.spacing = 24
         contentStack.translatesAutoresizingMaskIntoConstraints = false
 
-        contentStack.addArrangedSubview(makeIntroLabel())
         contentStack.addArrangedSubview(makeEnableSection())
         contentStack.addArrangedSubview(makeMouseTriggersSection())
         contentStack.addArrangedSubview(makeExcludedWindowsSection())
@@ -85,23 +86,16 @@ final class PreferenceGeneralViewController: NSViewController {
         ])
 
         view = rootView
-    }
-
-    private func makeIntroLabel() -> NSView {
-        let label = NSTextField(wrappingLabelWithString: UICopy.generalPreviewNote)
-        label.font = .systemFont(ofSize: 12)
-        label.textColor = .secondaryLabelColor
-        label.maximumNumberOfLines = 0
-        return label
+        reloadFromViewModel()
     }
 
     private func makeEnableSection() -> NSView {
-        let checkbox = NSButton(checkboxWithTitle: UICopy.enableTitle, target: nil, action: nil)
-        checkbox.state = defaultConfiguration.general.isEnabled ? .on : .off
+        enableCheckbox.target = self
+        enableCheckbox.action = #selector(toggleEnable)
 
         let subtitleLabel = makeSecondaryLabel(UICopy.enableSubtitle)
 
-        let stackView = NSStackView(views: [checkbox, subtitleLabel])
+        let stackView = NSStackView(views: [enableCheckbox, subtitleLabel])
         stackView.orientation = .vertical
         stackView.alignment = .leading
         stackView.spacing = 6
@@ -110,15 +104,14 @@ final class PreferenceGeneralViewController: NSViewController {
     }
 
     private func makeMouseTriggersSection() -> NSView {
-        let middleMouseCheckbox = NSButton(checkboxWithTitle: UICopy.middleMouseTitle, target: nil, action: nil)
-        middleMouseCheckbox.state = defaultConfiguration.dragTriggers.enableMiddleMouseDrag ? .on : .off
-
-        let modifierLeftCheckbox = NSButton(checkboxWithTitle: UICopy.modifierLeftMouseTitle, target: nil, action: nil)
-        modifierLeftCheckbox.state = defaultConfiguration.dragTriggers.enableModifierLeftMouseDrag ? .on : .off
+        middleMouseCheckbox.target = self
+        middleMouseCheckbox.action = #selector(toggleMiddleMouse)
+        modifierLeftMouseCheckbox.target = self
+        modifierLeftMouseCheckbox.action = #selector(toggleModifierLeftMouse)
 
         let checkboxStack = NSStackView(views: [
             makeCheckboxRow(checkbox: middleMouseCheckbox, subtitle: UICopy.middleMouseSubtitle),
-            makeCheckboxRow(checkbox: modifierLeftCheckbox, subtitle: UICopy.modifierLeftMouseSubtitle),
+            makeCheckboxRow(checkbox: modifierLeftMouseCheckbox, subtitle: UICopy.modifierLeftMouseSubtitle),
         ])
         checkboxStack.orientation = .vertical
         checkboxStack.alignment = .leading
@@ -128,20 +121,26 @@ final class PreferenceGeneralViewController: NSViewController {
         modifierGroupsLabel.font = .systemFont(ofSize: 12, weight: .semibold)
 
         configureModifierGroupsTableView()
+        modifierGroupsContainer.orientation = .vertical
+        modifierGroupsContainer.alignment = .leading
+        modifierGroupsContainer.spacing = 8
         let modifierGroupList = makeTableContainer(
             tableView: modifierGroupsTableView,
             buttons: [
-                makeSmallActionButton(title: "+"),
-                makeSmallActionButton(title: "−"),
+                makeModifierGroupAddButton(),
+                makeModifierGroupRemoveButton(),
             ]
         )
+        modifierGroupsContainer.addArrangedSubview(modifierGroupsLabel)
+        modifierGroupsContainer.addArrangedSubview(modifierGroupList)
 
-        let stackView = NSStackView(views: [checkboxStack, modifierGroupsLabel, modifierGroupList])
-        stackView.orientation = .vertical
-        stackView.alignment = .leading
-        stackView.spacing = 14
+        mouseTriggersBodyView.orientation = .vertical
+        mouseTriggersBodyView.alignment = .leading
+        mouseTriggersBodyView.spacing = 14
+        mouseTriggersBodyView.addArrangedSubview(checkboxStack)
+        mouseTriggersBodyView.addArrangedSubview(modifierGroupsContainer)
 
-        return makeSection(title: UICopy.mouseTriggersSectionTitle, body: stackView)
+        return makeSection(title: UICopy.mouseTriggersSectionTitle, body: mouseTriggersBodyView)
     }
 
     private func makeExcludedWindowsSection() -> NSView {
@@ -149,8 +148,8 @@ final class PreferenceGeneralViewController: NSViewController {
         let tableContainer = makeTableContainer(
             tableView: excludedWindowsTableView,
             buttons: [
-                makeSmallActionButton(title: "+"),
-                makeSmallActionButton(title: "−"),
+                makeExcludedWindowAddButton(),
+                makeExcludedWindowRemoveButton(),
             ]
         )
 
@@ -200,6 +199,27 @@ final class PreferenceGeneralViewController: NSViewController {
         return label
     }
 
+    func reloadFromViewModel() {
+        enableCheckbox.state = viewModel.configuration.general.isEnabled ? .on : .off
+        middleMouseCheckbox.state = viewModel.configuration.dragTriggers.enableMiddleMouseDrag ? .on : .off
+        modifierLeftMouseCheckbox.state = viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag ? .on : .off
+
+        modifierGroupsTableView.reloadData()
+        excludedWindowsTableView.reloadData()
+
+        let dragEnabled = viewModel.configuration.general.isEnabled
+        middleMouseCheckbox.isEnabled = dragEnabled
+        modifierLeftMouseCheckbox.isEnabled = dragEnabled
+        modifierGroupsContainer.alphaValue = dragEnabled && viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag ? 1 : 0.45
+        modifierGroupsTableView.isEnabled = dragEnabled && viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag
+        modifierGroupAddButton.isEnabled = dragEnabled && viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag
+        modifierGroupRemoveButton.isEnabled = modifierGroupsTableView.selectedRow >= 0 && modifierGroupAddButton.isEnabled
+
+        excludedWindowsTableView.isEnabled = dragEnabled
+        excludedWindowAddButton.isEnabled = dragEnabled
+        excludedWindowRemoveButton.isEnabled = dragEnabled && excludedWindowsTableView.selectedRow >= 0
+    }
+
     private func configureModifierGroupsTableView() {
         modifierGroupsTableView.identifier = NSUserInterfaceItemIdentifier("modifierGroups")
         modifierGroupsTableView.headerView = nil
@@ -238,6 +258,38 @@ final class PreferenceGeneralViewController: NSViewController {
         excludedWindowsTableView.addTableColumn(typeColumn)
     }
 
+    private func makeModifierGroupAddButton() -> NSButton {
+        let button = makeSmallActionButton(title: "+")
+        button.target = self
+        button.action = #selector(addModifierGroup)
+        modifierGroupAddButton = button
+        return button
+    }
+
+    private func makeModifierGroupRemoveButton() -> NSButton {
+        let button = makeSmallActionButton(title: "−")
+        button.target = self
+        button.action = #selector(removeSelectedModifierGroup)
+        modifierGroupRemoveButton = button
+        return button
+    }
+
+    private func makeExcludedWindowAddButton() -> NSButton {
+        let button = makeSmallActionButton(title: "+")
+        button.target = self
+        button.action = #selector(addExcludedWindow)
+        excludedWindowAddButton = button
+        return button
+    }
+
+    private func makeExcludedWindowRemoveButton() -> NSButton {
+        let button = makeSmallActionButton(title: "−")
+        button.target = self
+        button.action = #selector(removeSelectedExcludedWindow)
+        excludedWindowRemoveButton = button
+        return button
+    }
+
     private func makeTableContainer(tableView: NSTableView, buttons: [NSButton]) -> NSView {
         let scrollView = NSScrollView()
         scrollView.borderType = .bezelBorder
@@ -272,17 +324,98 @@ final class PreferenceGeneralViewController: NSViewController {
         return button
     }
 
-    private func modifierSymbol(for key: ModifierKey) -> String {
-        switch key {
-        case .ctrl:
-            return "⌃"
-        case .cmd:
-            return "⌘"
-        case .shift:
-            return "⇧"
-        case .alt:
-            return "⌥"
+    @objc private func toggleEnable() {
+        viewModel.updateGeneralEnabled(enableCheckbox.state == .on)
+        reloadFromViewModel()
+    }
+
+    @objc private func toggleMiddleMouse() {
+        viewModel.updateDragTriggers(enableMiddleMouseDrag: middleMouseCheckbox.state == .on)
+        reloadFromViewModel()
+    }
+
+    @objc private func toggleModifierLeftMouse() {
+        viewModel.updateDragTriggers(enableModifierLeftMouseDrag: modifierLeftMouseCheckbox.state == .on)
+        reloadFromViewModel()
+    }
+
+    @objc private func addModifierGroup() {
+        let alert = NSAlert()
+        alert.messageText = UICopy.addModifierGroupTitle
+        alert.addButton(withTitle: UICopy.add)
+        alert.addButton(withTitle: UICopy.cancel)
+
+        let checkboxes = ModifierKey.allCases.map { key in
+            let checkbox = NSButton(checkboxWithTitle: key.displayName, target: nil, action: nil)
+            checkbox.identifier = NSUserInterfaceItemIdentifier(key.rawValue)
+            return checkbox
         }
+
+        let stackView = NSStackView(views: checkboxes)
+        stackView.orientation = .vertical
+        stackView.alignment = .leading
+        stackView.spacing = 8
+        alert.accessoryView = stackView
+
+        guard alert.runModal() == .alertFirstButtonReturn else {
+            return
+        }
+
+        let selectedKeys = ModifierKey.allCases.filter { key in
+            checkboxes.first(where: { $0.identifier?.rawValue == key.rawValue })?.state == .on
+        }
+        viewModel.addModifierGroup(selectedKeys)
+        reloadFromViewModel()
+    }
+
+    @objc private func removeSelectedModifierGroup() {
+        let selectedRow = modifierGroupsTableView.selectedRow
+        guard selectedRow >= 0,
+              viewModel.modifierGroupItems.indices.contains(selectedRow) else {
+            return
+        }
+        viewModel.removeModifierGroup(at: viewModel.modifierGroupItems[selectedRow].index)
+        reloadFromViewModel()
+    }
+
+    @objc private func addExcludedWindow() {
+        let alert = NSAlert()
+        alert.messageText = UICopy.addExcludedWindowTitle
+        alert.addButton(withTitle: UICopy.add)
+        alert.addButton(withTitle: UICopy.cancel)
+
+        let kindPopup = NSPopUpButton()
+        kindPopup.addItems(withTitles: [UICopy.bundleIDTitle, UICopy.windowTitle])
+
+        let valueField = NSTextField(string: "")
+        valueField.placeholderString = UICopy.valueColumnTitle
+        valueField.translatesAutoresizingMaskIntoConstraints = false
+        valueField.widthAnchor.constraint(equalToConstant: 280).isActive = true
+
+        let accessoryStack = NSStackView(views: [kindPopup, valueField])
+        accessoryStack.orientation = .vertical
+        accessoryStack.alignment = .leading
+        accessoryStack.spacing = 10
+        alert.accessoryView = accessoryStack
+
+        guard alert.runModal() == .alertFirstButtonReturn else {
+            return
+        }
+
+        let kind: PreferenceViewModel.EntryKind = kindPopup.indexOfSelectedItem == 0 ? .bundleID : .windowTitle
+        viewModel.addExcludedWindow(kind: kind, value: valueField.stringValue)
+        reloadFromViewModel()
+    }
+
+    @objc private func removeSelectedExcludedWindow() {
+        let selectedRow = excludedWindowsTableView.selectedRow
+        let items = viewModel.excludedWindowItems
+        guard selectedRow >= 0,
+              items.indices.contains(selectedRow) else {
+            return
+        }
+        viewModel.removeExcludedWindow(items[selectedRow])
+        reloadFromViewModel()
     }
 }
 
@@ -290,9 +423,9 @@ extension PreferenceGeneralViewController: NSTableViewDataSource, NSTableViewDel
     func numberOfRows(in tableView: NSTableView) -> Int {
         switch tableKind(for: tableView) {
         case .modifierGroups:
-            return modifierGroupRows.count
+            return viewModel.modifierGroupItems.count
         case .excludedWindows:
-            return excludedWindowRows.count
+            return viewModel.excludedWindowItems.count
         }
     }
 
@@ -301,11 +434,11 @@ extension PreferenceGeneralViewController: NSTableViewDataSource, NSTableViewDel
 
         switch tableKind(for: tableView) {
         case .modifierGroups:
-            text = modifierGroupRows[row]
+            text = viewModel.modifierGroupItems[row].symbolTitle
         case .excludedWindows:
-            let rowValue = excludedWindowRows[row]
+            let rowValue = viewModel.excludedWindowItems[row]
             if tableColumn?.identifier.rawValue == "type" {
-                text = rowValue.typeTitle
+                text = rowValue.kind.title
             } else {
                 text = rowValue.value
             }
@@ -336,6 +469,10 @@ extension PreferenceGeneralViewController: NSTableViewDataSource, NSTableViewDel
         cellView.textField?.font = .systemFont(ofSize: 12)
         cellView.textField?.textColor = tableColumn?.identifier.rawValue == "type" ? .secondaryLabelColor : .labelColor
         return cellView
+    }
+
+    func tableViewSelectionDidChange(_ notification: Notification) {
+        reloadFromViewModel()
     }
 
     private func tableKind(for tableView: NSTableView) -> TableKind {
