@@ -11,7 +11,6 @@ enum UICopy {
     static let reloadConfigMenuTitle = "Reload"
     static let customizeMenuTitle = "Customize... ↗"
     static let configReloadFailedTitle = "GridMove config reload failed"
-    static let configReloadFailedBody = "GridMove kept running with the built-in default configuration."
     static let quitMenuTitle = "Quit"
     static let quitAppMenuTitle = "Quit GridMove"
     static let applyNextLayout = "Apply next layout"
@@ -39,5 +38,23 @@ enum UICopy {
     static func layoutMenuName(name: String, fallbackIdentifier: String) -> String {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmedName.isEmpty ? fallbackIdentifier : trimmedName
+    }
+
+    static func configReloadFailedBody(diagnostic: ConfigurationLoadDiagnostic?) -> String {
+        let prefix = "Config was not applied. GridMove kept running with the current configuration."
+
+        guard let diagnostic else {
+            return prefix
+        }
+
+        if let line = diagnostic.line, let column = diagnostic.column {
+            return "\(prefix) The error is at line \(line), column \(column): \(diagnostic.message)"
+        }
+
+        if let codingPath = diagnostic.codingPathDescription {
+            return "\(prefix) The error is in \(codingPath): \(diagnostic.message)"
+        }
+
+        return "\(prefix) \(diagnostic.message)"
     }
 }

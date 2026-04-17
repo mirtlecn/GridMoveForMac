@@ -3,6 +3,11 @@ import Foundation
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    enum ConfigurationReloadMode {
+        case launch
+        case manual
+    }
+
     private let configurationCoordinator: ConfigurationRuntimeCoordinator
     private let deferredConfigurationSaver: DeferredConfigurationSaver
     private let menuActionBuilder = MenuActionBuilder()
@@ -93,7 +98,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        reloadConfigurationFromDisk(notifyOnFallback: false)
+        reloadConfigurationFromDisk(mode: .launch)
         configureMainMenu()
         commandRelay.startListening { [weak self] command in
             MainActor.assumeIsolated {
@@ -125,7 +130,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.performMenuAction(action)
             },
             onReloadConfiguration: { [weak self] in
-                self?.reloadConfigurationFromDisk(notifyOnFallback: true)
+                self?.reloadConfigurationFromDisk(mode: .manual)
             },
             onCustomize: { [weak self] in
                 _ = self?.openConfigurationDirectory()
@@ -150,23 +155,31 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = accessibilityCoordinator.evaluate(promptOnMissing: true)
     }
 
-    func reloadConfigurationFromDisk(notifyOnFallback: Bool = false) {
+    func reloadConfigurationFromDisk(mode: ConfigurationReloadMode) {
         do {
             let result = try configurationCoordinator.loadConfiguration()
-            applyConfiguration(result.configuration)
-            if result.didFallBackToDefault && notifyOnFallback {
-                userNotifier.notify(
-                    title: UICopy.configReloadFailedTitle,
-                    body: UICopy.configReloadFailedBody
-                )
+            switch mode {
+            case .launch:
+                applyConfiguration(result.configuration)
+            case .manual:
+                if result.source == .persistedConfiguration {
+                    applyConfiguration(result.configuration)
+                } else {
+                    userNotifier.notify(
+                        title: UICopy.configReloadFailedTitle,
+                        body: UICopy.configReloadFailedBody(diagnostic: result.diagnostic)
+                    )
+                }
             }
         } catch {
             AppLogger.shared.error("Failed to load configuration: \(error.localizedDescription)")
-            applyConfiguration(.defaultValue)
-            if notifyOnFallback {
+            switch mode {
+            case .launch:
+                applyConfiguration(.defaultValue)
+            case .manual:
                 userNotifier.notify(
                     title: UICopy.configReloadFailedTitle,
-                    body: UICopy.configReloadFailedBody
+                    body: UICopy.configReloadFailedBody(diagnostic: nil)
                 )
             }
         }
@@ -309,7 +322,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func reloadConfigurationFromMenu() {
-        reloadConfigurationFromDisk(notifyOnFallback: true)
+        reloadConfigurationFromDisk(mode: .manual)
     }
 
     @objc private func customizeFromMenu() {

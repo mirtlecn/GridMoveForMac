@@ -3,7 +3,8 @@ import Foundation
 final class ConfigurationRuntimeCoordinator {
     struct LoadResult {
         let configuration: AppConfiguration
-        let didFallBackToDefault: Bool
+        let source: ConfigurationLoadSource
+        let diagnostic: ConfigurationLoadDiagnostic?
     }
 
     private let configurationStore: ConfigurationStore
@@ -25,7 +26,7 @@ final class ConfigurationRuntimeCoordinator {
         let result = try configurationStore.loadWithStatus()
         var configuration = result.configuration
         let didUpdateMonitorMetadata = synchronizeMonitorMetadata(configuration: &configuration)
-        if didUpdateMonitorMetadata && result.didFallBackToDefault == false {
+        if didUpdateMonitorMetadata && result.source == .persistedConfiguration {
             do {
                 try configurationStore.save(configuration)
             } catch {
@@ -35,7 +36,8 @@ final class ConfigurationRuntimeCoordinator {
 
         return LoadResult(
             configuration: configuration,
-            didFallBackToDefault: result.didFallBackToDefault
+            source: result.source,
+            diagnostic: result.diagnostic
         )
     }
 

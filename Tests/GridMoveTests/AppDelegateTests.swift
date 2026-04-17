@@ -16,7 +16,7 @@ import Testing
     try store.save(savedConfiguration)
 
     let delegate = AppDelegate(configurationStore: store, openURL: { _ in true })
-    delegate.reloadConfigurationFromDisk()
+    delegate.reloadConfigurationFromDisk(mode: .launch)
 
     #expect(delegate.configuration.general.isEnabled == false)
     #expect(delegate.configuration.layouts.map(\.name) == savedConfiguration.layouts.map(\.name))
@@ -42,7 +42,7 @@ import Testing
         currentMonitorMapProvider: { monitorMap }
     )
 
-    delegate.reloadConfigurationFromDisk()
+    delegate.reloadConfigurationFromDisk(mode: .launch)
 
     let persistedConfiguration = try store.load()
     #expect(delegate.configuration.monitors == monitorMap)
@@ -57,7 +57,7 @@ import Testing
 
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
     let delegate = AppDelegate(configurationStore: store, openURL: { _ in true })
-    delegate.reloadConfigurationFromDisk()
+    delegate.reloadConfigurationFromDisk(mode: .launch)
 
     let updatedConfiguration = try #require(delegate.cycleToNextLayoutGroupForTesting())
     #expect(updatedConfiguration.general.activeLayoutGroup == AppConfiguration.fullscreenGroupName)
@@ -81,7 +81,7 @@ import Testing
     try store.save(configuration)
 
     let delegate = AppDelegate(configurationStore: store, openURL: { _ in true })
-    delegate.reloadConfigurationFromDisk()
+    delegate.reloadConfigurationFromDisk(mode: .launch)
 
     let actionItems = delegate.menuActionItemsForTesting()
     let layoutActionTitles = actionItems.dropFirst(2).map(\.title)
@@ -115,7 +115,7 @@ import Testing
 
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
     let delegate = AppDelegate(configurationStore: store, openURL: { _ in true })
-    delegate.reloadConfigurationFromDisk()
+    delegate.reloadConfigurationFromDisk(mode: .launch)
 
     let actionItems = delegate.menuActionItemsForTesting()
     let layoutActionItems = Array(actionItems.dropFirst(2))
@@ -152,19 +152,16 @@ import Testing
 }
 
 @MainActor
-@Test func appDelegateNotifiesUserWhenManualReloadFallsBackToDefault() async throws {
+@Test func appDelegateKeepsCurrentConfigurationWhenManualReloadFails() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-notify-\(UUID().uuidString)", isDirectory: true)
     defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
 
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
-    try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
-    try """
-    {
-      "general": {
-        "isEnabled":
-    """.write(to: store.fileURL, atomically: true, encoding: .utf8)
-
+    var savedConfiguration = AppConfiguration.defaultValue
+    savedConfiguration.general.isEnabled = false
+    savedConfiguration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
+    try store.save(savedConfiguration)
     var receivedTitle: String?
     var receivedBody: String?
     let delegate = AppDelegate(
@@ -176,13 +173,25 @@ import Testing
         }
     )
 
-    delegate.reloadConfigurationFromDisk(notifyOnFallback: true)
+    delegate.reloadConfigurationFromDisk(mode: .launch)
 
-    #expect(delegate.configuration.general == AppConfiguration.defaultValue.general)
-    #expect(delegate.configuration.layoutGroups == AppConfiguration.defaultValue.layoutGroups)
-    #expect(delegate.configuration.hotkeys == AppConfiguration.defaultValue.hotkeys)
+    try FileManager.default.removeItem(at: store.lastKnownGoodFileURL)
+    try """
+    {
+      "general": {
+        "isEnabled":
+    """.write(to: store.fileURL, atomically: true, encoding: .utf8)
+    let expectedResult = try store.loadWithStatus()
+
+    delegate.reloadConfigurationFromDisk(mode: .manual)
+
+    #expect(expectedResult.source == .builtInDefault)
+    #expect(delegate.configuration.general == savedConfiguration.general)
+    #expect(delegate.configuration.layoutGroups == savedConfiguration.layoutGroups)
+    #expect(delegate.configuration.hotkeys.bindings.map(\.shortcut) == savedConfiguration.hotkeys.bindings.map(\.shortcut))
+    #expect(delegate.configuration.hotkeys.bindings.map(\.action) == savedConfiguration.hotkeys.bindings.map(\.action))
     #expect(receivedTitle == UICopy.configReloadFailedTitle)
-    #expect(receivedBody == UICopy.configReloadFailedBody)
+    #expect(receivedBody == UICopy.configReloadFailedBody(diagnostic: expectedResult.diagnostic))
 }
 
 @MainActor
@@ -272,7 +281,7 @@ import Testing
     disabledConfiguration.general.isEnabled = false
     try store.save(disabledConfiguration)
 
-    delegate.reloadConfigurationFromDisk()
+    delegate.reloadConfigurationFromDisk(mode: .launch)
 
     #expect(delegate.configuration.general.isEnabled == false)
     #expect(delegate.shouldMonitorGlobalInputForTesting == false)
@@ -327,7 +336,7 @@ import Testing
 
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
     let delegate = AppDelegate(configurationStore: store, openURL: { _ in true })
-    delegate.reloadConfigurationFromDisk()
+    delegate.reloadConfigurationFromDisk(mode: .launch)
 
     delegate.recordLayoutIDForTesting("layout-2", windowIdentity: "window-a")
     #expect(delegate.nextLayoutIDForTesting(windowIdentity: "window-a") == "layout-3")
@@ -336,7 +345,7 @@ import Testing
     reorderedConfiguration.moveLayout(id: "layout-2", to: reorderedConfiguration.layouts.count)
     try store.save(reorderedConfiguration)
 
-    delegate.reloadConfigurationFromDisk()
+    delegate.reloadConfigurationFromDisk(mode: .launch)
 
     #expect(delegate.nextLayoutIDForTesting(windowIdentity: "window-a") == "layout-1")
 }
@@ -351,7 +360,7 @@ import Testing
     _ = try store.load()
 
     let delegate = AppDelegate(configurationStore: store, openURL: { _ in true })
-    delegate.reloadConfigurationFromDisk()
+    delegate.reloadConfigurationFromDisk(mode: .launch)
 
     delegate.updateMiddleMouseDragEnabled(false)
     delegate.updateModifierLeftMouseDragEnabled(false)

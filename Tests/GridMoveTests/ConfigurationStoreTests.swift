@@ -16,6 +16,7 @@ import Testing
     #expect(initialConfiguration.layouts.count == 11)
     #expect(initialConfiguration.layoutGroupNames() == [AppConfiguration.builtInGroupName, AppConfiguration.fullscreenGroupName])
     #expect(FileManager.default.fileExists(atPath: store.fileURL.path))
+    #expect(FileManager.default.fileExists(atPath: store.lastKnownGoodFileURL.path))
 
     let initialText = try String(contentsOf: store.fileURL, encoding: .utf8)
     #expect(initialText.contains("\"layoutGroups\""))
@@ -48,7 +49,7 @@ import Testing
     #expect(reloadedConfiguration.hotkeys.bindings.map(\.id) == (1...updatedConfiguration.hotkeys.bindings.count).map { "binding-\($0)" })
 }
 
-@Test func configurationStoreReturnsDefaultAndPreservesBrokenJSON() async throws {
+@Test func configurationStoreReturnsBuiltInDefaultAndDiagnosticForBrokenJSONWithoutRecoverySnapshot() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-invalid-json-\(UUID().uuidString)", isDirectory: true)
     defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
@@ -63,11 +64,42 @@ import Testing
     """
     try invalidJSON.write(to: store.fileURL, atomically: true, encoding: .utf8)
 
-    let configuration = try store.load()
+    let result = try store.loadWithStatus()
     let reloadedText = try String(contentsOf: store.fileURL, encoding: .utf8)
 
-    #expect(configuration == .defaultValue)
+    #expect(result.source == .builtInDefault)
+    #expect(result.configuration == .defaultValue)
+    #expect(result.diagnostic != nil)
+    #expect(result.diagnostic?.line != nil)
+    #expect(result.diagnostic?.column != nil)
     #expect(reloadedText == invalidJSON)
+}
+
+@Test func configurationStoreReturnsLastKnownGoodAndDiagnosticForBrokenJSON() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-last-known-good-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var savedConfiguration = AppConfiguration.defaultValue
+    savedConfiguration.general.isEnabled = false
+    savedConfiguration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
+    try store.save(savedConfiguration)
+
+    try """
+    {
+      "general": {
+        "isEnabled":
+    """.write(to: store.fileURL, atomically: true, encoding: .utf8)
+
+    let result = try store.loadWithStatus()
+
+    #expect(result.source == .lastKnownGood)
+    #expect(result.configuration.general.isEnabled == false)
+    #expect(result.configuration.general.activeLayoutGroup == AppConfiguration.fullscreenGroupName)
+    #expect(result.diagnostic != nil)
+    #expect(result.diagnostic?.line != nil)
+    #expect(result.diagnostic?.column != nil)
 }
 
 @Test func configurationStoreLoadsPureJSONWithGroupsAndOptionalTriggers() async throws {
@@ -242,7 +274,8 @@ import Testing
     try json.write(to: store.fileURL, atomically: true, encoding: .utf8)
     let result = try store.loadWithStatus()
 
-    #expect(result.didFallBackToDefault == false)
+    #expect(result.source == .persistedConfiguration)
+    #expect(result.diagnostic == nil)
     #expect(result.configuration.general.activeLayoutGroup == "work")
     #expect(result.configuration.layoutGroups[0].includeInGroupCycle == true)
     #expect(result.configuration.layoutGroups[0].sets[0].layouts.map(\.name) == ["Center", "Center"])
@@ -271,8 +304,11 @@ import Testing
     try json.write(to: store.fileURL, atomically: true, encoding: .utf8)
     let result = try store.loadWithStatus()
 
-    #expect(result.didFallBackToDefault == true)
+    #expect(result.source == .builtInDefault)
     #expect(result.configuration == .defaultValue)
+    #expect(result.diagnostic != nil)
+    #expect(result.diagnostic?.line != nil)
+    #expect(result.diagnostic?.column != nil)
 }
 
 @Test func defaultConfigurationKeepsExpectedShortcutAndModifierDefaults() async throws {

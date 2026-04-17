@@ -33,7 +33,7 @@ Main responsibilities:
 - start and stop the drag controller and shortcut controller based on Accessibility status
 - listen for remote CLI commands
 - request Accessibility permission from the system when access is missing
-- post a notification when manual config reload falls back to defaults
+- post a diagnostic notification when manual config reload rejects an invalid config file
 
 Main runtime components:
 
@@ -159,7 +159,9 @@ Default layout names in order:
 Compatibility behavior:
 
 - if config decoding fails, including invalid JSON, comments, or an invalid persisted layout index, the file is left untouched
-- the app falls back to built-in defaults for the current launch
+- successful saves also refresh `~/.config/GridMove/config.last-known-good.json`
+- on launch, the app loads `config.last-known-good.json` when `config.json` is invalid, and only falls back to built-in defaults when no valid recovery snapshot exists
+- on manual reload, invalid config files are rejected and the current in-memory configuration keeps running
 - missing `preferLayoutMode` defaults to `true`
 - missing `includeInGroupCycle` defaults to `true`
 - missing `triggerRegion` means the layout is menu, shortcut, and CLI only
