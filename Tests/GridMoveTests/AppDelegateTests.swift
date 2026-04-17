@@ -79,6 +79,30 @@ import Testing
         .applyLayoutByID(layoutID: "layout-14"),
         .applyLayoutByID(layoutID: "layout-16"),
     ])
+    #expect(actionItems.dropFirst(2).allSatisfy { $0.shortcut == nil })
+}
+
+@MainActor
+@Test func appDelegateMenuActionsShowDirectLayoutShortcutsForSingleSetGroup() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-menu-shortcuts-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let delegate = AppDelegate(configurationStore: store, openURL: { _ in true })
+    delegate.reloadConfigurationFromDisk()
+
+    let actionItems = delegate.menuActionItemsForTesting()
+    let layoutActionItems = Array(actionItems.dropFirst(2))
+
+    #expect(layoutActionItems[0].shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "-"))
+    #expect(layoutActionItems[1].shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "["))
+    #expect(layoutActionItems[2].shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: ";"))
+    #expect(layoutActionItems[3].shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "\\"))
+    #expect(layoutActionItems[4].shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "="))
+    #expect(layoutActionItems[5].shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "]"))
+    #expect(layoutActionItems[6].shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "'"))
+    #expect(layoutActionItems[7].shortcut == nil)
 }
 
 @MainActor
