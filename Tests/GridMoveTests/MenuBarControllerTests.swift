@@ -7,6 +7,7 @@ import Testing
     let controller = MenuBarController(
         dragGridEnabled: true,
         toggleSettings: .init(
+            mouseButtonNumber: 3,
             middleMouseDragEnabled: true,
             modifierLeftMouseDragEnabled: true,
             preferLayoutMode: true
@@ -31,7 +32,7 @@ import Testing
         controller.menuItemDescriptorsForTesting == [
             "Enable",
             "|",
-            "Mouse drag",
+            "Middle mouse drag",
             "Modifier + left mouse drag",
             "Prefer layout mode",
             "|",
@@ -53,6 +54,7 @@ import Testing
     let controller = MenuBarController(
         dragGridEnabled: true,
         toggleSettings: .init(
+            mouseButtonNumber: 3,
             middleMouseDragEnabled: false,
             modifierLeftMouseDragEnabled: true,
             preferLayoutMode: false
@@ -72,7 +74,7 @@ import Testing
 
     #expect(
         controller.toggleStateDescriptorsForTesting == [
-            UICopy.middleMouseDragMenuTitle: false,
+            UICopy.middleMouseDragMenuTitle(mouseButtonNumber: 3): false,
             UICopy.modifierLeftMouseDragMenuTitle: true,
             UICopy.preferLayoutModeMenuTitle: false,
         ]
@@ -83,5 +85,34 @@ import Testing
             "built-in": false,
             "work": true,
         ]
+    )
+}
+
+@MainActor
+@Test func menuBarControllerShowsConfiguredMouseButtonNumberInTitle() async throws {
+    let controller = MenuBarController(
+        dragGridEnabled: true,
+        toggleSettings: .init(
+            mouseButtonNumber: 5,
+            middleMouseDragEnabled: true,
+            modifierLeftMouseDragEnabled: true,
+            preferLayoutMode: true
+        ),
+        layoutGroupState: .init(groupNames: ["built-in"], activeGroupName: "built-in"),
+        actionItems: [],
+        onToggleDragGrid: { _ in true },
+        onToggleMiddleMouseDrag: { _ in true },
+        onToggleModifierLeftMouseDrag: { _ in true },
+        onTogglePreferLayoutMode: { _ in true },
+        onSelectLayoutGroup: { _ in true },
+        onPerformAction: { _ in },
+        onReloadConfiguration: {},
+        onCustomize: {},
+        onQuit: {}
+    )
+
+    #expect(controller.menuItemDescriptorsForTesting.contains("Middle 5 drag"))
+    #expect(
+        controller.toggleStateDescriptorsForTesting[UICopy.middleMouseDragMenuTitle(mouseButtonNumber: 5)] == true
     )
 }

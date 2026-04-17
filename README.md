@@ -176,20 +176,13 @@ The example below uses `jsonc` only for explanation. Real files must be plain JS
 }
 ```
 
-## Behavior
+## Additional Behavior
 
 Layout-mode group cycling behavior:
 
 - `Shift` tap cycles to the next eligible group
 - mouse-wheel up cycles to the previous eligible group
 - mouse-wheel down cycles to the next eligible group
-
-Mouse-button trigger behavior:
-
-- `general.mouseButtonNumber` uses user-facing numbering and defaults to `3`
-- `3` maps to the standard middle button
-- `4` and `5` can be used for common side buttons
-- layout-mode mouse-wheel group switching remains unchanged
 
 
 ## Additional docs

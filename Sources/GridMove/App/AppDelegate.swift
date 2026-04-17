@@ -445,6 +445,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func makeToggleSettingsState(configuration: AppConfiguration) -> MenuBarController.ToggleSettingsState {
         MenuBarController.ToggleSettingsState(
+            mouseButtonNumber: configuration.general.mouseButtonNumber,
             middleMouseDragEnabled: configuration.dragTriggers.enableMiddleMouseDrag,
             modifierLeftMouseDragEnabled: configuration.dragTriggers.enableModifierLeftMouseDrag,
             preferLayoutMode: configuration.dragTriggers.preferLayoutMode

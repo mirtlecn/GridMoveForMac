@@ -14,6 +14,7 @@ final class MenuBarController: NSObject {
     }
 
     struct ToggleSettingsState: Equatable {
+        let mouseButtonNumber: Int
         let middleMouseDragEnabled: Bool
         let modifierLeftMouseDragEnabled: Bool
         let preferLayoutMode: Bool
@@ -23,7 +24,7 @@ final class MenuBarController: NSObject {
     private let menu = NSMenu()
     private let dragGridMenuItem = NSMenuItem(title: UICopy.enableMenuTitle, action: nil, keyEquivalent: "")
     private let enableSeparatorItem = NSMenuItem.separator()
-    private let middleMouseDragMenuItem = NSMenuItem(title: UICopy.middleMouseDragMenuTitle, action: nil, keyEquivalent: "")
+    private let middleMouseDragMenuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let modifierLeftMouseDragMenuItem = NSMenuItem(title: UICopy.modifierLeftMouseDragMenuTitle, action: nil, keyEquivalent: "")
     private let preferLayoutModeMenuItem = NSMenuItem(title: UICopy.preferLayoutModeMenuTitle, action: nil, keyEquivalent: "")
     private let layoutGroupSectionSeparatorItem = NSMenuItem.separator()
@@ -152,6 +153,9 @@ final class MenuBarController: NSObject {
     }
 
     func updateToggleStates(_ toggleSettings: ToggleSettingsState) {
+        middleMouseDragMenuItem.title = UICopy.middleMouseDragMenuTitle(
+            mouseButtonNumber: toggleSettings.mouseButtonNumber
+        )
         middleMouseDragMenuItem.state = toggleSettings.middleMouseDragEnabled ? .on : .off
         modifierLeftMouseDragMenuItem.state = toggleSettings.modifierLeftMouseDragEnabled ? .on : .off
         preferLayoutModeMenuItem.state = toggleSettings.preferLayoutMode ? .on : .off
@@ -269,7 +273,7 @@ final class MenuBarController: NSObject {
 
     var toggleStateDescriptorsForTesting: [String: Bool] {
         [
-            UICopy.middleMouseDragMenuTitle: middleMouseDragMenuItem.state == .on,
+            middleMouseDragMenuItem.title: middleMouseDragMenuItem.state == .on,
             UICopy.modifierLeftMouseDragMenuTitle: modifierLeftMouseDragMenuItem.state == .on,
             UICopy.preferLayoutModeMenuTitle: preferLayoutModeMenuItem.state == .on,
         ]

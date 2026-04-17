@@ -4,7 +4,6 @@ enum UICopy {
     static let appName = "GridMove"
     static let applicationMenuTitle = "Application"
     static let enableMenuTitle = "Enable"
-    static let middleMouseDragMenuTitle = "Mouse drag"
     static let modifierLeftMouseDragMenuTitle = "Modifier + left mouse drag"
     static let preferLayoutModeMenuTitle = "Prefer layout mode"
     static let layoutGroupMenuTitle = "Layout group"
@@ -35,6 +34,10 @@ enum UICopy {
 
     static func applyLayout(_ name: String) -> String {
         "Apply \(name)"
+    }
+
+    static func middleMouseDragMenuTitle(mouseButtonNumber: Int) -> String {
+        mouseButtonNumber == 3 ? "Middle mouse drag" : "Middle \(mouseButtonNumber) drag"
     }
 
     static func layoutMenuName(name: String, fallbackIdentifier: String) -> String {
