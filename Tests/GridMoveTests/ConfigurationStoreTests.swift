@@ -583,6 +583,8 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(result.source == .builtInDefault)
     #expect(result.configuration == .defaultValue)
     #expect(result.diagnostic?.message.contains("missing layout group") == true)
+    #expect(result.skippedLayoutDiagnostics.count == 1)
+    #expect(result.skippedLayoutDiagnostics[0].fileURL.lastPathComponent == "1.grid.json")
 }
 
 @Test func configurationStoreRejectsLegacyEmbeddedLayoutGroupsInConfigJSON() async throws {
@@ -660,6 +662,135 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     .sorted()
 
     #expect(layoutFiles == ["1.grid.json", "custom-note.json"])
+}
+
+@Test func configurationStoreReportsFilesystemErrorsForUnreadableManagedLayoutEntries() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-layout-read-error-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+
+    try writeMainConfigurationJSON(
+        """
+        {
+          "general": {
+            "isEnabled": true,
+            "excludedBundleIDs": ["com.apple.Spotlight"],
+            "excludedWindowTitles": [],
+            "activeLayoutGroup": "work"
+          },
+          "appearance": {
+            "renderTriggerAreas": false,
+            "triggerOpacity": 0.2,
+            "triggerGap": 2,
+            "triggerStrokeColor": "#007AFF33",
+            "renderWindowHighlight": true,
+            "highlightFillOpacity": 0.08,
+            "highlightStrokeWidth": 3,
+            "highlightStrokeColor": "#FFFFFFEB"
+          },
+          "dragTriggers": {
+            "middleMouseButtonNumber": 2,
+            "enableMiddleMouseDrag": true,
+            "enableModifierLeftMouseDrag": true,
+            "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
+            "activationDelaySeconds": 0.3,
+            "activationMoveThreshold": 10
+          },
+          "hotkeys": {
+            "bindings": []
+          },
+          "monitors": {}
+        }
+        """,
+        to: store
+    )
+    try FileManager.default.createDirectory(
+        at: store.layoutDirectoryURL.appendingPathComponent("1.grid.json"),
+        withIntermediateDirectories: true
+    )
+    try writeLayoutFile(
+        "2.grid.json",
+        json: """
+        {
+          "name": "work",
+          "sets": [
+            {
+              "monitor": "all",
+              "layouts": [
+                {
+                  "name": "Valid",
+                  "gridColumns": 12,
+                  "gridRows": 6,
+                  "windowSelection": { "x": 0, "y": 0, "w": 12, "h": 6 }
+                }
+              ]
+            }
+          ]
+        }
+        """,
+        to: store
+    )
+
+    let expectedMessage: String
+    do {
+        _ = try Data(contentsOf: store.layoutDirectoryURL.appendingPathComponent("1.grid.json"))
+        Issue.record("Expected reading a directory as a file to fail.")
+        return
+    } catch {
+        expectedMessage = error.localizedDescription
+    }
+
+    let result = try store.loadWithStatus()
+
+    #expect(result.source == .persistedConfiguration)
+    #expect(result.skippedLayoutDiagnostics.count == 1)
+    #expect(result.skippedLayoutDiagnostics[0].fileURL.lastPathComponent == "1.grid.json")
+    #expect(result.skippedLayoutDiagnostics[0].message == expectedMessage)
+    #expect(result.skippedLayoutDiagnostics[0].line == nil)
+    #expect(result.skippedLayoutDiagnostics[0].column == nil)
+}
+
+@Test func configurationStoreRestoresManagedLayoutFilesWhenConfigWriteFails() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-save-rollback-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    _ = try store.load()
+    try writeLayoutFile("3.grid.json", json: "{\"stale\":true}", to: store)
+
+    let layoutFile1URL = store.layoutDirectoryURL.appendingPathComponent("1.grid.json")
+    let layoutFile2URL = store.layoutDirectoryURL.appendingPathComponent("2.grid.json")
+    let layoutFile3URL = store.layoutDirectoryURL.appendingPathComponent("3.grid.json")
+    let layoutFile1TextBeforeSave = try String(contentsOf: layoutFile1URL, encoding: .utf8)
+    let layoutFile2TextBeforeSave = try String(contentsOf: layoutFile2URL, encoding: .utf8)
+    let layoutFile3TextBeforeSave = try String(contentsOf: layoutFile3URL, encoding: .utf8)
+
+    try FileManager.default.removeItem(at: store.fileURL)
+    try FileManager.default.createDirectory(at: store.fileURL, withIntermediateDirectories: true)
+
+    var configuration = AppConfiguration.defaultValue
+    configuration.layoutGroups = [configuration.layoutGroups[0]]
+    configuration.general.activeLayoutGroup = AppConfiguration.builtInGroupName
+
+    do {
+        try store.save(configuration)
+        Issue.record("Expected save to fail when config.json is replaced by a directory.")
+    } catch {
+        let layoutFiles = try FileManager.default.contentsOfDirectory(
+            at: store.layoutDirectoryURL,
+            includingPropertiesForKeys: nil
+        )
+        .map(\.lastPathComponent)
+        .sorted()
+
+        #expect(layoutFiles == ["1.grid.json", "2.grid.json", "3.grid.json"])
+        #expect(try String(contentsOf: layoutFile1URL, encoding: .utf8) == layoutFile1TextBeforeSave)
+        #expect(try String(contentsOf: layoutFile2URL, encoding: .utf8) == layoutFile2TextBeforeSave)
+        #expect(try String(contentsOf: layoutFile3URL, encoding: .utf8) == layoutFile3TextBeforeSave)
+    }
 }
 
 @Test func defaultConfigurationKeepsExpectedShortcutAndModifierDefaults() async throws {

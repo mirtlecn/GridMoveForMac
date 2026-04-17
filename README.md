@@ -176,17 +176,6 @@ The example below uses `jsonc` only for explanation. Real files must be plain JS
 }
 ```
 
-Compatibility and reload behavior:
-
-- `config.json` must not contain embedded `layoutGroups`
-- files in `layout/` that do not match `<positive-integer>.grid.json` are ignored
-- matching layout files are loaded in numeric order
-- invalid matching layout files are skipped individually
-- after skipping invalid layout files, the merged config must still pass validation or the whole load fails
-- successful saves also refresh `~/.config/GridMove/config.last-known-good.json` and `~/.config/GridMove/layout.last-known-good/*.grid.json`
-- launch falls back to the split last-known-good snapshot first, then to built-in defaults
-- manual reload keeps the current in-memory config on full failure, and warns when it skips invalid layout files
-
 
 ## Additional docs
 

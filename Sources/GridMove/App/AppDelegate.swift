@@ -173,7 +173,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 } else {
                     userNotifier.notify(
                         title: UICopy.configReloadFailedTitle,
-                        body: UICopy.configReloadFailedBody(diagnostic: result.diagnostic)
+                        body: UICopy.configReloadFailedBody(
+                            diagnostic: result.diagnostic,
+                            skippedLayoutDiagnostics: result.skippedLayoutDiagnostics
+                        )
                     )
                 }
             }

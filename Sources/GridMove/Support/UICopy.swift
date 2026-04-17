@@ -41,22 +41,41 @@ enum UICopy {
         return trimmedName.isEmpty ? fallbackIdentifier : trimmedName
     }
 
-    static func configReloadFailedBody(diagnostic: ConfigurationLoadDiagnostic?) -> String {
+    static func configReloadFailedBody(
+        diagnostic: ConfigurationLoadDiagnostic?,
+        skippedLayoutDiagnostics: [LayoutFileDiagnostic] = []
+    ) -> String {
         let prefix = "Config was not applied. GridMove kept running with the current configuration."
+        let skippedDetails = skippedLayoutDiagnosticsText(diagnostics: skippedLayoutDiagnostics)
 
         guard let diagnostic else {
-            return prefix
+            guard let skippedDetails else {
+                return prefix
+            }
+            return "\(prefix) Skipped layout files: \(skippedDetails)"
         }
 
         if let line = diagnostic.line, let column = diagnostic.column {
-            return "\(prefix) The error is at line \(line), column \(column): \(diagnostic.message)"
+            let body = "\(prefix) The error is at line \(line), column \(column): \(diagnostic.message)"
+            guard let skippedDetails else {
+                return body
+            }
+            return "\(body) Skipped layout files: \(skippedDetails)"
         }
 
         if let codingPath = diagnostic.codingPathDescription {
-            return "\(prefix) The error is in \(codingPath): \(diagnostic.message)"
+            let body = "\(prefix) The error is in \(codingPath): \(diagnostic.message)"
+            guard let skippedDetails else {
+                return body
+            }
+            return "\(body) Skipped layout files: \(skippedDetails)"
         }
 
-        return "\(prefix) \(diagnostic.message)"
+        let body = "\(prefix) \(diagnostic.message)"
+        guard let skippedDetails else {
+            return body
+        }
+        return "\(body) Skipped layout files: \(skippedDetails)"
     }
 
     static func configReloadSkippedLayoutsBody(diagnostics: [LayoutFileDiagnostic]) -> String {
@@ -65,7 +84,17 @@ enum UICopy {
             return prefix
         }
 
-        let details = diagnostics.map { diagnostic in
+        let details = skippedLayoutDiagnosticsText(diagnostics: diagnostics) ?? ""
+
+        return "\(prefix) \(details)"
+    }
+
+    private static func skippedLayoutDiagnosticsText(diagnostics: [LayoutFileDiagnostic]) -> String? {
+        guard !diagnostics.isEmpty else {
+            return nil
+        }
+
+        return diagnostics.map { diagnostic in
             let fileName = diagnostic.fileURL.lastPathComponent
             if let line = diagnostic.line, let column = diagnostic.column {
                 return "\(fileName) (line \(line), column \(column)): \(diagnostic.message)"
@@ -76,7 +105,5 @@ enum UICopy {
             return "\(fileName): \(diagnostic.message)"
         }
         .joined(separator: " ")
-
-        return "\(prefix) \(details)"
     }
 }

@@ -59,6 +59,7 @@ final class ConfigurationStore {
 
     private struct ConfigurationSnapshotLoadError: Error {
         let diagnostic: ConfigurationLoadDiagnostic
+        let skippedLayoutDiagnostics: [LayoutFileDiagnostic]
     }
 
     private let fileManager: FileManager
@@ -118,7 +119,7 @@ final class ConfigurationStore {
                             configuration: recoverySnapshot.configuration,
                             source: .lastKnownGood,
                             diagnostic: error.diagnostic,
-                            skippedLayoutDiagnostics: recoverySnapshot.skippedLayoutDiagnostics
+                            skippedLayoutDiagnostics: error.skippedLayoutDiagnostics
                         )
                     } catch {
                         AppLogger.shared.error("Failed to load last-known-good configuration from \(self.lastKnownGoodFileURL.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
@@ -129,7 +130,7 @@ final class ConfigurationStore {
                     configuration: .defaultValue,
                     source: .builtInDefault,
                     diagnostic: error.diagnostic,
-                    skippedLayoutDiagnostics: []
+                    skippedLayoutDiagnostics: error.skippedLayoutDiagnostics
                 )
             }
         }
@@ -182,7 +183,8 @@ final class ConfigurationStore {
                     for: error,
                     fileURL: configurationFileURL,
                     data: configurationData
-                )
+                ),
+                skippedLayoutDiagnostics: []
             )
         }
 
@@ -203,7 +205,8 @@ final class ConfigurationStore {
                     for: error,
                     fileURL: failureDiagnosticFileURL,
                     data: Data()
-                )
+                ),
+                skippedLayoutDiagnostics: layoutLoadResult.skippedLayoutDiagnostics
             )
         }
     }
@@ -214,15 +217,27 @@ final class ConfigurationStore {
         var skippedDiagnostics: [LayoutFileDiagnostic] = []
 
         for layoutFile in layoutFiles {
-            let data = (try? Data(contentsOf: layoutFile.fileURL)) ?? Data()
             do {
-                let layoutGroup = try decodeLayoutGroup(from: data)
+                let data = try Data(contentsOf: layoutFile.fileURL)
+                let layoutGroup: LayoutGroupConfiguration
+                do {
+                    layoutGroup = try decodeLayoutGroup(from: data)
+                } catch {
+                    let diagnostic = makeLayoutFileDiagnostic(
+                        for: error,
+                        fileURL: layoutFile.fileURL,
+                        data: data
+                    )
+                    skippedDiagnostics.append(diagnostic)
+                    AppLogger.shared.error("Skipped invalid layout file \(layoutFile.fileURL.lastPathComponent, privacy: .public): \(diagnostic.message, privacy: .public)")
+                    continue
+                }
                 decodedLayoutGroups.append(layoutGroup)
             } catch {
                 let diagnostic = makeLayoutFileDiagnostic(
                     for: error,
                     fileURL: layoutFile.fileURL,
-                    data: data
+                    data: Data()
                 )
                 skippedDiagnostics.append(diagnostic)
                 AppLogger.shared.error("Skipped invalid layout file \(layoutFile.fileURL.lastPathComponent, privacy: .public): \(diagnostic.message, privacy: .public)")
@@ -245,16 +260,90 @@ final class ConfigurationStore {
         }
 
         try fileManager.createDirectory(at: layoutDirectoryURL, withIntermediateDirectories: true)
-        for layoutFile in layoutFiles {
-            try layoutFile.data.write(to: layoutFile.fileURL, options: .atomic)
+        let layoutBackupDirectoryURL = directoryURL
+            .appendingPathComponent(".layout-backup-\(UUID().uuidString)", isDirectory: true)
+        let configurationBackupURL = directoryURL
+            .appendingPathComponent(".config-backup-\(UUID().uuidString)")
+        let existingManagedFiles = managedLayoutFiles(in: layoutDirectoryURL)
+        let hadExistingConfiguration = fileManager.fileExists(atPath: configurationFileURL.path)
+
+        try fileManager.createDirectory(at: layoutBackupDirectoryURL, withIntermediateDirectories: true)
+        defer {
+            try? fileManager.removeItem(at: layoutBackupDirectoryURL)
+            try? fileManager.removeItem(at: configurationBackupURL)
         }
 
-        let desiredFileNames = Set(layoutFiles.map { $0.fileURL.lastPathComponent })
-        for existingFile in managedLayoutFiles(in: layoutDirectoryURL) where !desiredFileNames.contains(existingFile.fileURL.lastPathComponent) {
-            try fileManager.removeItem(at: existingFile.fileURL)
+        for existingFile in existingManagedFiles {
+            try fileManager.copyItem(
+                at: existingFile.fileURL,
+                to: layoutBackupDirectoryURL.appendingPathComponent(existingFile.fileURL.lastPathComponent)
+            )
+        }
+        if hadExistingConfiguration {
+            try fileManager.copyItem(at: configurationFileURL, to: configurationBackupURL)
         }
 
-        try configurationData.write(to: configurationFileURL, options: .atomic)
+        do {
+            for layoutFile in layoutFiles {
+                try layoutFile.data.write(to: layoutFile.fileURL, options: .atomic)
+            }
+
+            let desiredFileNames = Set(layoutFiles.map { $0.fileURL.lastPathComponent })
+            for existingFile in existingManagedFiles where !desiredFileNames.contains(existingFile.fileURL.lastPathComponent) {
+                try fileManager.removeItem(at: existingFile.fileURL)
+            }
+
+            try configurationData.write(to: configurationFileURL, options: .atomic)
+        } catch {
+            do {
+                try restoreManagedLayoutFiles(
+                    from: layoutBackupDirectoryURL,
+                    to: layoutDirectoryURL
+                )
+            } catch {
+                AppLogger.shared.error("Failed to restore managed layout files after save failure: \(error.localizedDescription, privacy: .public)")
+            }
+            do {
+                try restoreConfigurationFile(
+                    from: hadExistingConfiguration ? configurationBackupURL : nil,
+                    to: configurationFileURL
+                )
+            } catch {
+                AppLogger.shared.error("Failed to restore config.json after save failure: \(error.localizedDescription, privacy: .public)")
+            }
+            throw error
+        }
+    }
+
+    private func restoreManagedLayoutFiles(from backupDirectoryURL: URL, to layoutDirectoryURL: URL) throws {
+        try fileManager.createDirectory(at: layoutDirectoryURL, withIntermediateDirectories: true)
+        for existingManagedFile in managedLayoutFiles(in: layoutDirectoryURL) {
+            try fileManager.removeItem(at: existingManagedFile.fileURL)
+        }
+
+        let backupItems = try fileManager.contentsOfDirectory(
+            at: backupDirectoryURL,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        )
+        for backupItem in backupItems {
+            try fileManager.copyItem(
+                at: backupItem,
+                to: layoutDirectoryURL.appendingPathComponent(backupItem.lastPathComponent)
+            )
+        }
+    }
+
+    private func restoreConfigurationFile(from backupURL: URL?, to configurationFileURL: URL) throws {
+        if fileManager.fileExists(atPath: configurationFileURL.path) {
+            try fileManager.removeItem(at: configurationFileURL)
+        }
+
+        guard let backupURL else {
+            return
+        }
+
+        try fileManager.copyItem(at: backupURL, to: configurationFileURL)
     }
 
     private func decodeConfigurationFile(from data: Data) throws -> ConfigurationFile {

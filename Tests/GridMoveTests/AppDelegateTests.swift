@@ -3,6 +3,20 @@ import Foundation
 import Testing
 @testable import GridMove
 
+private func writeMainConfigurationJSON(_ json: String, to store: ConfigurationStore) throws {
+    try FileManager.default.createDirectory(at: store.directoryURL, withIntermediateDirectories: true)
+    try json.write(to: store.fileURL, atomically: true, encoding: .utf8)
+}
+
+private func writeLayoutFile(_ fileName: String, json: String, to store: ConfigurationStore) throws {
+    try FileManager.default.createDirectory(at: store.layoutDirectoryURL, withIntermediateDirectories: true)
+    try json.write(
+        to: store.layoutDirectoryURL.appendingPathComponent(fileName),
+        atomically: true,
+        encoding: .utf8
+    )
+}
+
 @MainActor
 @Test func appDelegateReloadsConfigurationFromDisk() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
@@ -191,7 +205,7 @@ import Testing
     #expect(delegate.configuration.hotkeys.bindings.map(\.shortcut) == savedConfiguration.hotkeys.bindings.map(\.shortcut))
     #expect(delegate.configuration.hotkeys.bindings.map(\.action) == savedConfiguration.hotkeys.bindings.map(\.action))
     #expect(receivedTitle == UICopy.configReloadFailedTitle)
-    #expect(receivedBody == UICopy.configReloadFailedBody(diagnostic: expectedResult.diagnostic))
+    #expect(receivedBody == UICopy.configReloadFailedBody(diagnostic: expectedResult.diagnostic, skippedLayoutDiagnostics: expectedResult.skippedLayoutDiagnostics))
 }
 
 @MainActor
@@ -317,6 +331,85 @@ import Testing
     #expect(delegate.configuration.monitors == ["Built-in Retina Display": "12345"])
     #expect(FileManager.default.fileExists(atPath: invalidLayoutURL.path))
     #expect(try String(contentsOf: invalidLayoutURL, encoding: .utf8) == invalidLayoutTextBeforeLaunch)
+}
+
+@MainActor
+@Test func appDelegateManualReloadFailureIncludesSkippedLayoutFileDetails() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-failed-reload-skipped-layouts-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var savedConfiguration = AppConfiguration.defaultValue
+    savedConfiguration.general.isEnabled = false
+    try store.save(savedConfiguration)
+
+    try writeMainConfigurationJSON(
+        """
+        {
+          "general": {
+            "isEnabled": true,
+            "excludedBundleIDs": ["com.apple.Spotlight"],
+            "excludedWindowTitles": [],
+            "activeLayoutGroup": "missing-after-skip"
+          },
+          "appearance": {
+            "renderTriggerAreas": false,
+            "triggerOpacity": 0.2,
+            "triggerGap": 2,
+            "triggerStrokeColor": "#007AFF33",
+            "renderWindowHighlight": true,
+            "highlightFillOpacity": 0.08,
+            "highlightStrokeWidth": 3,
+            "highlightStrokeColor": "#FFFFFFEB"
+          },
+          "dragTriggers": {
+            "middleMouseButtonNumber": 2,
+            "enableMiddleMouseDrag": true,
+            "enableModifierLeftMouseDrag": true,
+            "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
+            "activationDelaySeconds": 0.3,
+            "activationMoveThreshold": 10
+          },
+          "hotkeys": {
+            "bindings": []
+          },
+          "monitors": {}
+        }
+        """,
+        to: store
+    )
+    try writeLayoutFile(
+        "1.grid.json",
+        json: """
+        {
+          "name":
+        """,
+        to: store
+    )
+
+    var receivedTitle: String?
+    var receivedBody: String?
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        notifyUser: { title, body in
+            receivedTitle = title
+            receivedBody = body
+        }
+    )
+
+    delegate.reloadConfigurationFromDisk(mode: .launch)
+    let expectedResult = try store.loadWithStatus()
+
+    delegate.reloadConfigurationFromDisk(mode: .manual)
+
+    #expect(expectedResult.source == .lastKnownGood)
+    #expect(expectedResult.skippedLayoutDiagnostics.count == 1)
+    #expect(delegate.configuration.general == savedConfiguration.general)
+    #expect(receivedTitle == UICopy.configReloadFailedTitle)
+    #expect(receivedBody == UICopy.configReloadFailedBody(diagnostic: expectedResult.diagnostic, skippedLayoutDiagnostics: expectedResult.skippedLayoutDiagnostics))
+    #expect(receivedBody?.contains("1.grid.json") == true)
 }
 
 @MainActor

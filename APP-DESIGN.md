@@ -168,6 +168,7 @@ Compatibility behavior:
 - matching layout files that fail to decode are skipped individually
 - unmatched files in `layout/` are ignored
 - after skipping invalid layout files, the merged configuration must still pass validation or the whole load fails
+- when skipped layout files contribute to a manual reload failure, the notification includes both the fatal config error and the skipped-file details
 - successful saves also refresh `~/.config/GridMove/config.last-known-good.json` and `~/.config/GridMove/layout.last-known-good/*.grid.json`
 - on launch, the app loads `config.last-known-good.json` plus `layout.last-known-good/` when the primary config is invalid, and only falls back to built-in defaults when no valid recovery snapshot exists
 - on manual reload, full-load failures are rejected and the current in-memory configuration keeps running
