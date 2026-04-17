@@ -46,9 +46,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var configuration = AppConfiguration.defaultValue
     private var menuController: MenuBarController?
+    private var preferenceController: PreferenceWindowController?
     private var settingsController: SettingsWindowController?
     private var onboardingController: OnboardingWindowController?
     private var accessibilityPollingTimer: Timer?
+
+    var preferenceWindowControllerForTesting: PreferenceWindowController? {
+        preferenceController
+    }
 
     var settingsWindowControllerForTesting: SettingsWindowController? {
         settingsController
@@ -71,6 +76,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             },
             onPerformAction: { [weak self] action in
                 self?.performMenuAction(action)
+            },
+            onOpenPreference: { [weak self] in
+                self?.showPreference()
             },
             onOpenSettings: { [weak self] in
                 self?.showSettings()
@@ -169,6 +177,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
+    func showPreference() {
+        if preferenceController == nil {
+            preferenceController = PreferenceWindowController(
+                onClose: { [weak self] in
+                    self?.preferenceController = nil
+                }
+            )
+        }
+
+        preferenceController?.show()
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
     func handleApplicationReopen() -> Bool {
         showSettings()
         return false
@@ -258,8 +279,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let applicationMenuItem = NSMenuItem()
         let applicationMenu = NSMenu(title: UICopy.applicationMenuTitle)
 
+        let preferenceItem = NSMenuItem(title: UICopy.preferenceMenuTitle, action: #selector(openPreferenceFromMenu), keyEquivalent: "")
+        preferenceItem.target = self
+        applicationMenu.addItem(preferenceItem)
+
         let settingsItem = NSMenuItem(title: UICopy.settingsMenuTitle, action: #selector(openSettingsFromMenu), keyEquivalent: ",")
         settingsItem.target = self
+        applicationMenu.addItem(.separator())
         applicationMenu.addItem(settingsItem)
         applicationMenu.addItem(.separator())
 
@@ -275,6 +301,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func openSettingsFromMenu() {
         showSettings()
+    }
+
+    @objc private func openPreferenceFromMenu() {
+        showPreference()
     }
 
     @objc private func quitApplication() {

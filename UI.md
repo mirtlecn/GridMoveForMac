@@ -10,6 +10,7 @@
 
 - 菜单栏菜单
 - 权限引导窗口
+- 临时 Preference 窗口
 - 设置窗口
 
 ## 2. 文案规则
@@ -39,9 +40,19 @@
 - 分隔线
 - 布局动作项
 - 分隔线
+- `Preference`
 - `Settings…`
 - 分隔线
 - `Quit`
+
+当前 `Preference` 是重写中的临时入口。
+
+点击后：
+
+- 打开新的原生 AppKit Preference 窗口
+- 如果窗口已存在，则激活并显示已有窗口
+- 当前阶段包含 5 个 tab：`General`、`Layouts`、`Appearance`、`Hotkeys`、`About`
+- 当前阶段只有 `General` 有静态页面内容，其余页面先显示占位内容
 
 ### 3.1 Enable
 

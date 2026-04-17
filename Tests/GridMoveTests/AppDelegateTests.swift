@@ -18,3 +18,18 @@ import Testing
 
     firstController.close()
 }
+
+@MainActor
+@Test func appDelegateShowsPreferenceWithoutCreatingDuplicates() async throws {
+    let appDelegate = AppDelegate()
+
+    appDelegate.showPreference()
+    let firstController = try #require(appDelegate.preferenceWindowControllerForTesting)
+
+    appDelegate.showPreference()
+    let secondController = try #require(appDelegate.preferenceWindowControllerForTesting)
+
+    #expect(ObjectIdentifier(firstController) == ObjectIdentifier(secondController))
+
+    firstController.close()
+}

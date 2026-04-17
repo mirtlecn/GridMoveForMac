@@ -13,7 +13,9 @@ import Testing
 
 @MainActor
 @Test func settingsCopyUsesSentenceCaseForVisibleLabels() async throws {
+    #expect(UICopy.preferenceMenuTitle == "Preference")
     #expect(UICopy.pressAndDragSectionTitle == "Press and drag")
+    #expect(UICopy.mouseTriggersSectionTitle == "Mouse triggers")
     #expect(UICopy.middleMouseTitle == "Middle mouse")
     #expect(UICopy.modifierLeftMouseTitle == "Modifier + left mouse")
     #expect(UICopy.hotkeysHelpText == "To change a shortcut, double-click the key combination, then type a new shortcut.")

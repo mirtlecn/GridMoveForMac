@@ -17,6 +17,7 @@ final class MenuBarController: NSObject {
 
     private let onToggleDragGrid: (Bool) -> Void
     private let onPerformAction: (HotkeyAction) -> Void
+    private let onOpenPreference: () -> Void
     private let onOpenSettings: () -> Void
     private let onQuit: () -> Void
 
@@ -25,12 +26,14 @@ final class MenuBarController: NSObject {
         actionItems: [ActionItem],
         onToggleDragGrid: @escaping (Bool) -> Void,
         onPerformAction: @escaping (HotkeyAction) -> Void,
+        onOpenPreference: @escaping () -> Void,
         onOpenSettings: @escaping () -> Void,
         onQuit: @escaping () -> Void
     ) {
         self.actionItems = actionItems
         self.onToggleDragGrid = onToggleDragGrid
         self.onPerformAction = onPerformAction
+        self.onOpenPreference = onOpenPreference
         self.onOpenSettings = onOpenSettings
         self.onQuit = onQuit
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
@@ -52,9 +55,12 @@ final class MenuBarController: NSObject {
 
         rebuildActionItems(isEnabled: dragGridEnabled)
 
+        let preferenceItem = NSMenuItem(title: UICopy.preferenceMenuTitle, action: #selector(openPreference), keyEquivalent: "")
+        preferenceItem.target = self
         let settingsItem = NSMenuItem(title: UICopy.settingsMenuTitle, action: #selector(openSettings), keyEquivalent: ",")
         settingsItem.target = self
         menu.addItem(.separator())
+        menu.addItem(preferenceItem)
         menu.addItem(settingsItem)
 
         menu.addItem(.separator())
@@ -112,6 +118,14 @@ final class MenuBarController: NSObject {
         separator.isEnabled = false
         menu.insertItem(separator, at: nextIndex)
         actionMenuItems.append(separator)
+    }
+
+    var menuItemTitlesForTesting: [String] {
+        menu.items.map(\.title)
+    }
+
+    @objc private func openPreference() {
+        onOpenPreference()
     }
 
     @objc private func openSettings() {
