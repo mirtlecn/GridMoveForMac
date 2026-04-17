@@ -27,7 +27,7 @@ import Testing
 }
 
 @MainActor
-@Test func settingsWindowControllerConfiguresToolbarBackedWindow() async throws {
+@Test func settingsWindowControllerConfiguresStandardTitledWindow() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-settings-window-\(UUID().uuidString)", isDirectory: true)
     defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
@@ -39,8 +39,7 @@ import Testing
         onConfigurationSaved: { _ in }
     )
 
-    #expect(controller.window?.toolbar != nil)
-    #expect(controller.window?.toolbarStyle == .automatic)
+    #expect(controller.window?.toolbar == nil)
     #expect(!(controller.window?.title.isEmpty ?? true))
     #expect(controller.window?.titleVisibility != .hidden)
     #expect(controller.window?.minSize.width == 860)
