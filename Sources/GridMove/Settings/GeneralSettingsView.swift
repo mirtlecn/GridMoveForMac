@@ -31,9 +31,8 @@ struct GeneralSettingsView: View {
                         subtitle: UICopy.middleMouseSubtitle
                     )
                 }
-                .controlSize(.mini)
 
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 12) {
                     Toggle(
                         isOn: Binding(
                             get: { viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag },
@@ -45,85 +44,77 @@ struct GeneralSettingsView: View {
                             subtitle: UICopy.modifierLeftMouseSubtitle
                         )
                     }
-                    .controlSize(.mini)
 
-                    SettingsActionList {
-                        List(selection: $viewModel.selectedModifierGroupID) {
-                            ForEach(viewModel.modifierGroupItems) { item in
-                                Text(item.title)
-                                    .font(.footnote)
-                                    .tag(item.id)
+                    GroupBox {
+                        VStack(alignment: .leading, spacing: 8) {
+                            List(selection: $viewModel.selectedModifierGroupID) {
+                                ForEach(viewModel.modifierGroupItems) { item in
+                                    Text(item.title)
+                                        .tag(item.id)
+                                }
                             }
-                        }
-                        .environment(\.defaultMinListRowHeight, 24)
-                        .frame(minHeight: 84, maxHeight: 104)
-                    } actions: {
-                        Button {
-                            viewModel.modifierGroupSheetPresented = true
-                        } label: {
-                            Image(systemName: "plus")
-                        }
-                        .buttonStyle(.plain)
+                            .frame(minHeight: 96, maxHeight: 120)
 
-                        if viewModel.selectedModifierGroupID != nil {
-                            Button {
-                                viewModel.removeSelectedModifierGroup()
-                            } label: {
-                                Image(systemName: "minus")
+                            SettingsListActions {
+                                addButton(action: { viewModel.modifierGroupSheetPresented = true })
+
+                                if viewModel.selectedModifierGroupID != nil {
+                                    removeButton(action: viewModel.removeSelectedModifierGroup)
+                                }
                             }
-                            .buttonStyle(.plain)
                         }
                     }
-                    .opacity(viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag ? 1 : 0.5)
-                    .allowsHitTesting(viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag)
+                    .disabled(!viewModel.configuration.dragTriggers.enableModifierLeftMouseDrag)
                 }
             }
             .disabled(!viewModel.configuration.general.isEnabled)
 
             Section(UICopy.excludedWindowsSectionTitle) {
-                SettingsActionList {
-                    Table(viewModel.excludedWindowItems, selection: $viewModel.selectedExcludedWindowID) {
-                        TableColumn(UICopy.valueColumnTitle) { item in
-                            Text(item.value)
-                                .font(.footnote)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                        }
-                        .width(min: 280)
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Table(viewModel.excludedWindowItems, selection: $viewModel.selectedExcludedWindowID) {
+                            TableColumn(UICopy.valueColumnTitle) { item in
+                                Text(item.value)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                            }
+                            .width(min: 280)
 
-                        TableColumn(UICopy.typeColumnTitle) { item in
-                            Text(item.kind.columnTitle)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
+                            TableColumn(UICopy.typeColumnTitle) { item in
+                                Text(item.kind.columnTitle)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .width(min: 120, max: 160)
                         }
-                        .width(min: 120, max: 160)
-                    }
-                    .frame(minHeight: 144, maxHeight: 176)
-                } actions: {
-                    Button {
-                        viewModel.openExcludedWindowSheet()
-                    } label: {
-                        Image(systemName: "plus")
-                    }
-                    .buttonStyle(.plain)
+                        .frame(minHeight: 150, maxHeight: 190)
 
-                    if viewModel.selectedExcludedWindowID != nil {
-                        Button {
-                            viewModel.removeSelectedExcludedWindow()
-                        } label: {
-                            Image(systemName: "minus")
+                        SettingsListActions {
+                            addButton(action: viewModel.openExcludedWindowSheet)
+
+                            if viewModel.selectedExcludedWindowID != nil {
+                                removeButton(action: viewModel.removeSelectedExcludedWindow)
+                            }
                         }
-                        .buttonStyle(.plain)
                     }
                 }
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(.top, 2)
-        .background(Color(nsColor: .windowBackgroundColor))
         .formStyle(.grouped)
-        .scrollContentBackground(.hidden)
         .controlSize(.small)
+    }
+
+    private func addButton(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(UICopy.add, systemImage: "plus")
+                .labelStyle(.iconOnly)
+        }
+    }
+
+    private func removeButton(action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Label(UICopy.delete, systemImage: "minus")
+                .labelStyle(.iconOnly)
+        }
     }
 }
 
@@ -134,37 +125,10 @@ private struct SettingsDescriptionLabel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
-                .font(.body.weight(.medium))
             Text(subtitle)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
-    }
-}
-
-private struct SettingsActionList<Content: View, Actions: View>: View {
-    @ViewBuilder let content: Content
-    @ViewBuilder let actions: Actions
-
-    var body: some View {
-        VStack(spacing: 0) {
-            content
-
-            HStack(spacing: 10) {
-                actions
-                    .foregroundStyle(.secondary)
-                Spacer()
-            }
-            .font(.body)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 5)
-            .background(Color(nsColor: .controlBackgroundColor))
-        }
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(Color(nsColor: .separatorColor).opacity(0.45), lineWidth: 1)
-        )
     }
 }

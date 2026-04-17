@@ -25,11 +25,15 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
             backing: .buffered,
             defer: false
         )
+        let toolbar = NSToolbar(identifier: "GridMoveSettingsToolbar")
+        toolbar.allowsUserCustomization = false
+        toolbar.autosavesConfiguration = false
         window.title = UICopy.settingsWindowTitle
-        window.minSize = NSSize(width: 860, height: 620)
+        window.minSize = NSSize(width: 860, height: 660)
+        window.toolbar = toolbar
         window.titlebarAppearsTransparent = true
         window.titleVisibility = .hidden
-        window.toolbarStyle = .unified
+        window.toolbarStyle = .automatic
         if #available(macOS 11.0, *) {
             window.titlebarSeparatorStyle = .none
         }

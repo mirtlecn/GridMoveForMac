@@ -9,58 +9,43 @@ struct HotkeysSettingsView: View {
                 Text(UICopy.hotkeysHelpText)
                     .foregroundStyle(.secondary)
 
-                hotkeyList
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(.top, 2)
-        .background(Color(nsColor: .windowBackgroundColor))
-        .formStyle(.grouped)
-        .scrollContentBackground(.hidden)
-        .controlSize(.small)
-    }
-
-    private var hotkeyList: some View {
-        VStack(spacing: 0) {
-            SettingsListContainer(minHeight: 300, maxHeight: 500) {
-                LazyVStack(alignment: .leading, spacing: 0) {
-                    ForEach(viewModel.hotkeyItems) { binding in
-                        SettingsSelectableListRow(isSelected: viewModel.selectedHotkeyBindingID == binding.id) {
-                            HotkeyBindingRow(
-                                binding: binding,
-                                options: viewModel.hotkeyActionOptions,
-                                onChange: viewModel.replaceBinding(_:),
-                                onSelect: { viewModel.selectedHotkeyBindingID = binding.id }
-                            )
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 8) {
+                        List(selection: $viewModel.selectedHotkeyBindingID) {
+                            ForEach(viewModel.hotkeyItems) { binding in
+                                HotkeyBindingRow(
+                                    binding: binding,
+                                    options: viewModel.hotkeyActionOptions,
+                                    onChange: viewModel.replaceBinding(_:),
+                                    onSelect: { viewModel.selectedHotkeyBindingID = binding.id }
+                                )
+                                .tag(binding.id)
+                            }
                         }
-                        .onTapGesture {
-                            viewModel.selectedHotkeyBindingID = binding.id
-                        }
+                        .frame(minHeight: 300, maxHeight: 500)
 
-                        if binding.id != viewModel.hotkeyItems.last?.id {
-                            Divider()
-                                .padding(.leading, 36)
+                        SettingsListActions {
+                            Button {
+                                viewModel.addHotkeyBinding()
+                            } label: {
+                                Label(UICopy.add, systemImage: "plus")
+                                    .labelStyle(.iconOnly)
+                            }
+
+                            Button {
+                                viewModel.deleteSelectedHotkeyBinding()
+                            } label: {
+                                Label(UICopy.delete, systemImage: "minus")
+                                    .labelStyle(.iconOnly)
+                            }
+                            .disabled(viewModel.selectedHotkeyBindingID == nil)
                         }
                     }
                 }
-                .padding(.vertical, 4)
-            }
-
-            SettingsListFooterBar {
-                SettingsMiniActionButton(systemImage: "plus") {
-                    viewModel.addHotkeyBinding()
-                }
-
-                SettingsMiniActionButton(systemImage: "minus") {
-                    viewModel.deleteSelectedHotkeyBinding()
-                }
-                .disabled(viewModel.selectedHotkeyBindingID == nil)
             }
         }
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color(nsColor: .separatorColor).opacity(0.45), lineWidth: 1)
-        )
+        .formStyle(.grouped)
+        .controlSize(.small)
     }
 }
 
@@ -119,5 +104,7 @@ private struct HotkeyBindingRow: View {
             .onTapGesture(count: 2, perform: onSelect)
         }
         .font(.body)
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onSelect)
     }
 }

@@ -33,53 +33,40 @@ struct LayoutsSettingsView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Color(nsColor: .windowBackgroundColor))
     }
 
     private var listPage: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                Text(UICopy.layoutsSectionTitle)
-                    .font(.title.weight(.semibold))
-
-            SettingsGroupedRows {
+        VStack(spacing: 0) {
+            List {
                 ForEach(viewModel.layoutItems) { item in
                     LayoutListRow(
                         title: item.title,
                         onOpen: { viewModel.openLayoutDetail(id: item.id) }
-                        )
-                        .onDrag {
-                            draggedLayoutID = item.id
-                            return NSItemProvider(object: item.id as NSString)
-                        }
-                        .onDrop(
-                            of: [UTType.text],
-                            delegate: LayoutListDropDelegate(
-                                targetID: item.id,
-                                draggedLayoutID: $draggedLayoutID,
-                                moveLayout: viewModel.moveLayout(id:before:)
-                            )
-                        )
-
-                        if item.id != viewModel.layoutItems.last?.id {
-                            Divider()
-                                .padding(.leading, 18)
-                        }
+                    )
+                    .onDrag {
+                        draggedLayoutID = item.id
+                        return NSItemProvider(object: item.id as NSString)
                     }
-                }
-
-                HStack {
-                    Spacer()
-                    Button(UICopy.addLayout) {
-                        viewModel.addLayout()
-                    }
-                    .buttonStyle(.bordered)
+                    .onDrop(
+                        of: [UTType.text],
+                        delegate: LayoutListDropDelegate(
+                            targetID: item.id,
+                            draggedLayoutID: $draggedLayoutID,
+                            moveLayout: viewModel.moveLayout(id:before:)
+                        )
+                    )
                 }
             }
-            .frame(maxWidth: 760, alignment: .leading)
-            .padding(.horizontal, 22)
-            .padding(.vertical, 22)
-            .frame(maxWidth: .infinity, alignment: .top)
+
+            Divider()
+
+            HStack {
+                Spacer()
+                Button(UICopy.addLayout) {
+                    viewModel.addLayout()
+                }
+            }
+            .padding(16)
         }
         .onDrop(of: [UTType.text], isTargeted: nil) { _ in
             draggedLayoutID = nil
@@ -89,9 +76,75 @@ struct LayoutsSettingsView: View {
 
     private var detailPage: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
+            VStack(alignment: .leading, spacing: 20) {
                 if let draft = viewModel.layoutDraft {
-                    layoutInfoSection(draft: draft)
+                    GroupBox {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Toggle(
+                                UICopy.includeInCycle,
+                                isOn: Binding(
+                                    get: { viewModel.layoutDraft?.includeInCycle ?? draft.includeInCycle },
+                                    set: { isOn in
+                                        viewModel.updateLayoutDraft { $0.includeInCycle = isOn }
+                                    }
+                                )
+                            )
+
+                            Divider()
+
+                            LabeledContent(UICopy.name) {
+                                TextField(
+                                    UICopy.optionalName,
+                                    text: Binding(
+                                        get: { viewModel.layoutDraft?.name ?? draft.name },
+                                        set: { newValue in
+                                            viewModel.updateLayoutDraft { $0.name = newValue }
+                                        }
+                                    )
+                                )
+                                .textFieldStyle(.roundedBorder)
+                                .frame(width: 240)
+                            }
+
+                            Divider()
+
+                            LabeledContent(UICopy.grid) {
+                                HStack(spacing: 8) {
+                                    TextField(
+                                        "12",
+                                        text: Binding(
+                                            get: { String(viewModel.layoutDraft?.gridColumns ?? draft.gridColumns) },
+                                            set: { newValue in
+                                                viewModel.updateLayoutDraft {
+                                                    $0.gridColumns = max(1, Int(newValue) ?? $0.gridColumns)
+                                                }
+                                            }
+                                        )
+                                    )
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 72)
+
+                                    Text("x")
+                                        .foregroundStyle(.secondary)
+
+                                    TextField(
+                                        "6",
+                                        text: Binding(
+                                            get: { String(viewModel.layoutDraft?.gridRows ?? draft.gridRows) },
+                                            set: { newValue in
+                                                viewModel.updateLayoutDraft {
+                                                    $0.gridRows = max(1, Int(newValue) ?? $0.gridRows)
+                                                }
+                                            }
+                                        )
+                                    )
+                                    .textFieldStyle(.roundedBorder)
+                                    .frame(width: 72)
+                                }
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
 
                     Picker("", selection: $selectedTab) {
                         ForEach(LayoutEditorTab.allCases) { tab in
@@ -101,14 +154,50 @@ struct LayoutsSettingsView: View {
                     .pickerStyle(.segmented)
                     .frame(maxWidth: .infinity)
 
-                    previewSection(draft: draft)
+                    GroupBox {
+                        Group {
+                            switch selectedTab {
+                            case .windowOverlay:
+                                InteractiveGridPreview(
+                                    columns: draft.gridColumns,
+                                    rows: draft.gridRows,
+                                    selection: Binding(
+                                        get: { viewModel.layoutDraft?.windowSelection ?? draft.windowSelection },
+                                        set: { newSelection in
+                                            viewModel.updateLayoutDraft { $0.windowSelection = newSelection }
+                                        }
+                                    ),
+                                    style: GridPreviewOverlayStyle(
+                                        strokeColor: Color(viewModel.configuration.appearance.highlightStrokeColor.nsColor),
+                                        fillOpacity: viewModel.configuration.appearance.highlightFillOpacity,
+                                        strokeWidth: viewModel.configuration.appearance.highlightStrokeWidth
+                                    )
+                                )
+                            case .triggerOverlay:
+                                InteractiveTriggerRegionPreview(
+                                    columns: draft.gridColumns,
+                                    rows: draft.gridRows,
+                                    triggerRegion: Binding(
+                                        get: { viewModel.layoutDraft?.triggerRegion ?? draft.triggerRegion },
+                                        set: { newRegion in
+                                            viewModel.updateLayoutDraft { $0.triggerRegion = newRegion }
+                                        }
+                                    ),
+                                    style: GridPreviewOverlayStyle(
+                                        strokeColor: Color(viewModel.configuration.appearance.triggerStrokeColor.nsColor),
+                                        fillOpacity: min(max(viewModel.configuration.appearance.triggerOpacity * 0.45, 0.08), 0.35),
+                                        strokeWidth: 2
+                                    )
+                                )
+                            }
+                        }
+                        .frame(height: 320)
+                    }
 
                     HStack(spacing: 10) {
                         Button(viewModel.layoutDeleteArmed ? UICopy.confirmDelete : UICopy.delete) {
                             viewModel.deleteSelectedLayout()
                         }
-                        .buttonStyle(.bordered)
-                        .tint(viewModel.layoutDeleteArmed ? .red : nil)
                         .disabled(!viewModel.canDeleteSelectedLayout)
 
                         Spacer()
@@ -121,151 +210,9 @@ struct LayoutsSettingsView: View {
                     }
                 }
             }
-            .frame(maxWidth: 760, alignment: .leading)
-            .padding(.horizontal, 22)
-            .padding(.vertical, 22)
+            .frame(maxWidth: 780, alignment: .leading)
+            .padding(24)
             .frame(maxWidth: .infinity, alignment: .top)
-        }
-    }
-
-    private func layoutInfoSection(draft: LayoutPreset) -> some View {
-        SettingsGroupedRows {
-            SettingsGroupedRow {
-                layoutToggleRow(
-                    title: UICopy.includeInCycle,
-                    isOn: Binding(
-                        get: { viewModel.layoutDraft?.includeInCycle ?? draft.includeInCycle },
-                        set: { isOn in
-                            viewModel.updateLayoutDraft { $0.includeInCycle = isOn }
-                        }
-                    )
-                )
-            }
-
-            Divider()
-
-            SettingsGroupedRow {
-                layoutTextFieldRow(
-                    title: UICopy.name,
-                    placeholder: UICopy.optionalName,
-                    text: Binding(
-                        get: { viewModel.layoutDraft?.name ?? draft.name },
-                        set: { newValue in
-                            viewModel.updateLayoutDraft { $0.name = newValue }
-                        }
-                    )
-                )
-            }
-
-            Divider()
-
-            SettingsGroupedRow {
-                layoutGridRow(
-                    columns: Binding(
-                        get: { String(viewModel.layoutDraft?.gridColumns ?? draft.gridColumns) },
-                        set: { newValue in
-                            viewModel.updateLayoutDraft {
-                                $0.gridColumns = max(1, Int(newValue) ?? $0.gridColumns)
-                            }
-                        }
-                    ),
-                    rows: Binding(
-                        get: { String(viewModel.layoutDraft?.gridRows ?? draft.gridRows) },
-                        set: { newValue in
-                            viewModel.updateLayoutDraft {
-                                $0.gridRows = max(1, Int(newValue) ?? $0.gridRows)
-                            }
-                        }
-                    )
-                )
-            }
-        }
-    }
-
-    private func previewSection(draft: LayoutPreset) -> some View {
-        SettingsPageSection(title: nil) {
-            Group {
-                switch selectedTab {
-                case .windowOverlay:
-                    InteractiveGridPreview(
-                        columns: draft.gridColumns,
-                        rows: draft.gridRows,
-                        selection: Binding(
-                            get: { viewModel.layoutDraft?.windowSelection ?? draft.windowSelection },
-                            set: { newSelection in
-                                viewModel.updateLayoutDraft { $0.windowSelection = newSelection }
-                            }
-                        ),
-                        style: GridPreviewOverlayStyle(
-                            strokeColor: Color(viewModel.configuration.appearance.highlightStrokeColor.nsColor),
-                            fillOpacity: viewModel.configuration.appearance.highlightFillOpacity,
-                            strokeWidth: viewModel.configuration.appearance.highlightStrokeWidth
-                        )
-                    )
-                case .triggerOverlay:
-                    InteractiveTriggerRegionPreview(
-                        columns: draft.gridColumns,
-                        rows: draft.gridRows,
-                        triggerRegion: Binding(
-                            get: { viewModel.layoutDraft?.triggerRegion ?? draft.triggerRegion },
-                            set: { newRegion in
-                                viewModel.updateLayoutDraft { $0.triggerRegion = newRegion }
-                            }
-                        ),
-                        style: GridPreviewOverlayStyle(
-                            strokeColor: Color(viewModel.configuration.appearance.triggerStrokeColor.nsColor),
-                            fillOpacity: min(max(viewModel.configuration.appearance.triggerOpacity * 0.45, 0.08), 0.35),
-                            strokeWidth: 2
-                        )
-                    )
-                }
-            }
-            .frame(height: 320)
-        }
-    }
-
-    private func layoutToggleRow(title: String, isOn: Binding<Bool>) -> some View {
-        HStack(spacing: 12) {
-            Text(title)
-                .font(.body)
-
-            Spacer(minLength: 12)
-
-            Toggle("", isOn: isOn)
-                .labelsHidden()
-        }
-    }
-
-    private func layoutTextFieldRow(title: String, placeholder: String, text: Binding<String>) -> some View {
-        HStack(spacing: 16) {
-            Text(title)
-                .font(.body)
-                .frame(width: 96, alignment: .leading)
-
-            TextField(placeholder, text: text)
-                .textFieldStyle(.roundedBorder)
-        }
-    }
-
-    private func layoutGridRow(columns: Binding<String>, rows: Binding<String>) -> some View {
-        HStack(spacing: 16) {
-            Text(UICopy.grid)
-                .font(.body)
-                .frame(width: 96, alignment: .leading)
-
-            TextField("12", text: columns)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 72)
-
-            Text("x")
-                .font(.body)
-                .foregroundStyle(.secondary)
-
-            TextField("6", text: rows)
-                .textFieldStyle(.roundedBorder)
-                .frame(width: 72)
-
-            Spacer(minLength: 0)
         }
     }
 }
@@ -275,25 +222,19 @@ private struct LayoutListRow: View {
     let onOpen: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            Text(title)
-                .font(.body)
-                .foregroundStyle(.primary)
+        Button(action: onOpen) {
+            HStack(spacing: 12) {
+                Text(title)
+                    .foregroundStyle(.primary)
 
-            Spacer(minLength: 12)
+                Spacer(minLength: 12)
 
-            Button(action: onOpen) {
                 Image(systemName: "chevron.right")
-                    .font(.body.weight(.semibold))
-                    .frame(width: 14, height: 14)
                     .foregroundStyle(.secondary)
             }
-            .buttonStyle(.plain)
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 16)
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onOpen)
+        .buttonStyle(.plain)
     }
 }
 

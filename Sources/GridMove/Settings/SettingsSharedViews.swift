@@ -1,97 +1,6 @@
 import AppKit
 import SwiftUI
 
-struct DirectHotkeyRow: View {
-    let binding: ShortcutBinding
-    let options: [(String, HotkeyAction)]
-    let onChange: (ShortcutBinding) -> Void
-    let onDelete: () -> Void
-
-    var body: some View {
-        HStack(spacing: 16) {
-            Picker(
-                "",
-                selection: Binding(
-                    get: { binding.action },
-                    set: { newAction in
-                        var updatedBinding = binding
-                        updatedBinding.action = newAction
-                        onChange(updatedBinding)
-                    }
-                )
-            ) {
-                ForEach(options, id: \.0) { option in
-                    Text(option.0).tag(option.1)
-                }
-            }
-            .labelsHidden()
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            ShortcutRecorderRepresentable(
-                shortcut: Binding(
-                    get: { binding.shortcut },
-                    set: { newShortcut in
-                        var updatedBinding = binding
-                        updatedBinding.shortcut = newShortcut
-                        onChange(updatedBinding)
-                    }
-                )
-            )
-            .frame(width: 240, height: 32)
-
-            Button(UICopy.delete, role: .destructive) {
-                onDelete()
-            }
-        }
-        .padding(.vertical, 4)
-    }
-}
-
-struct CycleHotkeyRow: View {
-    let binding: ShortcutBinding
-    let onChange: (ShortcutBinding) -> Void
-    let onDelete: () -> Void
-
-    var body: some View {
-        HStack(spacing: 16) {
-            Text(binding.action == .cyclePrevious ? UICopy.applyPreviousLayout : UICopy.applyNextLayout)
-                .foregroundStyle(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            ShortcutRecorderRepresentable(
-                shortcut: Binding(
-                    get: { binding.shortcut },
-                    set: { newShortcut in
-                        var updatedBinding = binding
-                        updatedBinding.shortcut = newShortcut
-                        onChange(updatedBinding)
-                    }
-                )
-            )
-            .frame(width: 240, height: 32)
-
-            Button(UICopy.delete, role: .destructive) {
-                onDelete()
-            }
-        }
-        .padding(.vertical, 4)
-    }
-}
-
-struct SectionHeaderRow: View {
-    let title: String
-
-    var body: some View {
-        HStack {
-            Text(title)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(.secondary)
-            Spacer()
-        }
-        .padding(.vertical, 8)
-    }
-}
-
 struct LabeledSliderRow: View {
     let title: String
     @Binding var value: Double
@@ -222,24 +131,6 @@ struct ExcludedWindowSheetView: View {
                 .disabled(value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-    }
-}
-
-struct SettingsCard<Content: View>: View {
-    let title: String
-    @ViewBuilder let content: Content
-
-    var body: some View {
-        GroupBox {
-            VStack(alignment: .leading, spacing: 14) {
-                content
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        } label: {
-            Text(title)
-                .font(.headline)
-        }
-        .controlSize(.large)
     }
 }
 

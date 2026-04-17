@@ -255,6 +255,37 @@ import Testing
 }
 
 @MainActor
+@Test func settingsViewModelKeepsLayoutsToolbarNavigationSemantics() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let viewModel = SettingsViewModel(
+        configurationStore: store,
+        configurationProvider: { AppConfiguration.defaultValue },
+        onConfigurationSaved: { _ in }
+    )
+
+    let layoutID = AppConfiguration.defaultValue.layouts[0].id
+    viewModel.navigateToSection(.layouts)
+    viewModel.openLayoutDetail(id: layoutID)
+
+    #expect(viewModel.layoutPageMode == .detail)
+    #expect(viewModel.canNavigateToLayoutDetail == false)
+
+    viewModel.showLayoutsList()
+
+    #expect(viewModel.layoutPageMode == .list)
+    #expect(viewModel.canNavigateToLayoutDetail == true)
+
+    viewModel.reopenLayoutDetail()
+
+    #expect(viewModel.layoutPageMode == .detail)
+    #expect(viewModel.selectedLayoutID == layoutID)
+}
+
+@MainActor
 @Test func settingsViewModelReordersLayoutsAndUpdatesDisplayOrder() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-settings-\(UUID().uuidString)", isDirectory: true)
