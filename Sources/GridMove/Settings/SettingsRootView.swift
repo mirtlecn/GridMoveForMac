@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct SettingsRootView: View {
@@ -23,16 +24,23 @@ struct SettingsRootView: View {
                     .tag(section)
                 }
             }
+            .padding(.top, 8)
             .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 260)
             .listStyle(.sidebar)
         } detail: {
             detailView
+                .padding(.top, 8)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .navigationTitle(headerTitle)
         }
         .frame(minWidth: 860, minHeight: 660)
+        .toolbar(removing: .sidebarToggle)
         .toolbar {
             ToolbarItemGroup(placement: .navigation) {
+                Button(action: toggleSidebar) {
+                    Image(systemName: "sidebar.leading")
+                }
+
                 Button(action: handleNavigateBack) {
                     Image(systemName: "chevron.left")
                 }
@@ -107,5 +115,9 @@ struct SettingsRootView: View {
             return
         }
         viewModel.navigateForward()
+    }
+
+    private func toggleSidebar() {
+        NSApp.sendAction(#selector(NSSplitViewController.toggleSidebar(_:)), to: nil, from: nil)
     }
 }

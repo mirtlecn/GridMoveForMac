@@ -5,7 +5,13 @@ struct SettingsSidebarRowLabel: View {
     let systemImage: String
 
     var body: some View {
-        Label(title, systemImage: systemImage)
+        HStack(spacing: 10) {
+            Image(systemName: systemImage)
+                .frame(width: 16)
+
+            Text(title)
+                .lineLimit(1)
+        }
     }
 }
 
@@ -25,18 +31,20 @@ struct SettingsPreviewConfigurationPage<Preview: View, Controls: View>: View {
         VStack(spacing: 0) {
             preview
                 .frame(maxWidth: 780, alignment: .leading)
-                .padding(24)
+                .padding(.horizontal, 24)
+                .padding(.top, 24)
+                .padding(.bottom, 20)
+                .frame(maxWidth: .infinity, alignment: .top)
 
             Divider()
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    controls
-                }
-                .frame(maxWidth: 780, alignment: .leading)
-                .padding(24)
-                .frame(maxWidth: .infinity, alignment: .top)
+            Form {
+                controls
             }
+            .formStyle(.grouped)
+            .controlSize(.small)
+            .frame(maxWidth: 780, maxHeight: .infinity, alignment: .top)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }

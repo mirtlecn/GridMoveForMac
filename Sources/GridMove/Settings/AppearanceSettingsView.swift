@@ -30,34 +30,34 @@ struct AppearanceSettingsView: View {
             )
             .frame(height: 270)
         } controls: {
-            Picker("", selection: $selectedTab) {
-                ForEach(AppearanceTab.allCases) { tab in
-                    Text(tab.title).tag(tab)
-                }
-            }
-            .pickerStyle(.segmented)
-            .frame(maxWidth: .infinity)
-
-            GroupBox {
-                VStack(alignment: .leading, spacing: 12) {
-                    switch selectedTab {
-                    case .windowOverlay:
-                        windowOverlayConfiguration
-                    case .triggerOverlay:
-                        triggerOverlayConfiguration
+            Section {
+                Picker("", selection: $selectedTab) {
+                    ForEach(AppearanceTab.allCases) { tab in
+                        Text(tab.title).tag(tab)
                     }
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .pickerStyle(.segmented)
             }
 
-            HStack {
-                Spacer()
-                Button(UICopy.resetToDefaults) {
-                    switch selectedTab {
-                    case .windowOverlay:
-                        viewModel.resetWindowAppearanceToDefaults()
-                    case .triggerOverlay:
-                        viewModel.resetTriggerAppearanceToDefaults()
+            Section(selectedTab.title) {
+                switch selectedTab {
+                case .windowOverlay:
+                    windowOverlayConfiguration
+                case .triggerOverlay:
+                    triggerOverlayConfiguration
+                }
+            }
+
+            Section {
+                HStack {
+                    Spacer()
+                    Button(UICopy.resetToDefaults) {
+                        switch selectedTab {
+                        case .windowOverlay:
+                            viewModel.resetWindowAppearanceToDefaults()
+                        case .triggerOverlay:
+                            viewModel.resetTriggerAppearanceToDefaults()
+                        }
                     }
                 }
             }
@@ -65,7 +65,7 @@ struct AppearanceSettingsView: View {
     }
 
     private var windowOverlayConfiguration: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        Group {
             SettingsSwitchRow(
                 title: UICopy.renderWindowArea,
                 subtitle: UICopy.renderWindowAreaSubtitle,
@@ -76,8 +76,6 @@ struct AppearanceSettingsView: View {
                     }
                 )
             )
-
-            Divider()
 
             LabeledSliderRow(
                 title: UICopy.fillOpacity,
@@ -91,8 +89,6 @@ struct AppearanceSettingsView: View {
             )
             .disabled(!viewModel.configuration.appearance.renderWindowHighlight)
 
-            Divider()
-
             LabeledNumberFieldRow(
                 title: UICopy.strokeWidth,
                 value: Binding(
@@ -103,8 +99,6 @@ struct AppearanceSettingsView: View {
                 )
             )
             .disabled(!viewModel.configuration.appearance.renderWindowHighlight)
-
-            Divider()
 
             colorPickerRow(
                 title: UICopy.strokeColor,
@@ -122,7 +116,7 @@ struct AppearanceSettingsView: View {
     }
 
     private var triggerOverlayConfiguration: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        Group {
             SettingsSwitchRow(
                 title: UICopy.renderTriggerArea,
                 subtitle: UICopy.renderTriggerAreaSubtitle,
@@ -133,8 +127,6 @@ struct AppearanceSettingsView: View {
                     }
                 )
             )
-
-            Divider()
 
             LabeledSliderRow(
                 title: UICopy.strokeOpacity,
@@ -148,8 +140,6 @@ struct AppearanceSettingsView: View {
             )
             .disabled(!viewModel.configuration.appearance.renderTriggerAreas)
 
-            Divider()
-
             LabeledNumberFieldRow(
                 title: UICopy.gridGap,
                 value: Binding(
@@ -160,8 +150,6 @@ struct AppearanceSettingsView: View {
                 )
             )
             .disabled(!viewModel.configuration.appearance.renderTriggerAreas)
-
-            Divider()
 
             colorPickerRow(
                 title: UICopy.strokeColor,

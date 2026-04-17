@@ -79,125 +79,119 @@ struct LayoutsSettingsView: View {
     }
 
     private var detailPage: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
-                if let draft = viewModel.layoutDraft {
-                    GroupBox {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Toggle(
-                                UICopy.includeInCycle,
-                                isOn: Binding(
-                                    get: { viewModel.layoutDraft?.includeInCycle ?? draft.includeInCycle },
-                                    set: { isOn in
-                                        viewModel.updateLayoutDraft { $0.includeInCycle = isOn }
+        Form {
+            if let draft = viewModel.layoutDraft {
+                Section {
+                    Toggle(
+                        UICopy.includeInCycle,
+                        isOn: Binding(
+                            get: { viewModel.layoutDraft?.includeInCycle ?? draft.includeInCycle },
+                            set: { isOn in
+                                viewModel.updateLayoutDraft { $0.includeInCycle = isOn }
+                            }
+                        )
+                    )
+
+                    LabeledContent(UICopy.name) {
+                        TextField(
+                            UICopy.optionalName,
+                            text: Binding(
+                                get: { viewModel.layoutDraft?.name ?? draft.name },
+                                set: { newValue in
+                                    viewModel.updateLayoutDraft { $0.name = newValue }
+                                }
+                            )
+                        )
+                        .textFieldStyle(.roundedBorder)
+                        .frame(width: 240)
+                    }
+
+                    LabeledContent(UICopy.grid) {
+                        HStack(spacing: 8) {
+                            TextField(
+                                "12",
+                                text: Binding(
+                                    get: { String(viewModel.layoutDraft?.gridColumns ?? draft.gridColumns) },
+                                    set: { newValue in
+                                        viewModel.updateLayoutDraft {
+                                            $0.gridColumns = max(1, Int(newValue) ?? $0.gridColumns)
+                                        }
                                     }
                                 )
                             )
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 72)
 
-                            Divider()
+                            Text("x")
+                                .foregroundStyle(.secondary)
 
-                            LabeledContent(UICopy.name) {
-                                TextField(
-                                    UICopy.optionalName,
-                                    text: Binding(
-                                        get: { viewModel.layoutDraft?.name ?? draft.name },
-                                        set: { newValue in
-                                            viewModel.updateLayoutDraft { $0.name = newValue }
+                            TextField(
+                                "6",
+                                text: Binding(
+                                    get: { String(viewModel.layoutDraft?.gridRows ?? draft.gridRows) },
+                                    set: { newValue in
+                                        viewModel.updateLayoutDraft {
+                                            $0.gridRows = max(1, Int(newValue) ?? $0.gridRows)
                                         }
-                                    )
+                                    }
                                 )
-                                .textFieldStyle(.roundedBorder)
-                                .frame(width: 240)
-                            }
-
-                            Divider()
-
-                            LabeledContent(UICopy.grid) {
-                                HStack(spacing: 8) {
-                                    TextField(
-                                        "12",
-                                        text: Binding(
-                                            get: { String(viewModel.layoutDraft?.gridColumns ?? draft.gridColumns) },
-                                            set: { newValue in
-                                                viewModel.updateLayoutDraft {
-                                                    $0.gridColumns = max(1, Int(newValue) ?? $0.gridColumns)
-                                                }
-                                            }
-                                        )
-                                    )
-                                    .textFieldStyle(.roundedBorder)
-                                    .frame(width: 72)
-
-                                    Text("x")
-                                        .foregroundStyle(.secondary)
-
-                                    TextField(
-                                        "6",
-                                        text: Binding(
-                                            get: { String(viewModel.layoutDraft?.gridRows ?? draft.gridRows) },
-                                            set: { newValue in
-                                                viewModel.updateLayoutDraft {
-                                                    $0.gridRows = max(1, Int(newValue) ?? $0.gridRows)
-                                                }
-                                            }
-                                        )
-                                    )
-                                    .textFieldStyle(.roundedBorder)
-                                    .frame(width: 72)
-                                }
-                            }
+                            )
+                            .textFieldStyle(.roundedBorder)
+                            .frame(width: 72)
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                }
 
+                Section {
                     Picker("", selection: $selectedTab) {
                         ForEach(LayoutEditorTab.allCases) { tab in
                             Text(tab.title).tag(tab)
                         }
                     }
                     .pickerStyle(.segmented)
-                    .frame(maxWidth: .infinity)
+                }
 
-                    GroupBox {
-                        Group {
-                            switch selectedTab {
-                            case .windowOverlay:
-                                InteractiveGridPreview(
-                                    columns: draft.gridColumns,
-                                    rows: draft.gridRows,
-                                    selection: Binding(
-                                        get: { viewModel.layoutDraft?.windowSelection ?? draft.windowSelection },
-                                        set: { newSelection in
-                                            viewModel.updateLayoutDraft { $0.windowSelection = newSelection }
-                                        }
-                                    ),
-                                    style: GridPreviewOverlayStyle(
-                                        strokeColor: Color(viewModel.configuration.appearance.highlightStrokeColor.nsColor),
-                                        fillOpacity: viewModel.configuration.appearance.highlightFillOpacity,
-                                        strokeWidth: viewModel.configuration.appearance.highlightStrokeWidth
-                                    )
+                Section(selectedTab.title) {
+                    Group {
+                        switch selectedTab {
+                        case .windowOverlay:
+                            InteractiveGridPreview(
+                                columns: draft.gridColumns,
+                                rows: draft.gridRows,
+                                selection: Binding(
+                                    get: { viewModel.layoutDraft?.windowSelection ?? draft.windowSelection },
+                                    set: { newSelection in
+                                        viewModel.updateLayoutDraft { $0.windowSelection = newSelection }
+                                    }
+                                ),
+                                style: GridPreviewOverlayStyle(
+                                    strokeColor: Color(viewModel.configuration.appearance.highlightStrokeColor.nsColor),
+                                    fillOpacity: viewModel.configuration.appearance.highlightFillOpacity,
+                                    strokeWidth: viewModel.configuration.appearance.highlightStrokeWidth
                                 )
-                            case .triggerOverlay:
-                                InteractiveTriggerRegionPreview(
-                                    columns: draft.gridColumns,
-                                    rows: draft.gridRows,
-                                    triggerRegion: Binding(
-                                        get: { viewModel.layoutDraft?.triggerRegion ?? draft.triggerRegion },
-                                        set: { newRegion in
-                                            viewModel.updateLayoutDraft { $0.triggerRegion = newRegion }
-                                        }
-                                    ),
-                                    style: GridPreviewOverlayStyle(
-                                        strokeColor: Color(viewModel.configuration.appearance.triggerStrokeColor.nsColor),
-                                        fillOpacity: min(max(viewModel.configuration.appearance.triggerOpacity * 0.45, 0.08), 0.35),
-                                        strokeWidth: 2
-                                    )
+                            )
+                        case .triggerOverlay:
+                            InteractiveTriggerRegionPreview(
+                                columns: draft.gridColumns,
+                                rows: draft.gridRows,
+                                triggerRegion: Binding(
+                                    get: { viewModel.layoutDraft?.triggerRegion ?? draft.triggerRegion },
+                                    set: { newRegion in
+                                        viewModel.updateLayoutDraft { $0.triggerRegion = newRegion }
+                                    }
+                                ),
+                                style: GridPreviewOverlayStyle(
+                                    strokeColor: Color(viewModel.configuration.appearance.triggerStrokeColor.nsColor),
+                                    fillOpacity: min(max(viewModel.configuration.appearance.triggerOpacity * 0.45, 0.08), 0.35),
+                                    strokeWidth: 2
                                 )
-                            }
+                            )
                         }
-                        .frame(height: 320)
                     }
+                    .frame(height: 320)
+                }
 
+                Section {
                     HStack(spacing: 10) {
                         Button(viewModel.layoutDeleteArmed ? UICopy.confirmDelete : UICopy.delete) {
                             viewModel.deleteSelectedLayout()
@@ -214,10 +208,12 @@ struct LayoutsSettingsView: View {
                     }
                 }
             }
-            .frame(maxWidth: 780, alignment: .leading)
-            .padding(24)
-            .frame(maxWidth: .infinity, alignment: .top)
         }
+        .formStyle(.grouped)
+        .controlSize(.small)
+        .frame(maxWidth: 780, maxHeight: .infinity, alignment: .top)
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 }
 
