@@ -4,14 +4,11 @@ GridMove is a native macOS menu bar app for applying window layouts and moving w
 
 ## Features
 
-- Global keyboard shortcuts for cycling layouts and applying layout indexes within the active group
 - Drag-triggered layout selection and move-only mode
-- Layout groups that can be switched from the menu bar, from layout mode with a Shift tap, or from layout mode with vertical mouse-wheel scrolling
 - Per-display layout sets with `all`, `main`, single-display, and multi-display targeting
 - Trigger regions on the screen grid or menu bar strip
 - Accessibility-based window lookup, focus, move, resize, and fullscreen exit
 - CLI actions relayed to the running app
-- Split JSON configuration stored at `~/.config/GridMove/config.json` and `~/.config/GridMove/layout/*.grid.json`
 
 ## Dev
 
@@ -22,6 +19,9 @@ make test
 make dev
 # build and package
 make build
+# build a release package for the current VERSION
+make release
+
 # update VERSION and build a release package
 make release v0.1.1
 ```
@@ -32,7 +32,6 @@ The default signing mode is ad-hoc signing for local testing. To use a real cert
 make build SIGN_IDENTITY="Developer ID Application: Example Name (TEAMID)"
 ```
 
-`VERSION` is the single source of truth for the main app version. `make build` keeps `CFBundleShortVersionString` and `CFBundleVersion` at the main version and records `<main-version>+<short-commit>` in the package info string. `make release v0.1.1` updates `VERSION`, then builds a release package whose package info string is just `0.1.1`.
 
 ## CLI
 
@@ -55,13 +54,7 @@ Config files are stored at:
 - `~/.config/GridMove/config.json`
 - `~/.config/GridMove/layout/*.grid.json`
 
-On first launch, GridMove writes default files if they do not exist:
-
-- `layout/1.grid.json` for `built-in`
-- `layout/2.grid.json` for `fullscreen`
-
-`config.json` stores non-layout settings only. Each `layout/*.grid.json` file stores one layout-group object.
-Managed layout filenames must match `<positive-integer>.grid.json`, and GridMove loads them in numeric order.
+`config.json` stores non-layout settings only. Each `layout/*.grid.json` file stores one layout-group object. Managed layout filenames must match `<positive-integer>.grid.json`, and GridMove loads them in numeric order.
 
 The example below uses `jsonc` only for explanation. Real files must be plain JSON and do not support comments.
 
@@ -176,14 +169,6 @@ The example below uses `jsonc` only for explanation. Real files must be plain JS
   ]
 }
 ```
-
-## Additional Behavior
-
-Layout-mode group cycling behavior:
-
-- `Shift` tap cycles to the next eligible group
-- mouse-wheel up cycles to the previous eligible group
-- mouse-wheel down cycles to the next eligible group
 
 
 ## Additional docs

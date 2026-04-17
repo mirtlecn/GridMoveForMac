@@ -40,9 +40,8 @@ update-version:
 	./scripts/update_version.sh "$(VERSION_FILE)" "$(VERSION)"
 
 release:
-	@if [[ -z "$(RELEASE_VERSION)" ]]; then echo 'usage: make release v0.1.1'; exit 1; fi
-	$(MAKE) update-version VERSION="$(RELEASE_VERSION)"
-	$(MAKE) build PACKAGE_VERSION_INFO="$(APP_VERSION)"
+	@if [[ -n "$(RELEASE_VERSION)" ]]; then $(MAKE) update-version VERSION="$(RELEASE_VERSION)"; fi
+	$(MAKE) build APP_VERSION="$(shell tr -d '\n' < $(VERSION_FILE))" BUILD_NUMBER="$(shell tr -d '\n' < $(VERSION_FILE))" PACKAGE_VERSION_INFO="$(shell tr -d '\n' < $(VERSION_FILE))"
 
 test:
 	swift test
