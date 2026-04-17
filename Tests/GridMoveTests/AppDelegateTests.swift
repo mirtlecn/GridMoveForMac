@@ -83,7 +83,7 @@ import Testing
         KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "-"),
         KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "["),
         KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: ";"),
-        KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "-"),
+        KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "\\"),
     ])
 }
 

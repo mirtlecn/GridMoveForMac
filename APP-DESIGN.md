@@ -54,7 +54,7 @@ Important properties:
 
 - layout IDs are internal only and are regenerated from array order
 - hotkey binding IDs are internal only and are regenerated from array order
-- persisted `applyLayoutByIndex` actions point to the 1-based layout index within the resolved display set
+- persisted `applyLayoutByIndex` actions point to the 1-based layout index within the active layout group's indexed layouts
 - stroke colors are stored as `#RRGGBBAA`
 - `general.activeLayoutGroup` selects the currently active layout group
 - `layoutGroups[*].sets[*].monitor` routes layouts to `all`, `main`, one display ID, or multiple display IDs
@@ -105,14 +105,14 @@ The built-in default configuration currently resolves to the following values.
 
 - `ctrl + cmd + shift + alt + l` -> cycle next layout
 - `ctrl + cmd + shift + alt + j` -> cycle previous layout
-- `ctrl + cmd + shift + alt + \` -> apply current display set layout `1`
-- `ctrl + cmd + shift + alt + [` -> apply current display set layout `2`
-- `ctrl + cmd + shift + alt + ]` -> apply current display set layout `6`
-- `ctrl + cmd + shift + alt + ;` -> apply current display set layout `3`
-- `ctrl + cmd + shift + alt + '` -> apply current display set layout `7`
-- `ctrl + cmd + shift + alt + -` -> apply current display set layout `1`
-- `ctrl + cmd + shift + alt + =` -> apply current display set layout `5`
-- `ctrl + cmd + shift + alt + return` -> apply current display set layout `10`
+- `ctrl + cmd + shift + alt + \` -> apply active-group layout index `4`
+- `ctrl + cmd + shift + alt + [` -> apply active-group layout index `2`
+- `ctrl + cmd + shift + alt + ]` -> apply active-group layout index `6`
+- `ctrl + cmd + shift + alt + ;` -> apply active-group layout index `3`
+- `ctrl + cmd + shift + alt + '` -> apply active-group layout index `7`
+- `ctrl + cmd + shift + alt + -` -> apply active-group layout index `1`
+- `ctrl + cmd + shift + alt + =` -> apply active-group layout index `5`
+- `ctrl + cmd + shift + alt + return` -> apply active-group layout index `10`
 
 `layoutGroups`
 
@@ -122,15 +122,15 @@ The built-in default configuration currently resolves to the following values.
 - `layout-1` to `layout-9` use screen trigger regions
 - `layout-10` uses a screen trigger region
 - `layout-11` uses the full menu bar strip as its trigger region
-- `layout-1` to `layout-10` participate in layout cycling
-- `layout-11` does not participate in layout cycling
+- `layout-1` to `layout-10` participate in layout-index shortcuts and layout cycling
+- `layout-11` does not participate in layout-index shortcuts or layout cycling
 - the `fullscreen` group uses these layouts:
   - `Fullscreen main`: full screen with a full-screen trigger
   - `Main left 1/2`: left half with a left-quarter screen trigger
   - `Main right 1/2`: right half with a right-quarter screen trigger
-  - `Fullscreen main (menu bar)`: full screen with a menu-bar trigger and hidden from the menu bar list
+  - `Fullscreen main (menu bar)`: full screen with a menu-bar trigger, hidden from the menu bar list, and excluded from layout-index shortcuts and layout cycling
   - `Fullscreen other`: full screen with a full-screen trigger
-  - `Fullscreen other (menu bar)`: full screen with a menu-bar trigger and hidden from the menu bar list
+  - `Fullscreen other (menu bar)`: full screen with a menu-bar trigger, hidden from the menu bar list, and excluded from layout-index shortcuts and layout cycling
 
 Default layout names in order:
 
@@ -153,6 +153,7 @@ Compatibility behavior:
 - missing `preferLayoutMode` defaults to `true`
 - missing `triggerRegion` means the layout is menu, shortcut, and CLI only
 - missing `includeInMenu` defaults to `true`
+- missing `includeInLayoutIndex` defaults to `true`
 
 ## 5. Accessibility Lifecycle
 
@@ -299,7 +300,7 @@ Keyboard shortcuts:
 
 - are captured through a global event tap
 - resolve to the first matching enabled binding
-- interpret `applyLayoutByIndex` within the target window's current display set
+- interpret `applyLayoutByIndex` as a global index within the active layout group's indexed layouts
 - operate on the currently resolved target window
 
 CLI:
@@ -316,7 +317,7 @@ Display set resolution:
 - each physical display resolves exactly one set from the active layout group
 - priority is explicit display ID or ID array, then `main`, then `all`
 - drag overlays and trigger hit testing only use the resolved set for the current display
-- `cycleNext` and `cyclePrevious` only use the resolved set for the target window's current display and never move the window across displays
+- `cycleNext` and `cyclePrevious` only use the resolved set for the target window's current display, skip layouts whose `includeInLayoutIndex` is `false`, and never move the window across displays
 - menu and CLI direct layout application may move the window across displays when the chosen layout belongs to another resolved set
 - menu actions target layouts by internal layout ID so same-name layouts in different sets still go to the intended display
 

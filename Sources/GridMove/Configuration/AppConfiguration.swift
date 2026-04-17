@@ -128,8 +128,9 @@ enum HotkeyAction: Codable, Equatable, Hashable {
     func displayName(layouts: [LayoutPreset]) -> String {
         switch self {
         case let .applyLayoutByIndex(layoutIndex):
-            if layoutIndex >= 1, layoutIndex <= layouts.count {
-                return UICopy.applyLayout(layouts[layoutIndex - 1].name)
+            let indexedLayouts = layouts.filter(\.includeInLayoutIndex)
+            if layoutIndex >= 1, layoutIndex <= indexedLayouts.count {
+                return UICopy.applyLayout(indexedLayouts[layoutIndex - 1].name)
             }
             return UICopy.applyLayout(UICopy.unknownLayout)
         case let .applyLayoutByName(name):
@@ -241,7 +242,7 @@ struct LayoutPreset: Codable, Equatable, Hashable, Identifiable {
     var gridRows: Int
     var windowSelection: GridSelection
     var triggerRegion: TriggerRegion?
-    var includeInCycle: Bool
+    var includeInLayoutIndex: Bool
     var includeInMenu: Bool
 
     init(
@@ -251,7 +252,7 @@ struct LayoutPreset: Codable, Equatable, Hashable, Identifiable {
         gridRows: Int,
         windowSelection: GridSelection,
         triggerRegion: TriggerRegion?,
-        includeInCycle: Bool,
+        includeInLayoutIndex: Bool,
         includeInMenu: Bool = true
     ) {
         self.id = id
@@ -260,7 +261,7 @@ struct LayoutPreset: Codable, Equatable, Hashable, Identifiable {
         self.gridRows = gridRows
         self.windowSelection = windowSelection
         self.triggerRegion = triggerRegion
-        self.includeInCycle = includeInCycle
+        self.includeInLayoutIndex = includeInLayoutIndex
         self.includeInMenu = includeInMenu
     }
 
@@ -271,7 +272,7 @@ struct LayoutPreset: Codable, Equatable, Hashable, Identifiable {
         case gridRows
         case windowSelection
         case triggerRegion
-        case includeInCycle
+        case includeInLayoutIndex
         case includeInMenu
     }
 
@@ -283,7 +284,7 @@ struct LayoutPreset: Codable, Equatable, Hashable, Identifiable {
         gridRows = try container.decode(Int.self, forKey: .gridRows)
         windowSelection = try container.decode(GridSelection.self, forKey: .windowSelection)
         triggerRegion = try container.decodeIfPresent(TriggerRegion.self, forKey: .triggerRegion)
-        includeInCycle = try container.decode(Bool.self, forKey: .includeInCycle)
+        includeInLayoutIndex = try container.decodeIfPresent(Bool.self, forKey: .includeInLayoutIndex) ?? true
         includeInMenu = try container.decodeIfPresent(Bool.self, forKey: .includeInMenu) ?? true
     }
 
@@ -295,7 +296,7 @@ struct LayoutPreset: Codable, Equatable, Hashable, Identifiable {
         try container.encode(gridRows, forKey: .gridRows)
         try container.encode(windowSelection, forKey: .windowSelection)
         try container.encodeIfPresent(triggerRegion, forKey: .triggerRegion)
-        try container.encode(includeInCycle, forKey: .includeInCycle)
+        try container.encode(includeInLayoutIndex, forKey: .includeInLayoutIndex)
         try container.encode(includeInMenu, forKey: .includeInMenu)
     }
 }
@@ -629,17 +630,17 @@ struct AppConfiguration: Codable, Equatable {
 
     static var defaultLayouts: [LayoutPreset] {
         [
-            LayoutPreset(id: "layout-1", name: UICopy.defaultLayoutNames[0], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 4, h: 6), triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 2, h: 6)), includeInCycle: true),
-            LayoutPreset(id: "layout-2", name: UICopy.defaultLayoutNames[1], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6), triggerRegion: .screen(GridSelection(x: 2, y: 2, w: 3, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-3", name: UICopy.defaultLayoutNames[2], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 8, h: 6), triggerRegion: .screen(GridSelection(x: 2, y: 0, w: 3, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-4", name: UICopy.defaultLayoutNames[3], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4), triggerRegion: .screen(GridSelection(x: 5, y: 2, w: 2, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-5", name: UICopy.defaultLayoutNames[4], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 4, y: 0, w: 8, h: 6), triggerRegion: .screen(GridSelection(x: 7, y: 0, w: 3, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-6", name: UICopy.defaultLayoutNames[5], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 6, y: 0, w: 6, h: 6), triggerRegion: .screen(GridSelection(x: 7, y: 2, w: 3, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-7", name: UICopy.defaultLayoutNames[6], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 6), triggerRegion: .screen(GridSelection(x: 10, y: 2, w: 2, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-8", name: UICopy.defaultLayoutNames[7], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 3), triggerRegion: .screen(GridSelection(x: 10, y: 0, w: 2, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-9", name: UICopy.defaultLayoutNames[8], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 3, w: 4, h: 3), triggerRegion: .screen(GridSelection(x: 10, y: 4, w: 2, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-10", name: UICopy.defaultLayoutNames[9], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .screen(GridSelection(x: 5, y: 0, w: 2, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-11", name: UICopy.defaultLayoutNames[10], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .menuBar(MenuBarSelection(x: 0, w: 6)), includeInCycle: false, includeInMenu: false),
+            LayoutPreset(id: "layout-1", name: UICopy.defaultLayoutNames[0], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 4, h: 6), triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 2, h: 6)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-2", name: UICopy.defaultLayoutNames[1], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6), triggerRegion: .screen(GridSelection(x: 2, y: 2, w: 3, h: 2)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-3", name: UICopy.defaultLayoutNames[2], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 8, h: 6), triggerRegion: .screen(GridSelection(x: 2, y: 0, w: 3, h: 2)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-4", name: UICopy.defaultLayoutNames[3], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4), triggerRegion: .screen(GridSelection(x: 5, y: 2, w: 2, h: 2)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-5", name: UICopy.defaultLayoutNames[4], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 4, y: 0, w: 8, h: 6), triggerRegion: .screen(GridSelection(x: 7, y: 0, w: 3, h: 2)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-6", name: UICopy.defaultLayoutNames[5], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 6, y: 0, w: 6, h: 6), triggerRegion: .screen(GridSelection(x: 7, y: 2, w: 3, h: 2)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-7", name: UICopy.defaultLayoutNames[6], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 6), triggerRegion: .screen(GridSelection(x: 10, y: 2, w: 2, h: 2)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-8", name: UICopy.defaultLayoutNames[7], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 3), triggerRegion: .screen(GridSelection(x: 10, y: 0, w: 2, h: 2)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-9", name: UICopy.defaultLayoutNames[8], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 3, w: 4, h: 3), triggerRegion: .screen(GridSelection(x: 10, y: 4, w: 2, h: 2)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-10", name: UICopy.defaultLayoutNames[9], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .screen(GridSelection(x: 5, y: 0, w: 2, h: 2)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-11", name: UICopy.defaultLayoutNames[10], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .menuBar(MenuBarSelection(x: 0, w: 6)), includeInLayoutIndex: false, includeInMenu: false),
         ]
     }
 
@@ -664,7 +665,7 @@ struct AppConfiguration: Codable, Equatable {
                                 gridRows: 6,
                                 windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
                                 triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 12, h: 6)),
-                                includeInCycle: true
+                                includeInLayoutIndex: true
                             ),
                             LayoutPreset(
                                 id: "layout-13",
@@ -673,7 +674,7 @@ struct AppConfiguration: Codable, Equatable {
                                 gridRows: 6,
                                 windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6),
                                 triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 3, h: 6)),
-                                includeInCycle: true
+                                includeInLayoutIndex: true
                             ),
                             LayoutPreset(
                                 id: "layout-14",
@@ -682,7 +683,7 @@ struct AppConfiguration: Codable, Equatable {
                                 gridRows: 6,
                                 windowSelection: GridSelection(x: 6, y: 0, w: 6, h: 6),
                                 triggerRegion: .screen(GridSelection(x: 9, y: 0, w: 3, h: 6)),
-                                includeInCycle: true
+                                includeInLayoutIndex: true
                             ),
                             LayoutPreset(
                                 id: "layout-15",
@@ -691,7 +692,7 @@ struct AppConfiguration: Codable, Equatable {
                                 gridRows: 6,
                                 windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
                                 triggerRegion: .menuBar(MenuBarSelection(x: 0, w: 6)),
-                                includeInCycle: true,
+                                includeInLayoutIndex: false,
                                 includeInMenu: false
                             ),
                         ]
@@ -706,7 +707,7 @@ struct AppConfiguration: Codable, Equatable {
                                 gridRows: 6,
                                 windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
                                 triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 12, h: 6)),
-                                includeInCycle: true
+                                includeInLayoutIndex: true
                             ),
                             LayoutPreset(
                                 id: "layout-17",
@@ -715,7 +716,7 @@ struct AppConfiguration: Codable, Equatable {
                                 gridRows: 6,
                                 windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
                                 triggerRegion: .menuBar(MenuBarSelection(x: 0, w: 6)),
-                                includeInCycle: true,
+                                includeInLayoutIndex: false,
                                 includeInMenu: false
                             ),
                         ]
@@ -804,15 +805,22 @@ struct AppConfiguration: Codable, Equatable {
         nextLayouts.remove(at: removedIndex)
         layouts = nextLayouts
 
+        let removedLayout = layouts[removedIndex]
+        guard removedLayout.includeInLayoutIndex else {
+            return
+        }
+
+        let removedShortcutIndex = layouts[..<removedIndex].filter(\.includeInLayoutIndex).count + 1
+
         hotkeys.bindings.removeAll { binding in
             if case let .applyLayoutByIndex(layoutIndex) = binding.action {
-                return layoutIndex == removedIndex + 1
+                return layoutIndex == removedShortcutIndex
             }
             return false
         }
 
         hotkeys.bindings = hotkeys.bindings.map { binding in
-            guard case let .applyLayoutByIndex(layoutIndex) = binding.action, layoutIndex > removedIndex + 1 else {
+            guard case let .applyLayoutByIndex(layoutIndex) = binding.action, layoutIndex > removedShortcutIndex else {
                 return binding
             }
 

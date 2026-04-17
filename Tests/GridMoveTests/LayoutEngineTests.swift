@@ -30,7 +30,7 @@ import Testing
     #expect(layouts[9].triggerRegion == .screen(GridSelection(x: 5, y: 0, w: 2, h: 2)))
     #expect(layouts[10].windowSelection == GridSelection(x: 0, y: 0, w: 12, h: 6))
     #expect(layouts[10].triggerRegion == .menuBar(MenuBarSelection(x: 0, w: 6)))
-    #expect(layouts[10].includeInCycle == false)
+    #expect(layouts[10].includeInLayoutIndex == false)
     #expect(layouts[10].includeInMenu == false)
 }
 
@@ -143,7 +143,7 @@ import Testing
             gridRows: 6,
             windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
             triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 12, h: 6)),
-            includeInCycle: true
+            includeInLayoutIndex: true
         ),
         LayoutPreset(
             id: "layout-b",
@@ -152,7 +152,7 @@ import Testing
             gridRows: 6,
             windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6),
             triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 6, h: 6)),
-            includeInCycle: true
+            includeInLayoutIndex: true
         ),
     ]
 
@@ -189,6 +189,17 @@ import Testing
             resolvedDisplayIDs: ["12345", "67890"]
         ) == "12345"
     )
+}
+
+@Test func layoutGroupResolverUsesGlobalIndexedOrderWithinActiveGroup() async throws {
+    var configuration = AppConfiguration.defaultValue
+    configuration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
+
+    #expect(LayoutGroupResolver.entry(at: 1, configuration: configuration)?.layout.name == "Fullscreen main")
+    #expect(LayoutGroupResolver.entry(at: 2, configuration: configuration)?.layout.name == "Main left 1/2")
+    #expect(LayoutGroupResolver.entry(at: 3, configuration: configuration)?.layout.name == "Main right 1/2")
+    #expect(LayoutGroupResolver.entry(at: 4, configuration: configuration)?.layout.name == "Fullscreen other")
+    #expect(LayoutGroupResolver.entry(at: 5, configuration: configuration) == nil)
 }
 
 @Test func layoutEngineKeepsOnlyTenRecentWindowLayoutRecords() async throws {

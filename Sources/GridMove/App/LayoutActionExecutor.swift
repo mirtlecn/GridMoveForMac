@@ -47,7 +47,7 @@ final class LayoutActionExecutor {
         case let .applyLayout(identifier):
             do {
                 let layout = try LayoutIdentifierResolver.resolveLayout(identifier: identifier, in: configuration)
-                resolvedAction = .applyLayoutByName(name: layout.layout.name)
+                resolvedAction = .applyLayoutByID(layoutID: layout.layout.id)
             } catch let error as CommandLineLayoutResolutionError {
                 return .failure(error.message)
             } catch {
@@ -120,16 +120,16 @@ final class LayoutActionExecutor {
             return .success
         case let .applyLayoutByIndex(layoutIndex):
             let currentScreen = screen(for: window)
-            guard let currentScreen else {
-                return .failure("No display found for the target window.")
+            guard let entry = LayoutGroupResolver.entry(at: layoutIndex, configuration: configuration) else {
+                return .failure("No layout found at index \(layoutIndex) in the current layout group.")
             }
-            guard let entry = LayoutGroupResolver.entry(at: layoutIndex, on: currentScreen, configuration: configuration) else {
-                return .failure("No layout found at index \(layoutIndex) for the current display.")
+            guard let targetScreen = LayoutGroupResolver.targetScreen(for: entry, currentScreen: currentScreen, configuration: configuration) else {
+                return .failure("No target display found for layout index \(layoutIndex).")
             }
             windowController.applyLayout(
                 layoutID: entry.layout.id,
                 to: window,
-                preferredScreen: currentScreen,
+                preferredScreen: targetScreen,
                 configuration: configuration
             )
             return .success

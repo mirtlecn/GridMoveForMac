@@ -30,6 +30,10 @@ enum LayoutGroupResolver {
         return flattenedEntries(in: group)
     }
 
+    static func indexedActiveEntries(in configuration: AppConfiguration) -> [ResolvedLayoutEntry] {
+        flattenedActiveEntries(in: configuration).filter { $0.layout.includeInLayoutIndex }
+    }
+
     static func resolvedSet(for screen: NSScreen, configuration: AppConfiguration) -> LayoutSet? {
         guard let group = activeGroup(in: configuration) else {
             return nil
@@ -82,21 +86,15 @@ enum LayoutGroupResolver {
         flattenedActiveEntries(in: configuration).first(where: { $0.layout.id == layoutID })
     }
 
-    static func entry(at index: Int, on screen: NSScreen, configuration: AppConfiguration) -> ResolvedLayoutEntry? {
-        guard index >= 1, let group = activeGroup(in: configuration), let set = resolvedSet(for: screen, configuration: configuration) else {
+    static func entry(at index: Int, configuration: AppConfiguration) -> ResolvedLayoutEntry? {
+        guard index >= 1 else {
             return nil
         }
-
-        let currentSetEntries = group.sets.flatMap { candidateSet in
-            candidateSet.layouts.map { layout in
-                ResolvedLayoutEntry(layout: layout, set: candidateSet, groupName: group.name, menuIndex: 0)
-            }
-        }.filter { $0.set == set }
-
-        guard index <= currentSetEntries.count else {
+        let indexedEntries = indexedActiveEntries(in: configuration)
+        guard index <= indexedEntries.count else {
             return nil
         }
-        return currentSetEntries[index - 1]
+        return indexedEntries[index - 1]
     }
 
     static func targetScreen(

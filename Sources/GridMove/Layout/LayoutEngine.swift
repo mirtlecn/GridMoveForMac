@@ -123,7 +123,7 @@ final class LayoutEngine {
             var nextIndex = currentIndex
             repeat {
                 nextIndex = (nextIndex + direction + layouts.count) % layouts.count
-                if layouts[nextIndex].includeInCycle {
+                if layouts[nextIndex].includeInLayoutIndex {
                     return layouts[nextIndex].id
                 }
             } while nextIndex != currentIndex
@@ -145,7 +145,7 @@ final class LayoutEngine {
     }
 
     private func cycleEligibleLayouts(from layouts: [LayoutPreset]) -> [LayoutPreset] {
-        layouts.filter(\.includeInCycle)
+        layouts.filter(\.includeInLayoutIndex)
     }
 
     private func trimRecordedLayoutIDsIfNeeded() {

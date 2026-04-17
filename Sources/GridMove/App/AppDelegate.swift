@@ -301,8 +301,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ),
         ]
 
+        let indexedLayoutIDs = Dictionary(
+            uniqueKeysWithValues: LayoutGroupResolver.indexedActiveEntries(in: configuration).enumerated().map { offset, entry in
+                (entry.layout.id, offset + 1)
+            }
+        )
         let layoutItems: [MenuBarController.ActionItem] = LayoutGroupResolver.activeGroup(in: configuration)?.sets.flatMap { set in
-            set.layouts.enumerated().compactMap { index, layout in
+            set.layouts.compactMap { layout in
                 guard layout.includeInMenu else {
                     return nil
                 }
@@ -310,11 +315,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     title: UICopy.applyLayout(
                         UICopy.layoutMenuName(
                             name: layout.name,
-                            fallbackIdentifier: "layout_\(index + 1)"
+                            fallbackIdentifier: layout.id
                         )
                     ),
                     action: .applyLayoutByID(layoutID: layout.id),
-                    shortcut: configuration.hotkeys.firstShortcut(for: .applyLayoutByIndex(layout: index + 1))
+                    shortcut: indexedLayoutIDs[layout.id].flatMap {
+                        configuration.hotkeys.firstShortcut(for: .applyLayoutByIndex(layout: $0))
+                    }
                 )
             }
         } ?? []

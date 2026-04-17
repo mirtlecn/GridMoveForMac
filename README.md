@@ -4,7 +4,7 @@ GridMove is a native macOS menu bar app for applying window layouts and moving w
 
 ## Features
 
-- Global keyboard shortcuts for cycling layouts and applying per-display layout indexes
+- Global keyboard shortcuts for cycling layouts and applying layout indexes within the active group
 - Drag-triggered layout selection and move-only mode
 - Layout groups that can be switched from the menu bar
 - Per-display layout sets with `all`, `main`, single-display, and multi-display targeting
@@ -101,7 +101,7 @@ The real file must be plain JSON and does not support comments. The example belo
         },
         "action": {
           "kind": "applyLayoutByIndex", // Allowed values are applyLayoutByIndex, cycleNext, cyclePrevious.
-          "layout": 4 // Required only for applyLayoutByIndex. This is a 1-based index into the current display set.
+          "layout": 4 // Required only for applyLayoutByIndex. This is a 1-based index within the active layout group's indexed layouts.
         }
       }
       // The default file contains more bindings in the same shape.
@@ -135,7 +135,7 @@ The real file must be plain JSON and does not support comments. The example belo
                 // If kind is menuBar, use:
                 // "menuBarSelection": { "x": 1, "w": 4 }
               },
-              "includeInCycle": true,
+              "includeInLayoutIndex": true,
               "includeInMenu": true // Missing includeInMenu means the layout still appears in the menu bar.
             },
             {
@@ -148,8 +148,8 @@ The real file must be plain JSON and does not support comments. The example belo
                 "w": 6,
                 "h": 4
               },
-              "includeInCycle": false,
-              "includeInMenu": false // Missing triggerRegion means menu/shortcut/CLI only.
+              "includeInLayoutIndex": false, // Excluded from layout-index shortcuts and from cycle order.
+              "includeInMenu": false // Missing triggerRegion means trigger is unavailable; menu visibility is controlled separately.
             }
           ]
         }
@@ -166,12 +166,14 @@ Notes:
 
 - `layoutGroups[*].sets[*].layouts` order matters.
 - the built-in default file includes `built-in` and `fullscreen`; startup keeps `built-in` active until the user switches the group
-- `hotkeys.bindings[*].action.layout` is 1-based within the current display's resolved set, not across the whole group.
+- `hotkeys.bindings[*].action.layout` is a 1-based index within the active layout group's indexed layouts.
+- layouts with `includeInLayoutIndex = false` are excluded from layout-index shortcuts and from layout cycling.
 - GridMove resolves one active set per display in this order: explicit display ID or ID array, then `main`, then `all`.
 - if trigger regions overlap on one display, the later declared layout wins.
 - `cycleNext` and `cyclePrevious` only cycle inside the target window's current display set. They never move the window to another display.
 - Menu and CLI direct layout application may move the target window to another display if the matched layout belongs to another set.
-- `includeInMenu` controls only menu-bar visibility. Hidden layouts can still be used by trigger, shortcut, and CLI paths.
+- `includeInMenu` controls only menu-bar visibility.
+- layouts hidden from the menu can still be used by trigger and CLI paths, and can still be reached by layout-index shortcuts only when `includeInLayoutIndex = true`.
 - Internal layout IDs and binding IDs are not stored in `config.json`. GridMove regenerates them when loading.
 - If the file is invalid JSON, contains comments, or references a missing layout index, GridMove falls back to built-in defaults for the current launch and keeps the broken file unchanged.
 

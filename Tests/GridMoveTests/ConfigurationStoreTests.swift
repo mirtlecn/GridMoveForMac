@@ -21,7 +21,9 @@ import Testing
     #expect(initialText.contains("\"layoutGroups\""))
     #expect(initialText.contains("\"activeLayoutGroup\""))
     #expect(initialText.contains("\"applyLayoutByIndex\""))
+    #expect(initialText.contains("\"includeInLayoutIndex\""))
     #expect(initialText.contains("\"monitor\""))
+    #expect(!initialText.contains("\"includeInCycle\""))
     #expect(!initialText.contains("\"id\":"))
     #expect(!initialText.contains("//"))
 
@@ -132,14 +134,14 @@ import Testing
                     "kind": "screen",
                     "gridSelection": { "x": 0, "y": 0, "w": 2, "h": 6 }
                   },
-                  "includeInCycle": true
+                  "includeInLayoutIndex": true
                 },
                 {
                   "name": "Center",
                   "gridColumns": 12,
                   "gridRows": 6,
                   "windowSelection": { "x": 3, "y": 1, "w": 6, "h": 4 },
-                  "includeInCycle": false
+                  "includeInLayoutIndex": false
                 }
               ]
             }
@@ -161,7 +163,7 @@ import Testing
     #expect(configuration.hotkeys.bindings[0].action == .applyLayoutByIndex(layout: 2))
     #expect(configuration.dragTriggers.preferLayoutMode == true)
     #expect(configuration.layouts[1].triggerRegion == nil)
-    #expect(configuration.layouts[1].includeInCycle == false)
+    #expect(configuration.layouts[1].includeInLayoutIndex == false)
     #expect(configuration.layouts[0].includeInMenu == true)
     #expect(configuration.layouts[1].includeInMenu == true)
     #expect(configuration.monitors == ["Built-in Retina Display": "12345"])
@@ -234,8 +236,11 @@ import Testing
         "Fullscreen other",
         "Fullscreen other (menu bar)",
     ])
+    #expect(configuration.layoutGroups[0].sets[0].layouts[10].includeInLayoutIndex == false)
     #expect(configuration.layoutGroups[0].sets[0].layouts[10].includeInMenu == false)
+    #expect(configuration.layoutGroups[1].sets[0].layouts[3].includeInLayoutIndex == false)
     #expect(configuration.layoutGroups[1].sets[0].layouts[3].includeInMenu == false)
+    #expect(configuration.layoutGroups[1].sets[1].layouts[1].includeInLayoutIndex == false)
     #expect(configuration.layoutGroups[1].sets[1].layouts[1].includeInMenu == false)
     #expect(!hasAltLayoutBinding)
     #expect(hasHyperLayoutFourBinding)

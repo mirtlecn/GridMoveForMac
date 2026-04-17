@@ -160,7 +160,7 @@ private enum ConfigurationSchemaConverter {
                         gridRows: layoutConfiguration.gridRows,
                         windowSelection: layoutConfiguration.windowSelection,
                         triggerRegion: layoutConfiguration.triggerRegion,
-                        includeInCycle: layoutConfiguration.includeInCycle,
+                        includeInLayoutIndex: layoutConfiguration.includeInLayoutIndex,
                         includeInMenu: layoutConfiguration.includeInMenu
                     )
                 }
@@ -333,7 +333,7 @@ private struct LayoutConfiguration: Codable {
     let gridRows: Int
     let windowSelection: GridSelection
     let triggerRegion: TriggerRegion?
-    let includeInCycle: Bool
+    let includeInLayoutIndex: Bool
     let includeInMenu: Bool
 
     private enum CodingKeys: String, CodingKey {
@@ -342,7 +342,7 @@ private struct LayoutConfiguration: Codable {
         case gridRows
         case windowSelection
         case triggerRegion
-        case includeInCycle
+        case includeInLayoutIndex
         case includeInMenu
     }
 
@@ -352,7 +352,7 @@ private struct LayoutConfiguration: Codable {
         gridRows = layout.gridRows
         windowSelection = layout.windowSelection
         triggerRegion = layout.triggerRegion
-        includeInCycle = layout.includeInCycle
+        includeInLayoutIndex = layout.includeInLayoutIndex
         includeInMenu = layout.includeInMenu
     }
 
@@ -363,7 +363,7 @@ private struct LayoutConfiguration: Codable {
         gridRows = try container.decode(Int.self, forKey: .gridRows)
         windowSelection = try container.decode(GridSelection.self, forKey: .windowSelection)
         triggerRegion = try container.decodeIfPresent(TriggerRegion.self, forKey: .triggerRegion)
-        includeInCycle = try container.decode(Bool.self, forKey: .includeInCycle)
+        includeInLayoutIndex = try container.decodeIfPresent(Bool.self, forKey: .includeInLayoutIndex) ?? true
         includeInMenu = try container.decodeIfPresent(Bool.self, forKey: .includeInMenu) ?? true
     }
 }

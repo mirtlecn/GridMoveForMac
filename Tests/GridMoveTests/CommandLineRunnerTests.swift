@@ -82,7 +82,7 @@ private final class Locked<Value: Sendable>: @unchecked Sendable {
             gridRows: 6,
             windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6),
             triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 2, h: 2)),
-            includeInCycle: true
+            includeInLayoutIndex: true
         ),
         LayoutPreset(
             id: "layout-b",
@@ -91,7 +91,7 @@ private final class Locked<Value: Sendable>: @unchecked Sendable {
             gridRows: 6,
             windowSelection: GridSelection(x: 6, y: 0, w: 6, h: 6),
             triggerRegion: .screen(GridSelection(x: 10, y: 0, w: 2, h: 2)),
-            includeInCycle: true
+            includeInLayoutIndex: true
         ),
     ]
 
