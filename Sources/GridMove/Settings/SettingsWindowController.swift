@@ -1,11 +1,11 @@
 import AppKit
 import Combine
-import SwiftUI
 
 @MainActor
 final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSToolbarDelegate {
     private let viewModel: SettingsViewModel
     private let onClose: () -> Void
+    private let rootViewController: SettingsRootViewController
     private var selectedSectionObservation: AnyCancellable?
 
     init(
@@ -20,6 +20,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
             configurationProvider: configurationProvider,
             onConfigurationSaved: onConfigurationSaved
         )
+        rootViewController = SettingsRootViewController()
 
         let window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 980, height: 720),
@@ -35,13 +36,15 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate, NSTo
         if #available(macOS 11.0, *) {
             window.titlebarSeparatorStyle = .none
         }
-        window.contentViewController = NSHostingController(rootView: SettingsRootView(viewModel: viewModel))
+        window.contentViewController = rootViewController
         super.init(window: window)
         window.toolbar = makeToolbar()
         window.delegate = self
         selectedSectionObservation = viewModel.$selectedSection.sink { [weak self] section in
             self?.window?.toolbar?.selectedItemIdentifier = Self.toolbarIdentifier(for: section)
+            self?.rootViewController.showSection(section)
         }
+        rootViewController.showSection(viewModel.selectedSection)
     }
 
     @available(*, unavailable)
