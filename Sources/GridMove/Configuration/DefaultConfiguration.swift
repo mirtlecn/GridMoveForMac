@@ -136,6 +136,7 @@ extension AppConfiguration {
             triggerOpacity: 0.2,
             triggerGap: 2,
             triggerStrokeColor: .defaultTriggerStrokeColor,
+            layoutGap: 1,
             renderWindowHighlight: true,
             highlightFillOpacity: 0.08,
             highlightStrokeWidth: 3,

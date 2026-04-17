@@ -85,6 +85,7 @@ The example below uses `jsonc` only for explanation. Real files must be plain JS
     "triggerOpacity": 0.2, // Fill opacity for trigger regions. Current defaults assume a 0...1 range.
     "triggerGap": 2, // Gap between trigger-region cells, in points.
     "triggerStrokeColor": "#007AFF33", // Border color for trigger regions. Accepts #RRGGBB or #RRGGBBAA.
+    "layoutGap": 1, // Integer gap between window layout frames, in points. Shrinks the applied window frame and the overlay highlight by this amount on each side. Missing or invalid values default to 1. If the gap would collapse a layout on the current screen, GridMove skips that layout on that screen.
     "renderWindowHighlight": true, // Show the current window highlight overlay.
     "highlightFillOpacity": 0.08, // Fill opacity for the window highlight. Current defaults assume a 0...1 range.
     "highlightStrokeWidth": 3, // Border width for the window highlight, in points.

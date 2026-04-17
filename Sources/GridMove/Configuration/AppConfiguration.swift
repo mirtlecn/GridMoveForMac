@@ -511,6 +511,7 @@ struct AppearanceSettings: Codable, Equatable {
     var triggerOpacity: Double
     var triggerGap: Double
     var triggerStrokeColor: RGBAColor
+    var layoutGap: Int
     var renderWindowHighlight: Bool
     var highlightFillOpacity: Double
     var highlightStrokeWidth: Double
@@ -521,6 +522,7 @@ struct AppearanceSettings: Codable, Equatable {
         case triggerOpacity
         case triggerGap
         case triggerStrokeColor
+        case layoutGap
         case renderWindowHighlight
         case highlightFillOpacity
         case highlightStrokeWidth
@@ -532,6 +534,7 @@ struct AppearanceSettings: Codable, Equatable {
         triggerOpacity: Double,
         triggerGap: Double,
         triggerStrokeColor: RGBAColor,
+        layoutGap: Int = AppearanceValueNormalizer.defaultLayoutGap,
         renderWindowHighlight: Bool,
         highlightFillOpacity: Double,
         highlightStrokeWidth: Double,
@@ -541,6 +544,7 @@ struct AppearanceSettings: Codable, Equatable {
         self.triggerOpacity = triggerOpacity
         self.triggerGap = triggerGap
         self.triggerStrokeColor = triggerStrokeColor
+        self.layoutGap = AppearanceValueNormalizer.normalizeLayoutGap(layoutGap)
         self.renderWindowHighlight = renderWindowHighlight
         self.highlightFillOpacity = highlightFillOpacity
         self.highlightStrokeWidth = highlightStrokeWidth
@@ -553,10 +557,47 @@ struct AppearanceSettings: Codable, Equatable {
         triggerOpacity = try container.decode(Double.self, forKey: .triggerOpacity)
         triggerGap = try container.decode(Double.self, forKey: .triggerGap)
         triggerStrokeColor = try container.decodeIfPresent(RGBAColor.self, forKey: .triggerStrokeColor) ?? RGBAColor.defaultTriggerStrokeColor
+        layoutGap = AppearanceValueNormalizer.decodeLayoutGap(from: container, forKey: .layoutGap)
         renderWindowHighlight = try container.decode(Bool.self, forKey: .renderWindowHighlight)
         highlightFillOpacity = try container.decode(Double.self, forKey: .highlightFillOpacity)
         highlightStrokeWidth = try container.decode(Double.self, forKey: .highlightStrokeWidth)
         highlightStrokeColor = try container.decode(RGBAColor.self, forKey: .highlightStrokeColor)
+    }
+
+    var effectiveLayoutGap: Int {
+        AppearanceValueNormalizer.normalizeLayoutGap(layoutGap)
+    }
+}
+
+enum AppearanceValueNormalizer {
+    static let defaultLayoutGap = 1
+
+    static func normalizeLayoutGap(_ value: Int) -> Int {
+        guard value >= 0 else {
+            return defaultLayoutGap
+        }
+
+        return value
+    }
+
+    static func normalizeLayoutGap(_ value: Double) -> Int {
+        guard value.isFinite, value >= 0, value.rounded(.towardZero) == value else {
+            return defaultLayoutGap
+        }
+
+        return Int(value)
+    }
+
+    static func decodeLayoutGap<Key: CodingKey>(from container: KeyedDecodingContainer<Key>, forKey key: Key) -> Int {
+        if let value = try? container.decode(Int.self, forKey: key) {
+            return normalizeLayoutGap(value)
+        }
+
+        if let value = try? container.decode(Double.self, forKey: key) {
+            return normalizeLayoutGap(value)
+        }
+
+        return defaultLayoutGap
     }
 }
 

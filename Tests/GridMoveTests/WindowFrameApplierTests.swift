@@ -76,8 +76,20 @@ private func decodeSize(from value: AXValue) -> CGSize {
     let configuration = AppConfiguration.defaultValue
     let fullscreenPreset = try #require(layoutEngine.layoutPreset(for: "layout-11", in: configuration.layouts))
     let thirdsPreset = try #require(layoutEngine.layoutPreset(for: "layout-1", in: configuration.layouts))
-    let fullscreenFrame = layoutEngine.frame(for: fullscreenPreset, on: screen)
-    let thirdsFrame = layoutEngine.frame(for: thirdsPreset, on: screen)
+    let fullscreenFrame = try #require(
+        layoutEngine.frame(
+            for: fullscreenPreset,
+            on: screen,
+            layoutGap: configuration.appearance.effectiveLayoutGap
+        )
+    )
+    let thirdsFrame = try #require(
+        layoutEngine.frame(
+            for: thirdsPreset,
+            on: screen,
+            layoutGap: configuration.appearance.effectiveLayoutGap
+        )
+    )
     var scheduledWorkItems: [DispatchWorkItem] = []
     var appliedSizes: [CGSize] = []
 
@@ -125,4 +137,38 @@ private func decodeSize(from value: AXValue) -> CGSize {
     #expect(abs(appliedSizes[1].height - thirdsFrame.height) < 0.5)
     #expect(abs(appliedSizes[2].width - thirdsFrame.width) < 0.5)
     #expect(abs(appliedSizes[2].height - thirdsFrame.height) < 0.5)
+}
+
+@MainActor
+@Test func windowFrameApplierSkipsCollapsedLayoutFrames() async throws {
+    let screen = try #require(NSScreen.screens.first)
+    let layoutEngine = LayoutEngine()
+    var applyFrameCount = 0
+    var configuration = AppConfiguration.defaultValue
+    configuration.appearance.layoutGap = 10_000
+
+    let applier = WindowFrameApplier(
+        layoutEngine: layoutEngine,
+        mainDisplayHeightProvider: { screen.frame.height },
+        screenContainingProvider: { point in
+            screen.frame.contains(point) ? screen : nil
+        },
+        testHooks: .init(
+            currentFrameProvider: { _ in CGRect(x: 0, y: 0, width: 960, height: 720) },
+            applyPositionValue: { _, _ in false },
+            applyFrameValues: { _, _, _ in
+                applyFrameCount += 1
+                return true
+            }
+        )
+    )
+
+    applier.applyLayout(
+        layoutID: "layout-1",
+        to: makeManagedWindow(frame: CGRect(x: 0, y: 0, width: 960, height: 720)),
+        preferredScreen: screen,
+        configuration: configuration
+    )
+
+    #expect(applyFrameCount == 0)
 }
