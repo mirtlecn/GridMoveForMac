@@ -73,6 +73,15 @@ private final class Locked<Value: Sendable>: @unchecked Sendable {
 }
 
 @MainActor
+@Test func commandLineRunnerResolvesIndexedLayoutAliasesInActiveGroup() async throws {
+    var configuration = AppConfiguration.defaultValue
+    configuration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
+
+    #expect(try LayoutIdentifierResolver.resolveLayout(identifier: "layout-1", in: configuration).layout.name == "Fullscreen main")
+    #expect(try LayoutIdentifierResolver.resolveLayout(identifier: "layout_4", in: configuration).layout.name == "Fullscreen other")
+}
+
+@MainActor
 @Test func commandLineRunnerRejectsAmbiguousLayoutNames() async throws {
     let layouts = [
         LayoutPreset(

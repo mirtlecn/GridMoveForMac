@@ -22,7 +22,16 @@ enum CommandLineLayoutResolutionError: Error, Equatable {
 
 enum LayoutIdentifierResolver {
     static func resolveLayout(identifier: String, in configuration: AppConfiguration) throws -> ResolvedLayoutEntry {
-        try LayoutGroupResolver.resolveNamedLayout(identifier: identifier, configuration: configuration)
+        if let matchedByID = LayoutGroupResolver.entry(for: identifier, configuration: configuration) {
+            return matchedByID
+        }
+
+        if let index = parseIndexedLayoutIdentifier(identifier),
+           let indexedEntry = LayoutGroupResolver.entry(at: index, configuration: configuration) {
+            return indexedEntry
+        }
+
+        return try LayoutGroupResolver.resolveNamedLayout(identifier: identifier, configuration: configuration)
     }
 
     static func resolveLayout(identifier: String, in layouts: [LayoutPreset]) throws -> LayoutPreset {
@@ -40,4 +49,18 @@ enum LayoutIdentifierResolver {
 
         throw CommandLineLayoutResolutionError.unknownLayout(identifier)
     }
+}
+
+private func parseIndexedLayoutIdentifier(_ identifier: String) -> Int? {
+    let normalizedIdentifier = identifier.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    let prefixes = ["layout-", "layout_"]
+
+    for prefix in prefixes where normalizedIdentifier.hasPrefix(prefix) {
+        let suffix = String(normalizedIdentifier.dropFirst(prefix.count))
+        if let value = Int(suffix), value >= 1 {
+            return value
+        }
+    }
+
+    return nil
 }

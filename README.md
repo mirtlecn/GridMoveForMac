@@ -43,10 +43,12 @@ path/to/GridMove.app/Contents/MacOS/GridMove -next
 path/to/GridMove.app/Contents/MacOS/GridMove -pre
 path/to/GridMove.app/Contents/MacOS/GridMove -layout "Center"
 path/to/GridMove.app/Contents/MacOS/GridMove -layout layout-4
+path/to/GridMove.app/Contents/MacOS/GridMove -layout layout_4
 path/to/GridMove.app/Contents/MacOS/GridMove -layout "Center" -window-id 12345
 ```
 
 If `-window-id <cg-window-id>` is not provided, GridMove targets the currently focused window. 
+`-layout layout-4` and `-layout layout_4` are aliases for the active layout group's 1-based layout index.
 
 ## Configuration
 
