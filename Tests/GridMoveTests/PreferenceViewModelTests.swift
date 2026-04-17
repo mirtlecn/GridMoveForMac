@@ -58,3 +58,49 @@ private func makePreferenceViewModel() -> (PreferenceViewModel, URL) {
 
     #expect(viewModel.configuration.hotkeys.bindings.count == initialCount)
 }
+
+@MainActor
+@Test func preferenceViewModelBuildsOnePrimaryGroupPerAction() async throws {
+    let (viewModel, temporaryDirectory) = makePreferenceViewModel()
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    #expect(viewModel.hotkeyGroups.count == viewModel.allHotkeyActions.count)
+    #expect(viewModel.hotkeyGroups.allSatisfy { $0.primaryRow.isAdditional == false })
+}
+
+@MainActor
+@Test func preferenceViewModelClearingShortcutDisablesExistingBinding() async throws {
+    let (viewModel, temporaryDirectory) = makePreferenceViewModel()
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let row = try #require(viewModel.hotkeyRows.first(where: { $0.shortcut != nil }))
+    let bindingID = try #require(row.bindingID)
+
+    viewModel.updateHotkeyShortcut(id: row.id, shortcut: nil)
+
+    let binding = try #require(viewModel.configuration.hotkeys.bindings.first(where: { $0.id == bindingID }))
+    #expect(binding.shortcut == nil)
+    #expect(binding.isEnabled == false)
+}
+
+@MainActor
+@Test func preferenceHotkeyIconCatalogProvidesImagesForDefaultActions() async throws {
+    let configuration = AppConfiguration.defaultValue
+
+    let firstLayoutImage = PreferenceHotkeyIconCatalog.image(
+        for: .applyLayout(layoutID: configuration.layouts[0].id),
+        configuration: configuration
+    )
+    let previousImage = PreferenceHotkeyIconCatalog.image(
+        for: .cyclePrevious,
+        configuration: configuration
+    )
+    let nextImage = PreferenceHotkeyIconCatalog.image(
+        for: .cycleNext,
+        configuration: configuration
+    )
+
+    #expect(firstLayoutImage != nil)
+    #expect(previousImage != nil)
+    #expect(nextImage != nil)
+}

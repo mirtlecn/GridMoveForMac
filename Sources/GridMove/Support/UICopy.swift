@@ -43,6 +43,7 @@ enum UICopy {
     static let build = "Build"
 
     static let hotkeysHelpText = "To change a shortcut, double-click the key combination, then type a new shortcut."
+    static let recordShortcut = "Record shortcut"
     static let applyNextLayout = "Apply next layout"
     static let applyPreviousLayout = "Apply previous layout"
     static let unknownLayout = "Unknown layout"

@@ -3,7 +3,8 @@ import AppKit
 @MainActor
 final class PreferenceHotkeysViewController: NSViewController {
     private let viewModel: PreferenceViewModel
-    private let rowsStackView = NSStackView()
+    private let leftColumnStackView = NSStackView()
+    private let rightColumnStackView = NSStackView()
 
     init(viewModel: PreferenceViewModel) {
         self.viewModel = viewModel
@@ -22,62 +23,21 @@ final class PreferenceHotkeysViewController: NSViewController {
 
     override func loadView() {
         let rootView = NSView()
-        rootView.wantsLayer = true
+        configureColumnStack(leftColumnStackView)
+        configureColumnStack(rightColumnStackView)
 
-        let helpLabel = NSTextField(wrappingLabelWithString: UICopy.hotkeysHelpText)
-        helpLabel.font = NSFont.systemFont(ofSize: 12)
-        helpLabel.textColor = .secondaryLabelColor
-        helpLabel.maximumNumberOfLines = 0
-
-        rowsStackView.orientation = .vertical
-        rowsStackView.alignment = .leading
-        rowsStackView.spacing = 0
-        rowsStackView.translatesAutoresizingMaskIntoConstraints = false
-
-        let documentView = NSView()
-        documentView.translatesAutoresizingMaskIntoConstraints = false
-        documentView.addSubview(rowsStackView)
-
+        let columnsStackView = NSStackView(views: [leftColumnStackView, rightColumnStackView])
+        columnsStackView.orientation = .horizontal
+        columnsStackView.alignment = .top
+        columnsStackView.distribution = .fillEqually
+        columnsStackView.spacing = 76
+        columnsStackView.translatesAutoresizingMaskIntoConstraints = false
+        rootView.addSubview(columnsStackView)
         NSLayoutConstraint.activate([
-            rowsStackView.leadingAnchor.constraint(equalTo: documentView.leadingAnchor),
-            rowsStackView.trailingAnchor.constraint(equalTo: documentView.trailingAnchor),
-            rowsStackView.topAnchor.constraint(equalTo: documentView.topAnchor),
-            rowsStackView.bottomAnchor.constraint(equalTo: documentView.bottomAnchor),
-            rowsStackView.widthAnchor.constraint(equalTo: documentView.widthAnchor),
-        ])
-
-        let scrollView = NSScrollView()
-        scrollView.drawsBackground = false
-        scrollView.borderType = .bezelBorder
-        scrollView.hasVerticalScroller = true
-        scrollView.autohidesScrollers = true
-        scrollView.documentView = documentView
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        scrollView.heightAnchor.constraint(equalToConstant: 420).isActive = true
-
-        let addButton = NSButton(title: "+", target: self, action: #selector(addHotkeyRow))
-        addButton.bezelStyle = .rounded
-        addButton.controlSize = .small
-
-        let footer = NSStackView(views: [addButton])
-        footer.orientation = .horizontal
-        footer.alignment = .centerY
-        footer.spacing = 8
-
-        let contentStack = NSStackView(views: [helpLabel, scrollView, footer])
-        contentStack.orientation = .vertical
-        contentStack.alignment = .leading
-        contentStack.spacing = 14
-        contentStack.translatesAutoresizingMaskIntoConstraints = false
-
-        rootView.addSubview(contentStack)
-        NSLayoutConstraint.activate([
-            contentStack.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: 28),
-            contentStack.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -28),
-            contentStack.topAnchor.constraint(equalTo: rootView.topAnchor, constant: 28),
-            contentStack.bottomAnchor.constraint(lessThanOrEqualTo: rootView.bottomAnchor, constant: -28),
-            scrollView.widthAnchor.constraint(equalTo: contentStack.widthAnchor),
-            footer.widthAnchor.constraint(equalTo: contentStack.widthAnchor),
+            columnsStackView.leadingAnchor.constraint(equalTo: rootView.leadingAnchor, constant: 56),
+            columnsStackView.trailingAnchor.constraint(equalTo: rootView.trailingAnchor, constant: -56),
+            columnsStackView.topAnchor.constraint(equalTo: rootView.topAnchor, constant: 42),
+            columnsStackView.bottomAnchor.constraint(lessThanOrEqualTo: rootView.bottomAnchor, constant: -42),
         ])
 
         view = rootView
@@ -85,140 +45,228 @@ final class PreferenceHotkeysViewController: NSViewController {
     }
 
     func reloadFromViewModel() {
-        rowsStackView.arrangedSubviews.forEach { arrangedSubview in
-            rowsStackView.removeArrangedSubview(arrangedSubview)
-            arrangedSubview.removeFromSuperview()
+        rebuildPrimaryColumns()
+    }
+
+    private func configureColumnStack(_ stackView: NSStackView) {
+        stackView.orientation = .vertical
+        stackView.alignment = .trailing
+        stackView.spacing = 14
+    }
+
+    private func rebuildPrimaryColumns() {
+        clearArrangedSubviews(in: leftColumnStackView)
+        clearArrangedSubviews(in: rightColumnStackView)
+
+        let groups = viewModel.hotkeyGroups
+        let splitIndex = Int(ceil(Double(groups.count) / 2.0))
+        let leftGroups = Array(groups.prefix(splitIndex))
+        let rightGroups = Array(groups.dropFirst(splitIndex))
+
+        for group in leftGroups {
+            leftColumnStackView.addArrangedSubview(makePrimaryRowView(for: group))
         }
 
-        let rows = viewModel.hotkeyRows
-        for (index, row) in rows.enumerated() {
-            let rowView = PreferenceHotkeyRowView(
-                row: row,
-                actionOptions: viewModel.hotkeyActionOptions,
-                actionTitle: viewModel.hotkeyActionTitle(for: row.action),
-                onShortcutChange: { [weak self] shortcut in
-                    self?.viewModel.updateHotkeyShortcut(id: row.id, shortcut: shortcut)
-                    self?.reloadFromViewModel()
-                },
-                onActionChange: { [weak self] action in
-                    self?.viewModel.updateHotkeyAction(id: row.id, action: action)
-                    self?.reloadFromViewModel()
-                },
-                onDelete: { [weak self] in
-                    self?.viewModel.deleteHotkeyRow(id: row.id)
-                    self?.reloadFromViewModel()
-                }
-            )
-            rowsStackView.addArrangedSubview(rowView)
-
-            if index != rows.index(before: rows.endIndex) {
-                let divider = NSBox()
-                divider.boxType = .separator
-                rowsStackView.addArrangedSubview(divider)
-            }
+        for group in rightGroups {
+            rightColumnStackView.addArrangedSubview(makePrimaryRowView(for: group))
         }
     }
 
-    @objc private func addHotkeyRow() {
-        viewModel.addHotkeyRow()
-        reloadFromViewModel()
+    private func makePrimaryRowView(for group: PreferenceViewModel.HotkeyGroup) -> NSView {
+        PreferencePrimaryHotkeyRowView(
+            title: viewModel.hotkeyGridTitle(for: group.action),
+            action: group.action,
+            shortcut: group.primaryRow.shortcut,
+            configuration: viewModel.configuration,
+            onShortcutChange: { [weak self] shortcut in
+                self?.viewModel.updateHotkeyShortcut(id: group.primaryRow.id, shortcut: shortcut)
+                self?.reloadFromViewModel()
+            }
+        )
+    }
+
+    private func clearArrangedSubviews(in stackView: NSStackView) {
+        stackView.arrangedSubviews.forEach { arrangedSubview in
+            stackView.removeArrangedSubview(arrangedSubview)
+            arrangedSubview.removeFromSuperview()
+        }
     }
 }
 
 @MainActor
-private final class PreferenceHotkeyRowView: NSView {
-    private var actionSleeves: [TargetActionSleeve] = []
-
+private final class PreferencePrimaryHotkeyRowView: NSView {
     init(
-        row: PreferenceViewModel.HotkeyRow,
-        actionOptions: [(String, HotkeyAction)],
-        actionTitle: String,
-        onShortcutChange: @escaping (KeyboardShortcut?) -> Void,
-        onActionChange: @escaping (HotkeyAction) -> Void,
-        onDelete: @escaping () -> Void
+        title: String,
+        action: HotkeyAction,
+        shortcut: KeyboardShortcut?,
+        configuration: AppConfiguration,
+        onShortcutChange: @escaping (KeyboardShortcut?) -> Void
     ) {
         super.init(frame: .zero)
         translatesAutoresizingMaskIntoConstraints = false
 
-        let contentStack = NSStackView()
-        contentStack.orientation = .horizontal
-        contentStack.alignment = .centerY
-        contentStack.spacing = 14
-        contentStack.translatesAutoresizingMaskIntoConstraints = false
+        let actionLabel = NSTextField(labelWithString: title)
+        actionLabel.font = NSFont.systemFont(ofSize: 15, weight: .medium)
+        actionLabel.alignment = .right
+        actionLabel.lineBreakMode = .byTruncatingTail
+        actionLabel.translatesAutoresizingMaskIntoConstraints = false
+        actionLabel.widthAnchor.constraint(equalToConstant: 150).isActive = true
 
-        let actionView: NSView
-        if row.isAdditional {
-            let popupButton = NSPopUpButton()
-            popupButton.translatesAutoresizingMaskIntoConstraints = false
-            popupButton.font = NSFont.systemFont(ofSize: 12)
-            actionOptions.forEach { title, action in
-                let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-                item.representedObject = action
-                popupButton.menu?.addItem(item)
-                if action == row.action {
-                    popupButton.select(item)
-                }
-            }
-            let popupSleeve = TargetActionSleeve { button in
-                guard let popupButton = button as? NSPopUpButton,
-                      let action = popupButton.selectedItem?.representedObject as? HotkeyAction else {
-                    return
-                }
-                onActionChange(action)
-            }
-            actionSleeves.append(popupSleeve)
-            popupButton.target = popupSleeve
-            popupButton.action = #selector(TargetActionSleeve.invoke(_:))
-            popupButton.widthAnchor.constraint(equalToConstant: 300).isActive = true
-            actionView = popupButton
-        } else {
-            let actionLabel = NSTextField(labelWithString: actionTitle)
-            actionLabel.font = NSFont.systemFont(ofSize: 13)
-            actionLabel.lineBreakMode = .byTruncatingTail
-            actionLabel.translatesAutoresizingMaskIntoConstraints = false
-            actionLabel.widthAnchor.constraint(equalToConstant: 300).isActive = true
-            actionView = actionLabel
-        }
+        let iconView = PreferenceHotkeyImageView(action: action, configuration: configuration)
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        iconView.widthAnchor.constraint(equalToConstant: 30).isActive = true
+        iconView.heightAnchor.constraint(equalToConstant: 20).isActive = true
 
-        let recorder = PreferenceShortcutRecorderControl()
-        recorder.shortcut = row.shortcut
-        recorder.onShortcutChange = onShortcutChange
-        recorder.translatesAutoresizingMaskIntoConstraints = false
-        recorder.widthAnchor.constraint(equalToConstant: 140).isActive = true
+        let shortcutView = PreferenceShortcutPillView(
+            shortcut: shortcut,
+            onShortcutChange: onShortcutChange
+        )
+        shortcutView.translatesAutoresizingMaskIntoConstraints = false
+        shortcutView.widthAnchor.constraint(equalToConstant: 224).isActive = true
 
-        contentStack.addArrangedSubview(actionView)
-        contentStack.addArrangedSubview(recorder)
+        let labelStackView = NSStackView(views: [actionLabel, iconView])
+        labelStackView.orientation = .horizontal
+        labelStackView.alignment = .centerY
+        labelStackView.spacing = 12
 
-        if row.isAdditional {
-            let deleteButton = NSButton(title: UICopy.delete, target: nil, action: nil)
-            deleteButton.bezelStyle = .rounded
-            deleteButton.controlSize = .small
-            let deleteSleeve = TargetActionSleeve { _ in
-                onDelete()
-            }
-            actionSleeves.append(deleteSleeve)
-            deleteButton.target = deleteSleeve
-            deleteButton.action = #selector(TargetActionSleeve.invoke(_:))
-            contentStack.addArrangedSubview(deleteButton)
-        } else {
-            let spacer = NSView()
-            spacer.translatesAutoresizingMaskIntoConstraints = false
-            spacer.widthAnchor.constraint(equalToConstant: 56).isActive = true
-            contentStack.addArrangedSubview(spacer)
-        }
+        let contentStackView = NSStackView(views: [labelStackView, shortcutView])
+        contentStackView.orientation = .horizontal
+        contentStackView.alignment = .centerY
+        contentStackView.spacing = 20
+        contentStackView.translatesAutoresizingMaskIntoConstraints = false
 
-        addSubview(contentStack)
+        addSubview(contentStackView)
         NSLayoutConstraint.activate([
-            contentStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
-            contentStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
-            contentStack.topAnchor.constraint(equalTo: topAnchor, constant: 10),
-            contentStack.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -10),
+            contentStackView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            contentStackView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            contentStackView.topAnchor.constraint(equalTo: topAnchor),
+            contentStackView.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
     }
 
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+}
+
+@MainActor
+private final class PreferenceShortcutPillView: NSView {
+    private var actionSleeves: [TargetActionSleeve] = []
+
+    init(
+        shortcut: KeyboardShortcut?,
+        onShortcutChange: @escaping (KeyboardShortcut?) -> Void
+    ) {
+        super.init(frame: .zero)
+        translatesAutoresizingMaskIntoConstraints = false
+
+        let recorder = PreferenceShortcutRecorderControl()
+        recorder.shortcut = shortcut
+        recorder.onShortcutChange = onShortcutChange
+        recorder.alignment = .center
+        recorder.translatesAutoresizingMaskIntoConstraints = false
+        recorder.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+
+        let clearButton = NSButton(title: "×", target: nil, action: nil)
+        clearButton.isBordered = false
+        clearButton.font = NSFont.systemFont(ofSize: 17, weight: .medium)
+        clearButton.contentTintColor = .labelColor
+        clearButton.translatesAutoresizingMaskIntoConstraints = false
+        clearButton.isHidden = shortcut == nil
+        clearButton.setContentHuggingPriority(.required, for: .horizontal)
+
+        let clearSleeve = TargetActionSleeve { _ in
+            onShortcutChange(nil)
+        }
+        actionSleeves.append(clearSleeve)
+        clearButton.target = clearSleeve
+        clearButton.action = #selector(TargetActionSleeve.invoke(_:))
+
+        let backgroundView = PreferenceShortcutCapsuleBackgroundView()
+        backgroundView.translatesAutoresizingMaskIntoConstraints = false
+        backgroundView.addSubview(recorder)
+
+        let clearBackgroundView = PreferenceShortcutCapsuleBackgroundView()
+        clearBackgroundView.translatesAutoresizingMaskIntoConstraints = false
+        clearBackgroundView.isHidden = shortcut == nil
+        clearBackgroundView.addSubview(clearButton)
+
+        let stackView = NSStackView(views: [backgroundView, clearBackgroundView])
+        stackView.orientation = .horizontal
+        stackView.alignment = .centerY
+        stackView.spacing = 4
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+
+        addSubview(stackView)
+
+        let clearWidthConstraint = clearBackgroundView.widthAnchor.constraint(equalToConstant: 40)
+        clearWidthConstraint.isActive = true
+
+        NSLayoutConstraint.activate([
+            heightAnchor.constraint(equalToConstant: 46),
+            stackView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            stackView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            stackView.topAnchor.constraint(equalTo: topAnchor),
+            stackView.bottomAnchor.constraint(equalTo: bottomAnchor),
+
+            recorder.leadingAnchor.constraint(equalTo: backgroundView.leadingAnchor, constant: 18),
+            recorder.trailingAnchor.constraint(equalTo: backgroundView.trailingAnchor, constant: -18),
+            recorder.topAnchor.constraint(equalTo: backgroundView.topAnchor, constant: 6),
+            recorder.bottomAnchor.constraint(equalTo: backgroundView.bottomAnchor, constant: -6),
+
+            clearButton.centerXAnchor.constraint(equalTo: clearBackgroundView.centerXAnchor),
+            clearButton.centerYAnchor.constraint(equalTo: clearBackgroundView.centerYAnchor),
+        ])
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
+@MainActor
+private final class PreferenceHotkeyImageView: NSImageView {
+    init(action: HotkeyAction, configuration: AppConfiguration) {
+        super.init(frame: .zero)
+        image = PreferenceHotkeyIconCatalog.image(for: action, configuration: configuration)
+        imageAlignment = .alignCenter
+        imageScaling = .scaleAxesIndependently
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
+@MainActor
+private final class PreferenceShortcutCapsuleBackgroundView: NSView {
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        super.draw(dirtyRect)
+
+        let rect = bounds.insetBy(dx: 0.5, dy: 0.5)
+        let path = NSBezierPath(roundedRect: rect, xRadius: 16, yRadius: 16)
+        let gradient = NSGradient(
+            starting: NSColor(calibratedWhite: 0.94, alpha: 1),
+            ending: NSColor(calibratedWhite: 0.89, alpha: 1)
+        )
+        gradient?.draw(in: path, angle: 90)
+
+        NSColor(calibratedWhite: 0.80, alpha: 0.7).setStroke()
+        path.lineWidth = 1
+        path.stroke()
     }
 }
 

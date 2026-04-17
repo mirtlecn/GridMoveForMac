@@ -16,8 +16,8 @@ final class PreferenceShortcutRecorderControl: NSButton {
         isBordered = false
         setButtonType(.momentaryChange)
         focusRingType = .none
-        alignment = .right
-        font = .monospacedSystemFont(ofSize: NSFont.systemFontSize, weight: .medium)
+        alignment = .center
+        font = .systemFont(ofSize: 14, weight: .medium)
         updateTitle()
     }
 
@@ -82,11 +82,19 @@ final class PreferenceShortcutRecorderControl: NSButton {
 
     private func beginRecording() {
         isRecording = true
-        title = UICopy.typeShortcut
+        updateTitle()
         window?.makeFirstResponder(self)
     }
 
     private func updateTitle() {
-        title = isRecording ? UICopy.typeShortcut : (shortcut?.symbolDisplayString ?? UICopy.notSet)
+        let text = isRecording ? UICopy.typeShortcut : (shortcut?.symbolDisplayString ?? UICopy.recordShortcut)
+        let color: NSColor = shortcut == nil && !isRecording ? .secondaryLabelColor : .labelColor
+        attributedTitle = NSAttributedString(
+            string: text,
+            attributes: [
+                .font: NSFont.systemFont(ofSize: 14, weight: shortcut == nil && !isRecording ? .regular : .medium),
+                .foregroundColor: color,
+            ]
+        )
     }
 }

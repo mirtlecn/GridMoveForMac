@@ -44,6 +44,12 @@ final class PreferenceViewModel {
         let isAdditional: Bool
     }
 
+    struct HotkeyGroup: Equatable {
+        let action: HotkeyAction
+        let primaryRow: HotkeyRow
+        let additionalRows: [HotkeyRow]
+    }
+
     private let configurationStore: ConfigurationStore
     private let onConfigurationSaved: (AppConfiguration) -> Void
 
@@ -123,6 +129,27 @@ final class PreferenceViewModel {
         }
 
         return rows
+    }
+
+    var hotkeyGroups: [HotkeyGroup] {
+        allHotkeyActions.map { action in
+            let rows = hotkeyRows.filter { $0.action == action }
+            return HotkeyGroup(
+                action: action,
+                primaryRow: rows.first(where: { !$0.isAdditional }) ?? HotkeyRow(
+                    id: "base-\(actionKey(for: action))",
+                    action: action,
+                    shortcut: nil,
+                    bindingID: nil,
+                    isAdditional: false
+                ),
+                additionalRows: rows.filter(\.isAdditional)
+            )
+        }
+    }
+
+    var additionalHotkeyRows: [HotkeyRow] {
+        hotkeyGroups.flatMap(\.additionalRows)
     }
 
     func replaceConfiguration(_ configuration: AppConfiguration) {
@@ -254,6 +281,17 @@ final class PreferenceViewModel {
             return UICopy.applyPreviousLayout
         case .cycleNext:
             return UICopy.applyNextLayout
+        }
+    }
+
+    func hotkeyGridTitle(for action: HotkeyAction) -> String {
+        switch action {
+        case let .applyLayout(layoutID):
+            return layoutDisplayLabel(for: layoutID)
+        case .cyclePrevious:
+            return "Previous layout"
+        case .cycleNext:
+            return "Next layout"
         }
     }
 

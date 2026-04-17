@@ -15,7 +15,10 @@ let package = Package(
     ],
     targets: [
         .executableTarget(
-            name: "GridMove"
+            name: "GridMove",
+            resources: [
+                .process("Resources"),
+            ]
         ),
         .testTarget(
             name: "GridMoveTests",
