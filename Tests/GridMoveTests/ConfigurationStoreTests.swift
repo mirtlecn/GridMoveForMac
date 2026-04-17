@@ -18,6 +18,8 @@ import Testing
     #expect(initialText.contains("#007AFF33"))
     #expect(initialText.contains("\"highlightStrokeColor\""))
     #expect(initialText.contains("#FFFFFFEB"))
+    #expect(initialText.contains("\"renderTriggerAreas\""))
+    #expect(initialText.contains("false"))
     #expect(!initialText.contains("\"id\":"))
     #expect(initialText.contains("\"layout\""))
     #expect(initialText.contains("4"))
@@ -83,7 +85,7 @@ import Testing
         "excludedWindowTitles": []
       },
       "appearance": {
-        "renderTriggerAreas": true,
+        "renderTriggerAreas": false,
         "triggerOpacity": 0.2,
         "triggerGap": 2,
         "triggerStrokeColor": "#007AFF33",
@@ -96,7 +98,7 @@ import Testing
         "middleMouseButtonNumber": 2,
         "enableMiddleMouseDrag": true,
         "enableModifierLeftMouseDrag": true,
-        "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
+        "modifierGroups": [["ctrl", "cmd", "shift", "alt"], ["ctrl", "shift", "alt"]],
         "activationDelaySeconds": 0.3,
         "activationMoveThreshold": 10
       },
@@ -214,7 +216,8 @@ import Testing
     #expect(hasHyperLayoutFourBinding)
     #expect(!hasFullscreenOrCloseBinding)
     #expect(configuration.dragTriggers.preferLayoutMode == true)
-    #expect(configuration.dragTriggers.modifierGroups == [[.ctrl, .cmd, .shift, .alt]])
+    #expect(configuration.dragTriggers.modifierGroups == [[.ctrl, .cmd, .shift, .alt], [.ctrl, .shift, .alt]])
+    #expect(configuration.appearance.renderTriggerAreas == false)
     #expect(configuration.appearance.triggerStrokeColor.alpha == 0.2)
 }
 
@@ -295,7 +298,7 @@ import Testing
 @Test func appearanceSettingsDecodeMissingTriggerStrokeColorWithDefaultValue() async throws {
     let json = """
     {
-      "renderTriggerAreas": true,
+      "renderTriggerAreas": false,
       "triggerOpacity": 0.2,
       "triggerGap": 2,
       "renderWindowHighlight": true,

@@ -29,7 +29,7 @@ import Testing
     #expect(layouts[9].windowSelection == GridSelection(x: 0, y: 0, w: 12, h: 6))
     #expect(layouts[9].triggerRegion == .screen(GridSelection(x: 5, y: 0, w: 2, h: 2)))
     #expect(layouts[10].windowSelection == GridSelection(x: 0, y: 0, w: 12, h: 6))
-    #expect(layouts[10].triggerRegion == .menuBar(MenuBarSelection(x: 1, w: 4)))
+    #expect(layouts[10].triggerRegion == .menuBar(MenuBarSelection(x: 0, w: 6)))
     #expect(layouts[10].includeInCycle == false)
 }
 
@@ -82,9 +82,9 @@ import Testing
     #expect(fullscreenSlot.triggerFrame.size.width == 296)
     #expect(fullscreenSlot.triggerFrame.size.height == 296)
 
-    #expect(menuBarSlot.triggerFrame.origin.x == 302)
+    #expect(menuBarSlot.triggerFrame.origin.x == 2)
     #expect(menuBarSlot.triggerFrame.origin.y == 902)
-    #expect(menuBarSlot.triggerFrame.size.width == 1196)
+    #expect(menuBarSlot.triggerFrame.size.width == 1796)
     #expect(menuBarSlot.triggerFrame.size.height == 26)
 }
 

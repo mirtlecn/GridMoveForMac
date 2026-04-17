@@ -62,7 +62,7 @@ The real file must be plain JSON and does not support comments. The example belo
     ]
   },
   "appearance": {
-    "renderTriggerAreas": true, // Show trigger-region overlay while in layout mode.
+    "renderTriggerAreas": false, // Show trigger-region overlay while in layout mode. The default is off.
     "triggerOpacity": 0.2, // Fill opacity for trigger regions. Current defaults assume a 0...1 range.
     "triggerGap": 2, // Gap between trigger-region cells, in points.
     "triggerStrokeColor": "#007AFF33", // Border color for trigger regions. Accepts #RRGGBB or #RRGGBBAA.
@@ -77,7 +77,8 @@ The real file must be plain JSON and does not support comments. The example belo
     "enableModifierLeftMouseDrag": true, // Enable the modifier-plus-left-click trigger path.
     "preferLayoutMode": true, // true: start drag interaction in layout mode. false: start in move-only mode.
     "modifierGroups": [
-      ["ctrl", "cmd", "shift", "alt"] // Allowed modifier names are ctrl, cmd, shift, alt. Matching is exact by group.
+      ["ctrl", "cmd", "shift", "alt"], // Allowed modifier names are ctrl, cmd, shift, alt. Matching is exact by group.
+      ["ctrl", "shift", "alt"]
     ],
     "activationDelaySeconds": 0.3, // Hold time before drag interaction becomes active.
     "activationMoveThreshold": 10 // Pointer movement threshold, in points, before the interaction counts as a drag.

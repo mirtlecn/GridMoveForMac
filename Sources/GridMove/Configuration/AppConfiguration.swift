@@ -468,7 +468,7 @@ struct AppConfiguration: Codable, Equatable {
             LayoutPreset(id: "layout-8", name: UICopy.defaultLayoutNames[7], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 3), triggerRegion: .screen(GridSelection(x: 10, y: 0, w: 2, h: 2)), includeInCycle: true),
             LayoutPreset(id: "layout-9", name: UICopy.defaultLayoutNames[8], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 3, w: 4, h: 3), triggerRegion: .screen(GridSelection(x: 10, y: 4, w: 2, h: 2)), includeInCycle: true),
             LayoutPreset(id: "layout-10", name: UICopy.defaultLayoutNames[9], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .screen(GridSelection(x: 5, y: 0, w: 2, h: 2)), includeInCycle: true),
-            LayoutPreset(id: "layout-11", name: UICopy.defaultLayoutNames[10], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .menuBar(MenuBarSelection(x: 1, w: 4)), includeInCycle: false),
+            LayoutPreset(id: "layout-11", name: UICopy.defaultLayoutNames[10], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .menuBar(MenuBarSelection(x: 0, w: 6)), includeInCycle: false),
         ]
     }
 
@@ -495,7 +495,7 @@ struct AppConfiguration: Codable, Equatable {
             excludedWindowTitles: []
         ),
         appearance: AppearanceSettings(
-            renderTriggerAreas: true,
+            renderTriggerAreas: false,
             triggerOpacity: 0.2,
             triggerGap: 2,
             triggerStrokeColor: .defaultTriggerStrokeColor,
@@ -511,6 +511,7 @@ struct AppConfiguration: Codable, Equatable {
             preferLayoutMode: true,
             modifierGroups: [
                 [.ctrl, .cmd, .shift, .alt],
+                [.ctrl, .shift, .alt],
             ],
             activationDelaySeconds: 0.3,
             activationMoveThreshold: 10

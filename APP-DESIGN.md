@@ -68,6 +68,74 @@ Current drag-trigger configuration fields:
 - `activationDelaySeconds`
 - `activationMoveThreshold`
 
+### 4.1 Current Default Configuration
+
+The built-in default configuration currently resolves to the following values.
+
+`general`
+
+- `isEnabled = true`
+- `excludedBundleIDs = ["com.apple.Spotlight"]`
+- `excludedWindowTitles = []`
+
+`appearance`
+
+- `renderTriggerAreas = false`
+- `triggerOpacity = 0.2`
+- `triggerGap = 2`
+- `triggerStrokeColor = system accent color with alpha 0.2`
+- `renderWindowHighlight = true`
+- `highlightFillOpacity = 0.08`
+- `highlightStrokeWidth = 3`
+- `highlightStrokeColor = #FFFFFFEB`
+
+`dragTriggers`
+
+- `middleMouseButtonNumber = 2`
+- `enableMiddleMouseDrag = true`
+- `enableModifierLeftMouseDrag = true`
+- `preferLayoutMode = true`
+- `modifierGroups = [[ctrl, cmd, shift, alt], [ctrl, shift, alt]]`
+- `activationDelaySeconds = 0.3`
+- `activationMoveThreshold = 10`
+
+`hotkeys`
+
+- `ctrl + cmd + shift + alt + l` -> cycle next layout
+- `ctrl + cmd + shift + alt + j` -> cycle previous layout
+- `ctrl + cmd + shift + alt + \` -> apply `layout-4`
+- `ctrl + cmd + shift + alt + [` -> apply `layout-2`
+- `ctrl + cmd + shift + alt + ]` -> apply `layout-6`
+- `ctrl + cmd + shift + alt + ;` -> apply `layout-3`
+- `ctrl + cmd + shift + alt + '` -> apply `layout-7`
+- `ctrl + cmd + shift + alt + -` -> apply `layout-1`
+- `ctrl + cmd + shift + alt + =` -> apply `layout-5`
+- `ctrl + cmd + shift + alt + return` -> apply `layout-10`
+
+`layouts`
+
+- the default set contains 11 layouts
+- all layouts use a `12 x 6` grid
+- `layout-1` to `layout-9` use screen trigger regions
+- `layout-10` uses a screen trigger region
+- `layout-11` uses the full menu bar strip as its trigger region
+- `layout-1` to `layout-10` participate in layout cycling
+- `layout-11` does not participate in layout cycling
+
+Default layout names in order:
+
+- `layout-1`: `Left 1/3`
+- `layout-2`: `Left 1/2`
+- `layout-3`: `Left 2/3`
+- `layout-4`: `Center`
+- `layout-5`: `Right 2/3`
+- `layout-6`: `Right 1/2`
+- `layout-7`: `Right 1/3`
+- `layout-8`: `Right 1/3 top`
+- `layout-9`: `Right 1/3 bottom`
+- `layout-10`: `Fill all screen`
+- `layout-11`: `Fill all screen (Menu bar)`
+
 Compatibility behavior:
 
 - if config decoding fails, the file is left untouched
