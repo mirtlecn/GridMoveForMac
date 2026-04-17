@@ -262,7 +262,6 @@ extension DragGridController {
             return
         }
 
-        let shouldApplyImmediately = state.hasDraggedPastThreshold
         guard let updatedConfiguration = cycleActiveLayoutGroup() else {
             return
         }
@@ -270,7 +269,7 @@ extension DragGridController {
         configureLayoutSelectionMode(
             at: point,
             configuration: updatedConfiguration,
-            shouldApplyImmediately: shouldApplyImmediately,
+            shouldApplyImmediately: false,
             shouldFlashHighlight: false
         )
 

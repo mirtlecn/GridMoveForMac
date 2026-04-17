@@ -200,6 +200,7 @@ Layout-mode group cycling:
 - while a drag interaction is active in layout-selection mode, pressing and releasing `Shift` alone cycles to the next group whose `includeInGroupCycle` is `true`
 - the switch is persisted by updating `general.activeLayoutGroup`
 - the trigger overlay is recomputed immediately for the new group
+- after the switch, layout selection returns to the same pre-threshold state used at initial activation, so no layout is applied until the pointer crosses the movement threshold again
 - the overlay shows the new group name centered inside the current highlight region for the same duration used by the move-only highlight flash, while keeping the current highlight and trigger overlay visible
 
 ## 6. Target Window Resolution

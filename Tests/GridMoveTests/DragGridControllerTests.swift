@@ -1,3 +1,4 @@
+import AppKit
 import CoreGraphics
 import Foundation
 import Testing
@@ -114,4 +115,44 @@ import Testing
             pointerScreen: "pointer-screen"
         ) == "active-screen"
     )
+}
+
+@MainActor
+@Test func layoutGroupCycleReturnsToThresholdPhaseBeforeApplyingLayouts() async throws {
+    let screen = try #require(NSScreen.screens.first)
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController()
+    var updatedConfiguration = AppConfiguration.defaultValue
+    updatedConfiguration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
+
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { AppConfiguration.defaultValue },
+        cycleActiveLayoutGroup: { updatedConfiguration },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {}
+    )
+
+    controller.state.active = true
+    controller.state.interactionMode = .layoutSelection
+    controller.state.currentWindowFrame = CGRect(
+        x: screen.frame.minX + 40,
+        y: screen.frame.minY + 40,
+        width: 320,
+        height: 240
+    )
+    controller.state.hasDraggedPastThreshold = true
+    controller.state.hoveredLayoutID = "layout-1"
+    controller.state.lastAppliedLayoutID = "layout-1"
+
+    controller.cycleLayoutGroup(at: CGPoint(x: screen.frame.minX + 60, y: screen.frame.minY + 60))
+
+    #expect(controller.state.hasDraggedPastThreshold == false)
+    #expect(controller.state.hoveredLayoutID == nil)
+    #expect(controller.state.lastAppliedLayoutID == nil)
+    #expect(controller.state.activeScreen != nil)
 }

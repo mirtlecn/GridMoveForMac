@@ -179,7 +179,7 @@ Notes:
 - Menu and CLI direct layout application may move the target window to another display if the matched layout belongs to another set.
 - `includeInMenu` controls only menu-bar visibility.
 - layouts hidden from the menu can still be used by trigger and CLI paths, and can still be reached by layout-index shortcuts only when `includeInLayoutIndex = true`.
-- while a drag interaction is in layout mode, pressing and releasing `Shift` alone switches to the next group whose `includeInGroupCycle` is `true`, saves that group as `general.activeLayoutGroup`, and refreshes the active trigger set immediately.
+- while a drag interaction is in layout mode, pressing and releasing `Shift` alone switches to the next group whose `includeInGroupCycle` is `true`, saves that group as `general.activeLayoutGroup`, refreshes the active trigger set immediately, and returns to the pre-threshold highlight state until the pointer moves far enough again.
 - Internal layout IDs and binding IDs are not stored in `config.json`. GridMove regenerates them when loading.
 - If the file is invalid JSON, contains comments, or references a missing layout index, GridMove falls back to built-in defaults for the current launch and keeps the broken file unchanged.
 
