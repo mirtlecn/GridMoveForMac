@@ -18,29 +18,46 @@ import Testing
 }
 
 @Test func optionToggleTrackerTogglesAfterPressThenRelease() async throws {
-    var tracker = OptionToggleTracker(baselinePressed: false)
+    var tracker = OptionToggleTracker(baselineModifiers: [])
 
-    #expect(tracker.register(isPressed: true) == .consume)
+    #expect(tracker.register(modifiers: [.alt]) == .consume)
     #expect(tracker.isPending == true)
-    #expect(tracker.register(isPressed: false) == .toggle)
+    #expect(tracker.register(modifiers: []) == .toggle)
     #expect(tracker.isPending == false)
 }
 
 @Test func optionToggleTrackerTogglesAfterReleaseThenPress() async throws {
-    var tracker = OptionToggleTracker(baselinePressed: true)
+    var tracker = OptionToggleTracker(baselineModifiers: [.alt])
 
-    #expect(tracker.register(isPressed: false) == .consume)
+    #expect(tracker.register(modifiers: []) == .ignore)
+    #expect(tracker.register(modifiers: [.alt]) == .consume)
     #expect(tracker.isPending == true)
-    #expect(tracker.register(isPressed: true) == .toggle)
+    #expect(tracker.register(modifiers: []) == .toggle)
     #expect(tracker.isPending == false)
 }
 
 @Test func optionToggleTrackerIgnoresRepeatedState() async throws {
-    var tracker = OptionToggleTracker(baselinePressed: false)
+    var tracker = OptionToggleTracker(baselineModifiers: [])
 
-    #expect(tracker.register(isPressed: false) == .ignore)
-    #expect(tracker.register(isPressed: true) == .consume)
-    #expect(tracker.register(isPressed: true) == .ignore)
+    #expect(tracker.register(modifiers: []) == .ignore)
+    #expect(tracker.register(modifiers: [.alt]) == .consume)
+    #expect(tracker.register(modifiers: [.alt]) == .ignore)
+}
+
+@Test func optionToggleTrackerIgnoresOptionCombinedWithOtherModifiers() async throws {
+    var tracker = OptionToggleTracker(baselineModifiers: [])
+
+    #expect(tracker.register(modifiers: [.alt, .cmd]) == .ignore)
+    #expect(tracker.isPending == false)
+}
+
+@Test func optionToggleTrackerCancelsPendingToggleWhenAnotherModifierAppears() async throws {
+    var tracker = OptionToggleTracker(baselineModifiers: [])
+
+    #expect(tracker.register(modifiers: [.alt]) == .consume)
+    #expect(tracker.register(modifiers: [.alt, .shift]) == .consume)
+    #expect(tracker.isPending == false)
+    #expect(tracker.register(modifiers: []) == .ignore)
 }
 
 @Test func moveAnchorPreservesPointerOffset() async throws {

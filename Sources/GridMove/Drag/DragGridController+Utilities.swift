@@ -58,6 +58,16 @@ extension DragGridController {
         NSEvent.modifierFlags.contains(.option)
     }
 
+    var currentModifierKeys: Set<ModifierKey> {
+        var result: Set<ModifierKey> = []
+        let flags = NSEvent.modifierFlags
+        if flags.contains(.control) { result.insert(.ctrl) }
+        if flags.contains(.command) { result.insert(.cmd) }
+        if flags.contains(.shift) { result.insert(.shift) }
+        if flags.contains(.option) { result.insert(.alt) }
+        return result
+    }
+
     func pointsApproximatelyEqual(_ lhs: CGPoint, _ rhs: CGPoint, tolerance: CGFloat = 0.5) -> Bool {
         abs(lhs.x - rhs.x) < tolerance && abs(lhs.y - rhs.y) < tolerance
     }

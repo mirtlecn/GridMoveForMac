@@ -175,8 +175,8 @@ extension DragGridController {
             return Unmanaged.passUnretained(event)
         }
 
-        let isOptionPressed = event.flags.contains(.maskAlternate)
-        let result = tracker.register(isPressed: isOptionPressed)
+        let modifiers = normalizedModifiers(from: event.flags)
+        let result = tracker.register(modifiers: modifiers)
         state.optionToggleTracker = tracker
 
         switch result {

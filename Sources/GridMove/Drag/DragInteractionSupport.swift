@@ -18,36 +18,38 @@ enum OptionToggleEventResult: Equatable {
 }
 
 struct OptionToggleTracker: Equatable {
-    let baselinePressed: Bool
-    private(set) var lastPressed: Bool
+    private(set) var lastModifiers: Set<ModifierKey>
     private(set) var isPending = false
 
-    init(baselinePressed: Bool) {
-        self.baselinePressed = baselinePressed
-        lastPressed = baselinePressed
+    init(baselineModifiers: Set<ModifierKey>) {
+        lastModifiers = baselineModifiers
     }
 
-    mutating func register(isPressed: Bool) -> OptionToggleEventResult {
-        guard isPressed != lastPressed else {
+    mutating func register(modifiers: Set<ModifierKey>) -> OptionToggleEventResult {
+        guard modifiers != lastModifiers else {
             return .ignore
         }
 
+        let previousModifiers = lastModifiers
         defer {
-            lastPressed = isPressed
+            lastModifiers = modifiers
         }
 
-        if lastPressed == baselinePressed, isPressed != baselinePressed {
+        if previousModifiers.isEmpty, modifiers == [.alt] {
             isPending = true
             return .consume
         }
 
-        if lastPressed != baselinePressed, isPressed == baselinePressed, isPending {
+        if previousModifiers == [.alt], modifiers.isEmpty, isPending {
             isPending = false
             return .toggle
         }
 
         if isPending {
-            return .consume
+            isPending = false
+            if previousModifiers == [.alt] || modifiers == [.alt] {
+                return .consume
+            }
         }
 
         return .ignore

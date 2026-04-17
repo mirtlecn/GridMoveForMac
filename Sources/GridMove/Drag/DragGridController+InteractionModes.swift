@@ -25,7 +25,7 @@ extension DragGridController {
         state.activeButton = button
         state.targetWindow = targetWindow
         state.currentWindowFrame = targetWindow.frame
-        state.optionToggleTracker = OptionToggleTracker(baselinePressed: isOptionPressed)
+        state.optionToggleTracker = OptionToggleTracker(baselineModifiers: currentModifierKeys)
         state.pendingRightClickToggle = false
 
         let initialMode = Self.preferredInteractionMode(preferLayoutMode: configuration.dragTriggers.preferLayoutMode)
