@@ -93,7 +93,7 @@ final class LayoutActionExecutor {
             guard let entry = LayoutGroupResolver.entry(for: layoutID, configuration: configuration) else {
                 return .failure("No layout found for ID \(layoutID).")
             }
-            guard let targetScreen = LayoutGroupResolver.targetScreen(for: entry, currentScreen: currentScreen) else {
+            guard let targetScreen = LayoutGroupResolver.targetScreen(for: entry, currentScreen: currentScreen, configuration: configuration) else {
                 return .failure("No target display found for layout \(entry.layout.name).")
             }
             windowController.applyLayout(
@@ -108,7 +108,7 @@ final class LayoutActionExecutor {
             guard let entry = try? LayoutGroupResolver.resolveNamedLayout(identifier: name, configuration: configuration) else {
                 return .failure("No layout named \(name).")
             }
-            guard let targetScreen = LayoutGroupResolver.targetScreen(for: entry, currentScreen: currentScreen) else {
+            guard let targetScreen = LayoutGroupResolver.targetScreen(for: entry, currentScreen: currentScreen, configuration: configuration) else {
                 return .failure("No target display found for layout \(name).")
             }
             windowController.applyLayout(

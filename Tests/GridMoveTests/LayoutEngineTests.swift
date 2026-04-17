@@ -167,6 +167,30 @@ import Testing
     #expect(matchedSlot.layoutID == "layout-b")
 }
 
+@Test func targetDisplayIDPrefersResolvedFallbackDisplayOverCurrentDisplay() async throws {
+    #expect(
+        LayoutGroupResolver.targetDisplayID(
+            for: .all,
+            currentDisplayID: "main",
+            resolvedDisplayIDs: ["other"]
+        ) == "other"
+    )
+    #expect(
+        LayoutGroupResolver.targetDisplayID(
+            for: .main,
+            currentDisplayID: "main",
+            resolvedDisplayIDs: ["main"]
+        ) == "main"
+    )
+    #expect(
+        LayoutGroupResolver.targetDisplayID(
+            for: .displays(["12345", "67890"]),
+            currentDisplayID: "12345",
+            resolvedDisplayIDs: ["12345", "67890"]
+        ) == "12345"
+    )
+}
+
 @Test func layoutEngineKeepsOnlyTenRecentWindowLayoutRecords() async throws {
     let engine = LayoutEngine()
     let layouts = AppConfiguration.defaultValue.layouts

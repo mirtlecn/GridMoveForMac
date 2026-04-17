@@ -99,8 +99,52 @@ enum LayoutGroupResolver {
         return currentSetEntries[index - 1]
     }
 
-    static func targetScreen(for entry: ResolvedLayoutEntry, currentScreen: NSScreen?) -> NSScreen? {
-        MonitorDiscovery.targetScreen(for: entry.set.monitor, currentScreen: currentScreen)
+    static func targetScreen(
+        for entry: ResolvedLayoutEntry,
+        currentScreen: NSScreen?,
+        configuration: AppConfiguration
+    ) -> NSScreen? {
+        let currentDisplayID = currentScreen.map(MonitorDiscovery.displayID(for:))
+        let resolvedScreens = NSScreen.screens.filter { resolvedSet(for: $0, configuration: configuration) == entry.set }
+        let resolvedDisplayIDs = resolvedScreens.map(MonitorDiscovery.displayID(for:))
+
+        guard let targetDisplayID = targetDisplayID(
+            for: entry.set.monitor,
+            currentDisplayID: currentDisplayID,
+            resolvedDisplayIDs: resolvedDisplayIDs
+        ) else {
+            return nil
+        }
+
+        return resolvedScreens.first(where: { MonitorDiscovery.displayID(for: $0) == targetDisplayID })
+            ?? NSScreen.screens.first(where: { MonitorDiscovery.displayID(for: $0) == targetDisplayID })
+            ?? MonitorDiscovery.targetScreen(for: entry.set.monitor, currentScreen: currentScreen)
+    }
+
+    static func targetDisplayID(
+        for monitor: LayoutSetMonitor,
+        currentDisplayID: String?,
+        resolvedDisplayIDs: [String]
+    ) -> String? {
+        if let currentDisplayID, resolvedDisplayIDs.contains(currentDisplayID) {
+            return currentDisplayID
+        }
+
+        if let resolvedDisplayID = resolvedDisplayIDs.first {
+            return resolvedDisplayID
+        }
+
+        switch monitor {
+        case .all:
+            return currentDisplayID
+        case .main:
+            return currentDisplayID
+        case let .displays(displayIDs):
+            if let currentDisplayID, displayIDs.contains(currentDisplayID) {
+                return currentDisplayID
+            }
+            return displayIDs.first
+        }
     }
 }
 

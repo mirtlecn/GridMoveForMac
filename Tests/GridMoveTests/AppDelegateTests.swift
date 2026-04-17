@@ -79,7 +79,12 @@ import Testing
         .applyLayoutByID(layoutID: "layout-14"),
         .applyLayoutByID(layoutID: "layout-16"),
     ])
-    #expect(actionItems.dropFirst(2).allSatisfy { $0.shortcut == nil })
+    #expect(actionItems.dropFirst(2).map(\.shortcut) == [
+        KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "-"),
+        KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "["),
+        KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: ";"),
+        KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "-"),
+    ])
 }
 
 @MainActor

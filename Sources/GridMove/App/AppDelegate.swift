@@ -301,30 +301,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ),
         ]
 
-        let activeGroup = LayoutGroupResolver.activeGroup(in: configuration)
-        let shouldShowDirectLayoutShortcuts = activeGroup?.sets.count == 1
-
-        let layoutItems = LayoutGroupResolver.flattenedActiveEntries(in: configuration)
-            .filter { $0.layout.includeInMenu }
-            .enumerated()
-            .map { index, entry in
-                let layoutShortcut: KeyboardShortcut?
-                if shouldShowDirectLayoutShortcuts {
-                    layoutShortcut = configuration.hotkeys.firstShortcut(for: .applyLayoutByIndex(layout: index + 1))
-                } else {
-                    layoutShortcut = nil
+        let layoutItems: [MenuBarController.ActionItem] = LayoutGroupResolver.activeGroup(in: configuration)?.sets.flatMap { set in
+            set.layouts.enumerated().compactMap { index, layout in
+                guard layout.includeInMenu else {
+                    return nil
                 }
                 return MenuBarController.ActionItem(
                     title: UICopy.applyLayout(
                         UICopy.layoutMenuName(
-                            name: entry.layout.name,
+                            name: layout.name,
                             fallbackIdentifier: "layout_\(index + 1)"
                         )
                     ),
-                    action: .applyLayoutByID(layoutID: entry.layout.id),
-                    shortcut: layoutShortcut
+                    action: .applyLayoutByID(layoutID: layout.id),
+                    shortcut: configuration.hotkeys.firstShortcut(for: .applyLayoutByIndex(layout: index + 1))
                 )
             }
+        } ?? []
 
         return cycleItems + layoutItems
     }
