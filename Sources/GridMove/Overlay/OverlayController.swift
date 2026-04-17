@@ -4,12 +4,20 @@ import Foundation
 @MainActor
 final class OverlayController {
     private enum FlashDuration {
-        static let seconds: TimeInterval = 0.4
+        static let seconds: TimeInterval = 0.8
+    }
+
+    private struct OverlayContentState {
+        let screen: NSScreen
+        let slots: [ResolvedTriggerSlot]
+        let highlightFrame: CGRect?
+        let configuration: AppConfiguration
     }
 
     private var panel: OverlayPanel?
     private var screenIdentifier: String?
     private var flashGeneration: UInt64 = 0
+    private var pendingPostFlashOverlayState: OverlayContentState?
 
     func update(
         screen: NSScreen,
@@ -27,15 +35,37 @@ final class OverlayController {
         showOverlay(screen: screen, slots: slots, highlightFrame: highlightFrame, configuration: configuration)
     }
 
-    func flashHighlight(frame: CGRect, screen: NSScreen, configuration: AppConfiguration) {
+    func flashHighlight(
+        frame: CGRect,
+        screen: NSScreen,
+        slots: [ResolvedTriggerSlot] = [],
+        configuration: AppConfiguration,
+        keepsOverlayVisibleAfterFlash: Bool = false
+    ) {
         cancelPendingFlash()
 
         guard configuration.appearance.renderWindowHighlight else {
-            dismiss()
+            if keepsOverlayVisibleAfterFlash {
+                showOverlay(screen: screen, slots: slots, highlightFrame: frame, configuration: configuration)
+            } else {
+                dismiss()
+            }
             return
         }
 
-        showOverlay(screen: screen, slots: [], highlightFrame: frame, configuration: configuration)
+        let steadyState = OverlayContentState(
+            screen: screen,
+            slots: slots,
+            highlightFrame: frame,
+            configuration: configuration
+        )
+        pendingPostFlashOverlayState = keepsOverlayVisibleAfterFlash ? steadyState : nil
+        showOverlay(
+            screen: steadyState.screen,
+            slots: steadyState.slots,
+            highlightFrame: steadyState.highlightFrame,
+            configuration: steadyState.configuration
+        )
         panel?.alphaValue = 1.0
 
         flashGeneration &+= 1
@@ -48,7 +78,18 @@ final class OverlayController {
             Task { @MainActor in
                 guard let self else { return }
                 if self.flashGeneration == expectedGeneration {
-                    self.dismissPanel()
+                    if let pendingPostFlashOverlayState = self.pendingPostFlashOverlayState {
+                        self.panel?.alphaValue = 1.0
+                        self.showOverlay(
+                            screen: pendingPostFlashOverlayState.screen,
+                            slots: pendingPostFlashOverlayState.slots,
+                            highlightFrame: pendingPostFlashOverlayState.highlightFrame,
+                            configuration: pendingPostFlashOverlayState.configuration
+                        )
+                        self.pendingPostFlashOverlayState = nil
+                    } else {
+                        self.dismissPanel()
+                    }
                 }
             }
         }
@@ -63,6 +104,7 @@ final class OverlayController {
 
     private func cancelPendingFlash() {
         flashGeneration &+= 1
+        pendingPostFlashOverlayState = nil
         panel?.alphaValue = 1.0
     }
 
@@ -104,6 +146,7 @@ final class OverlayController {
         panel?.orderOut(nil)
         panel = nil
         screenIdentifier = nil
+        pendingPostFlashOverlayState = nil
     }
 }
 

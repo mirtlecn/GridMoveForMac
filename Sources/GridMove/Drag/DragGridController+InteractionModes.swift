@@ -31,9 +31,14 @@ extension DragGridController {
         let initialMode = Self.preferredInteractionMode(preferLayoutMode: configuration.dragTriggers.preferLayoutMode)
         switch initialMode {
         case .layoutSelection:
-            configureLayoutSelectionMode(at: point, configuration: configuration, shouldApplyImmediately: false)
+            configureLayoutSelectionMode(
+                at: point,
+                configuration: configuration,
+                shouldApplyImmediately: false,
+                shouldFlashHighlight: false
+            )
         case .moveOnly:
-            configureMoveOnlyMode(at: point, configuration: configuration)
+            configureMoveOnlyMode(at: point, configuration: configuration, shouldFlashHighlight: true)
         }
     }
 
@@ -105,16 +110,22 @@ extension DragGridController {
 
         switch state.interactionMode {
         case .layoutSelection:
-            configureMoveOnlyMode(at: point, configuration: configuration)
+            configureMoveOnlyMode(at: point, configuration: configuration, shouldFlashHighlight: true)
         case .moveOnly:
-            configureLayoutSelectionMode(at: point, configuration: configuration, shouldApplyImmediately: false)
+            configureLayoutSelectionMode(
+                at: point,
+                configuration: configuration,
+                shouldApplyImmediately: false,
+                shouldFlashHighlight: false
+            )
         }
     }
 
     func configureLayoutSelectionMode(
         at point: CGPoint,
         configuration: AppConfiguration,
-        shouldApplyImmediately: Bool
+        shouldApplyImmediately: Bool,
+        shouldFlashHighlight: Bool
     ) {
         state.interactionMode = .layoutSelection
         state.moveAnchor = nil
@@ -136,10 +147,29 @@ extension DragGridController {
         }
 
         state.hasDraggedPastThreshold = false
+
+        if shouldFlashHighlight,
+           let screen = state.activeScreen,
+           let frame = currentWindowFrame()
+        {
+            overlayController.flashHighlight(
+                frame: frame,
+                screen: screen,
+                slots: state.resolvedSlots,
+                configuration: configuration,
+                keepsOverlayVisibleAfterFlash: true
+            )
+            return
+        }
+
         refreshOverlay(configuration: configuration)
     }
 
-    func configureMoveOnlyMode(at point: CGPoint, configuration: AppConfiguration) {
+    func configureMoveOnlyMode(
+        at point: CGPoint,
+        configuration: AppConfiguration,
+        shouldFlashHighlight: Bool
+    ) {
         state.interactionMode = .moveOnly
         state.overlayActivationPoint = point
         state.hoveredLayoutID = nil
@@ -162,7 +192,7 @@ extension DragGridController {
             activeScreen: state.activeScreen,
             pointerScreen: pointerScreen
         )
-        if let screen, let windowFrame {
+        if shouldFlashHighlight, let screen, let windowFrame {
             overlayController.flashHighlight(frame: windowFrame, screen: screen, configuration: configuration)
         } else {
             overlayController.dismiss()
