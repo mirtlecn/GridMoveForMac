@@ -79,7 +79,7 @@ enum CommandLineAction: Equatable {
     Usage:
       GridMove -next [-window-id <cg-window-id>]
       GridMove -pre [-window-id <cg-window-id>]
-      GridMove -layout <layout-name-or-id> [-window-id <cg-window-id>]
+      GridMove -layout <layout-index-or-name> [-window-id <cg-window-id>]
       GridMove -help
     """
 }

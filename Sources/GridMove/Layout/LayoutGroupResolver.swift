@@ -68,10 +68,6 @@ enum LayoutGroupResolver {
 
     static func resolveNamedLayout(identifier: String, configuration: AppConfiguration) throws -> ResolvedLayoutEntry {
         let entries = flattenedActiveEntries(in: configuration)
-        if let matchedByID = entries.first(where: { $0.layout.id.caseInsensitiveCompare(identifier) == .orderedSame }) {
-            return matchedByID
-        }
-
         let matchedLayouts = entries.filter { $0.layout.name.caseInsensitiveCompare(identifier) == .orderedSame }
         if let entry = matchedLayouts.onlyElement {
             return entry

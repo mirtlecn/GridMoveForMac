@@ -41,14 +41,12 @@ GridMove can relay CLI actions to a running app instance:
 ```bash
 path/to/GridMove.app/Contents/MacOS/GridMove -next
 path/to/GridMove.app/Contents/MacOS/GridMove -pre
+path/to/GridMove.app/Contents/MacOS/GridMove -layout 4
 path/to/GridMove.app/Contents/MacOS/GridMove -layout "Center"
-path/to/GridMove.app/Contents/MacOS/GridMove -layout layout-4
-path/to/GridMove.app/Contents/MacOS/GridMove -layout layout_4
 path/to/GridMove.app/Contents/MacOS/GridMove -layout "Center" -window-id 12345
 ```
 
 If `-window-id <cg-window-id>` is not provided, GridMove targets the currently focused window. 
-`-layout layout-4` and `-layout layout_4` are aliases for the active layout group's 1-based layout index.
 
 ## Configuration
 
@@ -169,6 +167,8 @@ Notes:
 - `layoutGroups[*].sets[*].layouts` order matters.
 - the built-in default file includes `built-in` and `fullscreen`; startup keeps `built-in` active until the user switches the group
 - `hotkeys.bindings[*].action.layout` is a 1-based index within the active layout group's indexed layouts.
+- CLI `-layout <number>` uses the same 1-based index within the active layout group's indexed layouts.
+- CLI `-layout "<name>"` matches a layout name inside the active layout group.
 - layouts with `includeInLayoutIndex = false` are excluded from layout-index shortcuts and from layout cycling.
 - GridMove resolves one active set per display in this order: explicit display ID or ID array, then `main`, then `all`.
 - if trigger regions overlap on one display, the later declared layout wins.

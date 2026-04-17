@@ -61,24 +61,21 @@ private final class Locked<Value: Sendable>: @unchecked Sendable {
 }
 
 @MainActor
-@Test func commandLineRunnerResolvesLayoutByNameOrIdentifier() async throws {
+@Test func commandLineRunnerResolvesLayoutByGroupIndexOrName() async throws {
     let layouts = AppConfiguration.defaultValue.layouts
 
-    #expect(try LayoutIdentifierResolver.resolveLayout(identifier: "layout-4", in: layouts).id == "layout-4")
+    #expect(try LayoutIdentifierResolver.resolveLayout(identifier: "4", in: layouts).id == "layout-4")
     #expect(try LayoutIdentifierResolver.resolveLayout(identifier: "Center", in: layouts).id == "layout-4")
     #expect(try LayoutIdentifierResolver.resolveLayout(identifier: "fill all screen", in: layouts).id == "layout-10")
     #expect(throws: CommandLineLayoutResolutionError.unknownLayout("unknown")) {
         try LayoutIdentifierResolver.resolveLayout(identifier: "unknown", in: layouts)
     }
-}
-
-@MainActor
-@Test func commandLineRunnerResolvesIndexedLayoutAliasesInActiveGroup() async throws {
-    var configuration = AppConfiguration.defaultValue
-    configuration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
-
-    #expect(try LayoutIdentifierResolver.resolveLayout(identifier: "layout-1", in: configuration).layout.name == "Fullscreen main")
-    #expect(try LayoutIdentifierResolver.resolveLayout(identifier: "layout_4", in: configuration).layout.name == "Fullscreen other")
+    #expect(throws: CommandLineLayoutResolutionError.invalidLayoutIndex("12")) {
+        try LayoutIdentifierResolver.resolveLayout(identifier: "12", in: layouts)
+    }
+    #expect(throws: CommandLineLayoutResolutionError.unknownLayout("layout-4")) {
+        try LayoutIdentifierResolver.resolveLayout(identifier: "layout-4", in: layouts)
+    }
 }
 
 @MainActor
@@ -106,6 +103,21 @@ private final class Locked<Value: Sendable>: @unchecked Sendable {
 
     #expect(throws: CommandLineLayoutResolutionError.ambiguousLayoutName("Center", matches: layouts)) {
         try LayoutIdentifierResolver.resolveLayout(identifier: "Center", in: layouts)
+    }
+}
+
+@MainActor
+@Test func commandLineRunnerResolvesNumericIdentifierInsideActiveGroup() async throws {
+    var configuration = AppConfiguration.defaultValue
+    configuration.general.activeLayoutGroup = "fullscreen"
+
+    #expect(try LayoutIdentifierResolver.resolveLayout(identifier: "1", in: configuration).layout.name == "Fullscreen main")
+    #expect(try LayoutIdentifierResolver.resolveLayout(identifier: "4", in: configuration).layout.name == "Fullscreen other")
+    #expect(throws: CommandLineLayoutResolutionError.invalidLayoutIndex("5")) {
+        try LayoutIdentifierResolver.resolveLayout(identifier: "5", in: configuration)
+    }
+    #expect(throws: CommandLineLayoutResolutionError.unknownLayout("layout_4")) {
+        try LayoutIdentifierResolver.resolveLayout(identifier: "layout_4", in: configuration)
     }
 }
 

@@ -46,6 +46,12 @@ Main runtime components:
 - `LayoutActionExecutor`: shared logic for menu, shortcut, and CLI actions
 - `DistributedCommandRelay`: CLI-to-app command relay
 
+CLI layout lookup rules:
+
+- `-layout <number>` resolves the 1-based layout index inside the active layout group's indexed layouts
+- `-layout "<name>"` resolves a layout by name inside the active layout group
+- internal layout IDs are not part of the CLI interface
+
 ## 4. Configuration Model
 
 Persistent configuration is stored in JSON and normalized on read and write.

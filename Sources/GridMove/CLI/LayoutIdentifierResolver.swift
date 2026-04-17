@@ -3,40 +3,43 @@ import Foundation
 enum CommandLineLayoutResolutionError: Error, Equatable {
     case unknownLayout(String)
     case ambiguousLayoutName(String, matches: [LayoutPreset])
+    case invalidLayoutIndex(String)
 
     var message: String {
         switch self {
         case let .unknownLayout(identifier):
             return "Unknown layout: \(identifier)"
         case let .ambiguousLayoutName(identifier, matches):
-            let matchList = matches.map { "- \($0.name) [\($0.id)]" }.joined(separator: "\n")
+            let matchList = matches.map { "- \($0.name)" }.joined(separator: "\n")
             return """
             Ambiguous layout name: \(identifier)
             Matched layouts:
             \(matchList)
-            Please use -layout <layout-id>.
+            Please use -layout <layout-index>.
             """
+        case let .invalidLayoutIndex(value):
+            return "Unknown layout index: \(value)"
         }
     }
 }
 
 enum LayoutIdentifierResolver {
     static func resolveLayout(identifier: String, in configuration: AppConfiguration) throws -> ResolvedLayoutEntry {
-        if let matchedByID = LayoutGroupResolver.entry(for: identifier, configuration: configuration) {
-            return matchedByID
+        if let numericIndex = parseLayoutIndex(from: identifier) {
+            guard let entry = LayoutGroupResolver.entry(at: numericIndex, configuration: configuration) else {
+                throw CommandLineLayoutResolutionError.invalidLayoutIndex(identifier)
+            }
+            return entry
         }
-
-        if let index = parseIndexedLayoutIdentifier(identifier),
-           let indexedEntry = LayoutGroupResolver.entry(at: index, configuration: configuration) {
-            return indexedEntry
-        }
-
         return try LayoutGroupResolver.resolveNamedLayout(identifier: identifier, configuration: configuration)
     }
 
     static func resolveLayout(identifier: String, in layouts: [LayoutPreset]) throws -> LayoutPreset {
-        if let layoutByID = layouts.first(where: { $0.id.caseInsensitiveCompare(identifier) == .orderedSame }) {
-            return layoutByID
+        if let numericIndex = parseLayoutIndex(from: identifier) {
+            guard numericIndex >= 1, numericIndex <= layouts.count else {
+                throw CommandLineLayoutResolutionError.invalidLayoutIndex(identifier)
+            }
+            return layouts[numericIndex - 1]
         }
 
         let matchedLayouts = layouts.filter { $0.name.caseInsensitiveCompare(identifier) == .orderedSame }
@@ -49,18 +52,18 @@ enum LayoutIdentifierResolver {
 
         throw CommandLineLayoutResolutionError.unknownLayout(identifier)
     }
-}
 
-private func parseIndexedLayoutIdentifier(_ identifier: String) -> Int? {
-    let normalizedIdentifier = identifier.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-    let prefixes = ["layout-", "layout_"]
-
-    for prefix in prefixes where normalizedIdentifier.hasPrefix(prefix) {
-        let suffix = String(normalizedIdentifier.dropFirst(prefix.count))
-        if let value = Int(suffix), value >= 1 {
-            return value
+    private static func parseLayoutIndex(from identifier: String) -> Int? {
+        let trimmedIdentifier = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedIdentifier.isEmpty else {
+            return nil
         }
-    }
 
-    return nil
+        let digits = CharacterSet.decimalDigits
+        guard trimmedIdentifier.unicodeScalars.allSatisfy(digits.contains) else {
+            return nil
+        }
+
+        return Int(trimmedIdentifier)
+    }
 }
