@@ -43,7 +43,7 @@ Main runtime components:
 - `LayoutEngine`: trigger-slot resolution and layout cycling
 - `DragGridController`: pointer-triggered runtime interaction
 - `ShortcutController`: global keyboard shortcut handling
-- `LayoutActionExecutor`: shared logic for menu and CLI actions
+- `LayoutActionExecutor`: shared logic for menu, shortcut, and CLI actions
 - `DistributedCommandRelay`: CLI-to-app command relay
 
 ## 4. Configuration Model
@@ -152,16 +152,16 @@ Polling behavior:
 - fast polling while permission is granted
 - slower polling while permission is missing
 
-When permission is available:
+When permission is available and `general.isEnabled` is `true`:
 
 - drag interactions are enabled
 - shortcut handling is enabled
 
-When permission is missing or revoked:
+When permission is missing, revoked, or the app is disabled:
 
 - drag interactions stop
 - shortcut handling stops
-- the app directly triggers one system Accessibility permission request for that state transition
+- if the access state changed to missing, the app directly triggers one system Accessibility permission request for that state transition
 - if access stays missing, the app does not keep re-requesting until the next transition or the next launch
 
 ## 6. Target Window Resolution

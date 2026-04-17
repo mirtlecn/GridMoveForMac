@@ -38,8 +38,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     )
 
     private lazy var shortcutController = ShortcutController(
-        layoutEngine: layoutEngine,
-        windowController: windowController,
+        actionExecutor: actionExecutor,
         configurationProvider: { [weak self] in self?.configuration ?? AppConfiguration.defaultValue },
         accessibilityTrustedProvider: { [weak self] in
             self?.accessibilityMonitor.hasAccess ?? false
@@ -52,6 +51,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var configuration = AppConfiguration.defaultValue
     private var menuController: MenuBarController?
     private var accessibilityPollingTimer: Timer?
+    private var currentAccessibilityPollingInterval: TimeInterval?
 
     init(
         configurationStore: ConfigurationStore = ConfigurationStore(),
@@ -84,16 +84,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             toggleSettings: makeToggleSettingsState(configuration: configuration),
             actionItems: makeMenuActionItems(configuration: configuration),
             onToggleDragGrid: { [weak self] isEnabled in
-                self?.updateGlobalEnabledState(isEnabled)
+                self?.updateGlobalEnabledState(isEnabled) ?? false
             },
             onToggleMiddleMouseDrag: { [weak self] isEnabled in
-                self?.updateMiddleMouseDragEnabled(isEnabled)
+                self?.updateMiddleMouseDragEnabled(isEnabled) ?? false
             },
             onToggleModifierLeftMouseDrag: { [weak self] isEnabled in
-                self?.updateModifierLeftMouseDragEnabled(isEnabled)
+                self?.updateModifierLeftMouseDragEnabled(isEnabled) ?? false
             },
             onTogglePreferLayoutMode: { [weak self] isEnabled in
-                self?.updatePreferLayoutMode(isEnabled)
+                self?.updatePreferLayoutMode(isEnabled) ?? false
             },
             onPerformAction: { [weak self] action in
                 self?.performMenuAction(action)
@@ -117,24 +117,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         dragGridController.stop()
         shortcutController.stop()
         accessibilityPollingTimer?.invalidate()
+        currentAccessibilityPollingInterval = nil
         commandRelay.stopListening()
     }
 
     func evaluateAccessibilityState() {
         let didChange = accessibilityMonitor.refresh()
-        restartAccessibilityPolling()
+        synchronizeAccessibilityPolling()
+        synchronizeRuntimeControllers()
 
-        guard didChange else {
-            return
-        }
-
-        if accessibilityMonitor.hasAccess {
-            dragGridController.start()
-            shortcutController.start()
-            applyGlobalEnabledState()
-        } else {
-            dragGridController.stop()
-            shortcutController.stop()
+        if didChange && !accessibilityMonitor.hasAccess {
             _ = requestAccessibilityPrompt()
         }
     }
@@ -145,16 +137,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func startAccessibilityPollingIfNeeded() {
-        restartAccessibilityPolling()
+        synchronizeAccessibilityPolling()
     }
 
-    private func restartAccessibilityPolling() {
+    private func synchronizeAccessibilityPolling() {
+        let nextPollingInterval = accessibilityMonitor.pollingInterval
+        guard accessibilityPollingTimer == nil || currentAccessibilityPollingInterval != nextPollingInterval else {
+            return
+        }
+
         accessibilityPollingTimer?.invalidate()
-        accessibilityPollingTimer = Timer.scheduledTimer(withTimeInterval: accessibilityMonitor.pollingInterval, repeats: true) { [weak self] _ in
+        accessibilityPollingTimer = Timer.scheduledTimer(withTimeInterval: nextPollingInterval, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in
                 self?.evaluateAccessibilityState()
             }
         }
+        currentAccessibilityPollingInterval = nextPollingInterval
     }
 
     func reloadConfigurationFromDisk(notifyOnFallback: Bool = false) {
@@ -179,47 +177,60 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func updateGlobalEnabledState(_ isEnabled: Bool) {
+    @discardableResult
+    private func updateGlobalEnabledState(_ isEnabled: Bool) -> Bool {
         guard configuration.general.isEnabled != isEnabled else {
-            return
+            return true
         }
 
-        updateConfiguration { configuration in
+        return updateConfiguration { configuration in
             configuration.general.isEnabled = isEnabled
         }
     }
 
-    func updateMiddleMouseDragEnabled(_ isEnabled: Bool) {
+    @discardableResult
+    func updateMiddleMouseDragEnabled(_ isEnabled: Bool) -> Bool {
         guard configuration.dragTriggers.enableMiddleMouseDrag != isEnabled else {
-            return
+            return true
         }
 
-        updateConfiguration { configuration in
+        return updateConfiguration { configuration in
             configuration.dragTriggers.enableMiddleMouseDrag = isEnabled
         }
     }
 
-    func updateModifierLeftMouseDragEnabled(_ isEnabled: Bool) {
+    @discardableResult
+    func updateModifierLeftMouseDragEnabled(_ isEnabled: Bool) -> Bool {
         guard configuration.dragTriggers.enableModifierLeftMouseDrag != isEnabled else {
-            return
+            return true
         }
 
-        updateConfiguration { configuration in
+        return updateConfiguration { configuration in
             configuration.dragTriggers.enableModifierLeftMouseDrag = isEnabled
         }
     }
 
-    func updatePreferLayoutMode(_ isEnabled: Bool) {
+    @discardableResult
+    func updatePreferLayoutMode(_ isEnabled: Bool) -> Bool {
         guard configuration.dragTriggers.preferLayoutMode != isEnabled else {
-            return
+            return true
         }
 
-        updateConfiguration { configuration in
+        return updateConfiguration { configuration in
             configuration.dragTriggers.preferLayoutMode = isEnabled
         }
     }
 
-    private func applyGlobalEnabledState() {
+    private func synchronizeRuntimeControllers() {
+        let shouldListenForGlobalInput = accessibilityMonitor.hasAccess && configuration.general.isEnabled
+        if shouldListenForGlobalInput {
+            dragGridController.start()
+            shortcutController.start()
+        } else {
+            dragGridController.stop()
+            shortcutController.stop()
+        }
+
         dragGridController.isEnabled = configuration.general.isEnabled
         shortcutController.isEnabled = configuration.general.isEnabled
         menuController?.setEnabled(configuration.general.isEnabled)
@@ -291,7 +302,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         applicationMenuItem.submenu = applicationMenu
         mainMenu.addItem(applicationMenuItem)
-        NSApp.mainMenu = mainMenu
+        NSApplication.shared.mainMenu = mainMenu
     }
 
     @objc private func reloadConfigurationFromMenu() {
@@ -311,26 +322,55 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         openURL(configurationStore.directoryURL)
     }
 
-    private func updateConfiguration(_ mutate: (inout AppConfiguration) -> Void) {
-        mutate(&configuration)
+    @discardableResult
+    private func updateConfiguration(_ mutate: (inout AppConfiguration) -> Void) -> Bool {
+        var candidateConfiguration = configuration
+        mutate(&candidateConfiguration)
 
         do {
-            try configurationStore.save(configuration)
+            try configurationStore.save(candidateConfiguration)
         } catch {
             AppLogger.shared.error("Failed to save configuration: \(error.localizedDescription)")
+            menuController?.updateToggleStates(makeToggleSettingsState(configuration: configuration))
+            menuController?.setEnabled(configuration.general.isEnabled)
+            return false
         }
 
-        applyConfiguration(configuration)
+        applyConfiguration(candidateConfiguration)
+        return true
     }
 
     private func applyConfiguration(_ configuration: AppConfiguration) {
+        if self.configuration.layouts != configuration.layouts {
+            layoutEngine.resetRecordedLayoutIDs()
+        }
         self.configuration = configuration
-        applyGlobalEnabledState()
+        synchronizeRuntimeControllers()
         menuController?.updateActionItems(
             makeMenuActionItems(configuration: configuration),
             isEnabled: configuration.general.isEnabled
         )
         menuController?.updateToggleStates(makeToggleSettingsState(configuration: configuration))
+    }
+
+    var isDragInputMonitoringActiveForTesting: Bool {
+        dragGridController.eventTap != nil
+    }
+
+    var isShortcutInputMonitoringActiveForTesting: Bool {
+        shortcutController.isMonitoringInputForTesting
+    }
+
+    var shouldMonitorGlobalInputForTesting: Bool {
+        accessibilityMonitor.hasAccess && configuration.general.isEnabled
+    }
+
+    func recordLayoutIDForTesting(_ layoutID: String, windowIdentity: String) {
+        layoutEngine.recordLayoutID(layoutID, for: windowIdentity)
+    }
+
+    func nextLayoutIDForTesting(windowIdentity: String) -> String? {
+        layoutEngine.nextLayoutID(for: windowIdentity, layouts: configuration.layouts)
     }
 
     private func makeToggleSettingsState(configuration: AppConfiguration) -> MenuBarController.ToggleSettingsState {

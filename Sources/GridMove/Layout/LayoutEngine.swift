@@ -78,6 +78,10 @@ final class LayoutEngine {
         windowLayoutIDs[identity] = nil
     }
 
+    func resetRecordedLayoutIDs() {
+        windowLayoutIDs.removeAll()
+    }
+
     func currentLayoutID(for windowIdentity: String, layouts: [LayoutPreset]) -> String {
         let cycleLayouts = cycleEligibleLayouts(from: layouts)
         if let layoutID = windowLayoutIDs[windowIdentity], cycleLayouts.contains(where: { $0.id == layoutID }) {

@@ -28,10 +28,10 @@ final class MenuBarController: NSObject {
     private var actionMenuItems: [NSMenuItem] = []
     private var actionItems: [ActionItem]
 
-    private let onToggleDragGrid: (Bool) -> Void
-    private let onToggleMiddleMouseDrag: (Bool) -> Void
-    private let onToggleModifierLeftMouseDrag: (Bool) -> Void
-    private let onTogglePreferLayoutMode: (Bool) -> Void
+    private let onToggleDragGrid: (Bool) -> Bool
+    private let onToggleMiddleMouseDrag: (Bool) -> Bool
+    private let onToggleModifierLeftMouseDrag: (Bool) -> Bool
+    private let onTogglePreferLayoutMode: (Bool) -> Bool
     private let onPerformAction: (HotkeyAction) -> Void
     private let onReloadConfiguration: () -> Void
     private let onCustomize: () -> Void
@@ -41,10 +41,10 @@ final class MenuBarController: NSObject {
         dragGridEnabled: Bool,
         toggleSettings: ToggleSettingsState,
         actionItems: [ActionItem],
-        onToggleDragGrid: @escaping (Bool) -> Void,
-        onToggleMiddleMouseDrag: @escaping (Bool) -> Void,
-        onToggleModifierLeftMouseDrag: @escaping (Bool) -> Void,
-        onTogglePreferLayoutMode: @escaping (Bool) -> Void,
+        onToggleDragGrid: @escaping (Bool) -> Bool,
+        onToggleMiddleMouseDrag: @escaping (Bool) -> Bool,
+        onToggleModifierLeftMouseDrag: @escaping (Bool) -> Bool,
+        onTogglePreferLayoutMode: @escaping (Bool) -> Bool,
         onPerformAction: @escaping (HotkeyAction) -> Void,
         onReloadConfiguration: @escaping () -> Void,
         onCustomize: @escaping () -> Void,
@@ -103,8 +103,9 @@ final class MenuBarController: NSObject {
 
     @objc private func toggleDragGrid() {
         let nextState: NSControl.StateValue = dragGridMenuItem.state == .on ? .off : .on
-        dragGridMenuItem.state = nextState
-        onToggleDragGrid(nextState == .on)
+        if onToggleDragGrid(nextState == .on) {
+            dragGridMenuItem.state = nextState
+        }
     }
 
     private func configureToggleMenuItems(_ toggleSettings: ToggleSettingsState) {
@@ -178,20 +179,23 @@ final class MenuBarController: NSObject {
 
     @objc private func toggleMiddleMouseDrag() {
         let nextState: NSControl.StateValue = middleMouseDragMenuItem.state == .on ? .off : .on
-        middleMouseDragMenuItem.state = nextState
-        onToggleMiddleMouseDrag(nextState == .on)
+        if onToggleMiddleMouseDrag(nextState == .on) {
+            middleMouseDragMenuItem.state = nextState
+        }
     }
 
     @objc private func toggleModifierLeftMouseDrag() {
         let nextState: NSControl.StateValue = modifierLeftMouseDragMenuItem.state == .on ? .off : .on
-        modifierLeftMouseDragMenuItem.state = nextState
-        onToggleModifierLeftMouseDrag(nextState == .on)
+        if onToggleModifierLeftMouseDrag(nextState == .on) {
+            modifierLeftMouseDragMenuItem.state = nextState
+        }
     }
 
     @objc private func togglePreferLayoutMode() {
         let nextState: NSControl.StateValue = preferLayoutModeMenuItem.state == .on ? .off : .on
-        preferLayoutModeMenuItem.state = nextState
-        onTogglePreferLayoutMode(nextState == .on)
+        if onTogglePreferLayoutMode(nextState == .on) {
+            preferLayoutModeMenuItem.state = nextState
+        }
     }
 
     @objc private func performAction(_ sender: NSMenuItem) {

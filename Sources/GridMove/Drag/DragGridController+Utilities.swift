@@ -73,7 +73,6 @@ extension DragGridController {
     func ensureAccessibilityIsStillGranted() -> Bool {
         guard accessibilityTrustedProvider() else {
             resetState()
-            stop()
             scheduleAccessibilityRevocationHandling()
             return false
         }

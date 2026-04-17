@@ -3,8 +3,7 @@ import Foundation
 
 @MainActor
 final class ShortcutController {
-    private let layoutEngine: LayoutEngine
-    private let windowController: WindowController
+    private let actionExecutor: LayoutActionExecutor
     private let configurationProvider: () -> AppConfiguration
     private let accessibilityTrustedProvider: () -> Bool
     private let onAccessibilityRevoked: () -> Void
@@ -15,15 +14,17 @@ final class ShortcutController {
 
     var isEnabled = true
 
+    var isMonitoringInputForTesting: Bool {
+        eventTap != nil
+    }
+
     init(
-        layoutEngine: LayoutEngine,
-        windowController: WindowController,
+        actionExecutor: LayoutActionExecutor,
         configurationProvider: @escaping () -> AppConfiguration,
         accessibilityTrustedProvider: @escaping () -> Bool,
         onAccessibilityRevoked: @escaping () -> Void
     ) {
-        self.layoutEngine = layoutEngine
-        self.windowController = windowController
+        self.actionExecutor = actionExecutor
         self.configurationProvider = configurationProvider
         self.accessibilityTrustedProvider = accessibilityTrustedProvider
         self.onAccessibilityRevoked = onAccessibilityRevoked
@@ -112,40 +113,7 @@ final class ShortcutController {
             return Unmanaged.passUnretained(event)
         }
 
-        guard let window = windowController.windowForLayoutAction(configuration: configuration) else {
-            return nil
-        }
-
-        switch binding.action {
-        case let .applyLayout(layoutID):
-            windowController.applyLayout(
-                layoutID: layoutID,
-                to: window,
-                preferredScreen: nil,
-                configuration: configuration
-            )
-        case .cycleNext:
-            guard let layoutID = layoutEngine.nextLayoutID(for: window.identity, layouts: configuration.layouts) else {
-                return nil
-            }
-            windowController.applyLayout(
-                layoutID: layoutID,
-                to: window,
-                preferredScreen: nil,
-                configuration: configuration
-            )
-        case .cyclePrevious:
-            guard let layoutID = layoutEngine.previousLayoutID(for: window.identity, layouts: configuration.layouts) else {
-                return nil
-            }
-            windowController.applyLayout(
-                layoutID: layoutID,
-                to: window,
-                preferredScreen: nil,
-                configuration: configuration
-            )
-        }
-
+        _ = actionExecutor.executeFocusedWindowAction(binding.action, configuration: configuration)
         return nil
     }
 
@@ -160,7 +128,6 @@ final class ShortcutController {
 
     private func ensureAccessibilityIsStillGranted() -> Bool {
         guard accessibilityTrustedProvider() else {
-            stop()
             scheduleAccessibilityRevocationHandling()
             return false
         }

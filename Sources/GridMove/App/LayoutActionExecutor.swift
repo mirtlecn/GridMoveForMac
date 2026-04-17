@@ -59,6 +59,10 @@ final class LayoutActionExecutor {
         execute(hotkeyAction: hotkeyAction, targetWindowID: targetWindowID, configuration: configurationProvider())
     }
 
+    func executeFocusedWindowAction(_ hotkeyAction: HotkeyAction, configuration: AppConfiguration) -> LayoutActionExecutionResult {
+        execute(hotkeyAction: hotkeyAction, targetWindowID: nil, configuration: configuration)
+    }
+
     private func execute(
         hotkeyAction: HotkeyAction,
         targetWindowID: UInt32?,
