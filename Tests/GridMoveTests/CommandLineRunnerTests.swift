@@ -136,6 +136,7 @@ private final class Locked<Value: Sendable>: @unchecked Sendable {
     configuration.layoutGroups = [
         LayoutGroup(
             name: "work",
+            includeInGroupCycle: true,
             sets: [
                 LayoutSet(
                     monitor: .main,

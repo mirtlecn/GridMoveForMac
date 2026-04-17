@@ -28,12 +28,14 @@ extension AppConfiguration {
         [
             LayoutGroup(
                 name: builtInGroupName,
+                includeInGroupCycle: true,
                 sets: [
                     LayoutSet(monitor: .all, layouts: defaultLayouts),
                 ]
             ),
             LayoutGroup(
                 name: fullscreenGroupName,
+                includeInGroupCycle: true,
                 sets: [
                     LayoutSet(
                         monitor: .main,

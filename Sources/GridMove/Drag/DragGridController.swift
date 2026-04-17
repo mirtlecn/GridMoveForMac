@@ -8,6 +8,7 @@ final class DragGridController {
     let windowController: WindowController
     let overlayController: OverlayController
     let configurationProvider: () -> AppConfiguration
+    let cycleActiveLayoutGroup: () -> AppConfiguration?
     let accessibilityTrustedProvider: () -> Bool
     let accessibilityAccessValidator: () -> Bool
     let onAccessibilityRevoked: () -> Void
@@ -24,6 +25,7 @@ final class DragGridController {
         windowController: WindowController,
         overlayController: OverlayController,
         configurationProvider: @escaping () -> AppConfiguration,
+        cycleActiveLayoutGroup: @escaping () -> AppConfiguration?,
         accessibilityTrustedProvider: @escaping () -> Bool,
         accessibilityAccessValidator: @escaping () -> Bool,
         onAccessibilityRevoked: @escaping () -> Void
@@ -32,6 +34,7 @@ final class DragGridController {
         self.windowController = windowController
         self.overlayController = overlayController
         self.configurationProvider = configurationProvider
+        self.cycleActiveLayoutGroup = cycleActiveLayoutGroup
         self.accessibilityTrustedProvider = accessibilityTrustedProvider
         self.accessibilityAccessValidator = accessibilityAccessValidator
         self.onAccessibilityRevoked = onAccessibilityRevoked

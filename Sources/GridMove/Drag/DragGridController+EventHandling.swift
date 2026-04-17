@@ -171,23 +171,44 @@ extension DragGridController {
     }
 
     func handleFlagsChanged(event: CGEvent, configuration: AppConfiguration) -> Unmanaged<CGEvent>? {
-        guard state.active, var tracker = state.optionToggleTracker else {
+        guard state.active else {
             return Unmanaged.passUnretained(event)
         }
 
         let modifiers = normalizedModifiers(from: event.flags)
-        let result = tracker.register(modifiers: modifiers)
-        state.optionToggleTracker = tracker
+        var consumedEvent = false
 
-        switch result {
-        case .ignore:
-            return Unmanaged.passUnretained(event)
-        case .consume:
-            return nil
-        case .toggle:
-            toggleInteractionMode(at: appKitPoint(from: event), configuration: configuration)
-            return nil
+        if state.interactionMode == .layoutSelection, var shiftTracker = state.shiftGroupCycleTracker {
+            let shiftResult = shiftTracker.register(modifiers: modifiers)
+            state.shiftGroupCycleTracker = shiftTracker
+
+            switch shiftResult {
+            case .ignore:
+                break
+            case .consume:
+                consumedEvent = true
+            case .toggle:
+                cycleLayoutGroup(at: appKitPoint(from: event))
+                return nil
+            }
         }
+
+        if var optionTracker = state.optionToggleTracker {
+            let optionResult = optionTracker.register(modifiers: modifiers)
+            state.optionToggleTracker = optionTracker
+
+            switch optionResult {
+            case .ignore:
+                break
+            case .consume:
+                consumedEvent = true
+            case .toggle:
+                toggleInteractionMode(at: appKitPoint(from: event), configuration: configuration)
+                return nil
+            }
+        }
+
+        return consumedEvent ? nil : Unmanaged.passUnretained(event)
     }
 
     func handleKeyDown(event: CGEvent) -> Unmanaged<CGEvent>? {

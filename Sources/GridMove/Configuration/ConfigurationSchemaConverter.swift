@@ -86,7 +86,11 @@ enum ConfigurationSchemaConverter {
                 }
                 return LayoutSet(monitor: setConfiguration.monitor, layouts: layouts)
             }
-            return LayoutGroup(name: groupConfiguration.name, sets: sets)
+            return LayoutGroup(
+                name: groupConfiguration.name,
+                includeInGroupCycle: groupConfiguration.includeInGroupCycle,
+                sets: sets
+            )
         }
     }
 }

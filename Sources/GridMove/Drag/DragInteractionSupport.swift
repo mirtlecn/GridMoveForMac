@@ -18,11 +18,41 @@ enum OptionToggleEventResult: Equatable {
 }
 
 struct OptionToggleTracker: Equatable {
-    private(set) var lastModifiers: Set<ModifierKey>
-    private(set) var isPending = false
+    private var tracker: SingleModifierToggleTracker
 
     init(baselineModifiers: Set<ModifierKey>) {
+        tracker = SingleModifierToggleTracker(baselineModifiers: baselineModifiers, toggleModifier: .alt)
+    }
+
+    var isPending: Bool {
+        tracker.isPending
+    }
+
+    mutating func register(modifiers: Set<ModifierKey>) -> OptionToggleEventResult {
+        tracker.register(modifiers: modifiers)
+    }
+}
+
+struct ShiftGroupCycleTracker: Equatable {
+    private var tracker: SingleModifierToggleTracker
+
+    init(baselineModifiers: Set<ModifierKey>) {
+        tracker = SingleModifierToggleTracker(baselineModifiers: baselineModifiers, toggleModifier: .shift)
+    }
+
+    mutating func register(modifiers: Set<ModifierKey>) -> OptionToggleEventResult {
+        tracker.register(modifiers: modifiers)
+    }
+}
+
+private struct SingleModifierToggleTracker: Equatable {
+    private(set) var lastModifiers: Set<ModifierKey>
+    private(set) var isPending = false
+    let toggleModifier: ModifierKey
+
+    init(baselineModifiers: Set<ModifierKey>, toggleModifier: ModifierKey) {
         lastModifiers = baselineModifiers
+        self.toggleModifier = toggleModifier
     }
 
     mutating func register(modifiers: Set<ModifierKey>) -> OptionToggleEventResult {
@@ -35,19 +65,19 @@ struct OptionToggleTracker: Equatable {
             lastModifiers = modifiers
         }
 
-        if previousModifiers.isEmpty, modifiers == [.alt] {
+        if previousModifiers.isEmpty, modifiers == [toggleModifier] {
             isPending = true
             return .consume
         }
 
-        if previousModifiers == [.alt], modifiers.isEmpty, isPending {
+        if previousModifiers == [toggleModifier], modifiers.isEmpty, isPending {
             isPending = false
             return .toggle
         }
 
         if isPending {
             isPending = false
-            if previousModifiers == [.alt] || modifiers == [.alt] {
+            if previousModifiers == [toggleModifier] || modifiers == [toggleModifier] {
                 return .consume
             }
         }
@@ -85,5 +115,6 @@ struct DragInteractionState {
     var currentWindowFrame: CGRect?
     var moveAnchor: MoveAnchor?
     var optionToggleTracker: OptionToggleTracker?
+    var shiftGroupCycleTracker: ShiftGroupCycleTracker?
     var pendingRightClickToggle = false
 }

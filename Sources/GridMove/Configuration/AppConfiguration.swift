@@ -377,6 +377,7 @@ struct LayoutSet: Codable, Equatable, Hashable {
 
 struct LayoutGroup: Codable, Equatable, Hashable {
     var name: String
+    var includeInGroupCycle: Bool
     var sets: [LayoutSet]
 }
 
@@ -634,6 +635,27 @@ struct AppConfiguration: Codable, Equatable {
 
     func layoutGroupNames() -> [String] {
         layoutGroups.map(\.name)
+    }
+
+    func nextLayoutGroupNameInCycle() -> String? {
+        guard !layoutGroups.isEmpty else {
+            return nil
+        }
+
+        guard let currentIndex = layoutGroups.firstIndex(where: { $0.name == general.activeLayoutGroup }) else {
+            return layoutGroups.first(where: \.includeInGroupCycle)?.name
+        }
+
+        for offset in 1...layoutGroups.count {
+            let nextIndex = (currentIndex + offset) % layoutGroups.count
+            let nextGroup = layoutGroups[nextIndex]
+            guard nextGroup.includeInGroupCycle else {
+                continue
+            }
+            return nextGroup.name == general.activeLayoutGroup ? nil : nextGroup.name
+        }
+
+        return nil
     }
 
     mutating func removeLayout(id: String) {

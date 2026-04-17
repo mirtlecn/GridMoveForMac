@@ -38,6 +38,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowController: windowController,
         overlayController: overlayController,
         configurationProvider: { [weak self] in self?.configuration ?? AppConfiguration.defaultValue },
+        cycleActiveLayoutGroup: { [weak self] in
+            self?.cycleToNextLayoutGroup()
+        },
         accessibilityTrustedProvider: { [weak self] in
             self?.accessibilityCoordinator.hasAccess ?? false
         },
@@ -221,6 +224,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return updateConfiguration { configuration in
             configuration.general.activeLayoutGroup = groupName
         }
+    }
+
+    private func cycleToNextLayoutGroup() -> AppConfiguration? {
+        guard let nextGroupName = configuration.nextLayoutGroupNameInCycle() else {
+            return nil
+        }
+
+        guard updateActiveLayoutGroup(nextGroupName) else {
+            return nil
+        }
+
+        return configuration
     }
 
     private func synchronizeRuntimeControllers() {

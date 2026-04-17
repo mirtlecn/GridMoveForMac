@@ -26,6 +26,7 @@ extension DragGridController {
         state.targetWindow = targetWindow
         state.currentWindowFrame = targetWindow.frame
         state.optionToggleTracker = OptionToggleTracker(baselineModifiers: currentModifierKeys)
+        state.shiftGroupCycleTracker = ShiftGroupCycleTracker(baselineModifiers: currentModifierKeys)
         state.pendingRightClickToggle = false
 
         let initialMode = Self.preferredInteractionMode(preferLayoutMode: configuration.dragTriggers.preferLayoutMode)
@@ -138,6 +139,7 @@ extension DragGridController {
         state.overlayActivationPoint = point
         state.hoveredLayoutID = nil
         state.lastAppliedLayoutID = nil
+        state.shiftGroupCycleTracker = ShiftGroupCycleTracker(baselineModifiers: currentModifierKeys)
 
         let fallbackScreen = currentWindowFrame()
             .flatMap { frame in
@@ -187,6 +189,7 @@ extension DragGridController {
         state.hoveredLayoutID = nil
         state.lastAppliedLayoutID = nil
         state.hasDraggedPastThreshold = true
+        state.shiftGroupCycleTracker = nil
 
         let windowFrame = currentWindowFrame()
         if let frame = windowFrame {
@@ -246,20 +249,42 @@ extension DragGridController {
             return
         }
 
-        let highlightFrame: CGRect?
-        if !state.hasDraggedPastThreshold {
-            highlightFrame = currentWindowFrame()
-        } else if let hoveredLayoutID = state.hoveredLayoutID {
-            highlightFrame = state.resolvedSlots.first(where: { $0.layoutID == hoveredLayoutID })?.targetFrame
-        } else {
-            highlightFrame = nil
-        }
-
         overlayController.update(
             screen: screen,
             slots: state.resolvedSlots,
-            highlightFrame: highlightFrame,
+            highlightFrame: overlayHighlightFrame(),
             configuration: configuration
+        )
+    }
+
+    func cycleLayoutGroup(at point: CGPoint) {
+        guard state.interactionMode == .layoutSelection else {
+            return
+        }
+
+        let shouldApplyImmediately = state.hasDraggedPastThreshold
+        guard let updatedConfiguration = cycleActiveLayoutGroup() else {
+            return
+        }
+
+        configureLayoutSelectionMode(
+            at: point,
+            configuration: updatedConfiguration,
+            shouldApplyImmediately: shouldApplyImmediately,
+            shouldFlashHighlight: false
+        )
+
+        guard let screen = state.activeScreen else {
+            return
+        }
+
+        overlayController.flashGroupLabel(
+            text: updatedConfiguration.general.activeLayoutGroup,
+            screen: screen,
+            slots: state.resolvedSlots,
+            highlightFrame: overlayHighlightFrame() ?? currentWindowFrame(),
+            configuration: updatedConfiguration,
+            keepsOverlayVisibleAfterFlash: true
         )
     }
 
@@ -276,5 +301,17 @@ extension DragGridController {
         state = DragInteractionState()
         state.suppressedMouseUpButton = suppressedMouseUpButton
         overlayController.dismiss()
+    }
+
+    func overlayHighlightFrame() -> CGRect? {
+        if !state.hasDraggedPastThreshold {
+            return currentWindowFrame()
+        }
+
+        guard let hoveredLayoutID = state.hoveredLayoutID else {
+            return nil
+        }
+
+        return state.resolvedSlots.first(where: { $0.layoutID == hoveredLayoutID })?.targetFrame
     }
 }

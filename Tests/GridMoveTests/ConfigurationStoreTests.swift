@@ -21,6 +21,7 @@ import Testing
     #expect(initialText.contains("\"layoutGroups\""))
     #expect(initialText.contains("\"activeLayoutGroup\""))
     #expect(initialText.contains("\"applyLayoutByIndex\""))
+    #expect(initialText.contains("\"includeInGroupCycle\""))
     #expect(initialText.contains("\"includeInLayoutIndex\""))
     #expect(initialText.contains("\"monitor\""))
     #expect(!initialText.contains("\"includeInCycle\""))
@@ -121,6 +122,7 @@ import Testing
       "layoutGroups": [
         {
           "name": "work",
+          "includeInGroupCycle": false,
           "sets": [
             {
               "monitor": "main",
@@ -158,6 +160,7 @@ import Testing
     let configuration = try store.load()
 
     #expect(configuration.general.activeLayoutGroup == "work")
+    #expect(configuration.layoutGroups[0].includeInGroupCycle == false)
     #expect(configuration.layouts.map(\.id) == ["layout-1", "layout-2"])
     #expect(configuration.hotkeys.bindings.map(\.id) == ["binding-1"])
     #expect(configuration.hotkeys.bindings[0].action == .applyLayoutByIndex(layout: 2))
@@ -241,6 +244,7 @@ import Testing
 
     #expect(result.didFallBackToDefault == false)
     #expect(result.configuration.general.activeLayoutGroup == "work")
+    #expect(result.configuration.layoutGroups[0].includeInGroupCycle == true)
     #expect(result.configuration.layoutGroups[0].sets[0].layouts.map(\.name) == ["Center", "Center"])
 }
 
@@ -295,9 +299,11 @@ import Testing
     #expect(configuration.general.isEnabled)
     #expect(configuration.general.activeLayoutGroup == AppConfiguration.builtInGroupName)
     #expect(configuration.layoutGroups.count == 2)
+    #expect(configuration.layoutGroups[0].includeInGroupCycle == true)
     #expect(configuration.layoutGroups[0].sets.count == 1)
     #expect(configuration.layoutGroups[0].sets[0].monitor == .all)
     #expect(configuration.layoutGroups[1].name == AppConfiguration.fullscreenGroupName)
+    #expect(configuration.layoutGroups[1].includeInGroupCycle == true)
     #expect(configuration.layoutGroups[1].sets.map(\.monitor) == [.main, .all])
     #expect(configuration.layoutGroups[1].sets[0].layouts.map(\.name) == [
         "Fullscreen main",

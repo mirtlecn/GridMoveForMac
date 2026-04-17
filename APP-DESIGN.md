@@ -64,6 +64,7 @@ Important properties:
 - persisted `applyLayoutByIndex` actions point to the 1-based layout index within the active layout group's indexed layouts
 - stroke colors are stored as `#RRGGBBAA`
 - `general.activeLayoutGroup` selects the currently active layout group
+- `layoutGroups[*].includeInGroupCycle` controls whether layout-mode Shift cycling can switch to that group
 - `layoutGroups[*].sets[*].monitor` routes layouts to `all`, `main`, one display ID, or multiple display IDs
 - `layoutGroups[*].sets[*].layouts[*].includeInMenu` controls whether a layout appears in the menu bar
 
@@ -125,6 +126,7 @@ The built-in default configuration currently resolves to the following values.
 
 - the default `built-in` group contains one `all` set with 11 layouts
 - the default `fullscreen` group contains one `main` set and one fallback `all` set
+- both default groups participate in layout-mode group cycling
 - all layouts use a `12 x 6` grid
 - `layout-1` to `layout-9` use screen trigger regions
 - `layout-10` uses a screen trigger region
@@ -158,6 +160,7 @@ Compatibility behavior:
 - if config decoding fails, the file is left untouched
 - the app falls back to built-in defaults for the current launch
 - missing `preferLayoutMode` defaults to `true`
+- missing `includeInGroupCycle` defaults to `true`
 - missing `triggerRegion` means the layout is menu, shortcut, and CLI only
 - missing `includeInMenu` defaults to `true`
 - missing `includeInLayoutIndex` defaults to `true`
@@ -191,6 +194,13 @@ Layout cycling state is stored in memory only:
 - GridMove keeps the most recent 10 window-to-layout records
 - older window records are dropped automatically
 - reloading a changed layout list clears the recorded cycle baseline
+
+Layout-mode group cycling:
+
+- while a drag interaction is active in layout-selection mode, pressing and releasing `Shift` alone cycles to the next group whose `includeInGroupCycle` is `true`
+- the switch is persisted by updating `general.activeLayoutGroup`
+- the trigger overlay is recomputed immediately for the new group
+- the overlay shows the new group name centered inside the current highlight region for the same duration used by the move-only highlight flash
 
 ## 6. Target Window Resolution
 

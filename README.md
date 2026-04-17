@@ -110,6 +110,7 @@ The real file must be plain JSON and does not support comments. The example belo
   "layoutGroups": [
     {
       "name": "built-in",
+      "includeInGroupCycle": true, // Missing includeInGroupCycle means this group still participates in Shift-based group cycling.
       "sets": [
         {
           "monitor": "all", // Allowed values: "all", "main", "<display-id>", ["<display-id>", ...]
@@ -165,6 +166,7 @@ The real file must be plain JSON and does not support comments. The example belo
 Notes:
 
 - `layoutGroups[*].sets[*].layouts` order matters.
+- `layoutGroups[*].includeInGroupCycle` controls whether layout-mode Shift cycling can switch to that group.
 - the built-in default file includes `built-in` and `fullscreen`; startup keeps `built-in` active until the user switches the group
 - `hotkeys.bindings[*].action.layout` is a 1-based index within the active layout group's indexed layouts.
 - CLI `-layout <number>` uses the same 1-based index within the active layout group's indexed layouts.
@@ -177,6 +179,7 @@ Notes:
 - Menu and CLI direct layout application may move the target window to another display if the matched layout belongs to another set.
 - `includeInMenu` controls only menu-bar visibility.
 - layouts hidden from the menu can still be used by trigger and CLI paths, and can still be reached by layout-index shortcuts only when `includeInLayoutIndex = true`.
+- while a drag interaction is in layout mode, pressing and releasing `Shift` alone switches to the next group whose `includeInGroupCycle` is `true`, saves that group as `general.activeLayoutGroup`, and refreshes the active trigger set immediately.
 - Internal layout IDs and binding IDs are not stored in `config.json`. GridMove regenerates them when loading.
 - If the file is invalid JSON, contains comments, or references a missing layout index, GridMove falls back to built-in defaults for the current launch and keeps the broken file unchanged.
 

@@ -60,6 +60,35 @@ import Testing
     #expect(tracker.register(modifiers: []) == .ignore)
 }
 
+@Test func shiftGroupCycleTrackerTogglesAfterPressThenRelease() async throws {
+    var tracker = ShiftGroupCycleTracker(baselineModifiers: [])
+
+    #expect(tracker.register(modifiers: [.shift]) == .consume)
+    #expect(tracker.register(modifiers: []) == .toggle)
+}
+
+@Test func nextLayoutGroupNameInCycleSkipsExcludedGroupsAndWraps() async throws {
+    var configuration = AppConfiguration.defaultValue
+    configuration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
+    configuration.layoutGroups = [
+        LayoutGroup(name: "work", includeInGroupCycle: true, sets: []),
+        LayoutGroup(name: "game", includeInGroupCycle: false, sets: []),
+        LayoutGroup(name: "fullscreen", includeInGroupCycle: true, sets: []),
+    ]
+
+    #expect(configuration.nextLayoutGroupNameInCycle() == "work")
+
+    configuration.general.activeLayoutGroup = "game"
+    #expect(configuration.nextLayoutGroupNameInCycle() == "fullscreen")
+
+    configuration.layoutGroups = [
+        LayoutGroup(name: "work", includeInGroupCycle: false, sets: []),
+        LayoutGroup(name: "game", includeInGroupCycle: true, sets: []),
+    ]
+    configuration.general.activeLayoutGroup = "game"
+    #expect(configuration.nextLayoutGroupNameInCycle() == nil)
+}
+
 @Test func moveAnchorPreservesPointerOffset() async throws {
     let anchor = MoveAnchor(
         mousePoint: CGPoint(x: 400, y: 300),
