@@ -1,40 +1,29 @@
 # GridMove
 
-GridMove is a native macOS menu bar app for applying window layouts and moving windows with mouse, keyboard, and CLI triggers.
+GridMove is a native macOS app for applying window layouts and moving windows across monitors.
+
+A rewrite of my AHK GridMove for Windows.
+
+GridMove requires accessibility permissions.
 
 ## Features
 
-- Drag-triggered layout selection and move-only mode
-- Per-display layout sets with `all`, `main`, single-display, and multi-display targeting
-- Trigger regions on the screen grid or menu bar strip
-- Accessibility-based window lookup, focus, move, resize, and fullscreen exit
-- CLI actions relayed to the running app
+- Fast, lightweight, and customizable window management via mouse, keyboard, and CLI triggers
+- Move and resize windows across monitors using different layouts
+- Per-monitor layout sets, switchable on the fly
 
-## Dev
+## Hotkeys and Behaviors
 
-```bash
-# test
-make test
-# run locally
-make dev
-# build and package
-make build
-# build a release package for the current VERSION
-make release
+- Hold <kbd>Middle Mouse Button</kbd> briefly to apply a layout to the window under the cursor.
+- Hold <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Alt</kbd>, then left-click and hold to apply a layout to the window under the cursor.
+- In layout mode, press <kbd>Option</kbd> or <kbd>Right Click</kbd> to enter free-move mode; click again to return to layout mode.
+- In layout mode, press <kbd>Shift</kbd> or scroll the mouse wheel to cycle the active layout group.
+- Use the menu bar or preset hotkeys to apply layouts to the currently focused window.
+- Use the CLI to apply layouts to any window by ID.
 
-# update VERSION, create a release commit and tag, then build a release package
-make release v0.1.1
-```
-The default signing mode is ad-hoc signing for local testing. To use a real certificate, override `SIGN_IDENTITY`:
+### CLI
 
-```bash
-make build SIGN_IDENTITY="Developer ID Application: Example Name (TEAMID)"
-```
-
-
-## CLI
-
-GridMove can relay CLI actions to a running app instance:
+GridMove relays CLI actions to a running app instance:
 
 ```bash
 path/to/GridMove.app/Contents/MacOS/GridMove -next
@@ -44,18 +33,16 @@ path/to/GridMove.app/Contents/MacOS/GridMove -layout "Center"
 path/to/GridMove.app/Contents/MacOS/GridMove -layout "Center" -window-id 12345
 ```
 
-If `-window-id <cg-window-id>` is not provided, GridMove targets the currently focused window. 
+If `-window-id <cg-window-id>` is omitted, GridMove targets the currently focused window.
 
 ## Configuration
 
-Config files are stored at:
+Configuration files are stored at:
 
-- `~/.config/GridMove/config.json`
-- `~/.config/GridMove/layout/*.grid.json`
+- `~/.config/GridMove/config.json` — general settings.
+- `~/.config/GridMove/layout/<positive-integer>.grid.json` — layout groups and their layouts.
 
-`config.json` stores non-layout settings only. Each `layout/*.grid.json` file stores one layout-group object. Managed layout filenames must match `<positive-integer>.grid.json`, and GridMove loads them in numeric order.
-
-The example below uses `jsonc` only for explanation. Real files must be plain JSON and do not support comments.
+The examples below use `jsonc` for annotation only. Real files must be plain JSON and do not support comments.
 
 `config.json`
 
@@ -169,8 +156,29 @@ The example below uses `jsonc` only for explanation. Real files must be plain JS
 }
 ```
 
+## Development
 
-## Additional docs
+```bash
+# run tests
+make test
+# run locally
+make dev
+# build and package
+make build
+# build a release package for the current VERSION
+make release
 
-- `UI-UX.md`: UI structure, editing patterns, and future interface rules
-- `APP-DESIGN.md`: runtime behavior, architecture, configuration details, and implementation notes
+# update VERSION, create a release commit and tag, and build a release package
+make release v0.1.1
+```
+
+The default signing mode is ad-hoc for local testing. To use a real certificate, override `SIGN_IDENTITY`:
+
+```bash
+make build SIGN_IDENTITY="Developer ID Application: Example Name (TEAMID)"
+```
+
+## Additional Docs
+
+- [UI-UX.md](UI-UX.md) — UI structure, editing patterns, and future interface rules
+- [APP-DESIGN.md](APP-DESIGN.md) — runtime behavior, architecture, configuration details, and implementation notes
