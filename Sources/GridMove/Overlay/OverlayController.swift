@@ -266,9 +266,11 @@ private final class OverlayView: NSView {
         color.setStroke()
 
         for slot in resolvedSlots {
-            let path = NSBezierPath(roundedRect: localRect(from: slot.triggerFrame), xRadius: 10, yRadius: 10)
-            path.lineWidth = 2
-            path.stroke()
+            for hitTestFrame in slot.hitTestFrames {
+                let path = NSBezierPath(roundedRect: localRect(from: hitTestFrame), xRadius: 10, yRadius: 10)
+                path.lineWidth = 2
+                path.stroke()
+            }
         }
     }
 

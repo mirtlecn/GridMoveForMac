@@ -277,6 +277,80 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 }
 
 @MainActor
+@Test func appDelegateNotifiesWhenManualReloadFullySucceeds() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-full-reload-success-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    _ = try store.load()
+
+    try """
+    {
+      "name": "built-in",
+      "sets": [
+        {
+          "monitor": "all",
+          "layouts": [
+            {
+              "name": "Modified built-in",
+              "gridColumns": 12,
+              "gridRows": 6,
+              "windowSelection": { "x": 0, "y": 0, "w": 12, "h": 6 }
+            }
+          ]
+        }
+      ]
+    }
+    """.write(
+        to: store.layoutDirectoryURL.appendingPathComponent("1.grid.json"),
+        atomically: true,
+        encoding: .utf8
+    )
+    try """
+    {
+      "name": "fullscreen",
+      "sets": [
+        {
+          "monitor": "all",
+          "layouts": [
+            {
+              "name": "Fullscreen",
+              "gridColumns": 12,
+              "gridRows": 6,
+              "windowSelection": { "x": 0, "y": 0, "w": 12, "h": 6 }
+            }
+          ]
+        }
+      ]
+    }
+    """.write(
+        to: store.layoutDirectoryURL.appendingPathComponent("2.grid.json"),
+        atomically: true,
+        encoding: .utf8
+    )
+
+    var receivedTitle: String?
+    var receivedBody: String?
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        notifyUser: { title, body in
+            receivedTitle = title
+            receivedBody = body
+        }
+    )
+
+    delegate.reloadConfigurationFromDisk(mode: .launch)
+    delegate.reloadConfigurationFromDisk(mode: .manual)
+
+    #expect(delegate.configuration.layoutGroups.count == 2)
+    #expect(delegate.configuration.layouts.map(\.name).contains("Modified built-in"))
+    #expect(receivedTitle == UICopy.configReloadSucceededTitle)
+    #expect(receivedBody == UICopy.configReloadSucceededBody())
+}
+
+@MainActor
 @Test func appDelegateLaunchKeepsInvalidLayoutFilesWhenPartialLoadSucceeds() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-launch-partial-reload-\(UUID().uuidString)", isDirectory: true)

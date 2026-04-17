@@ -10,6 +10,7 @@ enum UICopy {
     static let layoutGroupMenuTitle = "Layout group"
     static let reloadConfigMenuTitle = "Reload"
     static let customizeMenuTitle = "Customize... ↗"
+    static let configReloadSucceededTitle = "GridMove config reloaded"
     static let configReloadFailedTitle = "GridMove config reload failed"
     static let configReloadSkippedLayoutsTitle = "GridMove skipped invalid layout files"
     static let quitMenuTitle = "Quit"
@@ -105,5 +106,9 @@ enum UICopy {
             return "\(fileName): \(diagnostic.message)"
         }
         .joined(separator: " ")
+    }
+
+    static func configReloadSucceededBody() -> String {
+        "Config was applied successfully."
     }
 }

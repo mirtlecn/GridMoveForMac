@@ -34,6 +34,7 @@ Main responsibilities:
 - start and stop the drag controller and shortcut controller based on Accessibility status
 - listen for remote CLI commands
 - request Accessibility permission from the system when access is missing
+- post a success notification when manual config reload applies the full config without skipped files
 - post a diagnostic notification when manual config reload rejects the full config
 - post a warning when manual config reload skips invalid layout files but still applies the remaining layout groups
 
@@ -172,6 +173,7 @@ Compatibility behavior:
 - successful saves also refresh `~/.config/GridMove/config.last-known-good.json` and `~/.config/GridMove/layout.last-known-good/*.grid.json`
 - on launch, the app loads `config.last-known-good.json` plus `layout.last-known-good/` when the primary config is invalid, and only falls back to built-in defaults when no valid recovery snapshot exists
 - on manual reload, full-load failures are rejected and the current in-memory configuration keeps running
+- on manual reload, full success applies the config and posts a success notification
 - on manual reload, partial success applies valid layout files and warns about skipped files
 - missing `preferLayoutMode` defaults to `true`
 - missing `includeInGroupCycle` defaults to `true`
@@ -289,6 +291,7 @@ Behavior:
 - after the threshold is crossed, use hovered trigger slot to apply layouts
 - remember the last applied layout to avoid redundant reapplication
 - if trigger regions overlap on one display, the later declared layout wins
+- overlapping trigger regions are resolved when trigger slots are built, so earlier layouts do not keep temporary hit regions inside a later layout's winning area
 
 Cross-screen behavior:
 

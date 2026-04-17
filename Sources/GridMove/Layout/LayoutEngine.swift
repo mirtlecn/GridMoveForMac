@@ -4,6 +4,7 @@ import Foundation
 struct ResolvedTriggerSlot: Equatable {
     let layoutID: String
     let triggerFrame: CGRect
+    let hitTestFrames: [CGRect]
     let targetFrame: CGRect
 }
 
@@ -61,7 +62,7 @@ final class LayoutEngine {
         layouts: [LayoutPreset],
         triggerGap: Double
     ) -> [ResolvedTriggerSlot] {
-        layouts.compactMap { preset in
+        let rawSlots: [ResolvedTriggerSlot] = layouts.compactMap { preset -> ResolvedTriggerSlot? in
             guard let triggerFrame = triggerFrame(
                 for: preset,
                 screenFrame: screenFrame,
@@ -74,9 +75,11 @@ final class LayoutEngine {
             return ResolvedTriggerSlot(
                 layoutID: preset.id,
                 triggerFrame: triggerFrame,
+                hitTestFrames: [triggerFrame],
                 targetFrame: frame(for: preset, in: usableFrame)
             )
         }
+        return resolveOverlappingHitTestFrames(in: rawSlots)
     }
 
     func recordLayoutID(_ layoutID: String, for windowIdentity: String) {
@@ -137,7 +140,9 @@ final class LayoutEngine {
     }
 
     func triggerSlot(containing point: CGPoint, slots: [ResolvedTriggerSlot]) -> ResolvedTriggerSlot? {
-        slots.last { $0.triggerFrame.contains(point) }
+        slots.last { slot in
+            slot.hitTestFrames.contains { $0.contains(point) }
+        }
     }
 
     func layoutPreset(for layoutID: String, in layouts: [LayoutPreset]) -> LayoutPreset? {
@@ -146,6 +151,92 @@ final class LayoutEngine {
 
     private func cycleEligibleLayouts(from layouts: [LayoutPreset]) -> [LayoutPreset] {
         layouts.filter(\.includeInLayoutIndex)
+    }
+
+    private func resolveOverlappingHitTestFrames(in slots: [ResolvedTriggerSlot]) -> [ResolvedTriggerSlot] {
+        slots.enumerated().map { index, slot in
+            var hitTestFrames = [slot.triggerFrame]
+            for laterSlot in slots.suffix(from: index + 1) {
+                hitTestFrames = subtract(hitTestFrames, excluding: laterSlot.triggerFrame)
+                if hitTestFrames.isEmpty {
+                    break
+                }
+            }
+
+            return ResolvedTriggerSlot(
+                layoutID: slot.layoutID,
+                triggerFrame: slot.triggerFrame,
+                hitTestFrames: hitTestFrames,
+                targetFrame: slot.targetFrame
+            )
+        }
+    }
+
+    private func subtract(_ frames: [CGRect], excluding excludedFrame: CGRect) -> [CGRect] {
+        frames.flatMap { subtract($0, excluding: excludedFrame) }
+    }
+
+    private func subtract(_ frame: CGRect, excluding excludedFrame: CGRect) -> [CGRect] {
+        guard frame.intersects(excludedFrame) else {
+            return [frame]
+        }
+
+        let intersection = frame.intersection(excludedFrame)
+        guard !intersection.isNull, !intersection.isEmpty else {
+            return [frame]
+        }
+
+        if intersection.equalTo(frame) {
+            return []
+        }
+
+        var remainingFrames: [CGRect] = []
+
+        if intersection.maxY < frame.maxY {
+            remainingFrames.append(
+                CGRect(
+                    x: frame.minX,
+                    y: intersection.maxY,
+                    width: frame.width,
+                    height: frame.maxY - intersection.maxY
+                )
+            )
+        }
+
+        if intersection.minY > frame.minY {
+            remainingFrames.append(
+                CGRect(
+                    x: frame.minX,
+                    y: frame.minY,
+                    width: frame.width,
+                    height: intersection.minY - frame.minY
+                )
+            )
+        }
+
+        if intersection.minX > frame.minX {
+            remainingFrames.append(
+                CGRect(
+                    x: frame.minX,
+                    y: intersection.minY,
+                    width: intersection.minX - frame.minX,
+                    height: intersection.height
+                )
+            )
+        }
+
+        if intersection.maxX < frame.maxX {
+            remainingFrames.append(
+                CGRect(
+                    x: intersection.maxX,
+                    y: intersection.minY,
+                    width: frame.maxX - intersection.maxX,
+                    height: intersection.height
+                )
+            )
+        }
+
+        return remainingFrames.filter { !$0.isEmpty && !$0.isNull && $0.width > 0 && $0.height > 0 }
     }
 
     private func trimRecordedLayoutIDsIfNeeded() {

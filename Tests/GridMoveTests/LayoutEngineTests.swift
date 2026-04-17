@@ -167,6 +167,44 @@ import Testing
     #expect(matchedSlot.layoutID == "layout-b")
 }
 
+@Test func triggerSlotOverlapIsRemovedFromEarlierHitTestRegions() async throws {
+    let engine = LayoutEngine()
+    let layouts = [
+        LayoutPreset(
+            id: "layout-a",
+            name: "Fullscreen",
+            gridColumns: 12,
+            gridRows: 6,
+            windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
+            triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 12, h: 6)),
+            includeInLayoutIndex: true
+        ),
+        LayoutPreset(
+            id: "layout-b",
+            name: "Left 1/2",
+            gridColumns: 12,
+            gridRows: 6,
+            windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6),
+            triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 6, h: 6)),
+            includeInLayoutIndex: true
+        ),
+    ]
+
+    let slots = engine.resolveTriggerSlots(
+        screenFrame: CGRect(x: 0, y: 0, width: 1200, height: 630),
+        usableFrame: CGRect(x: 0, y: 0, width: 1200, height: 600),
+        layouts: layouts,
+        triggerGap: 0
+    )
+
+    let fullscreenSlot = try #require(slots.first(where: { $0.layoutID == "layout-a" }))
+    let leftHalfSlot = try #require(slots.first(where: { $0.layoutID == "layout-b" }))
+
+    #expect(fullscreenSlot.hitTestFrames.allSatisfy { !$0.contains(CGPoint(x: 100, y: 100)) })
+    #expect(fullscreenSlot.hitTestFrames.contains { $0.contains(CGPoint(x: 900, y: 100)) })
+    #expect(leftHalfSlot.hitTestFrames == [leftHalfSlot.triggerFrame])
+}
+
 @Test func targetDisplayIDFollowsMonitorTargetingRules() async throws {
     #expect(
         LayoutGroupResolver.targetDisplayID(
