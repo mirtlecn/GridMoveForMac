@@ -24,12 +24,12 @@ struct SettingsRootView: View {
                     .tag(section)
                 }
             }
-            .padding(.top, 8)
+            .padding(.top, 16)
             .navigationSplitViewColumnWidth(min: 180, ideal: 220, max: 260)
             .listStyle(.sidebar)
         } detail: {
             detailView
-                .padding(.top, 8)
+                .padding(.top, 16)
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .navigationTitle(headerTitle)
         }
@@ -50,6 +50,14 @@ struct SettingsRootView: View {
                     Image(systemName: "chevron.right")
                 }
                 .disabled(!canNavigateForward)
+            }
+
+            if showsAddLayoutAction {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(UICopy.addLayout) {
+                        viewModel.addLayout()
+                    }
+                }
             }
         }
         .sheet(isPresented: $viewModel.excludedWindowSheetPresented) {
@@ -99,6 +107,10 @@ struct SettingsRootView: View {
             return viewModel.canNavigateToLayoutDetail || viewModel.canNavigateForward
         }
         return viewModel.canNavigateForward
+    }
+
+    private var showsAddLayoutAction: Bool {
+        viewModel.selectedSection == .layouts && viewModel.layoutPageMode == .list
     }
 
     private func handleNavigateBack() {

@@ -69,13 +69,6 @@ struct LayoutsSettingsView: View {
             draggedLayoutID = nil
             return false
         }
-        .toolbar {
-            ToolbarItem(placement: .primaryAction) {
-                Button(UICopy.addLayout) {
-                    viewModel.addLayout()
-                }
-            }
-        }
     }
 
     private var detailPage: some View {

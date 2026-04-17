@@ -30,16 +30,15 @@ struct AppearanceSettingsView: View {
             )
             .frame(height: 270)
         } controls: {
-            Section {
-                Picker("", selection: $selectedTab) {
-                    ForEach(AppearanceTab.allCases) { tab in
-                        Text(tab.title).tag(tab)
-                    }
+            Picker("", selection: $selectedTab) {
+                ForEach(AppearanceTab.allCases) { tab in
+                    Text(tab.title).tag(tab)
                 }
-                .pickerStyle(.segmented)
             }
+            .pickerStyle(.segmented)
+            .frame(maxWidth: .infinity)
 
-            Section(selectedTab.title) {
+            SettingsFormSection(title: selectedTab.title) {
                 switch selectedTab {
                 case .windowOverlay:
                     windowOverlayConfiguration
@@ -48,18 +47,17 @@ struct AppearanceSettingsView: View {
                 }
             }
 
-            Section {
-                HStack {
-                    Spacer()
-                    Button(UICopy.resetToDefaults) {
-                        switch selectedTab {
-                        case .windowOverlay:
-                            viewModel.resetWindowAppearanceToDefaults()
-                        case .triggerOverlay:
-                            viewModel.resetTriggerAppearanceToDefaults()
-                        }
+            HStack {
+                Spacer()
+                Button(UICopy.resetToDefaults) {
+                    switch selectedTab {
+                    case .windowOverlay:
+                        viewModel.resetWindowAppearanceToDefaults()
+                    case .triggerOverlay:
+                        viewModel.resetTriggerAppearanceToDefaults()
                     }
                 }
+                .buttonStyle(.bordered)
             }
         }
     }

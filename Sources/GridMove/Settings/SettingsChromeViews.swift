@@ -38,15 +38,47 @@ struct SettingsPreviewConfigurationPage<Preview: View, Controls: View>: View {
 
             Divider()
 
-            Form {
-                controls
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    controls
+                }
+                .frame(maxWidth: 780, alignment: .leading)
+                .padding(24)
+                .frame(maxWidth: .infinity, alignment: .top)
             }
-            .formStyle(.grouped)
             .controlSize(.small)
-            .frame(maxWidth: 780, maxHeight: .infinity, alignment: .top)
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+}
+
+struct SettingsFormSection<Content: View>: View {
+    let title: String?
+    @ViewBuilder let content: Content
+
+    init(
+        title: String? = nil,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.title = title
+        self.content = content()
+    }
+
+    var body: some View {
+        Form {
+            if let title {
+                Section(title) {
+                    content
+                }
+            } else {
+                Section {
+                    content
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .controlSize(.small)
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
