@@ -381,9 +381,49 @@ struct DragTriggerSettings: Codable, Equatable {
     var middleMouseButtonNumber: Int
     var enableMiddleMouseDrag: Bool
     var enableModifierLeftMouseDrag: Bool
+    var preferLayoutMode: Bool
     var modifierGroups: [[ModifierKey]]
     var activationDelaySeconds: Double
     var activationMoveThreshold: Double
+
+    enum CodingKeys: String, CodingKey {
+        case middleMouseButtonNumber
+        case enableMiddleMouseDrag
+        case enableModifierLeftMouseDrag
+        case preferLayoutMode
+        case modifierGroups
+        case activationDelaySeconds
+        case activationMoveThreshold
+    }
+
+    init(
+        middleMouseButtonNumber: Int,
+        enableMiddleMouseDrag: Bool,
+        enableModifierLeftMouseDrag: Bool,
+        preferLayoutMode: Bool,
+        modifierGroups: [[ModifierKey]],
+        activationDelaySeconds: Double,
+        activationMoveThreshold: Double
+    ) {
+        self.middleMouseButtonNumber = middleMouseButtonNumber
+        self.enableMiddleMouseDrag = enableMiddleMouseDrag
+        self.enableModifierLeftMouseDrag = enableModifierLeftMouseDrag
+        self.preferLayoutMode = preferLayoutMode
+        self.modifierGroups = modifierGroups
+        self.activationDelaySeconds = activationDelaySeconds
+        self.activationMoveThreshold = activationMoveThreshold
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        middleMouseButtonNumber = try container.decode(Int.self, forKey: .middleMouseButtonNumber)
+        enableMiddleMouseDrag = try container.decode(Bool.self, forKey: .enableMiddleMouseDrag)
+        enableModifierLeftMouseDrag = try container.decode(Bool.self, forKey: .enableModifierLeftMouseDrag)
+        preferLayoutMode = try container.decodeIfPresent(Bool.self, forKey: .preferLayoutMode) ?? true
+        modifierGroups = try container.decode([[ModifierKey]].self, forKey: .modifierGroups)
+        activationDelaySeconds = try container.decode(Double.self, forKey: .activationDelaySeconds)
+        activationMoveThreshold = try container.decode(Double.self, forKey: .activationMoveThreshold)
+    }
 }
 
 struct HotkeySettings: Codable, Equatable {
@@ -468,6 +508,7 @@ struct AppConfiguration: Codable, Equatable {
             middleMouseButtonNumber: 2,
             enableMiddleMouseDrag: true,
             enableModifierLeftMouseDrag: true,
+            preferLayoutMode: true,
             modifierGroups: [
                 [.ctrl, .cmd, .shift, .alt],
             ],

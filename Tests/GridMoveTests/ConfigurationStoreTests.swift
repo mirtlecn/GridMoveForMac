@@ -23,11 +23,14 @@ import Testing
     #expect(initialText.contains("4"))
     #expect(initialText.contains("\"includeInCycle\""))
     #expect(initialText.contains("false"))
+    #expect(initialText.contains("\"preferLayoutMode\""))
+    #expect(initialText.contains("true"))
     #expect(!initialText.contains("//"))
 
     var updatedConfiguration = initialConfiguration
     updatedConfiguration.general.excludedWindowTitles = ["Test Title"]
     updatedConfiguration.appearance.triggerGap = 6
+    updatedConfiguration.dragTriggers.preferLayoutMode = false
     updatedConfiguration.dragTriggers.modifierGroups = [[.alt]]
 
     try store.save(updatedConfiguration)
@@ -35,6 +38,7 @@ import Testing
 
     #expect(reloadedConfiguration.general == updatedConfiguration.general)
     #expect(reloadedConfiguration.appearance.triggerGap == updatedConfiguration.appearance.triggerGap)
+    #expect(reloadedConfiguration.dragTriggers.preferLayoutMode == updatedConfiguration.dragTriggers.preferLayoutMode)
     #expect(reloadedConfiguration.dragTriggers.modifierGroups == updatedConfiguration.dragTriggers.modifierGroups)
     #expect(reloadedConfiguration.layouts.map(\.name) == updatedConfiguration.layouts.map(\.name))
     #expect(reloadedConfiguration.layouts.map(\.id) == (1...updatedConfiguration.layouts.count).map { "layout-\($0)" })
@@ -144,6 +148,7 @@ import Testing
     #expect(configuration.layouts.map(\.id) == ["layout-1", "layout-2"])
     #expect(configuration.hotkeys.bindings.map(\.id) == ["binding-1"])
     #expect(configuration.hotkeys.bindings[0].action == .applyLayout(layoutID: "layout-2"))
+    #expect(configuration.dragTriggers.preferLayoutMode == true)
     #expect(configuration.layouts[1].includeInCycle == false)
     #expect(configuration.appearance.triggerStrokeColor.hexString == "#007AFF33")
     #expect(configuration.appearance.highlightStrokeColor.hexString == "#FFFFFFEB")
@@ -208,6 +213,7 @@ import Testing
     #expect(!hasAltLayoutBinding)
     #expect(hasHyperLayoutFourBinding)
     #expect(!hasFullscreenOrCloseBinding)
+    #expect(configuration.dragTriggers.preferLayoutMode == true)
     #expect(configuration.dragTriggers.modifierGroups == [[.ctrl, .cmd, .shift, .alt]])
     #expect(configuration.appearance.triggerStrokeColor.alpha == 0.2)
 }

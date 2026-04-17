@@ -269,6 +269,26 @@
 
 - 删除入口不显示
 
+#### 9.2.3 Default drag sub-mode
+
+鼠标触发态内部固定存在两个子状态：
+
+- `Layout selection`
+- `Move only`
+
+设置项：
+
+- `Prefer layout mode`
+
+行为规则：
+
+- 打开时，进入触发态后默认进入 `Layout selection`
+- 关闭时，进入触发态后默认进入 `Move only`
+- 右键点击或 Option 键点击会在两个子状态之间切换
+- 切到 `Move only` 后，overlay 立即消失
+- 切回 `Layout selection` 后，立即恢复 trigger 命中与 overlay
+- 按 `Esc` 或松开当前主操作鼠标后，整个触发态退出
+
 ### 9.3 排除窗口设置
 
 此组用于维护排除规则。
@@ -516,6 +536,7 @@
 当主开关关闭时：
 
 - 其余三项显示为禁用状态
+- 运行时如果当前拖动子状态是 `Move only`，trigger overlay 也不会显示
 
 ### 11.4 Reset to defaults
 
@@ -637,6 +658,8 @@
   - 控制中键拖动是否启用
 - `Modifier + left mouse`
   - 控制修饰键左键拖动是否启用
+- `Prefer layout mode`
+  - 控制触发态默认进入布局态还是移动态
 - `Include in cycle`
   - 控制 layout 是否参与循环
 - `Excluded windows`

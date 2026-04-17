@@ -8,7 +8,7 @@ GridMove is a native macOS menu bar app that migrates the current Hammerspoon wi
 - Layout cycling that follows the current order in the JSON configuration and skips layouts excluded from cycling
 - Drag grid activation by middle mouse hold or configured modifier groups plus left mouse
 - Trigger regions that can use either the screen grid or a segmented menu bar strip
-- Accessibility-based target window lookup, focus, resize, and fullscreen exit
+- Accessibility-based target window lookup, focus, move, resize, and fullscreen exit
 - Non-activating overlay for trigger slots and target window preview
 - JSON configuration stored at `~/.config/GridMove/config.json`
 
@@ -114,6 +114,7 @@ Example:
     "middleMouseButtonNumber": 2,
     "enableMiddleMouseDrag": true,
     "enableModifierLeftMouseDrag": true,
+    "preferLayoutMode": true,
     "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
     "activationDelaySeconds": 0.3,
     "activationMoveThreshold": 10
@@ -191,5 +192,8 @@ Example:
 `hotkeys.bindings[*].action.kind` supports `cycleNext`, `cyclePrevious`, and `applyLayout`.
 For `applyLayout`, `action.layout` is the 1-based layout number in the `layouts` array.
 `layouts[*].includeInCycle = false` excludes that layout from next/previous cycling.
+
+When a drag trigger becomes active, GridMove starts in either layout selection mode or move-only mode according to `dragTriggers.preferLayoutMode`.
+While the trigger stays active, a right click or an Option key tap toggles between the two modes. Move-only mode hides the overlay and only updates window position.
 
 When GridMove is disabled, drag triggers, keyboard shortcuts, and CLI layout actions are all blocked until it is enabled again.

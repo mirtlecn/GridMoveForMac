@@ -202,6 +202,17 @@ final class WindowController {
         applyFrame()
     }
 
+    func moveWindow(to origin: CGPoint, currentFrame: CGRect, for window: ManagedWindow) -> Bool {
+        let nextFrame = CGRect(origin: origin, size: currentFrame.size)
+        let quartzFrame = Geometry.quartzRect(fromAppKitRect: nextFrame, mainDisplayHeight: mainDisplayHeight)
+        var point = CGPoint(x: quartzFrame.origin.x, y: quartzFrame.origin.y)
+        guard let positionValue = AXValueCreate(.cgPoint, &point) else {
+            return false
+        }
+
+        return applyPositionValue(positionValue, to: window.element)
+    }
+
     func screenContaining(point: CGPoint) -> NSScreen? {
         NSScreen.screens.first { $0.frame.contains(point) }
     }
@@ -441,9 +452,9 @@ final class WindowController {
     }
 
     private func applyFrameValues(positionValue: AXValue, sizeValue: AXValue, to element: AXUIElement) -> Bool {
-        let positionResult = AXUIElementSetAttributeValue(element, kAXPositionAttribute as CFString, positionValue)
+        let positionResult = applyPositionValue(positionValue, to: element)
         let sizeResult = AXUIElementSetAttributeValue(element, kAXSizeAttribute as CFString, sizeValue)
-        return positionResult == .success && sizeResult == .success
+        return positionResult && sizeResult == .success
     }
 
     private func scheduleCrossScreenSettle(positionValue: AXValue, sizeValue: AXValue, for element: AXUIElement) {
@@ -464,8 +475,7 @@ final class WindowController {
             return false
         }
 
-        let positionResult = AXUIElementSetAttributeValue(window.element, kAXPositionAttribute as CFString, positionValue)
-        return positionResult == .success
+        return applyPositionValue(positionValue, to: window.element)
     }
 
     private func handoffFrame(for window: ManagedWindow, on screen: NSScreen) -> CGRect {
@@ -488,6 +498,10 @@ final class WindowController {
 
     private func setBooleanAttribute(_ attribute: CFString, value: Bool, on element: AXUIElement) -> Bool {
         AXUIElementSetAttributeValue(element, attribute, value as CFBoolean) == .success
+    }
+
+    private func applyPositionValue(_ positionValue: AXValue, to element: AXUIElement) -> Bool {
+        AXUIElementSetAttributeValue(element, kAXPositionAttribute as CFString, positionValue) == .success
     }
 
     private func frame(of element: AXUIElement) -> CGRect? {
