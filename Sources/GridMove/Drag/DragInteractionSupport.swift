@@ -135,6 +135,7 @@ struct MoveAnchor: Equatable {
 struct DragInteractionState {
     var active = false
     var activeButton: DragTriggerButton?
+    var activeOtherMouseButtonNumber: Int64?
     var activationTimer: DispatchSourceTimer?
     var interactionMode: DragInteractionMode = .layoutSelection
     var activeScreen: NSScreen?

@@ -31,7 +31,7 @@ import Testing
         controller.menuItemDescriptorsForTesting == [
             "Enable",
             "|",
-            "Middle mouse drag",
+            "Mouse drag",
             "Modifier + left mouse drag",
             "Prefer layout mode",
             "|",

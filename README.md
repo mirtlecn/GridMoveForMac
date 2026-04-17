@@ -77,6 +77,7 @@ The example below uses `jsonc` only for explanation. Real files must be plain JS
     "excludedWindowTitles": [
       // Exact-match window titles to ignore.
     ],
+    "mouseButtonNumber": 3, // Mouse button number for the hold-to-drag trigger. 3 is the standard middle button. 4 and 5 commonly map to side buttons. Missing or invalid values fall back to 3.
     "activeLayoutGroup": "built-in" // The currently selected layout group. Menu-bar changes, layout-mode Shift cycling, and layout-mode mouse-wheel cycling all update this value.
   },
   "appearance": {
@@ -90,8 +91,7 @@ The example below uses `jsonc` only for explanation. Real files must be plain JS
     "highlightStrokeColor": "#FFFFFFEB" // Border color for the window highlight. Accepts #RRGGBB or #RRGGBBAA.
   },
   "dragTriggers": {
-    "middleMouseButtonNumber": 2, // Mouse button number used for the middle-button trigger. 2 is the standard middle button.
-    "enableMiddleMouseDrag": true, // Enable the middle-mouse trigger path.
+    "enableMiddleMouseDrag": true, // Enable the mouse-button hold trigger path.
     "enableModifierLeftMouseDrag": true, // Enable the modifier-plus-left-click trigger path.
     "preferLayoutMode": true, // true: start drag interaction in layout mode. false: start in move-only mode.
     "modifierGroups": [
@@ -176,18 +176,20 @@ The example below uses `jsonc` only for explanation. Real files must be plain JS
 }
 ```
 
-Manual reload behavior:
-
-- full success applies the config and posts a success notification
-- partial success applies the config, skips invalid matching layout files, and posts a warning notification
-- full failure keeps the current in-memory config and posts a failure notification
+## Behavior
 
 Layout-mode group cycling behavior:
 
 - `Shift` tap cycles to the next eligible group
 - mouse-wheel up cycles to the previous eligible group
 - mouse-wheel down cycles to the next eligible group
-- one scroll gesture triggers at most one group change after a small accumulated-distance threshold, then must stop briefly before the next group change
+
+Mouse-button trigger behavior:
+
+- `general.mouseButtonNumber` uses user-facing numbering and defaults to `3`
+- `3` maps to the standard middle button
+- `4` and `5` can be used for common side buttons
+- layout-mode mouse-wheel group switching remains unchanged
 
 
 ## Additional docs

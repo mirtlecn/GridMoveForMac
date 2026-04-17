@@ -425,6 +425,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "isEnabled": true,
             "excludedBundleIDs": ["com.apple.Spotlight"],
             "excludedWindowTitles": [],
+            "mouseButtonNumber": 3,
             "activeLayoutGroup": "missing-after-skip"
           },
           "appearance": {
@@ -438,7 +439,6 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "highlightStrokeColor": "#FFFFFFEB"
           },
           "dragTriggers": {
-            "middleMouseButtonNumber": 2,
             "enableMiddleMouseDrag": true,
             "enableModifierLeftMouseDrag": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],

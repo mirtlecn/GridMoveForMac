@@ -36,8 +36,10 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 
     let initialText = try String(contentsOf: store.fileURL, encoding: .utf8)
     #expect(initialText.contains("\"activeLayoutGroup\""))
+    #expect(initialText.contains("\"mouseButtonNumber\""))
     #expect(initialText.contains("\"applyLayoutByIndex\""))
     #expect(!initialText.contains("\"layoutGroups\""))
+    #expect(!initialText.contains("\"middleMouseButtonNumber\""))
     #expect(!initialText.contains("\"includeInCycle\""))
     #expect(!initialText.contains("\"id\":"))
     #expect(!initialText.contains("//"))
@@ -76,6 +78,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     let reloadedConfiguration = try store.load()
 
     #expect(reloadedConfiguration.general == updatedConfiguration.general)
+    #expect(reloadedConfiguration.general.mouseButtonNumber == updatedConfiguration.general.mouseButtonNumber)
     #expect(reloadedConfiguration.appearance.triggerGap == updatedConfiguration.appearance.triggerGap)
     #expect(reloadedConfiguration.dragTriggers.preferLayoutMode == updatedConfiguration.dragTriggers.preferLayoutMode)
     #expect(reloadedConfiguration.dragTriggers.modifierGroups == updatedConfiguration.dragTriggers.modifierGroups)
@@ -149,6 +152,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         "isEnabled": true,
         "excludedBundleIDs": ["com.apple.Spotlight"],
         "excludedWindowTitles": [],
+        "mouseButtonNumber": 3,
         "activeLayoutGroup": "work"
       },
       "appearance": {
@@ -162,7 +166,6 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         "highlightStrokeColor": "#FFFFFFEB"
       },
       "dragTriggers": {
-        "middleMouseButtonNumber": 2,
         "enableMiddleMouseDrag": true,
         "enableModifierLeftMouseDrag": true,
         "modifierGroups": [["ctrl", "cmd", "shift", "alt"], ["ctrl", "shift", "alt"]],
@@ -227,6 +230,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     let configuration = try store.load()
 
     #expect(configuration.general.activeLayoutGroup == "work")
+    #expect(configuration.general.mouseButtonNumber == 3)
     #expect(configuration.layoutGroups[0].includeInGroupCycle == false)
     #expect(configuration.layouts.map(\.id) == ["layout-1", "layout-2"])
     #expect(configuration.hotkeys.bindings.map(\.id) == ["binding-1"])
@@ -254,6 +258,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         "isEnabled": true,
         "excludedBundleIDs": ["com.apple.Spotlight"],
         "excludedWindowTitles": [],
+        "mouseButtonNumber": 3,
         "activeLayoutGroup": "work"
       },
       "appearance": {
@@ -267,7 +272,6 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         "highlightStrokeColor": "#FFFFFFEB"
       },
       "dragTriggers": {
-        "middleMouseButtonNumber": 2,
         "enableMiddleMouseDrag": true,
         "enableModifierLeftMouseDrag": true,
         "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
@@ -360,6 +364,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "isEnabled": true,
             "excludedBundleIDs": ["com.apple.Spotlight"],
             "excludedWindowTitles": [],
+            "mouseButtonNumber": 3,
             "activeLayoutGroup": "two"
           },
           "appearance": {
@@ -373,7 +378,6 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "highlightStrokeColor": "#FFFFFFEB"
           },
           "dragTriggers": {
-            "middleMouseButtonNumber": 2,
             "enableMiddleMouseDrag": true,
             "enableModifierLeftMouseDrag": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
@@ -459,6 +463,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "isEnabled": true,
             "excludedBundleIDs": ["com.apple.Spotlight"],
             "excludedWindowTitles": [],
+            "mouseButtonNumber": 3,
             "activeLayoutGroup": "work"
           },
           "appearance": {
@@ -472,7 +477,6 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "highlightStrokeColor": "#FFFFFFEB"
           },
           "dragTriggers": {
-            "middleMouseButtonNumber": 2,
             "enableMiddleMouseDrag": true,
             "enableModifierLeftMouseDrag": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
@@ -541,6 +545,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "isEnabled": true,
             "excludedBundleIDs": ["com.apple.Spotlight"],
             "excludedWindowTitles": [],
+            "mouseButtonNumber": 3,
             "activeLayoutGroup": "missing-after-skip"
           },
           "appearance": {
@@ -554,7 +559,6 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "highlightStrokeColor": "#FFFFFFEB"
           },
           "dragTriggers": {
-            "middleMouseButtonNumber": 2,
             "enableMiddleMouseDrag": true,
             "enableModifierLeftMouseDrag": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
@@ -601,6 +605,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "isEnabled": true,
             "excludedBundleIDs": ["com.apple.Spotlight"],
             "excludedWindowTitles": [],
+            "mouseButtonNumber": 3,
             "activeLayoutGroup": "built-in"
           },
           "appearance": {
@@ -614,7 +619,6 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "highlightStrokeColor": "#FFFFFFEB"
           },
           "dragTriggers": {
-            "middleMouseButtonNumber": 2,
             "enableMiddleMouseDrag": true,
             "enableModifierLeftMouseDrag": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
@@ -678,6 +682,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "isEnabled": true,
             "excludedBundleIDs": ["com.apple.Spotlight"],
             "excludedWindowTitles": [],
+            "mouseButtonNumber": 3,
             "activeLayoutGroup": "work"
           },
           "appearance": {
@@ -691,7 +696,6 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "highlightStrokeColor": "#FFFFFFEB"
           },
           "dragTriggers": {
-            "middleMouseButtonNumber": 2,
             "enableMiddleMouseDrag": true,
             "enableModifierLeftMouseDrag": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
@@ -904,9 +908,40 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     let settings = try JSONDecoder().decode(GeneralSettings.self, from: data)
 
     #expect(settings.isEnabled)
+    #expect(settings.mouseButtonNumber == 3)
     #expect(settings.activeLayoutGroup == "built-in")
     #expect(settings.excludedBundleIDs == ["com.apple.Spotlight"])
     #expect(settings.excludedWindowTitles.isEmpty)
+}
+
+@Test func generalSettingsDecodeInvalidMouseButtonNumberFallsBackToDefaultValue() async throws {
+    let invalidValueJSON = """
+    {
+      "isEnabled": true,
+      "excludedBundleIDs": [],
+      "excludedWindowTitles": [],
+      "mouseButtonNumber": 2,
+      "activeLayoutGroup": "built-in"
+    }
+    """
+    let invalidTypeJSON = """
+    {
+      "isEnabled": true,
+      "excludedBundleIDs": [],
+      "excludedWindowTitles": [],
+      "mouseButtonNumber": "side",
+      "activeLayoutGroup": "built-in"
+    }
+    """
+
+    let invalidValueData = try #require(invalidValueJSON.data(using: .utf8))
+    let invalidTypeData = try #require(invalidTypeJSON.data(using: .utf8))
+
+    let invalidValueSettings = try JSONDecoder().decode(GeneralSettings.self, from: invalidValueData)
+    let invalidTypeSettings = try JSONDecoder().decode(GeneralSettings.self, from: invalidTypeData)
+
+    #expect(invalidValueSettings.mouseButtonNumber == 3)
+    #expect(invalidTypeSettings.mouseButtonNumber == 3)
 }
 
 @Test func removingLayoutAlsoRemovesDirectBindingsForThatLayout() async throws {

@@ -128,7 +128,8 @@ extension AppConfiguration {
             isEnabled: true,
             excludedBundleIDs: ["com.apple.Spotlight"],
             excludedWindowTitles: [],
-            activeLayoutGroup: builtInGroupName
+            activeLayoutGroup: builtInGroupName,
+            mouseButtonNumber: 3
         ),
         appearance: AppearanceSettings(
             renderTriggerAreas: false,
@@ -141,7 +142,6 @@ extension AppConfiguration {
             highlightStrokeColor: RGBAColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.92)
         ),
         dragTriggers: DragTriggerSettings(
-            middleMouseButtonNumber: 2,
             enableMiddleMouseDrag: true,
             enableModifierLeftMouseDrag: true,
             preferLayoutMode: true,

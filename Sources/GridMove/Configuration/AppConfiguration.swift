@@ -459,28 +459,34 @@ enum RGBAColorHexError: Error {
 }
 
 struct GeneralSettings: Codable, Equatable {
+    static let defaultMouseButtonNumber = 3
+
     var isEnabled: Bool
     var excludedBundleIDs: [String]
     var excludedWindowTitles: [String]
     var activeLayoutGroup: String
+    var mouseButtonNumber: Int
 
     private enum CodingKeys: String, CodingKey {
         case isEnabled
         case excludedBundleIDs
         case excludedWindowTitles
         case activeLayoutGroup
+        case mouseButtonNumber
     }
 
     init(
         isEnabled: Bool,
         excludedBundleIDs: [String],
         excludedWindowTitles: [String],
-        activeLayoutGroup: String
+        activeLayoutGroup: String,
+        mouseButtonNumber: Int
     ) {
         self.isEnabled = isEnabled
         self.excludedBundleIDs = excludedBundleIDs
         self.excludedWindowTitles = excludedWindowTitles
         self.activeLayoutGroup = activeLayoutGroup
+        self.mouseButtonNumber = Self.sanitizedMouseButtonNumber(mouseButtonNumber)
     }
 
     init(from decoder: Decoder) throws {
@@ -489,6 +495,14 @@ struct GeneralSettings: Codable, Equatable {
         excludedBundleIDs = try container.decode([String].self, forKey: .excludedBundleIDs)
         excludedWindowTitles = try container.decode([String].self, forKey: .excludedWindowTitles)
         activeLayoutGroup = try container.decode(String.self, forKey: .activeLayoutGroup)
+        mouseButtonNumber = Self.sanitizedMouseButtonNumber(try? container.decode(Int.self, forKey: .mouseButtonNumber))
+    }
+
+    private static func sanitizedMouseButtonNumber(_ value: Int?) -> Int {
+        guard let value, value >= defaultMouseButtonNumber else {
+            return defaultMouseButtonNumber
+        }
+        return value
     }
 }
 
@@ -547,7 +561,6 @@ struct AppearanceSettings: Codable, Equatable {
 }
 
 struct DragTriggerSettings: Codable, Equatable {
-    var middleMouseButtonNumber: Int
     var enableMiddleMouseDrag: Bool
     var enableModifierLeftMouseDrag: Bool
     var preferLayoutMode: Bool
@@ -556,7 +569,6 @@ struct DragTriggerSettings: Codable, Equatable {
     var activationMoveThreshold: Double
 
     enum CodingKeys: String, CodingKey {
-        case middleMouseButtonNumber
         case enableMiddleMouseDrag
         case enableModifierLeftMouseDrag
         case preferLayoutMode
@@ -566,7 +578,6 @@ struct DragTriggerSettings: Codable, Equatable {
     }
 
     init(
-        middleMouseButtonNumber: Int,
         enableMiddleMouseDrag: Bool,
         enableModifierLeftMouseDrag: Bool,
         preferLayoutMode: Bool,
@@ -574,7 +585,6 @@ struct DragTriggerSettings: Codable, Equatable {
         activationDelaySeconds: Double,
         activationMoveThreshold: Double
     ) {
-        self.middleMouseButtonNumber = middleMouseButtonNumber
         self.enableMiddleMouseDrag = enableMiddleMouseDrag
         self.enableModifierLeftMouseDrag = enableModifierLeftMouseDrag
         self.preferLayoutMode = preferLayoutMode
@@ -585,7 +595,6 @@ struct DragTriggerSettings: Codable, Equatable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        middleMouseButtonNumber = try container.decode(Int.self, forKey: .middleMouseButtonNumber)
         enableMiddleMouseDrag = try container.decode(Bool.self, forKey: .enableMiddleMouseDrag)
         enableModifierLeftMouseDrag = try container.decode(Bool.self, forKey: .enableModifierLeftMouseDrag)
         preferLayoutMode = try container.decodeIfPresent(Bool.self, forKey: .preferLayoutMode) ?? true

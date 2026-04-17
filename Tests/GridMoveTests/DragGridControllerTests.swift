@@ -18,6 +18,21 @@ private func makeScrollEvent(deltaY: Int32) throws -> CGEvent {
     )
 }
 
+private func makeOtherMouseEvent(type: CGEventType, buttonNumber: Int64) throws -> CGEvent {
+    let source = try #require(CGEventSource(stateID: .hidSystemState))
+    let mouseButton = try #require(CGMouseButton(rawValue: UInt32(buttonNumber)))
+    let event = try #require(
+        CGEvent(
+            mouseEventSource: source,
+            mouseType: type,
+            mouseCursorPosition: .zero,
+            mouseButton: mouseButton
+        )
+    )
+    event.setIntegerValueField(CGEventField.mouseEventButtonNumber, value: buttonNumber)
+    return event
+}
+
 @MainActor
 @Test func preferredInteractionModeDefaultsToLayoutSelection() async throws {
     #expect(DragGridController.preferredInteractionMode(preferLayoutMode: true) == .layoutSelection)
@@ -231,4 +246,79 @@ private func makeScrollEvent(deltaY: Int32) throws -> CGEvent {
     controller.state.scrollGroupCycleTracker?.resetGesture()
     _ = controller.handleScrollWheel(event: try makeScrollEvent(deltaY: -6))
     #expect(directions == [.previous, .next])
+}
+
+@MainActor
+@Test func handleOtherMouseDownMatchesConfiguredSideButtonNumber() async throws {
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController()
+    var configuration = AppConfiguration.defaultValue
+    configuration.general.mouseButtonNumber = 5
+
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { configuration },
+        cycleActiveLayoutGroup: { _ in configuration },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {}
+    )
+
+    let sideButtonDown = try makeOtherMouseEvent(type: .otherMouseDown, buttonNumber: 4)
+    let middleButtonDown = try makeOtherMouseEvent(type: .otherMouseDown, buttonNumber: 2)
+
+    let consumedResult = controller.handleOtherMouseDown(event: sideButtonDown, configuration: configuration)
+    let passthroughResult = controller.handleOtherMouseDown(event: middleButtonDown, configuration: configuration)
+
+    #expect(consumedResult == nil)
+    #expect(controller.state.activeButton == .middle)
+    #expect(controller.state.activeOtherMouseButtonNumber == 4)
+    #expect(passthroughResult?.takeUnretainedValue() === middleButtonDown)
+
+    controller.resetState()
+}
+
+@MainActor
+@Test func handleOtherMouseUpMatchesConfiguredSideButtonNumber() async throws {
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController()
+    var configuration = AppConfiguration.defaultValue
+    configuration.general.mouseButtonNumber = 5
+
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { configuration },
+        cycleActiveLayoutGroup: { _ in configuration },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {}
+    )
+
+    controller.state.activeButton = .middle
+    controller.state.activeOtherMouseButtonNumber = 4
+    controller.state.active = true
+
+    let matchingUp = try makeOtherMouseEvent(type: .otherMouseUp, buttonNumber: 4)
+    let otherUp = try makeOtherMouseEvent(type: .otherMouseUp, buttonNumber: 2)
+
+    let matchingResult = controller.handleOtherMouseUp(event: matchingUp)
+
+    #expect(matchingResult == nil)
+    #expect(controller.state.active == false)
+
+    controller.state.activeButton = .middle
+    controller.state.activeOtherMouseButtonNumber = 4
+    controller.state.active = true
+
+    let passthroughResult = controller.handleOtherMouseUp(event: otherUp)
+
+    #expect(passthroughResult?.takeUnretainedValue() === otherUp)
+
+    controller.resetState()
 }

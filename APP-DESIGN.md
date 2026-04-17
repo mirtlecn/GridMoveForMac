@@ -70,6 +70,7 @@ Important properties:
 - persisted `applyLayoutByIndex` actions point to the 1-based layout index within the active layout group's indexed layouts
 - stroke colors are stored as `#RRGGBBAA`
 - `general.activeLayoutGroup` selects the currently active layout group
+- `general.mouseButtonNumber` selects the hold-to-drag mouse button using user-facing numbering, where `3` is the standard middle button
 - `layoutGroups[*].includeInGroupCycle` controls whether layout-mode Shift cycling can switch to that group
 - `layoutGroups[*].sets[*].monitor` routes layouts to `all`, `main`, one display ID, or multiple display IDs
 - `layoutGroups[*].sets[*].layouts` order drives menu order, layout-index numbering, and same-display trigger precedence
@@ -77,7 +78,6 @@ Important properties:
 
 Current drag-trigger configuration fields:
 
-- `middleMouseButtonNumber`
 - `enableMiddleMouseDrag`
 - `enableModifierLeftMouseDrag`
 - `preferLayoutMode`
@@ -94,6 +94,7 @@ The built-in default configuration currently resolves to the following values.
 - `isEnabled = true`
 - `excludedBundleIDs = ["com.apple.Spotlight"]`
 - `excludedWindowTitles = []`
+- `mouseButtonNumber = 3`
 
 `appearance`
 
@@ -108,7 +109,6 @@ The built-in default configuration currently resolves to the following values.
 
 `dragTriggers`
 
-- `middleMouseButtonNumber = 2`
 - `enableMiddleMouseDrag = true`
 - `enableModifierLeftMouseDrag = true`
 - `preferLayoutMode = true`
@@ -180,6 +180,7 @@ Compatibility behavior:
 - missing `triggerRegion` means the layout is menu, shortcut, and CLI only
 - missing `includeInMenu` defaults to `true`
 - missing `includeInLayoutIndex` defaults to `true`
+- missing or invalid `general.mouseButtonNumber` defaults to `3`
 
 ## 5. Accessibility Lifecycle
 
@@ -256,7 +257,7 @@ The drag runtime is owned by `DragGridController`.
 
 Primary trigger entry points:
 
-- middle mouse hold
+- configured mouse-button hold
 - configured modifier group + left mouse
 
 Once active, the trigger runs one of two sub-modes:
@@ -389,10 +390,10 @@ Appearance is controlled by configuration:
 
 These behaviors are intentional and should be preserved unless replaced with a better design.
 
-### 10.1 Synthetic middle-click replay
+### 10.1 Synthetic other-mouse click replay
 
-Middle mouse activation uses a hold delay.
-If the hold never becomes a drag interaction, GridMove replays a synthetic middle-click sequence so the original middle-click behavior is not lost.
+Configured mouse-button activation uses a hold delay.
+If the hold never becomes a drag interaction, GridMove replays a synthetic click sequence for that same other-mouse button so the original click behavior is not lost.
 
 Relevant code:
 

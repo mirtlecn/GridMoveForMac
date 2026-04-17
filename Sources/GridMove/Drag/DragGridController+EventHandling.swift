@@ -65,7 +65,7 @@ extension DragGridController {
         guard
             isEnabled,
             configuration.dragTriggers.enableMiddleMouseDrag,
-            buttonNumber == Int64(configuration.dragTriggers.middleMouseButtonNumber)
+            buttonNumber == configuredOtherMouseButtonNumber(for: configuration)
         else {
             return Unmanaged.passUnretained(event)
         }
@@ -77,6 +77,7 @@ extension DragGridController {
         let point = appKitPoint(from: event)
         resetState()
         state.activeButton = .middle
+        state.activeOtherMouseButtonNumber = buttonNumber
         state.mouseDownPoint = point
 
         let timer = DispatchSource.makeTimerSource(queue: .main)
@@ -89,7 +90,11 @@ extension DragGridController {
             self.state.activationTimer?.cancel()
             self.state.activationTimer = nil
 
-            guard self.state.activeButton == .middle, let point = self.state.mouseDownPoint else {
+            guard
+                self.state.activeButton == .middle,
+                let point = self.state.mouseDownPoint,
+                let activeOtherMouseButtonNumber = self.state.activeOtherMouseButtonNumber
+            else {
                 return
             }
 
@@ -98,7 +103,10 @@ extension DragGridController {
             }
 
             guard let targetWindow = self.windowController.windowUnderCursor(at: point, configuration: configuration) else {
-                self.postSyntheticMiddleMouseDown(at: self.windowController.quartzPoint(fromAppKitPoint: point))
+                self.postSyntheticOtherMouseDown(
+                    at: self.windowController.quartzPoint(fromAppKitPoint: point),
+                    buttonNumber: activeOtherMouseButtonNumber
+                )
                 self.resetState()
                 return
             }
@@ -142,10 +150,14 @@ extension DragGridController {
 
         if state.activationTimer != nil {
             state.activationTimer?.cancel()
-            if button == .middle, let mouseDownPoint = state.mouseDownPoint {
-                postSyntheticMiddleMouseClick(
+            if button == .middle,
+               let mouseDownPoint = state.mouseDownPoint,
+               let activeOtherMouseButtonNumber = state.activeOtherMouseButtonNumber
+            {
+                postSyntheticOtherMouseClick(
                     downAt: windowController.quartzPoint(fromAppKitPoint: mouseDownPoint),
-                    upAt: event.location
+                    upAt: event.location,
+                    buttonNumber: activeOtherMouseButtonNumber
                 )
             }
             resetState()
@@ -163,7 +175,9 @@ extension DragGridController {
 
     func handleOtherMouseUp(event: CGEvent) -> Unmanaged<CGEvent>? {
         let buttonNumber = event.getIntegerValueField(.mouseEventButtonNumber)
-        guard buttonNumber == Int64(DragTriggerButton.middle.rawValue) else {
+        let configuredButtonNumber = configuredOtherMouseButtonNumber(for: configurationProvider())
+        let expectedButtonNumber = state.activeOtherMouseButtonNumber ?? configuredButtonNumber
+        guard buttonNumber == expectedButtonNumber else {
             return Unmanaged.passUnretained(event)
         }
 

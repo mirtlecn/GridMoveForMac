@@ -8,38 +8,61 @@ extension DragGridController {
         static let resetDelaySeconds: Double = 0.18
     }
 
-    func postSyntheticMiddleMouseDown(at point: CGPoint) {
+    func postSyntheticOtherMouseDown(at point: CGPoint, buttonNumber: Int64) {
         guard let source = CGEventSource(stateID: .hidSystemState) else {
             return
         }
 
-        guard let syntheticEvent = CGEvent(mouseEventSource: source, mouseType: .otherMouseDown, mouseCursorPosition: point, mouseButton: .center) else {
+        guard let mouseButton = CGMouseButton(rawValue: UInt32(buttonNumber)) else {
+            return
+        }
+
+        guard let syntheticEvent = CGEvent(
+            mouseEventSource: source,
+            mouseType: .otherMouseDown,
+            mouseCursorPosition: point,
+            mouseButton: mouseButton
+        ) else {
             return
         }
 
         SyntheticEventMarker.markMiddleMouseReplay(syntheticEvent)
-        syntheticEvent.setIntegerValueField(.mouseEventButtonNumber, value: Int64(DragTriggerButton.middle.rawValue))
-        syntheticEvent.post(tap: .cghidEventTap)
+        syntheticEvent.setIntegerValueField(CGEventField.mouseEventButtonNumber, value: buttonNumber)
+        syntheticEvent.post(tap: CGEventTapLocation.cghidEventTap)
     }
 
-    func postSyntheticMiddleMouseClick(downAt downPoint: CGPoint, upAt upPoint: CGPoint) {
+    func postSyntheticOtherMouseClick(downAt downPoint: CGPoint, upAt upPoint: CGPoint, buttonNumber: Int64) {
         guard let source = CGEventSource(stateID: .hidSystemState) else {
             return
         }
 
+        guard let mouseButton = CGMouseButton(rawValue: UInt32(buttonNumber)) else {
+            return
+        }
+
         guard
-            let downEvent = CGEvent(mouseEventSource: source, mouseType: .otherMouseDown, mouseCursorPosition: downPoint, mouseButton: .center),
-            let upEvent = CGEvent(mouseEventSource: source, mouseType: .otherMouseUp, mouseCursorPosition: upPoint, mouseButton: .center)
+            let downEvent = CGEvent(
+                mouseEventSource: source,
+                mouseType: .otherMouseDown,
+                mouseCursorPosition: downPoint,
+                mouseButton: mouseButton
+            ),
+            let upEvent = CGEvent(
+                mouseEventSource: source,
+                mouseType: .otherMouseUp,
+                mouseCursorPosition: upPoint,
+                mouseButton: mouseButton
+            )
         else {
             return
         }
 
         SyntheticEventMarker.markMiddleMouseReplay(downEvent)
         SyntheticEventMarker.markMiddleMouseReplay(upEvent)
-        downEvent.setIntegerValueField(.mouseEventButtonNumber, value: Int64(DragTriggerButton.middle.rawValue))
-        upEvent.setIntegerValueField(.mouseEventButtonNumber, value: Int64(DragTriggerButton.middle.rawValue))
-        downEvent.post(tap: .cghidEventTap)
-        upEvent.post(tap: .cghidEventTap)
+        downEvent.setIntegerValueField(CGEventField.mouseEventButtonNumber, value: buttonNumber)
+        upEvent.setIntegerValueField(CGEventField.mouseEventButtonNumber, value: buttonNumber)
+        downEvent.post(tap: CGEventTapLocation.cghidEventTap)
+        upEvent.post(tap: CGEventTapLocation.cghidEventTap)
     }
 
     func currentWindowFrame() -> CGRect? {
@@ -101,6 +124,10 @@ extension DragGridController {
 
     func makeScrollGroupCycleTracker() -> ScrollGroupCycleTracker {
         ScrollGroupCycleTracker(threshold: ScrollGroupCycleConstants.threshold)
+    }
+
+    func configuredOtherMouseButtonNumber(for configuration: AppConfiguration) -> Int64 {
+        Int64(configuration.general.mouseButtonNumber - 1)
     }
 
     func scheduleScrollGroupCycleReset() {
