@@ -107,48 +107,47 @@ enum LayoutGroupResolver {
     static func targetScreen(
         for entry: ResolvedLayoutEntry,
         currentScreen: NSScreen?,
-        configuration: AppConfiguration
+        configuration _: AppConfiguration
     ) -> NSScreen? {
-        let currentDisplayID = currentScreen.map(MonitorDiscovery.displayID(for:))
-        let resolvedScreens = NSScreen.screens.filter { resolvedSet(for: $0, configuration: configuration) == entry.set }
-        let resolvedDisplayIDs = resolvedScreens.map(MonitorDiscovery.displayID(for:))
-
         guard let targetDisplayID = targetDisplayID(
             for: entry.set.monitor,
-            currentDisplayID: currentDisplayID,
-            resolvedDisplayIDs: resolvedDisplayIDs
+            currentDisplayID: currentScreen.map(MonitorDiscovery.displayID(for:)),
+            mainDisplayID: NSScreen.screens.first(where: MonitorDiscovery.isMainScreen(_:)).map(MonitorDiscovery.displayID(for:)),
+            availableDisplayIDs: NSScreen.screens.map(MonitorDiscovery.displayID(for:))
         ) else {
             return nil
         }
 
-        return resolvedScreens.first(where: { MonitorDiscovery.displayID(for: $0) == targetDisplayID })
-            ?? NSScreen.screens.first(where: { MonitorDiscovery.displayID(for: $0) == targetDisplayID })
-            ?? MonitorDiscovery.targetScreen(for: entry.set.monitor, currentScreen: currentScreen)
+        return NSScreen.screens.first(where: { MonitorDiscovery.displayID(for: $0) == targetDisplayID })
     }
 
     static func targetDisplayID(
         for monitor: LayoutSetMonitor,
         currentDisplayID: String?,
-        resolvedDisplayIDs: [String]
+        mainDisplayID: String?,
+        availableDisplayIDs: [String]
     ) -> String? {
-        if let currentDisplayID, resolvedDisplayIDs.contains(currentDisplayID) {
-            return currentDisplayID
-        }
-
-        if let resolvedDisplayID = resolvedDisplayIDs.first {
-            return resolvedDisplayID
-        }
-
         switch monitor {
         case .all:
-            return currentDisplayID
-        case .main:
-            return currentDisplayID
-        case let .displays(displayIDs):
-            if let currentDisplayID, displayIDs.contains(currentDisplayID) {
+            if let currentDisplayID, availableDisplayIDs.contains(currentDisplayID) {
                 return currentDisplayID
             }
-            return displayIDs.first
+            if let mainDisplayID, availableDisplayIDs.contains(mainDisplayID) {
+                return mainDisplayID
+            }
+            return availableDisplayIDs.first
+        case .main:
+            if let mainDisplayID, availableDisplayIDs.contains(mainDisplayID) {
+                return mainDisplayID
+            }
+            return availableDisplayIDs.first
+        case let .displays(displayIDs):
+            if let currentDisplayID,
+               displayIDs.contains(currentDisplayID),
+               availableDisplayIDs.contains(currentDisplayID) {
+                return currentDisplayID
+            }
+            return displayIDs.first(where: { availableDisplayIDs.contains($0) })
         }
     }
 }

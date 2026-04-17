@@ -167,27 +167,46 @@ import Testing
     #expect(matchedSlot.layoutID == "layout-b")
 }
 
-@Test func targetDisplayIDPrefersResolvedFallbackDisplayOverCurrentDisplay() async throws {
+@Test func targetDisplayIDFollowsMonitorTargetingRules() async throws {
     #expect(
         LayoutGroupResolver.targetDisplayID(
             for: .all,
             currentDisplayID: "main",
-            resolvedDisplayIDs: ["other"]
-        ) == "other"
+            mainDisplayID: "main",
+            availableDisplayIDs: ["main", "other"]
+        ) == "main"
     )
     #expect(
         LayoutGroupResolver.targetDisplayID(
             for: .main,
-            currentDisplayID: "main",
-            resolvedDisplayIDs: ["main"]
+            currentDisplayID: "other",
+            mainDisplayID: "main",
+            availableDisplayIDs: ["main", "other"]
         ) == "main"
     )
     #expect(
         LayoutGroupResolver.targetDisplayID(
             for: .displays(["12345", "67890"]),
             currentDisplayID: "12345",
-            resolvedDisplayIDs: ["12345", "67890"]
+            mainDisplayID: "99999",
+            availableDisplayIDs: ["12345", "67890"]
         ) == "12345"
+    )
+    #expect(
+        LayoutGroupResolver.targetDisplayID(
+            for: .displays(["99999", "67890", "12345"]),
+            currentDisplayID: "main",
+            mainDisplayID: "main",
+            availableDisplayIDs: ["12345", "67890"]
+        ) == "67890"
+    )
+    #expect(
+        LayoutGroupResolver.targetDisplayID(
+            for: .displays(["99999"]),
+            currentDisplayID: "main",
+            mainDisplayID: "main",
+            availableDisplayIDs: ["12345", "67890"]
+        ) == nil
     )
 }
 

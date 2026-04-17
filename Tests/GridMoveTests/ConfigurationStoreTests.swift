@@ -422,6 +422,36 @@ import Testing
     #expect(configuration.hotkeys.bindings == bindingsBeforeRemoval)
 }
 
+@Test func removingLayoutFromMultiSetGroupKeepsOtherSetsIntact() async throws {
+    var configuration = AppConfiguration.defaultValue
+    configuration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
+
+    let otherSetLayoutIDsBeforeRemoval = try #require(configuration.activeGroup?.sets.last?.layouts.map(\.id))
+
+    configuration.removeLayout(id: "layout-13")
+
+    let activeGroup = try #require(configuration.activeGroup)
+    #expect(activeGroup.sets[0].layouts.map(\.id) == ["layout-12", "layout-14", "layout-15"])
+    #expect(activeGroup.sets[1].layouts.map(\.id) == otherSetLayoutIDsBeforeRemoval)
+}
+
+@Test func movingLayoutInsideSameSetDoesNotCrossSetBoundaries() async throws {
+    var configuration = AppConfiguration.defaultValue
+    configuration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
+
+    configuration.moveLayout(id: "layout-14", to: 1)
+
+    let reorderedGroup = try #require(configuration.activeGroup)
+    #expect(reorderedGroup.sets[0].layouts.map(\.id) == ["layout-12", "layout-14", "layout-13", "layout-15"])
+    #expect(reorderedGroup.sets[1].layouts.map(\.id) == ["layout-16", "layout-17"])
+
+    configuration.moveLayout(id: "layout-14", to: configuration.layouts.count)
+
+    let unchangedGroup = try #require(configuration.activeGroup)
+    #expect(unchangedGroup.sets[0].layouts.map(\.id) == ["layout-12", "layout-14", "layout-13", "layout-15"])
+    #expect(unchangedGroup.sets[1].layouts.map(\.id) == ["layout-16", "layout-17"])
+}
+
 @Test func appearanceSettingsDecodeMissingTriggerStrokeColorWithDefaultValue() async throws {
     let json = """
     {

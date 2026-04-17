@@ -4,6 +4,10 @@ import Foundation
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let configurationCoordinator: ConfigurationRuntimeCoordinator
+    private let deferredConfigurationSaveQueue = DispatchQueue(
+        label: "GridMove.ConfigurationPersistence",
+        qos: .utility
+    )
     private let menuActionBuilder = MenuActionBuilder()
     private let openURL: (URL) -> Bool
     private let userNotifier: UserNotifier
@@ -231,11 +235,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return nil
         }
 
-        guard updateActiveLayoutGroup(nextGroupName) else {
-            return nil
-        }
+        var updatedConfiguration = configuration
+        updatedConfiguration.general.activeLayoutGroup = nextGroupName
+        applyConfiguration(updatedConfiguration)
+        persistConfigurationAsync(updatedConfiguration)
+        return updatedConfiguration
+    }
 
-        return configuration
+    private func persistConfigurationAsync(_ configuration: AppConfiguration) {
+        // Layout-mode Shift cycling runs inside the event-tap path, so persistence must stay off that hot path.
+        let workItem = DispatchWorkItem { [configurationCoordinator] in
+            do {
+                try configurationCoordinator.saveConfiguration(configuration)
+            } catch {
+                AppLogger.shared.error("Failed to save deferred configuration: \(error.localizedDescription)")
+            }
+        }
+        deferredConfigurationSaveQueue.async(execute: workItem)
     }
 
     private func synchronizeRuntimeControllers() {
@@ -378,6 +394,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func nextLayoutIDForTesting(windowIdentity: String) -> String? {
         layoutEngine.nextLayoutID(for: windowIdentity, layouts: configuration.layouts)
+    }
+
+    func cycleToNextLayoutGroupForTesting() -> AppConfiguration? {
+        cycleToNextLayoutGroup()
+    }
+
+    func waitForDeferredConfigurationSaveForTesting() {
+        deferredConfigurationSaveQueue.sync { }
     }
 
     private func makeLayoutGroupState(configuration: AppConfiguration) -> MenuBarController.LayoutGroupState {

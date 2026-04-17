@@ -50,6 +50,10 @@ final class ConfigurationRuntimeCoordinator {
         return candidateConfiguration
     }
 
+    func saveConfiguration(_ configuration: AppConfiguration) throws {
+        try configurationStore.save(configuration)
+    }
+
     private func synchronizeMonitorMetadata(configuration: inout AppConfiguration) -> Bool {
         let monitorMap = currentMonitorMapProvider()
         guard configuration.monitors != monitorMap else {

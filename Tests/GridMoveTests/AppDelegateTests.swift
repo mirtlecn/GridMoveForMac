@@ -12,7 +12,7 @@ import Testing
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
     var savedConfiguration = AppConfiguration.defaultValue
     savedConfiguration.general.isEnabled = false
-    savedConfiguration.layouts.reverse()
+    savedConfiguration.layoutGroups[0].sets[0].layouts.reverse()
     try store.save(savedConfiguration)
 
     let delegate = AppDelegate(configurationStore: store, openURL: { _ in true })
@@ -47,6 +47,26 @@ import Testing
     let persistedConfiguration = try store.load()
     #expect(delegate.configuration.monitors == monitorMap)
     #expect(persistedConfiguration.monitors == monitorMap)
+}
+
+@MainActor
+@Test func appDelegateCyclesLayoutGroupInMemoryBeforeDeferredSave() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-group-cycle-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let delegate = AppDelegate(configurationStore: store, openURL: { _ in true })
+    delegate.reloadConfigurationFromDisk()
+
+    let updatedConfiguration = try #require(delegate.cycleToNextLayoutGroupForTesting())
+    #expect(updatedConfiguration.general.activeLayoutGroup == AppConfiguration.fullscreenGroupName)
+    #expect(delegate.configuration.general.activeLayoutGroup == AppConfiguration.fullscreenGroupName)
+
+    delegate.waitForDeferredConfigurationSaveForTesting()
+
+    let persistedConfiguration = try store.load()
+    #expect(persistedConfiguration.general.activeLayoutGroup == AppConfiguration.fullscreenGroupName)
 }
 
 @MainActor

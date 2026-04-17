@@ -199,7 +199,8 @@ Layout cycling state is stored in memory only:
 Layout-mode group cycling:
 
 - while a drag interaction is active in layout-selection mode, pressing and releasing `Shift` alone cycles to the next group whose `includeInGroupCycle` is `true`
-- the switch is persisted by updating `general.activeLayoutGroup`
+- the `Shift` tap is evaluated relative to the modifier baseline captured when the interaction starts, so GridMove only cycles groups when `Shift` is tapped as the only extra modifier beyond that baseline
+- the switch updates in-memory runtime state immediately, then saves `general.activeLayoutGroup` asynchronously
 - the trigger overlay is recomputed immediately for the new group
 - after the switch, layout selection returns to the same pre-threshold state used at initial activation, so no layout is applied until the pointer crosses the movement threshold again
 - the overlay shows the new group name centered inside the current highlight region for the same duration used by the move-only highlight flash, while keeping the current highlight and trigger overlay visible
@@ -228,7 +229,6 @@ Window exclusion rules apply in both paths:
 
 - built-in excluded bundle IDs
 - configured excluded bundle IDs
-- built-in excluded titles
 - configured excluded titles
 - non-operable windows
 - desktop-like Finder window
@@ -321,6 +321,7 @@ Keyboard shortcuts:
 - are captured through a global event tap
 - resolve to the first matching enabled binding
 - interpret `applyLayoutByIndex` as a global index within the active layout group's indexed layouts
+- only require the configured index to be a positive integer; missing indexes fail when invoked instead of at load time
 - operate on the currently resolved target window
 
 CLI:
@@ -338,7 +339,11 @@ Display set resolution:
 - priority is explicit display ID or ID array, then `main`, then `all`
 - drag overlays and trigger hit testing only use the resolved set for the current display
 - `cycleNext` and `cyclePrevious` only use the resolved set for the target window's current display, skip layouts whose `includeInLayoutIndex` is `false`, and never move the window across displays
-- menu and CLI direct layout application may move the window across displays when the chosen layout belongs to another resolved set
+- menu and CLI direct layout application resolve the target display directly from the matched layout set's `monitor` value
+- `monitor: all` keeps the target window on its current display
+- `monitor: main` always targets the current system main display
+- `monitor: "<display-id>"` always targets that display
+- `monitor: ["<display-id>", ...]` keeps the current display when it is included; otherwise it picks the first currently connected display in declaration order
 - menu actions target layouts by internal layout ID so same-name layouts in different sets still go to the intended display
 
 ## 9. Overlay Behavior

@@ -6,7 +6,7 @@ GridMove is a native macOS menu bar app for applying window layouts and moving w
 
 - Global keyboard shortcuts for cycling layouts and applying layout indexes within the active group
 - Drag-triggered layout selection and move-only mode
-- Layout groups that can be switched from the menu bar
+- Layout groups that can be switched from the menu bar or from layout mode with a Shift tap
 - Per-display layout sets with `all`, `main`, single-display, and multi-display targeting
 - Trigger regions on the screen grid or menu bar strip
 - Accessibility-based window lookup, focus, move, resize, and fullscreen exit
@@ -67,7 +67,7 @@ The example below uses `jsonc` only for explanation. The real file must be plain
     "excludedWindowTitles": [
       // Exact-match window titles to ignore.
     ],
-    "activeLayoutGroup": "built-in" // The menu-bar-selected layout group.
+    "activeLayoutGroup": "built-in" // The currently selected layout group. Menu-bar changes and layout-mode Shift cycling both update this value.
   },
   "appearance": {
     "renderTriggerAreas": false, // Show trigger-region overlay while in layout mode. The default is off.
@@ -101,7 +101,7 @@ The example below uses `jsonc` only for explanation. The real file must be plain
         },
         "action": {
           "kind": "applyLayoutByIndex", // Allowed values are applyLayoutByIndex, cycleNext, cyclePrevious.
-          "layout": 4 // Required only for applyLayoutByIndex. This is a 1-based index within the active layout group's indexed layouts, and CLI -layout <number> uses the same numbering.
+          "layout": 4 // Required only for applyLayoutByIndex. This is a 1-based index within the active layout group's indexed layouts. CLI -layout <number> uses the same numbering, and GridMove only requires this value to be a positive integer.
         }
       }
       // The default file contains more bindings in the same shape.
@@ -110,10 +110,10 @@ The example below uses `jsonc` only for explanation. The real file must be plain
   "layoutGroups": [
     {
       "name": "built-in",
-      "includeInGroupCycle": true, // Missing includeInGroupCycle means this group still participates in Shift-based group cycling while drag interaction stays in layout mode.
+      "includeInGroupCycle": true, // Missing includeInGroupCycle means this group still participates in Shift-based group cycling while layout mode is active.
       "sets": [
         {
-          "monitor": "all", // Allowed values: "all", "main", "<display-id>", ["<display-id>", ...]. Display matching prefers explicit ID or ID array, then main, then all.
+          "monitor": "all", // Allowed values: "all", "main", "<display-id>", ["<display-id>", ...]. Trigger overlays resolve sets by explicit ID or ID array, then main, then all.
           "layouts": [
             {
               "name": "Center", // CLI -layout "<name>" looks up this value inside the active layout group.
@@ -136,7 +136,7 @@ The example below uses `jsonc` only for explanation. The real file must be plain
                 // If kind is menuBar, use:
                 // "menuBarSelection": { "x": 1, "w": 4 }
               },
-              "includeInLayoutIndex": true, // false excludes the layout from layout-index shortcuts and from cycle order.
+              "includeInLayoutIndex": true, // false excludes the layout from layout-index shortcuts and from cycle order, but CLI -layout "<name>" can still resolve the layout.
               "includeInMenu": true // false hides the layout from the menu bar only.
             },
             {
@@ -150,7 +150,7 @@ The example below uses `jsonc` only for explanation. The real file must be plain
                 "h": 4
               },
               "includeInLayoutIndex": false,
-              "includeInMenu": false // Missing triggerRegion means drag trigger is unavailable; menu and CLI can still use the layout.
+              "includeInMenu": false // Missing triggerRegion means drag trigger is unavailable; menu-hidden layouts remain available to CLI, and to layout-index shortcuts only when includeInLayoutIndex is true.
             }
           ]
         }

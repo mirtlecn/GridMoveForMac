@@ -621,12 +621,7 @@ struct AppConfiguration: Codable, Equatable {
     }
 
     var layouts: [LayoutPreset] {
-        get {
-            flattenedLayouts(in: activeGroup)
-        }
-        set {
-            replaceActiveGroupLayouts(with: newValue)
-        }
+        flattenedLayouts(in: activeGroup)
     }
 
     func flattenedLayouts(in group: LayoutGroup?) -> [LayoutPreset] {
@@ -665,9 +660,10 @@ struct AppConfiguration: Codable, Equatable {
         }
         let removedLayout = currentLayouts[removedIndex]
 
-        var nextLayouts = currentLayouts
-        nextLayouts.remove(at: removedIndex)
-        layouts = nextLayouts
+        guard let location = activeGroupLayoutLocation(for: id) else {
+            return
+        }
+        layoutGroups[location.groupIndex].sets[location.setIndex].layouts.remove(at: location.layoutIndex)
 
         guard removedLayout.includeInLayoutIndex else {
             return
@@ -694,35 +690,66 @@ struct AppConfiguration: Codable, Equatable {
     }
 
     mutating func moveLayout(id: String, to targetIndex: Int) {
-        guard let sourceIndex = layouts.firstIndex(where: { $0.id == id }) else {
+        let currentLayouts = layouts
+        guard let sourceIndex = currentLayouts.firstIndex(where: { $0.id == id }) else {
             return
         }
 
-        var nextLayouts = layouts
-        var destinationIndex = targetIndex
-        if sourceIndex < destinationIndex {
-            destinationIndex -= 1
+        guard let sourceLocation = activeGroupLayoutLocation(for: id) else {
+            return
         }
-        destinationIndex = max(0, min(destinationIndex, nextLayouts.count - 1))
 
-        let movedLayout = nextLayouts.remove(at: sourceIndex)
-        nextLayouts.insert(movedLayout, at: destinationIndex)
-        layouts = nextLayouts
+        var destinationFlattenedIndex = max(0, min(targetIndex, currentLayouts.count))
+        if sourceIndex < destinationFlattenedIndex {
+            destinationFlattenedIndex -= 1
+        }
+
+        let destinationLocation = activeGroupInsertionLocation(forFlattenedIndex: destinationFlattenedIndex)
+        guard destinationLocation.setIndex == sourceLocation.setIndex else {
+            return
+        }
+
+        var setLayouts = layoutGroups[sourceLocation.groupIndex].sets[sourceLocation.setIndex].layouts
+        let movedLayout = setLayouts.remove(at: sourceLocation.layoutIndex)
+
+        let localDestinationIndex = destinationLocation.layoutIndex
+        let boundedDestinationIndex = max(0, min(localDestinationIndex, setLayouts.count))
+        setLayouts.insert(movedLayout, at: boundedDestinationIndex)
+        layoutGroups[sourceLocation.groupIndex].sets[sourceLocation.setIndex].layouts = setLayouts
     }
 
-    private mutating func replaceActiveGroupLayouts(with layouts: [LayoutPreset]) {
+    private func activeGroupLayoutLocation(for layoutID: String) -> (groupIndex: Int, setIndex: Int, layoutIndex: Int)? {
         guard let groupIndex = layoutGroups.firstIndex(where: { $0.name == general.activeLayoutGroup }) else {
-            return
+            return nil
         }
 
-        if layoutGroups[groupIndex].sets.isEmpty {
-            layoutGroups[groupIndex].sets = [LayoutSet(monitor: .all, layouts: layouts)]
-            return
+        for setIndex in layoutGroups[groupIndex].sets.indices {
+            if let layoutIndex = layoutGroups[groupIndex].sets[setIndex].layouts.firstIndex(where: { $0.id == layoutID }) {
+                return (groupIndex, setIndex, layoutIndex)
+            }
         }
 
-        layoutGroups[groupIndex].sets[0].layouts = layouts
-        for setIndex in layoutGroups[groupIndex].sets.indices.dropFirst() {
-            layoutGroups[groupIndex].sets[setIndex].layouts = []
+        return nil
+    }
+
+    private func activeGroupInsertionLocation(forFlattenedIndex flattenedIndex: Int) -> (setIndex: Int, layoutIndex: Int) {
+        guard let group = activeGroup else {
+            return (0, 0)
         }
+
+        var remainingIndex = flattenedIndex
+        for setIndex in group.sets.indices {
+            let setLayouts = group.sets[setIndex].layouts
+            if remainingIndex <= setLayouts.count {
+                return (setIndex, remainingIndex)
+            }
+            remainingIndex -= setLayouts.count
+        }
+
+        if let lastSetIndex = group.sets.indices.last {
+            return (lastSetIndex, group.sets[lastSetIndex].layouts.count)
+        }
+
+        return (0, 0)
     }
 }
