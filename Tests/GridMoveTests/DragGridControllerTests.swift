@@ -4,6 +4,20 @@ import Foundation
 import Testing
 @testable import GridMove
 
+private func makeScrollEvent(deltaY: Int32) throws -> CGEvent {
+    let source = try #require(CGEventSource(stateID: .hidSystemState))
+    return try #require(
+        CGEvent(
+            scrollWheelEvent2Source: source,
+            units: .pixel,
+            wheelCount: 1,
+            wheel1: deltaY,
+            wheel2: 0,
+            wheel3: 0
+        )
+    )
+}
+
 @MainActor
 @Test func preferredInteractionModeDefaultsToLayoutSelection() async throws {
     #expect(DragGridController.preferredInteractionMode(preferLayoutMode: true) == .layoutSelection)
@@ -88,6 +102,15 @@ import Testing
     ]
     configuration.general.activeLayoutGroup = "game"
     #expect(configuration.nextLayoutGroupNameInCycle() == nil)
+    #expect(configuration.previousLayoutGroupNameInCycle() == nil)
+
+    configuration.layoutGroups = [
+        LayoutGroup(name: "work", includeInGroupCycle: true, sets: []),
+        LayoutGroup(name: "game", includeInGroupCycle: false, sets: []),
+        LayoutGroup(name: "fullscreen", includeInGroupCycle: true, sets: []),
+    ]
+    configuration.general.activeLayoutGroup = "work"
+    #expect(configuration.previousLayoutGroupNameInCycle() == "fullscreen")
 }
 
 @Test func moveAnchorPreservesPointerOffset() async throws {
@@ -131,7 +154,7 @@ import Testing
         windowController: windowController,
         overlayController: overlayController,
         configurationProvider: { AppConfiguration.defaultValue },
-        cycleActiveLayoutGroup: { updatedConfiguration },
+        cycleActiveLayoutGroup: { _ in updatedConfiguration },
         accessibilityTrustedProvider: { true },
         accessibilityAccessValidator: { true },
         onAccessibilityRevoked: {}
@@ -155,4 +178,57 @@ import Testing
     #expect(controller.state.hoveredLayoutID == nil)
     #expect(controller.state.lastAppliedLayoutID == nil)
     #expect(controller.state.activeScreen != nil)
+}
+
+@MainActor
+@Test func scrollGroupCycleTrackerTriggersOncePerGestureAfterThreshold() async throws {
+    var tracker = ScrollGroupCycleTracker(threshold: 6)
+
+    #expect(tracker.register(distance: 2) == nil)
+    #expect(tracker.register(distance: 3) == nil)
+    #expect(tracker.register(distance: 1) == .previous)
+    #expect(tracker.register(distance: 20) == nil)
+
+    tracker.resetGesture()
+
+    #expect(tracker.register(distance: -2) == nil)
+    #expect(tracker.register(distance: -4) == .next)
+}
+
+@MainActor
+@Test func handleScrollWheelCyclesLayoutGroupOnceUntilGestureResets() async throws {
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController()
+    var directions: [LayoutGroupCycleDirection] = []
+
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { AppConfiguration.defaultValue },
+        cycleActiveLayoutGroup: { direction in
+            directions.append(direction)
+            return AppConfiguration.defaultValue
+        },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {}
+    )
+
+    controller.state.active = true
+    controller.state.interactionMode = .layoutSelection
+    controller.state.scrollGroupCycleTracker = controller.makeScrollGroupCycleTracker()
+
+    _ = controller.handleScrollWheel(event: try makeScrollEvent(deltaY: 2))
+    _ = controller.handleScrollWheel(event: try makeScrollEvent(deltaY: 2))
+    _ = controller.handleScrollWheel(event: try makeScrollEvent(deltaY: 2))
+    #expect(directions == [.previous])
+
+    _ = controller.handleScrollWheel(event: try makeScrollEvent(deltaY: 10))
+    #expect(directions == [.previous])
+
+    controller.state.scrollGroupCycleTracker?.resetGesture()
+    _ = controller.handleScrollWheel(event: try makeScrollEvent(deltaY: -6))
+    #expect(directions == [.previous, .next])
 }

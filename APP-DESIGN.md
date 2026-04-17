@@ -214,6 +214,8 @@ Layout cycling state is stored in memory only:
 Layout-mode group cycling:
 
 - while a drag interaction is active in layout-selection mode, pressing and releasing `Shift` alone cycles to the next group whose `includeInGroupCycle` is `true`
+- while a drag interaction is active in layout-selection mode, vertical mouse-wheel scrolling cycles groups directly: upward scrolling moves to the previous group and downward scrolling moves to the next group
+- one scroll gesture only triggers one group change after a small accumulated-distance threshold; the gesture must stop briefly before the next group change can trigger
 - the `Shift` tap is evaluated relative to the modifier baseline captured when the interaction starts, so GridMove only cycles groups when `Shift` is tapped as the only extra modifier beyond that baseline
 - the switch updates in-memory runtime state immediately, then saves `general.activeLayoutGroup` asynchronously
 - the trigger overlay is recomputed immediately for the new group

@@ -44,8 +44,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         windowController: windowController,
         overlayController: overlayController,
         configurationProvider: { [weak self] in self?.configuration ?? AppConfiguration.defaultValue },
-        cycleActiveLayoutGroup: { [weak self] in
-            self?.cycleToNextLayoutGroup()
+        cycleActiveLayoutGroup: { [weak self] direction in
+            self?.cycleLayoutGroup(direction: direction)
         },
         accessibilityTrustedProvider: { [weak self] in
             self?.accessibilityCoordinator.hasAccess ?? false
@@ -258,8 +258,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func cycleToNextLayoutGroup() -> AppConfiguration? {
-        guard let nextGroupName = configuration.nextLayoutGroupNameInCycle() else {
+    private func cycleLayoutGroup(direction: LayoutGroupCycleDirection) -> AppConfiguration? {
+        let nextGroupName: String?
+        switch direction {
+        case .next:
+            nextGroupName = configuration.nextLayoutGroupNameInCycle()
+        case .previous:
+            nextGroupName = configuration.previousLayoutGroupNameInCycle()
+        }
+
+        guard let nextGroupName else {
             return nil
         }
 
@@ -420,7 +428,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func cycleToNextLayoutGroupForTesting() -> AppConfiguration? {
-        cycleToNextLayoutGroup()
+        cycleLayoutGroup(direction: .next)
     }
 
     func waitForDeferredConfigurationSaveForTesting() async {

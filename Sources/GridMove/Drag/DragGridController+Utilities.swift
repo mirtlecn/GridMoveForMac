@@ -3,6 +3,11 @@ import CoreGraphics
 import Foundation
 
 extension DragGridController {
+    private enum ScrollGroupCycleConstants {
+        static let threshold: Double = 6
+        static let resetDelaySeconds: Double = 0.18
+    }
+
     func postSyntheticMiddleMouseDown(at point: CGPoint) {
         guard let source = CGEventSource(stateID: .hidSystemState) else {
             return
@@ -78,6 +83,42 @@ extension DragGridController {
 
     func matchesAnyModifierGroup(flags: Set<ModifierKey>, groups: [[ModifierKey]]) -> Bool {
         Self.matchesAnyModifierGroup(flags: flags, groups: groups)
+    }
+
+    func verticalScrollDistance(from event: CGEvent) -> Double {
+        let pointDelta = Double(event.getIntegerValueField(.scrollWheelEventPointDeltaAxis1))
+        if pointDelta != 0 {
+            return pointDelta
+        }
+
+        let fixedPointDelta = Double(event.getIntegerValueField(.scrollWheelEventFixedPtDeltaAxis1)) / 65536.0
+        if fixedPointDelta != 0 {
+            return fixedPointDelta
+        }
+
+        return Double(event.getIntegerValueField(.scrollWheelEventDeltaAxis1))
+    }
+
+    func makeScrollGroupCycleTracker() -> ScrollGroupCycleTracker {
+        ScrollGroupCycleTracker(threshold: ScrollGroupCycleConstants.threshold)
+    }
+
+    func scheduleScrollGroupCycleReset() {
+        state.scrollGroupCycleResetWorkItem?.cancel()
+
+        let workItem = DispatchWorkItem { [weak self] in
+            guard let self else {
+                return
+            }
+
+            self.state.scrollGroupCycleTracker?.resetGesture()
+            self.state.scrollGroupCycleResetWorkItem = nil
+        }
+        state.scrollGroupCycleResetWorkItem = workItem
+        DispatchQueue.main.asyncAfter(
+            deadline: .now() + ScrollGroupCycleConstants.resetDelaySeconds,
+            execute: workItem
+        )
     }
 
     func ensureAccessibilityIsStillGranted() -> Bool {

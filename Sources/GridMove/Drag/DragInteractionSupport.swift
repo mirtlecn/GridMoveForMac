@@ -6,6 +6,11 @@ enum DragInteractionMode: Equatable {
     case moveOnly
 }
 
+enum LayoutGroupCycleDirection: Equatable {
+    case next
+    case previous
+}
+
 enum DragTriggerButton: Int {
     case left = 0
     case middle = 2
@@ -42,6 +47,35 @@ struct ShiftGroupCycleTracker: Equatable {
 
     mutating func register(modifiers: Set<ModifierKey>) -> OptionToggleEventResult {
         tracker.register(modifiers: modifiers)
+    }
+}
+
+struct ScrollGroupCycleTracker: Equatable {
+    let threshold: Double
+    private(set) var accumulatedDistance: Double = 0
+    private(set) var hasTriggeredCurrentGesture = false
+
+    mutating func register(distance: Double) -> LayoutGroupCycleDirection? {
+        guard distance != 0 else {
+            return nil
+        }
+
+        guard !hasTriggeredCurrentGesture else {
+            return nil
+        }
+
+        accumulatedDistance += distance
+        guard abs(accumulatedDistance) >= threshold else {
+            return nil
+        }
+
+        hasTriggeredCurrentGesture = true
+        return accumulatedDistance > 0 ? .previous : .next
+    }
+
+    mutating func resetGesture() {
+        accumulatedDistance = 0
+        hasTriggeredCurrentGesture = false
     }
 }
 
@@ -116,5 +150,7 @@ struct DragInteractionState {
     var moveAnchor: MoveAnchor?
     var optionToggleTracker: OptionToggleTracker?
     var shiftGroupCycleTracker: ShiftGroupCycleTracker?
+    var scrollGroupCycleTracker: ScrollGroupCycleTracker?
+    var scrollGroupCycleResetWorkItem: DispatchWorkItem?
     var pendingRightClickToggle = false
 }

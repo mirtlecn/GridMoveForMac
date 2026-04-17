@@ -140,6 +140,9 @@ extension DragGridController {
         state.hoveredLayoutID = nil
         state.lastAppliedLayoutID = nil
         state.shiftGroupCycleTracker = ShiftGroupCycleTracker(baselineModifiers: currentModifierKeys)
+        state.scrollGroupCycleResetWorkItem?.cancel()
+        state.scrollGroupCycleResetWorkItem = nil
+        state.scrollGroupCycleTracker = makeScrollGroupCycleTracker()
 
         let fallbackScreen = currentWindowFrame()
             .flatMap { frame in
@@ -190,6 +193,9 @@ extension DragGridController {
         state.lastAppliedLayoutID = nil
         state.hasDraggedPastThreshold = true
         state.shiftGroupCycleTracker = nil
+        state.scrollGroupCycleResetWorkItem?.cancel()
+        state.scrollGroupCycleResetWorkItem = nil
+        state.scrollGroupCycleTracker = nil
 
         let windowFrame = currentWindowFrame()
         if let frame = windowFrame {
@@ -257,12 +263,12 @@ extension DragGridController {
         )
     }
 
-    func cycleLayoutGroup(at point: CGPoint) {
+    func cycleLayoutGroup(at point: CGPoint, direction: LayoutGroupCycleDirection = .next) {
         guard state.interactionMode == .layoutSelection else {
             return
         }
 
-        guard let updatedConfiguration = cycleActiveLayoutGroup() else {
+        guard let updatedConfiguration = cycleActiveLayoutGroup(direction) else {
             return
         }
 
@@ -296,6 +302,7 @@ extension DragGridController {
 
     func resetState(keepSuppressedMouseUp: Bool = false) {
         state.activationTimer?.cancel()
+        state.scrollGroupCycleResetWorkItem?.cancel()
         let suppressedMouseUpButton = keepSuppressedMouseUp ? state.suppressedMouseUpButton : nil
         state = DragInteractionState()
         state.suppressedMouseUpButton = suppressedMouseUpButton

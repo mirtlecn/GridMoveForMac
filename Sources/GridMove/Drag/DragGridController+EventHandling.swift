@@ -170,6 +170,29 @@ extension DragGridController {
         return handleMouseUp(event: event, button: .middle)
     }
 
+    func handleScrollWheel(event: CGEvent) -> Unmanaged<CGEvent>? {
+        guard state.active, state.interactionMode == .layoutSelection else {
+            return Unmanaged.passUnretained(event)
+        }
+
+        let distance = verticalScrollDistance(from: event)
+        guard distance != 0 else {
+            return nil
+        }
+
+        var tracker = state.scrollGroupCycleTracker ?? makeScrollGroupCycleTracker()
+        let direction = tracker.register(distance: distance)
+        state.scrollGroupCycleTracker = tracker
+        scheduleScrollGroupCycleReset()
+
+        if let direction {
+            cycleLayoutGroup(at: appKitPoint(from: event), direction: direction)
+            state.scrollGroupCycleTracker = tracker
+        }
+
+        return nil
+    }
+
     func handleFlagsChanged(event: CGEvent, configuration: AppConfiguration) -> Unmanaged<CGEvent>? {
         guard state.active else {
             return Unmanaged.passUnretained(event)

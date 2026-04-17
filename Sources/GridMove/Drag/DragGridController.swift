@@ -8,7 +8,7 @@ final class DragGridController {
     let windowController: WindowController
     let overlayController: OverlayController
     let configurationProvider: () -> AppConfiguration
-    let cycleActiveLayoutGroup: () -> AppConfiguration?
+    let cycleActiveLayoutGroup: (LayoutGroupCycleDirection) -> AppConfiguration?
     let accessibilityTrustedProvider: () -> Bool
     let accessibilityAccessValidator: () -> Bool
     let onAccessibilityRevoked: () -> Void
@@ -25,7 +25,7 @@ final class DragGridController {
         windowController: WindowController,
         overlayController: OverlayController,
         configurationProvider: @escaping () -> AppConfiguration,
-        cycleActiveLayoutGroup: @escaping () -> AppConfiguration?,
+        cycleActiveLayoutGroup: @escaping (LayoutGroupCycleDirection) -> AppConfiguration?,
         accessibilityTrustedProvider: @escaping () -> Bool,
         accessibilityAccessValidator: @escaping () -> Bool,
         onAccessibilityRevoked: @escaping () -> Void
@@ -55,6 +55,7 @@ final class DragGridController {
             | (1 << CGEventType.otherMouseDown.rawValue)
             | (1 << CGEventType.otherMouseUp.rawValue)
             | (1 << CGEventType.otherMouseDragged.rawValue)
+            | (1 << CGEventType.scrollWheel.rawValue)
             | (1 << CGEventType.flagsChanged.rawValue)
             | (1 << CGEventType.keyDown.rawValue)
             | (1 << CGEventType.tapDisabledByTimeout.rawValue)
@@ -149,6 +150,8 @@ final class DragGridController {
             return handleMouseDragged(event: event, expectedButton: .middle, configuration: configuration)
         case .otherMouseUp:
             return handleOtherMouseUp(event: event)
+        case .scrollWheel:
+            return handleScrollWheel(event: event)
         case .flagsChanged:
             return handleFlagsChanged(event: event, configuration: configuration)
         case .keyDown:
