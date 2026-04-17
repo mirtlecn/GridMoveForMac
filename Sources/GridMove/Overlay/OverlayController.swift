@@ -44,9 +44,12 @@ final class OverlayController {
         NSAnimationContext.runAnimationGroup { context in
             context.duration = FlashDuration.seconds
             self.panel?.animator().alphaValue = 0.0
-        } completionHandler: {
-            if self.flashGeneration == expectedGeneration {
-                self.dismissPanel()
+        } completionHandler: { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                if self.flashGeneration == expectedGeneration {
+                    self.dismissPanel()
+                }
             }
         }
     }
