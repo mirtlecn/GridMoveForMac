@@ -64,6 +64,7 @@ struct AppearanceConfiguration: Codable {
     let triggerOpacity: Double
     let triggerGap: Double
     let triggerStrokeColor: String
+    let layoutGap: Double
     let renderWindowHighlight: Bool
     let highlightFillOpacity: Double
     let highlightStrokeWidth: Double
@@ -74,6 +75,7 @@ struct AppearanceConfiguration: Codable {
         triggerOpacity = settings.triggerOpacity
         triggerGap = settings.triggerGap
         triggerStrokeColor = settings.triggerStrokeColor.hexString
+        layoutGap = settings.layoutGap
         renderWindowHighlight = settings.renderWindowHighlight
         highlightFillOpacity = settings.highlightFillOpacity
         highlightStrokeWidth = settings.highlightStrokeWidth
@@ -86,6 +88,7 @@ struct AppearanceConfiguration: Codable {
             triggerOpacity: triggerOpacity,
             triggerGap: triggerGap,
             triggerStrokeColor: try RGBAColor(hexString: triggerStrokeColor),
+            layoutGap: layoutGap,
             renderWindowHighlight: renderWindowHighlight,
             highlightFillOpacity: highlightFillOpacity,
             highlightStrokeWidth: highlightStrokeWidth,

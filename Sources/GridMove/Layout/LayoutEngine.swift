@@ -16,17 +16,19 @@ final class LayoutEngine {
     private var windowLayoutIDs: [String: String] = [:]
     private var recentWindowIdentities: [String] = []
 
-    func frame(for preset: LayoutPreset, on screen: NSScreen) -> CGRect {
-        frame(for: preset, in: screen.visibleFrame)
+    func frame(for preset: LayoutPreset, on screen: NSScreen, layoutGap: Double = 0) -> CGRect {
+        frame(for: preset, in: screen.visibleFrame, layoutGap: layoutGap)
     }
 
-    func frame(for preset: LayoutPreset, in usableFrame: CGRect) -> CGRect {
+    func frame(for preset: LayoutPreset, in usableFrame: CGRect, layoutGap: Double = 0) -> CGRect {
         frame(
             for: preset.windowSelection,
             columns: preset.gridColumns,
             rows: preset.gridRows,
             in: usableFrame
         )
+        .insetBy(dx: layoutGap, dy: layoutGap)
+        .integral
     }
 
     func frame(
@@ -43,24 +45,26 @@ final class LayoutEngine {
         ).integral
     }
 
-    func resolveTriggerSlots(on screen: NSScreen, layouts: [LayoutPreset], triggerGap: Double) -> [ResolvedTriggerSlot] {
+    func resolveTriggerSlots(on screen: NSScreen, layouts: [LayoutPreset], triggerGap: Double, layoutGap: Double = 0) -> [ResolvedTriggerSlot] {
         resolveTriggerSlots(
             screenFrame: screen.frame,
             usableFrame: screen.visibleFrame,
             layouts: layouts,
-            triggerGap: triggerGap
+            triggerGap: triggerGap,
+            layoutGap: layoutGap
         )
     }
 
-    func resolveTriggerSlots(in usableFrame: CGRect, layouts: [LayoutPreset], triggerGap: Double) -> [ResolvedTriggerSlot] {
-        resolveTriggerSlots(screenFrame: usableFrame, usableFrame: usableFrame, layouts: layouts, triggerGap: triggerGap)
+    func resolveTriggerSlots(in usableFrame: CGRect, layouts: [LayoutPreset], triggerGap: Double, layoutGap: Double = 0) -> [ResolvedTriggerSlot] {
+        resolveTriggerSlots(screenFrame: usableFrame, usableFrame: usableFrame, layouts: layouts, triggerGap: triggerGap, layoutGap: layoutGap)
     }
 
     func resolveTriggerSlots(
         screenFrame: CGRect,
         usableFrame: CGRect,
         layouts: [LayoutPreset],
-        triggerGap: Double
+        triggerGap: Double,
+        layoutGap: Double = 0
     ) -> [ResolvedTriggerSlot] {
         let rawSlots: [ResolvedTriggerSlot] = layouts.compactMap { preset -> ResolvedTriggerSlot? in
             guard let triggerFrame = triggerFrame(
@@ -76,7 +80,7 @@ final class LayoutEngine {
                 layoutID: preset.id,
                 triggerFrame: triggerFrame,
                 hitTestFrames: [triggerFrame],
-                targetFrame: frame(for: preset, in: usableFrame)
+                targetFrame: frame(for: preset, in: usableFrame, layoutGap: layoutGap)
             )
         }
         return resolveOverlappingHitTestFrames(in: rawSlots)

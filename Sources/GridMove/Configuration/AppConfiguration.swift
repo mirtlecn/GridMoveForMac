@@ -511,6 +511,7 @@ struct AppearanceSettings: Codable, Equatable {
     var triggerOpacity: Double
     var triggerGap: Double
     var triggerStrokeColor: RGBAColor
+    var layoutGap: Double
     var renderWindowHighlight: Bool
     var highlightFillOpacity: Double
     var highlightStrokeWidth: Double
@@ -521,6 +522,7 @@ struct AppearanceSettings: Codable, Equatable {
         case triggerOpacity
         case triggerGap
         case triggerStrokeColor
+        case layoutGap
         case renderWindowHighlight
         case highlightFillOpacity
         case highlightStrokeWidth
@@ -532,6 +534,7 @@ struct AppearanceSettings: Codable, Equatable {
         triggerOpacity: Double,
         triggerGap: Double,
         triggerStrokeColor: RGBAColor,
+        layoutGap: Double = 1,
         renderWindowHighlight: Bool,
         highlightFillOpacity: Double,
         highlightStrokeWidth: Double,
@@ -541,6 +544,7 @@ struct AppearanceSettings: Codable, Equatable {
         self.triggerOpacity = triggerOpacity
         self.triggerGap = triggerGap
         self.triggerStrokeColor = triggerStrokeColor
+        self.layoutGap = layoutGap
         self.renderWindowHighlight = renderWindowHighlight
         self.highlightFillOpacity = highlightFillOpacity
         self.highlightStrokeWidth = highlightStrokeWidth
@@ -553,6 +557,7 @@ struct AppearanceSettings: Codable, Equatable {
         triggerOpacity = try container.decode(Double.self, forKey: .triggerOpacity)
         triggerGap = try container.decode(Double.self, forKey: .triggerGap)
         triggerStrokeColor = try container.decodeIfPresent(RGBAColor.self, forKey: .triggerStrokeColor) ?? RGBAColor.defaultTriggerStrokeColor
+        layoutGap = try container.decodeIfPresent(Double.self, forKey: .layoutGap) ?? 1
         renderWindowHighlight = try container.decode(Bool.self, forKey: .renderWindowHighlight)
         highlightFillOpacity = try container.decode(Double.self, forKey: .highlightFillOpacity)
         highlightStrokeWidth = try container.decode(Double.self, forKey: .highlightStrokeWidth)

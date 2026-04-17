@@ -50,7 +50,7 @@ final class WindowFrameApplier {
 
         let currentScreen = screenContainingProvider(CGPoint(x: currentFrame.midX, y: currentFrame.midY))
         let crossesScreenBoundary = currentScreen.map(Geometry.screenIdentifier(for:)) != Geometry.screenIdentifier(for: targetScreen)
-        let targetFrame = layoutEngine.frame(for: preset, on: targetScreen)
+        let targetFrame = layoutEngine.frame(for: preset, on: targetScreen, layoutGap: configuration.appearance.layoutGap)
         let applyFrame = { [weak self] in
             guard let self else {
                 return

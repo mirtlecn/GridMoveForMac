@@ -64,7 +64,8 @@ extension DragGridController {
                 layoutEngine.resolveTriggerSlots(
                     on: $0,
                     layouts: LayoutGroupResolver.triggerableLayouts(for: $0, configuration: configuration),
-                    triggerGap: configuration.appearance.triggerGap
+                    triggerGap: configuration.appearance.triggerGap,
+                    layoutGap: configuration.appearance.layoutGap
                 )
             } ?? []
             state.hoveredLayoutID = nil
@@ -153,7 +154,8 @@ extension DragGridController {
             layoutEngine.resolveTriggerSlots(
                 on: $0,
                 layouts: LayoutGroupResolver.triggerableLayouts(for: $0, configuration: configuration),
-                triggerGap: configuration.appearance.triggerGap
+                triggerGap: configuration.appearance.triggerGap,
+                layoutGap: configuration.appearance.layoutGap
             )
         } ?? []
 
