@@ -395,6 +395,27 @@ import Testing
     #expect(configuration.hotkeys.bindings.contains(where: { $0.action == .cycleNext }))
 }
 
+@Test func removingLastIndexedLayoutDoesNotCrashAndShiftsBindings() async throws {
+    var configuration = AppConfiguration.defaultValue
+
+    configuration.removeLayout(id: "layout-10")
+
+    #expect(!configuration.layouts.contains(where: { $0.id == "layout-10" }))
+    #expect(!configuration.hotkeys.bindings.contains(where: { $0.action == .applyLayoutByIndex(layout: 10) }))
+    #expect(!configuration.hotkeys.bindings.contains(where: { $0.action == .applyLayoutByIndex(layout: 9) }))
+    #expect(configuration.layouts.last?.id == "layout-11")
+}
+
+@Test func removingLayoutExcludedFromIndexesLeavesDirectBindingsUnchanged() async throws {
+    var configuration = AppConfiguration.defaultValue
+    let bindingsBeforeRemoval = configuration.hotkeys.bindings
+
+    configuration.removeLayout(id: "layout-11")
+
+    #expect(!configuration.layouts.contains(where: { $0.id == "layout-11" }))
+    #expect(configuration.hotkeys.bindings == bindingsBeforeRemoval)
+}
+
 @Test func appearanceSettingsDecodeMissingTriggerStrokeColorWithDefaultValue() async throws {
     let json = """
     {

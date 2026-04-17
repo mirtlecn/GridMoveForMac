@@ -797,20 +797,21 @@ struct AppConfiguration: Codable, Equatable {
     }
 
     mutating func removeLayout(id: String) {
-        guard let removedIndex = layouts.firstIndex(where: { $0.id == id }) else {
+        let currentLayouts = layouts
+        guard let removedIndex = currentLayouts.firstIndex(where: { $0.id == id }) else {
             return
         }
+        let removedLayout = currentLayouts[removedIndex]
 
-        var nextLayouts = layouts
+        var nextLayouts = currentLayouts
         nextLayouts.remove(at: removedIndex)
         layouts = nextLayouts
 
-        let removedLayout = layouts[removedIndex]
         guard removedLayout.includeInLayoutIndex else {
             return
         }
 
-        let removedShortcutIndex = layouts[..<removedIndex].filter(\.includeInLayoutIndex).count + 1
+        let removedShortcutIndex = currentLayouts[..<removedIndex].filter(\.includeInLayoutIndex).count + 1
 
         hotkeys.bindings.removeAll { binding in
             if case let .applyLayoutByIndex(layoutIndex) = binding.action {
