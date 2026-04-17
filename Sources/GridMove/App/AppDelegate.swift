@@ -76,9 +76,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         menuController = MenuBarController(
             dragGridEnabled: configuration.general.isEnabled,
+            toggleSettings: makeToggleSettingsState(configuration: configuration),
             actionItems: makeMenuActionItems(configuration: configuration),
             onToggleDragGrid: { [weak self] isEnabled in
                 self?.updateGlobalEnabledState(isEnabled)
+            },
+            onToggleMiddleMouseDrag: { [weak self] isEnabled in
+                self?.updateMiddleMouseDragEnabled(isEnabled)
+            },
+            onToggleModifierLeftMouseDrag: { [weak self] isEnabled in
+                self?.updateModifierLeftMouseDragEnabled(isEnabled)
+            },
+            onTogglePreferLayoutMode: { [weak self] isEnabled in
+                self?.updatePreferLayoutMode(isEnabled)
             },
             onPerformAction: { [weak self] action in
                 self?.performMenuAction(action)
@@ -171,14 +181,39 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        configuration.general.isEnabled = isEnabled
-        do {
-            try configurationStore.save(configuration)
-        } catch {
-            AppLogger.shared.error("Failed to save configuration: \(error.localizedDescription)")
+        updateConfiguration { configuration in
+            configuration.general.isEnabled = isEnabled
         }
-        applyGlobalEnabledState()
-        menuController?.updateActionItems(makeMenuActionItems(configuration: configuration), isEnabled: isEnabled)
+    }
+
+    func updateMiddleMouseDragEnabled(_ isEnabled: Bool) {
+        guard configuration.dragTriggers.enableMiddleMouseDrag != isEnabled else {
+            return
+        }
+
+        updateConfiguration { configuration in
+            configuration.dragTriggers.enableMiddleMouseDrag = isEnabled
+        }
+    }
+
+    func updateModifierLeftMouseDragEnabled(_ isEnabled: Bool) {
+        guard configuration.dragTriggers.enableModifierLeftMouseDrag != isEnabled else {
+            return
+        }
+
+        updateConfiguration { configuration in
+            configuration.dragTriggers.enableModifierLeftMouseDrag = isEnabled
+        }
+    }
+
+    func updatePreferLayoutMode(_ isEnabled: Bool) {
+        guard configuration.dragTriggers.preferLayoutMode != isEnabled else {
+            return
+        }
+
+        updateConfiguration { configuration in
+            configuration.dragTriggers.preferLayoutMode = isEnabled
+        }
     }
 
     private func applyGlobalEnabledState() {
@@ -253,7 +288,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         reloadItem.target = self
         applicationMenu.addItem(reloadItem)
 
-        let customizeItem = NSMenuItem(title: UICopy.customizeAppMenuTitle, action: #selector(customizeFromMenu), keyEquivalent: ",")
+        let customizeItem = NSMenuItem(title: UICopy.customizeMenuTitle, action: #selector(customizeFromMenu), keyEquivalent: ",")
         customizeItem.target = self
         customizeItem.keyEquivalentModifierMask = [.command]
         applicationMenu.addItem(customizeItem)
@@ -286,12 +321,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         openURL(configurationStore.directoryURL)
     }
 
+    private func updateConfiguration(_ mutate: (inout AppConfiguration) -> Void) {
+        mutate(&configuration)
+
+        do {
+            try configurationStore.save(configuration)
+        } catch {
+            AppLogger.shared.error("Failed to save configuration: \(error.localizedDescription)")
+        }
+
+        applyConfiguration(configuration)
+    }
+
     private func applyConfiguration(_ configuration: AppConfiguration) {
         self.configuration = configuration
         applyGlobalEnabledState()
         menuController?.updateActionItems(
             makeMenuActionItems(configuration: configuration),
             isEnabled: configuration.general.isEnabled
+        )
+        menuController?.updateToggleStates(makeToggleSettingsState(configuration: configuration))
+    }
+
+    private func makeToggleSettingsState(configuration: AppConfiguration) -> MenuBarController.ToggleSettingsState {
+        MenuBarController.ToggleSettingsState(
+            middleMouseDragEnabled: configuration.dragTriggers.enableMiddleMouseDrag,
+            modifierLeftMouseDragEnabled: configuration.dragTriggers.enableModifierLeftMouseDrag,
+            preferLayoutMode: configuration.dragTriggers.preferLayoutMode
         )
     }
 

@@ -26,7 +26,7 @@ final class LayoutActionExecutor {
         let configuration = configurationProvider()
 
         guard configuration.general.isEnabled else {
-            return .failure("GridMove is disabled. Enable it from the menu bar or Settings.")
+            return .failure("GridMove is disabled. Enable app first.")
         }
 
         guard windowController.isAccessibilityTrusted(prompt: false) else {
@@ -65,7 +65,7 @@ final class LayoutActionExecutor {
         configuration: AppConfiguration
     ) -> LayoutActionExecutionResult {
         guard configuration.general.isEnabled else {
-            return .failure("GridMove is disabled. Enable it from the menu bar or Settings.")
+            return .failure("GridMove is disabled. Enable app first.")
         }
 
         guard let window = targetWindow(targetWindowID: targetWindowID, configuration: configuration) else {

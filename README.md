@@ -1,39 +1,26 @@
 # GridMove
 
-GridMove is a native macOS menu bar app that migrates the current Hammerspoon window layout and drag grid workflow into a standalone AppKit-based application.
+GridMove is a native macOS menu bar app for applying window layouts and moving windows with mouse, keyboard, and CLI triggers.
 
-## Current scope
+## Features
 
 - Global keyboard shortcuts for cycling layouts and applying named layouts
-- Layout cycling that follows the current order in the JSON configuration and skips layouts excluded from cycling
-- Drag grid activation by middle mouse hold or configured modifier groups plus left mouse
-- Trigger regions that can use either the screen grid or a segmented menu bar strip
-- Accessibility-based target window lookup, focus, move, resize, and fullscreen exit
-- Non-activating overlay for trigger slots and target window preview
+- Drag-triggered layout selection and move-only mode
+- Trigger regions on the screen grid or menu bar strip
+- Accessibility-based window lookup, focus, move, resize, and fullscreen exit
+- CLI actions relayed to the running app
 - JSON configuration stored at `~/.config/GridMove/config.json`
 
-## Out of scope in this first version
-
-- Space switching
-- Mission Control automation
-- Cross-Space window movement
-- Fullscreen Space management
-- Sparkle integration
-- Third-party shortcut libraries
-
-## Build
+## Dev
 
 ```bash
+# test
+make test
+# run locally
+make dev
+# build and package
 make build
 ```
-
-This creates:
-
-- `dist/GridMove.app`
-- `dist/GridMove.dmg`
-
-Before packaging, `make build` removes the local runtime configuration at `~/.config/GridMove/config.json` so the packaged app starts from a clean default state.
-The packaged app bundle includes a generated app icon derived from the menu bar glyph.
 
 The default signing mode is ad-hoc signing for local testing. To use a real certificate, override `SIGN_IDENTITY`:
 
@@ -41,159 +28,115 @@ The default signing mode is ad-hoc signing for local testing. To use a real cert
 make build SIGN_IDENTITY="Developer ID Application: Example Name (TEAMID)"
 ```
 
-`make build` runs the Swift test suite before packaging. To run tests without packaging, use:
-
-```bash
-make test
-```
-
-To run the debug build locally, use:
-
-```bash
-make dev
-```
-
-## Run
-
-```bash
-swift run
-```
-
-On first launch, grant Accessibility access in System Settings. The app stays in the menu bar and hides the Dock icon by default.
-
 ## CLI
 
-The compiled executable can send layout commands to an already running GridMove app:
+GridMove can relay CLI actions to a running app instance:
 
 ```bash
-.build/release/GridMove -next
-.build/release/GridMove -pre
-.build/release/GridMove -layout "Center"
-.build/release/GridMove -layout layout-4
-.build/release/GridMove -layout "Center" -window-id 12345
-.build/release/GridMove -help
+path/to/GridMove.app/Contents/MacOS/GridMove -next
+path/to/GridMove.app/Contents/MacOS/GridMove -pre
+path/to/GridMove.app/Contents/MacOS/GridMove -layout "Center"
+path/to/GridMove.app/Contents/MacOS/GridMove -layout layout-4
+path/to/GridMove.app/Contents/MacOS/GridMove -layout "Center" -window-id 12345
 ```
 
-Start GridMove first before using CLI layout actions. If GridMove is not running, the CLI prints an error and exits.
-
-The `-layout` argument accepts either the layout name or the layout identifier. If `-window-id <cg-window-id>` is provided, GridMove targets that exact on-screen window. Otherwise CLI actions operate on the currently focused window only.
-If multiple layouts share the same name, use the layout identifier instead. Ambiguous layout names are rejected.
+If `-window-id <cg-window-id>` is not provided, GridMove targets the currently focused window. 
 
 ## Configuration
 
-The app writes a default JSON configuration to `~/.config/GridMove/config.json` on first launch. The initial values mirror the migrated `~/.hammerspoon` layouts, trigger regions, modifier groups, and shortcut defaults.
+Config file location is `~/.config/GridMove/config.json`.
 
-If the config file contains invalid JSON or an unsupported shape, GridMove keeps the file unchanged, logs the error, and falls back to the built-in default configuration for the current launch.
+On first launch, GridMove writes a default file to that path if it does not exist.
 
-You can open the config directory from the menu bar with `Customize` and reload the file from disk with `Reload config`.
+The real file must be plain JSON and does not support comments. The example below uses `jsonc` only for explanation.
 
-The generated file uses plain JSON. Layout objects do not store internal identifiers. Their 1-based position in the `layouts` array is the layout number. Hotkey actions that apply a layout use `action.layout` with that layout number. Stroke colors use `#RRGGBBAA`.
-
-If a manual `Reload config` falls back to the built-in default configuration, GridMove also posts a local system notification.
-
-Example:
-
-```json
+```jsonc
 {
   "general": {
-    "isEnabled": true,
-    "excludedBundleIDs": ["com.apple.Spotlight"],
-    "excludedWindowTitles": []
+    "isEnabled": true, // Enable or disable the whole app. If this field is missing, GridMove treats it as true.
+    "excludedBundleIDs": [
+      "com.apple.Spotlight" // Exact-match app bundle IDs to ignore. Built-in system exclusions still apply.
+    ],
+    "excludedWindowTitles": [
+      // Exact-match window titles to ignore.
+    ]
   },
   "appearance": {
-    "renderTriggerAreas": true,
-    "triggerOpacity": 0.2,
-    "triggerGap": 2,
-    "triggerStrokeColor": "#007AFF33",
-    "renderWindowHighlight": true,
-    "highlightFillOpacity": 0.08,
-    "highlightStrokeWidth": 3,
-    "highlightStrokeColor": "#FFFFFFEB"
+    "renderTriggerAreas": true, // Show trigger-region overlay while in layout mode.
+    "triggerOpacity": 0.2, // Fill opacity for trigger regions. Current defaults assume a 0...1 range.
+    "triggerGap": 2, // Gap between trigger-region cells, in points.
+    "triggerStrokeColor": "#007AFF33", // Border color for trigger regions. Accepts #RRGGBB or #RRGGBBAA.
+    "renderWindowHighlight": true, // Show the current window highlight overlay.
+    "highlightFillOpacity": 0.08, // Fill opacity for the window highlight. Current defaults assume a 0...1 range.
+    "highlightStrokeWidth": 3, // Border width for the window highlight, in points.
+    "highlightStrokeColor": "#FFFFFFEB" // Border color for the window highlight. Accepts #RRGGBB or #RRGGBBAA.
   },
   "dragTriggers": {
-    "middleMouseButtonNumber": 2,
-    "enableMiddleMouseDrag": true,
-    "enableModifierLeftMouseDrag": true,
-    "preferLayoutMode": true,
-    "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
-    "activationDelaySeconds": 0.3,
-    "activationMoveThreshold": 10
+    "middleMouseButtonNumber": 2, // Mouse button number used for the middle-button trigger. 2 is the standard middle button.
+    "enableMiddleMouseDrag": true, // Enable the middle-mouse trigger path.
+    "enableModifierLeftMouseDrag": true, // Enable the modifier-plus-left-click trigger path.
+    "preferLayoutMode": true, // true: start drag interaction in layout mode. false: start in move-only mode.
+    "modifierGroups": [
+      ["ctrl", "cmd", "shift", "alt"] // Allowed modifier names are ctrl, cmd, shift, alt. Matching is exact by group.
+    ],
+    "activationDelaySeconds": 0.3, // Hold time before drag interaction becomes active.
+    "activationMoveThreshold": 10 // Pointer movement threshold, in points, before the interaction counts as a drag.
   },
   "hotkeys": {
     "bindings": [
       {
-        "isEnabled": true,
+        "isEnabled": true, // Enable or disable this shortcut binding.
         "shortcut": {
-          "modifiers": ["ctrl", "cmd", "shift", "alt"],
-          "key": "l"
+          "modifiers": ["ctrl", "cmd", "shift", "alt"], // Allowed values are ctrl, cmd, shift, alt.
+          "key": "\\" // Supported keys: a-z, -, =, [, ], \, ;, ', ,, ., /, return, enter, escape, esc.
         },
         "action": {
-          "kind": "cycleNext"
-        }
-      },
-      {
-        "isEnabled": true,
-        "shortcut": {
-          "modifiers": ["ctrl", "cmd", "shift", "alt"],
-          "key": "\\"
-        },
-        "action": {
-          "kind": "applyLayout",
-          "layout": 4
+          "kind": "applyLayout", // Allowed values are applyLayout, cycleNext, cyclePrevious.
+          "layout": 4 // Required only for applyLayout. This is a 1-based index into the layouts array.
         }
       }
+      // The default file contains more bindings in the same shape.
     ]
   },
   "layouts": [
     {
-      "name": "Center",
-      "gridColumns": 12,
-      "gridRows": 6,
+      "name": "Center", // Name shown in the menu bar. CLI can also look up layouts by this name.
+      "gridColumns": 12, // Column count of the layout grid.
+      "gridRows": 6, // Row count of the layout grid.
       "windowSelection": {
-        "x": 3,
-        "y": 1,
-        "w": 6,
-        "h": 4
+        "x": 3, // Target window origin column inside the grid.
+        "y": 1, // Target window origin row inside the grid.
+        "w": 6, // Target window width in grid cells.
+        "h": 4 // Target window height in grid cells.
       },
       "triggerRegion": {
-        "kind": "screen",
+        "kind": "screen", // Allowed values are screen and menuBar.
         "gridSelection": {
-          "x": 5,
-          "y": 2,
-          "w": 2,
-          "h": 2
+          "x": 5, // Trigger origin column for screen mode.
+          "y": 2, // Trigger origin row for screen mode.
+          "w": 2, // Trigger width in cells for screen mode.
+          "h": 2 // Trigger height in cells for screen mode.
         }
+        // If kind is menuBar, use:
+        // "menuBarSelection": { "x": 1, "w": 4 }
+        // x is the start cell in the menu bar strip, w is the width in cells.
       },
-      "includeInCycle": true
-    },
-    {
-      "name": "Fill all screen (Menu bar)",
-      "gridColumns": 12,
-      "gridRows": 6,
-      "windowSelection": {
-        "x": 0,
-        "y": 0,
-        "w": 12,
-        "h": 6
-      },
-      "triggerRegion": {
-        "kind": "menuBar",
-        "menuBarSelection": {
-          "x": 1,
-          "w": 4
-        }
-      },
-      "includeInCycle": false
+      "includeInCycle": true // Whether this layout participates in next/previous layout cycling.
     }
+    // The default file contains more layouts in the same shape.
   ]
 }
 ```
 
-`hotkeys.bindings[*].action.kind` supports `cycleNext`, `cyclePrevious`, and `applyLayout`.
-For `applyLayout`, `action.layout` is the 1-based layout number in the `layouts` array.
-`layouts[*].includeInCycle = false` excludes that layout from next/previous cycling.
+Notes:
 
-When a drag trigger becomes active, GridMove starts in either layout selection mode or move-only mode according to `dragTriggers.preferLayoutMode`.
-While the trigger stays active, a right click or an Option key tap toggles between the two modes. Move-only mode hides the overlay and only updates window position.
+- `layouts` order matters. `layout-1`, `layout-2`, and other generated layout identifiers come from this order.
+- `hotkeys.bindings[*].action.layout` is also based on this order and starts from `1`, not `0`.
+- Internal layout IDs and binding IDs are not stored in `config.json`. GridMove regenerates them when loading.
+- If the file is invalid JSON, contains comments, or references a missing layout index, GridMove falls back to built-in defaults for the current launch and keeps the broken file unchanged.
 
-When GridMove is disabled, drag triggers, keyboard shortcuts, and CLI layout actions are all blocked until it is enabled again.
+
+## Additional docs
+
+- `UI-UX.md`: UI structure, editing patterns, and future interface rules
+- `APP-DESIGN.md`: runtime behavior, architecture, configuration details, and implementation notes

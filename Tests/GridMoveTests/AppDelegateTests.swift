@@ -75,3 +75,29 @@ import Testing
     #expect(receivedTitle == UICopy.configReloadFailedTitle)
     #expect(receivedBody == UICopy.configReloadFailedBody)
 }
+
+@MainActor
+@Test func appDelegatePersistsDragTriggerMenuToggles() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-drag-toggle-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    _ = try store.load()
+
+    let delegate = AppDelegate(configurationStore: store, openURL: { _ in true })
+    delegate.reloadConfigurationFromDisk()
+
+    delegate.updateMiddleMouseDragEnabled(false)
+    delegate.updateModifierLeftMouseDragEnabled(false)
+    delegate.updatePreferLayoutMode(false)
+
+    let reloadedConfiguration = try store.load()
+
+    #expect(delegate.configuration.dragTriggers.enableMiddleMouseDrag == false)
+    #expect(delegate.configuration.dragTriggers.enableModifierLeftMouseDrag == false)
+    #expect(delegate.configuration.dragTriggers.preferLayoutMode == false)
+    #expect(reloadedConfiguration.dragTriggers.enableMiddleMouseDrag == false)
+    #expect(reloadedConfiguration.dragTriggers.enableModifierLeftMouseDrag == false)
+    #expect(reloadedConfiguration.dragTriggers.preferLayoutMode == false)
+}

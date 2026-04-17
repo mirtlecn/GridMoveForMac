@@ -4,14 +4,12 @@ APP_BUNDLE := $(DIST_DIR)/$(APP_NAME).app
 APP_VERSION ?= 0.1.0
 BUILD_NUMBER ?= 1
 SIGN_IDENTITY ?= -
-APP_BUNDLE_ID ?= local.mirtle.GridMove
-CONFIG_JSON := $(HOME)/.config/GridMove/config.json
+APP_BUNDLE_ID ?= cn.mirtle.GridMove
 
-.PHONY: build test check dev run release sign-app verify-app clean
+.PHONY: build test dev run sign-app verify-app clean
 
-build: test release
-	rm -f "$(CONFIG_JSON)"
-	rm -rf "$(DIST_DIR)/$(APP_NAME)" "$(DIST_DIR)/$(APP_NAME)-macos.tar.gz" "$(DIST_DIR)/$(APP_NAME).zip" "$(DIST_DIR)/$(APP_NAME).dmg"
+build: clean test
+	swift build -c release	
 	./scripts/package_app.sh \
 		"$(APP_NAME)" \
 		"$(APP_BUNDLE)" \
@@ -23,16 +21,11 @@ build: test release
 test:
 	swift test
 
-check: test
-
 dev:
 	swift run
 
 run:
 	swift run
-
-release:
-	swift build -c release
 
 sign-app:
 	codesign --force --deep --sign "$(SIGN_IDENTITY)" --timestamp=none "$(APP_BUNDLE)"
