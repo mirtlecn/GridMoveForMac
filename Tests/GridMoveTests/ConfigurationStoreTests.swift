@@ -234,6 +234,7 @@ import Testing
         "Fullscreen other",
         "Fullscreen other (menu bar)",
     ])
+    #expect(configuration.layoutGroups[0].sets[0].layouts[10].includeInMenu == false)
     #expect(configuration.layoutGroups[1].sets[0].layouts[3].includeInMenu == false)
     #expect(configuration.layoutGroups[1].sets[1].layouts[1].includeInMenu == false)
     #expect(!hasAltLayoutBinding)

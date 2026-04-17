@@ -31,7 +31,7 @@ import Testing
     #expect(layouts[10].windowSelection == GridSelection(x: 0, y: 0, w: 12, h: 6))
     #expect(layouts[10].triggerRegion == .menuBar(MenuBarSelection(x: 0, w: 6)))
     #expect(layouts[10].includeInCycle == false)
-    #expect(layouts[10].includeInMenu == true)
+    #expect(layouts[10].includeInMenu == false)
 }
 
 @Test func layoutFrameUsesTopOriginCoordinates() async throws {

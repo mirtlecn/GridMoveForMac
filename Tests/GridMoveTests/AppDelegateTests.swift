@@ -108,6 +108,7 @@ import Testing
     #expect(layoutActionItems[5].shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "]"))
     #expect(layoutActionItems[6].shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "'"))
     #expect(layoutActionItems[7].shortcut == nil)
+    #expect(layoutActionItems.map(\.title).contains("Apply Fill all screen (Menu bar)") == false)
 }
 
 @MainActor
