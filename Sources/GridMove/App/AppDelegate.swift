@@ -14,7 +14,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private lazy var actionExecutor = LayoutActionExecutor(
         layoutEngine: layoutEngine,
         windowController: windowController,
-        configurationProvider: { [weak self] in self?.configuration ?? .defaultValue }
+        configurationProvider: { [weak self] in self?.configuration ?? .defaultValue },
+        accessibilityAccessValidator: { [weak self] in
+            self?.validateAccessibilityAccessForAction() ?? false
+        }
     )
     private let commandRelay = DistributedCommandRelay()
     private let overlayController = OverlayController()
@@ -31,6 +34,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         configurationProvider: { [weak self] in self?.configuration ?? AppConfiguration.defaultValue },
         accessibilityTrustedProvider: { [weak self] in
             self?.accessibilityMonitor.hasAccess ?? false
+        },
+        accessibilityAccessValidator: { [weak self] in
+            self?.validateAccessibilityAccessForAction() ?? false
         },
         onAccessibilityRevoked: { [weak self] in
             self?.forceAccessibilityReevaluation()
@@ -122,13 +128,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func evaluateAccessibilityState() {
-        let didChange = accessibilityMonitor.refresh()
-        synchronizeAccessibilityPolling()
-        synchronizeRuntimeControllers()
-
-        if didChange && !accessibilityMonitor.hasAccess {
-            _ = requestAccessibilityPrompt()
-        }
+        _ = refreshAccessibilityState(promptOnMissing: true)
     }
 
     private func forceAccessibilityReevaluation() {
@@ -141,7 +141,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func synchronizeAccessibilityPolling() {
-        let nextPollingInterval = accessibilityMonitor.pollingInterval
+        guard let nextPollingInterval = accessibilityMonitor.pollingInterval else {
+            accessibilityPollingTimer?.invalidate()
+            accessibilityPollingTimer = nil
+            currentAccessibilityPollingInterval = nil
+            return
+        }
+
         guard accessibilityPollingTimer == nil || currentAccessibilityPollingInterval != nextPollingInterval else {
             return
         }
@@ -153,6 +159,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         currentAccessibilityPollingInterval = nextPollingInterval
+    }
+
+    @discardableResult
+    private func refreshAccessibilityState(promptOnMissing: Bool) -> Bool {
+        let currentAccess = currentAccessibilityStatus()
+        let didChange = accessibilityMonitor.refresh(currentAccess: currentAccess)
+        synchronizeAccessibilityPolling()
+        synchronizeRuntimeControllers()
+
+        if promptOnMissing && didChange && !currentAccess {
+            _ = requestAccessibilityPrompt()
+        }
+
+        return currentAccess
     }
 
     func reloadConfigurationFromDisk(notifyOnFallback: Bool = false) {
@@ -365,6 +385,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         accessibilityMonitor.hasAccess && configuration.general.isEnabled
     }
 
+    var isAccessibilityPollingActiveForTesting: Bool {
+        accessibilityPollingTimer != nil
+    }
+
+    var accessibilityPollingIntervalForTesting: TimeInterval? {
+        currentAccessibilityPollingInterval
+    }
+
     func recordLayoutIDForTesting(_ layoutID: String, windowIdentity: String) {
         layoutEngine.recordLayoutID(layoutID, for: windowIdentity)
     }
@@ -387,6 +415,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func requestAccessibilityPrompt() -> Bool {
         injectedAccessibilityPromptRequester?() ?? windowController.isAccessibilityTrusted(prompt: true)
+    }
+
+    private func validateAccessibilityAccessForAction() -> Bool {
+        refreshAccessibilityState(promptOnMissing: true)
     }
 
     nonisolated private static func postSystemNotification(title: String, body: String) {

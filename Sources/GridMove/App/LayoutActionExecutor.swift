@@ -11,15 +11,18 @@ final class LayoutActionExecutor {
     private let layoutEngine: LayoutEngine
     private let windowController: WindowController
     private let configurationProvider: () -> AppConfiguration
+    private let accessibilityAccessValidator: () -> Bool
 
     init(
         layoutEngine: LayoutEngine,
         windowController: WindowController,
-        configurationProvider: @escaping () -> AppConfiguration
+        configurationProvider: @escaping () -> AppConfiguration,
+        accessibilityAccessValidator: @escaping () -> Bool
     ) {
         self.layoutEngine = layoutEngine
         self.windowController = windowController
         self.configurationProvider = configurationProvider
+        self.accessibilityAccessValidator = accessibilityAccessValidator
     }
 
     func execute(commandAction: CommandLineAction, targetWindowID: UInt32?) -> LayoutActionExecutionResult {
@@ -29,7 +32,7 @@ final class LayoutActionExecutor {
             return .failure("GridMove is disabled. Enable app first.")
         }
 
-        guard windowController.isAccessibilityTrusted(prompt: false) else {
+        guard accessibilityAccessValidator() else {
             return .failure("Accessibility access is required.")
         }
 
@@ -70,6 +73,10 @@ final class LayoutActionExecutor {
     ) -> LayoutActionExecutionResult {
         guard configuration.general.isEnabled else {
             return .failure("GridMove is disabled. Enable app first.")
+        }
+
+        guard accessibilityAccessValidator() else {
+            return .failure("Accessibility access is required.")
         }
 
         guard let window = targetWindow(targetWindowID: targetWindowID, configuration: configuration) else {

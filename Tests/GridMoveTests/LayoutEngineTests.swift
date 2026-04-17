@@ -126,3 +126,20 @@ import Testing
     #expect(engine.nextLayoutID(for: "window-a", layouts: configuration.layouts) == "layout-1")
     #expect(engine.previousLayoutID(for: "window-a", layouts: configuration.layouts) == "layout-10")
 }
+
+@Test func layoutEngineKeepsOnlyTenRecentWindowLayoutRecords() async throws {
+    let engine = LayoutEngine()
+    let layouts = AppConfiguration.defaultValue.layouts
+
+    for index in 1...11 {
+        engine.recordLayoutID("layout-2", for: "window-\(index)")
+    }
+
+    #expect(engine.nextLayoutID(for: "window-1", layouts: layouts) == "layout-1")
+    #expect(engine.nextLayoutID(for: "window-2", layouts: layouts) == "layout-3")
+
+    engine.recordLayoutID("layout-4", for: "window-5")
+
+    #expect(engine.nextLayoutID(for: "window-2", layouts: layouts) == "layout-3")
+    #expect(engine.nextLayoutID(for: "window-5", layouts: layouts) == "layout-5")
+}

@@ -9,6 +9,7 @@ final class DragGridController {
     let overlayController: OverlayController
     let configurationProvider: () -> AppConfiguration
     let accessibilityTrustedProvider: () -> Bool
+    let accessibilityAccessValidator: () -> Bool
     let onAccessibilityRevoked: () -> Void
 
     var state = DragInteractionState()
@@ -24,6 +25,7 @@ final class DragGridController {
         overlayController: OverlayController,
         configurationProvider: @escaping () -> AppConfiguration,
         accessibilityTrustedProvider: @escaping () -> Bool,
+        accessibilityAccessValidator: @escaping () -> Bool,
         onAccessibilityRevoked: @escaping () -> Void
     ) {
         self.layoutEngine = layoutEngine
@@ -31,6 +33,7 @@ final class DragGridController {
         self.overlayController = overlayController
         self.configurationProvider = configurationProvider
         self.accessibilityTrustedProvider = accessibilityTrustedProvider
+        self.accessibilityAccessValidator = accessibilityAccessValidator
         self.onAccessibilityRevoked = onAccessibilityRevoked
     }
 

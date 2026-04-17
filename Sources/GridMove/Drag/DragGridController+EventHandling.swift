@@ -8,6 +8,10 @@ extension DragGridController {
             return Unmanaged.passUnretained(event)
         }
 
+        guard validateAccessibilityAccessForInteraction() else {
+            return Unmanaged.passUnretained(event)
+        }
+
         let flags = normalizedModifiers(from: event.flags)
         guard matchesAnyModifierGroup(flags: flags, groups: configuration.dragTriggers.modifierGroups) else {
             return Unmanaged.passUnretained(event)
@@ -66,6 +70,10 @@ extension DragGridController {
             return Unmanaged.passUnretained(event)
         }
 
+        guard validateAccessibilityAccessForInteraction() else {
+            return Unmanaged.passUnretained(event)
+        }
+
         let point = appKitPoint(from: event)
         resetState()
         state.activeButton = .middle
@@ -82,6 +90,10 @@ extension DragGridController {
             self.state.activationTimer = nil
 
             guard self.state.activeButton == .middle, let point = self.state.mouseDownPoint else {
+                return
+            }
+
+            guard self.validateAccessibilityAccessForInteraction() else {
                 return
             }
 

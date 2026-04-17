@@ -8,7 +8,12 @@ struct ResolvedTriggerSlot: Equatable {
 }
 
 final class LayoutEngine {
+    private enum CacheLimit {
+        static let recentWindowCount = 10
+    }
+
     private var windowLayoutIDs: [String: String] = [:]
+    private var recentWindowIdentities: [String] = []
 
     func frame(for preset: LayoutPreset, on screen: NSScreen) -> CGRect {
         frame(for: preset, in: screen.visibleFrame)
@@ -72,14 +77,19 @@ final class LayoutEngine {
 
     func recordLayoutID(_ layoutID: String, for windowIdentity: String) {
         windowLayoutIDs[windowIdentity] = layoutID
+        recentWindowIdentities.removeAll { $0 == windowIdentity }
+        recentWindowIdentities.append(windowIdentity)
+        trimRecordedLayoutIDsIfNeeded()
     }
 
     func removeWindow(identity: String) {
         windowLayoutIDs[identity] = nil
+        recentWindowIdentities.removeAll { $0 == identity }
     }
 
     func resetRecordedLayoutIDs() {
         windowLayoutIDs.removeAll()
+        recentWindowIdentities.removeAll()
     }
 
     func currentLayoutID(for windowIdentity: String, layouts: [LayoutPreset]) -> String {
@@ -132,6 +142,13 @@ final class LayoutEngine {
 
     private func cycleEligibleLayouts(from layouts: [LayoutPreset]) -> [LayoutPreset] {
         layouts.filter(\.includeInCycle)
+    }
+
+    private func trimRecordedLayoutIDsIfNeeded() {
+        while recentWindowIdentities.count > CacheLimit.recentWindowCount {
+            let removedIdentity = recentWindowIdentities.removeFirst()
+            windowLayoutIDs[removedIdentity] = nil
+        }
     }
 
     private func triggerFrame(

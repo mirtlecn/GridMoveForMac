@@ -99,6 +99,8 @@ import Testing
     delegate.evaluateAccessibilityState()
 
     #expect(promptCount == 1)
+    #expect(delegate.isAccessibilityPollingActiveForTesting == true)
+    #expect(delegate.accessibilityPollingIntervalForTesting == 1.0)
 
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
 }
@@ -124,13 +126,17 @@ import Testing
 
     delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
     #expect(promptCount == 0)
+    #expect(delegate.isAccessibilityPollingActiveForTesting == false)
 
     trustState = false
     delegate.evaluateAccessibilityState()
     #expect(promptCount == 1)
+    #expect(delegate.isAccessibilityPollingActiveForTesting == true)
+    #expect(delegate.accessibilityPollingIntervalForTesting == 1.0)
 
     trustState = true
     delegate.evaluateAccessibilityState()
+    #expect(delegate.isAccessibilityPollingActiveForTesting == false)
     trustState = false
     delegate.evaluateAccessibilityState()
     #expect(promptCount == 2)
@@ -162,6 +168,27 @@ import Testing
 
     #expect(delegate.configuration.general.isEnabled == false)
     #expect(delegate.shouldMonitorGlobalInputForTesting == false)
+
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
+@Test func appDelegateStopsAccessibilityPollingWhenAccessIsAvailable() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-accessibility-polling-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+
+    #expect(delegate.isAccessibilityPollingActiveForTesting == false)
+    #expect(delegate.accessibilityPollingIntervalForTesting == nil)
 
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
 }

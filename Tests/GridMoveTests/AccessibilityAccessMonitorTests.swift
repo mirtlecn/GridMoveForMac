@@ -8,18 +8,18 @@ import Testing
     let monitor = AccessibilityAccessMonitor(statusProvider: { trustState })
 
     #expect(monitor.hasAccess == false)
-    #expect(monitor.pollingInterval == 2.0)
+    #expect(monitor.pollingInterval == 1.0)
 
     #expect(monitor.refresh() == true)
     #expect(monitor.hasAccess == false)
-    #expect(monitor.pollingInterval == 2.0)
+    #expect(monitor.pollingInterval == 1.0)
 
     #expect(monitor.refresh() == false)
 
     trustState = true
     #expect(monitor.refresh() == true)
     #expect(monitor.hasAccess == true)
-    #expect(monitor.pollingInterval == 0.25)
+    #expect(monitor.pollingInterval == nil)
 }
 
 @MainActor

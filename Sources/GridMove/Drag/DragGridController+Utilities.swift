@@ -79,6 +79,16 @@ extension DragGridController {
         return true
     }
 
+    func validateAccessibilityAccessForInteraction() -> Bool {
+        guard accessibilityAccessValidator() else {
+            resetState()
+            scheduleAccessibilityRevocationHandling()
+            return false
+        }
+
+        return true
+    }
+
     func scheduleAccessibilityRevocationHandling() {
         guard !pendingAccessibilityRevocation else {
             return

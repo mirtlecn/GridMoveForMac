@@ -3,8 +3,7 @@ import Foundation
 @MainActor
 final class AccessibilityAccessMonitor {
     private enum PollingInterval {
-        static let granted: TimeInterval = 0.25
-        static let revoked: TimeInterval = 2.0
+        static let revoked: TimeInterval = 1.0
     }
 
     private let statusProvider: () -> Bool
@@ -19,13 +18,17 @@ final class AccessibilityAccessMonitor {
         cachedAccess ?? false
     }
 
-    var pollingInterval: TimeInterval {
-        hasAccess ? PollingInterval.granted : PollingInterval.revoked
+    var pollingInterval: TimeInterval? {
+        hasAccess ? nil : PollingInterval.revoked
     }
 
     @discardableResult
     func refresh() -> Bool {
-        let currentAccess = statusProvider()
+        refresh(currentAccess: statusProvider())
+    }
+
+    @discardableResult
+    func refresh(currentAccess: Bool) -> Bool {
         let didChange = cachedAccess != currentAccess
         cachedAccess = currentAccess
         return didChange

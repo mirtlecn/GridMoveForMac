@@ -8,6 +8,10 @@ extension DragGridController {
         point: CGPoint,
         configuration: AppConfiguration
     ) {
+        guard validateAccessibilityAccessForInteraction() else {
+            return
+        }
+
         windowController.focus(targetWindow)
         state.active = true
         state.activeButton = button
@@ -68,6 +72,10 @@ extension DragGridController {
             let moveAnchor = state.moveAnchor,
             var frame = state.currentWindowFrame
         else {
+            return
+        }
+
+        guard validateAccessibilityAccessForInteraction() else {
             return
         }
 
@@ -141,6 +149,10 @@ extension DragGridController {
 
     func applyLayoutSelection(at point: CGPoint, configuration: AppConfiguration) {
         guard let targetWindow = state.targetWindow else {
+            return
+        }
+
+        guard validateAccessibilityAccessForInteraction() else {
             return
         }
 

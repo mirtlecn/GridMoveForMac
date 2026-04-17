@@ -149,8 +149,9 @@ The app uses `AccessibilityAccessMonitor` to cache the current permission state.
 
 Polling behavior:
 
-- fast polling while permission is granted
-- slower polling while permission is missing
+- no background polling while permission is granted
+- `1s` polling while permission is missing
+- every real action entry re-checks Accessibility access on demand before using AX-dependent behavior
 
 When permission is available and `general.isEnabled` is `true`:
 
@@ -163,6 +164,12 @@ When permission is missing, revoked, or the app is disabled:
 - shortcut handling stops
 - if the access state changed to missing, the app directly triggers one system Accessibility permission request for that state transition
 - if access stays missing, the app does not keep re-requesting until the next transition or the next launch
+
+Layout cycling state is stored in memory only:
+
+- GridMove keeps the most recent 10 window-to-layout records
+- older window records are dropped automatically
+- reloading a changed layout list clears the recorded cycle baseline
 
 ## 6. Target Window Resolution
 
