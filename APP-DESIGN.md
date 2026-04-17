@@ -116,12 +116,18 @@ The built-in default configuration currently resolves to the following values.
 `layoutGroups`
 
 - the default `built-in` group contains one `all` set with 11 layouts
+- the default `fullscreen` group contains one `main` set and one fallback `all` set
 - all layouts use a `12 x 6` grid
 - `layout-1` to `layout-9` use screen trigger regions
 - `layout-10` uses a screen trigger region
 - `layout-11` uses the full menu bar strip as its trigger region
 - `layout-1` to `layout-10` participate in layout cycling
 - `layout-11` does not participate in layout cycling
+- the `fullscreen` group uses these layouts:
+  - `Main left 1/2`: left half with a left-quarter screen trigger
+  - `Main right 1/2`: right half with a right-quarter screen trigger
+  - `Main fullscreen`: full screen with a menu-bar trigger
+  - `Other fullscreen`: full screen with a menu-bar trigger for non-main displays
 
 Default layout names in order:
 
@@ -280,6 +286,7 @@ Menu actions:
 
 - are built from current configuration
 - include a `Layout group` submenu that switches `general.activeLayoutGroup`
+- keep a separator between the drag-preference items and the `Layout group` submenu
 - always go through `LayoutActionExecutor`
 
 Keyboard shortcuts:

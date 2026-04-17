@@ -53,6 +53,7 @@ If `-window-id <cg-window-id>` is not provided, GridMove targets the currently f
 Config file location is `~/.config/GridMove/config.json`.
 
 On first launch, GridMove writes a default file to that path if it does not exist.
+The built-in default file contains two groups: `built-in` and `fullscreen`.
 
 The real file must be plain JSON and does not support comments. The example below uses `jsonc` only for explanation.
 
@@ -162,6 +163,7 @@ The real file must be plain JSON and does not support comments. The example belo
 Notes:
 
 - `layoutGroups[*].sets[*].layouts` order matters.
+- the built-in default file includes `built-in` and `fullscreen`; startup keeps `built-in` active until the user switches the group
 - `hotkeys.bindings[*].action.layout` is 1-based within the current display's resolved set, not across the whole group.
 - GridMove resolves one active set per display in this order: explicit display ID or ID array, then `main`, then `all`.
 - `cycleNext` and `cyclePrevious` only cycle inside the target window's current display set. They never move the window to another display.

@@ -34,6 +34,7 @@ import Testing
             "Middle mouse drag",
             "Modifier + left mouse drag",
             "Prefer layout mode",
+            "|",
             "Layout group",
             "|",
             "Apply previous layout",

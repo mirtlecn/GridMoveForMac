@@ -536,6 +536,7 @@ struct HotkeySettings: Codable, Equatable {
 
 struct AppConfiguration: Codable, Equatable {
     static let builtInGroupName = "built-in"
+    static let fullscreenGroupName = "fullscreen"
 
     var general: GeneralSettings
     var appearance: AppearanceSettings
@@ -579,6 +580,57 @@ struct AppConfiguration: Codable, Equatable {
                 name: builtInGroupName,
                 sets: [
                     LayoutSet(monitor: .all, layouts: defaultLayouts),
+                ]
+            ),
+            LayoutGroup(
+                name: fullscreenGroupName,
+                sets: [
+                    LayoutSet(
+                        monitor: .main,
+                        layouts: [
+                            LayoutPreset(
+                                id: "layout-12",
+                                name: "Main left 1/2",
+                                gridColumns: 12,
+                                gridRows: 6,
+                                windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6),
+                                triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 3, h: 6)),
+                                includeInCycle: true
+                            ),
+                            LayoutPreset(
+                                id: "layout-13",
+                                name: "Main right 1/2",
+                                gridColumns: 12,
+                                gridRows: 6,
+                                windowSelection: GridSelection(x: 6, y: 0, w: 6, h: 6),
+                                triggerRegion: .screen(GridSelection(x: 9, y: 0, w: 3, h: 6)),
+                                includeInCycle: true
+                            ),
+                            LayoutPreset(
+                                id: "layout-14",
+                                name: "Main fullscreen",
+                                gridColumns: 12,
+                                gridRows: 6,
+                                windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
+                                triggerRegion: .menuBar(MenuBarSelection(x: 0, w: 6)),
+                                includeInCycle: true
+                            ),
+                        ]
+                    ),
+                    LayoutSet(
+                        monitor: .all,
+                        layouts: [
+                            LayoutPreset(
+                                id: "layout-15",
+                                name: "Other fullscreen",
+                                gridColumns: 12,
+                                gridRows: 6,
+                                windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
+                                triggerRegion: .menuBar(MenuBarSelection(x: 0, w: 6)),
+                                includeInCycle: true
+                            ),
+                        ]
+                    ),
                 ]
             ),
         ]

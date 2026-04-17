@@ -26,6 +26,7 @@ final class MenuBarController: NSObject {
     private let middleMouseDragMenuItem = NSMenuItem(title: UICopy.middleMouseDragMenuTitle, action: nil, keyEquivalent: "")
     private let modifierLeftMouseDragMenuItem = NSMenuItem(title: UICopy.modifierLeftMouseDragMenuTitle, action: nil, keyEquivalent: "")
     private let preferLayoutModeMenuItem = NSMenuItem(title: UICopy.preferLayoutModeMenuTitle, action: nil, keyEquivalent: "")
+    private let layoutGroupSectionSeparatorItem = NSMenuItem.separator()
     private let layoutGroupMenuItem = NSMenuItem(title: UICopy.layoutGroupMenuTitle, action: nil, keyEquivalent: "")
     private let layoutGroupSubmenu = NSMenu()
     private let settingsSectionSeparatorItem = NSMenuItem.separator()
@@ -138,6 +139,7 @@ final class MenuBarController: NSObject {
     }
 
     private func configureLayoutGroupMenu() {
+        menu.addItem(layoutGroupSectionSeparatorItem)
         layoutGroupMenuItem.submenu = layoutGroupSubmenu
         menu.addItem(layoutGroupMenuItem)
         rebuildLayoutGroupItems()

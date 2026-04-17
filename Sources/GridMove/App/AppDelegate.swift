@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let configurationStore: ConfigurationStore
     private let openURL: (URL) -> Bool
     private let notifyUser: (String, String) -> Void
+    private let currentMonitorMapProvider: () -> [String: String]
     private let injectedAccessibilityStatusProvider: (() -> Bool)?
     private let injectedAccessibilityPromptRequester: (() -> Bool)?
     private let layoutEngine = LayoutEngine()
@@ -62,6 +63,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     init(
         configurationStore: ConfigurationStore = ConfigurationStore(),
         openURL: @escaping (URL) -> Bool = { NSWorkspace.shared.open($0) },
+        currentMonitorMapProvider: @escaping () -> [String: String] = { MonitorDiscovery.currentMonitorMap() },
         accessibilityStatusProvider: (() -> Bool)? = nil,
         accessibilityPromptRequester: (() -> Bool)? = nil,
         notifyUser: @escaping (String, String) -> Void = { title, body in
@@ -70,6 +72,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     ) {
         self.configurationStore = configurationStore
         self.openURL = openURL
+        self.currentMonitorMapProvider = currentMonitorMapProvider
         self.injectedAccessibilityStatusProvider = accessibilityStatusProvider
         self.injectedAccessibilityPromptRequester = accessibilityPromptRequester
         self.notifyUser = notifyUser
@@ -183,7 +186,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         do {
             let result = try configurationStore.loadWithStatus()
             var configuration = result.configuration
-            synchronizeMonitorMetadata(configuration: &configuration)
+            let didUpdateMonitorMetadata = synchronizeMonitorMetadata(configuration: &configuration)
+            if didUpdateMonitorMetadata && result.didFallBackToDefault == false {
+                do {
+                    try configurationStore.save(configuration)
+                } catch {
+                    AppLogger.shared.error("Failed to save monitor metadata: \(error.localizedDescription)")
+                }
+            }
             applyConfiguration(configuration)
             if result.didFallBackToDefault && notifyOnFallback {
                 notifyUser(
@@ -443,9 +453,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
-    private func synchronizeMonitorMetadata(configuration: inout AppConfiguration) {
-        let monitorMap = MonitorDiscovery.currentMonitorMap()
+    @discardableResult
+    private func synchronizeMonitorMetadata(configuration: inout AppConfiguration) -> Bool {
+        let monitorMap = currentMonitorMapProvider()
+        guard configuration.monitors != monitorMap else {
+            return false
+        }
         configuration.monitors = monitorMap
+        return true
     }
 
     private func currentAccessibilityStatus() -> Bool {

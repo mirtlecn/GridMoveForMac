@@ -26,6 +26,30 @@ import Testing
 }
 
 @MainActor
+@Test func appDelegateReloadPersistsMonitorMetadata() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-monitor-metadata-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let monitorMap = [
+        "Built-in Retina Display": "12345",
+        "DELL U2720Q": "67890",
+    ]
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        currentMonitorMapProvider: { monitorMap }
+    )
+
+    delegate.reloadConfigurationFromDisk()
+
+    let persistedConfiguration = try store.load()
+    #expect(delegate.configuration.monitors == monitorMap)
+    #expect(persistedConfiguration.monitors == monitorMap)
+}
+
+@MainActor
 @Test func appDelegateCustomizeOpensConfigurationDirectory() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-customize-\(UUID().uuidString)", isDirectory: true)
