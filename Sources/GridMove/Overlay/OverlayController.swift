@@ -3,8 +3,13 @@ import Foundation
 
 @MainActor
 final class OverlayController {
+    private enum FlashDuration {
+        static let seconds: TimeInterval = 0.4
+    }
+
     private var panel: OverlayPanel?
     private var screenIdentifier: String?
+    private var flashGeneration: UInt64 = 0
 
     func update(
         screen: NSScreen,
@@ -12,14 +17,61 @@ final class OverlayController {
         highlightFrame: CGRect?,
         configuration: AppConfiguration
     ) {
+        cancelPendingFlash()
+
         guard configuration.appearance.renderTriggerAreas || configuration.appearance.renderWindowHighlight else {
             dismiss()
             return
         }
 
+        showOverlay(screen: screen, slots: slots, highlightFrame: highlightFrame, configuration: configuration)
+    }
+
+    func flashHighlight(frame: CGRect, screen: NSScreen, configuration: AppConfiguration) {
+        cancelPendingFlash()
+
+        guard configuration.appearance.renderWindowHighlight else {
+            dismiss()
+            return
+        }
+
+        showOverlay(screen: screen, slots: [], highlightFrame: frame, configuration: configuration)
+        panel?.alphaValue = 1.0
+
+        flashGeneration &+= 1
+        let expectedGeneration = flashGeneration
+
+        NSAnimationContext.runAnimationGroup { context in
+            context.duration = FlashDuration.seconds
+            self.panel?.animator().alphaValue = 0.0
+        } completionHandler: {
+            if self.flashGeneration == expectedGeneration {
+                self.dismissPanel()
+            }
+        }
+    }
+
+    func dismiss() {
+        cancelPendingFlash()
+        panel?.orderOut(nil)
+        panel = nil
+        screenIdentifier = nil
+    }
+
+    private func cancelPendingFlash() {
+        flashGeneration &+= 1
+        panel?.alphaValue = 1.0
+    }
+
+    private func showOverlay(
+        screen: NSScreen,
+        slots: [ResolvedTriggerSlot],
+        highlightFrame: CGRect?,
+        configuration: AppConfiguration
+    ) {
         let identifier = Geometry.screenIdentifier(for: screen)
         if panel == nil || screenIdentifier != identifier {
-            dismiss()
+            dismissPanel()
             let panel = OverlayPanel(contentRect: screen.frame)
             panel.setFrame(screen.frame, display: true)
             panel.orderFrontRegardless()
@@ -45,7 +97,7 @@ final class OverlayController {
         overlayView.needsDisplay = true
     }
 
-    func dismiss() {
+    private func dismissPanel() {
         panel?.orderOut(nil)
         panel = nil
         screenIdentifier = nil

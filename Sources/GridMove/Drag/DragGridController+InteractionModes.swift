@@ -25,7 +25,7 @@ extension DragGridController {
         case .layoutSelection:
             configureLayoutSelectionMode(at: point, configuration: configuration, shouldApplyImmediately: false)
         case .moveOnly:
-            configureMoveOnlyMode(at: point)
+            configureMoveOnlyMode(at: point, configuration: configuration)
         }
     }
 
@@ -97,7 +97,7 @@ extension DragGridController {
 
         switch state.interactionMode {
         case .layoutSelection:
-            configureMoveOnlyMode(at: point)
+            configureMoveOnlyMode(at: point, configuration: configuration)
         case .moveOnly:
             configureLayoutSelectionMode(at: point, configuration: configuration, shouldApplyImmediately: false)
         }
@@ -131,20 +131,29 @@ extension DragGridController {
         refreshOverlay(configuration: configuration)
     }
 
-    func configureMoveOnlyMode(at point: CGPoint) {
+    func configureMoveOnlyMode(at point: CGPoint, configuration: AppConfiguration) {
         state.interactionMode = .moveOnly
         state.overlayActivationPoint = point
         state.hoveredLayoutID = nil
         state.lastAppliedLayoutID = nil
         state.hasDraggedPastThreshold = true
 
-        if let frame = currentWindowFrame() {
+        let windowFrame = currentWindowFrame()
+        if let frame = windowFrame {
             state.moveAnchor = MoveAnchor(mousePoint: point, windowOrigin: frame.origin)
         } else {
             state.moveAnchor = nil
         }
 
-        overlayController.dismiss()
+        let fallbackScreen = windowFrame.flatMap { frame in
+            windowController.screenContaining(point: CGPoint(x: frame.midX, y: frame.midY))
+        }
+        let screen = state.activeScreen ?? windowController.resolvedScreen(for: point, fallback: fallbackScreen)
+        if let screen, let windowFrame {
+            overlayController.flashHighlight(frame: windowFrame, screen: screen, configuration: configuration)
+        } else {
+            overlayController.dismiss()
+        }
     }
 
     func applyLayoutSelection(at point: CGPoint, configuration: AppConfiguration) {
