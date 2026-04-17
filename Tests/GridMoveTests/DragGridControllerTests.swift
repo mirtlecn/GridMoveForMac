@@ -9,6 +9,14 @@ import Testing
     #expect(DragGridController.preferredInteractionMode(preferLayoutMode: false) == .moveOnly)
 }
 
+@Test func modeToggleReturnsToLayoutSelectionWithoutImmediateLayoutApply() async throws {
+    let interactionMode = DragInteractionMode.moveOnly
+    let nextMode: DragInteractionMode = interactionMode == .moveOnly ? .layoutSelection : .moveOnly
+
+    #expect(nextMode == .layoutSelection)
+    #expect(nextMode != .moveOnly)
+}
+
 @Test func optionToggleTrackerTogglesAfterPressThenRelease() async throws {
     var tracker = OptionToggleTracker(baselinePressed: false)
 

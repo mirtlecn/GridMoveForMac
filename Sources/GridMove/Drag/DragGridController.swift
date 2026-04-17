@@ -510,7 +510,7 @@ final class DragGridController {
         case .layoutSelection:
             configureMoveOnlyMode(at: point)
         case .moveOnly:
-            configureLayoutSelectionMode(at: point, configuration: configuration, shouldApplyImmediately: true)
+            configureLayoutSelectionMode(at: point, configuration: configuration, shouldApplyImmediately: false)
         }
     }
 
