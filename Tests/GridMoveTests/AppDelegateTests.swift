@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 @testable import GridMove
@@ -74,6 +75,67 @@ import Testing
     #expect(delegate.configuration == .defaultValue)
     #expect(receivedTitle == UICopy.configReloadFailedTitle)
     #expect(receivedBody == UICopy.configReloadFailedBody)
+}
+
+@MainActor
+@Test func appDelegateRequestsAccessibilityPromptOnlyOnceWhileAccessRemainsMissing() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-accessibility-prompt-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var promptCount = 0
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { false },
+        accessibilityPromptRequester: {
+            promptCount += 1
+            return false
+        }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    delegate.evaluateAccessibilityState()
+
+    #expect(promptCount == 1)
+
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
+@Test func appDelegateRequestsAccessibilityPromptAgainAfterAccessIsRevoked() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-accessibility-revoke-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var trustState = true
+    var promptCount = 0
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { trustState },
+        accessibilityPromptRequester: {
+            promptCount += 1
+            return false
+        }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    #expect(promptCount == 0)
+
+    trustState = false
+    delegate.evaluateAccessibilityState()
+    #expect(promptCount == 1)
+
+    trustState = true
+    delegate.evaluateAccessibilityState()
+    trustState = false
+    delegate.evaluateAccessibilityState()
+    #expect(promptCount == 2)
+
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
 }
 
 @MainActor

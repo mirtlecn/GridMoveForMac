@@ -7,6 +7,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let configurationStore: ConfigurationStore
     private let openURL: (URL) -> Bool
     private let notifyUser: (String, String) -> Void
+    private let injectedAccessibilityStatusProvider: (() -> Bool)?
+    private let injectedAccessibilityPromptRequester: (() -> Bool)?
     private let layoutEngine = LayoutEngine()
     private lazy var windowController = WindowController(layoutEngine: layoutEngine)
     private lazy var actionExecutor = LayoutActionExecutor(
@@ -18,7 +20,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let overlayController = OverlayController()
     private lazy var accessibilityMonitor = AccessibilityAccessMonitor(
         statusProvider: { [weak self] in
-            self?.windowController.isAccessibilityTrusted(prompt: false) ?? false
+            self?.currentAccessibilityStatus() ?? false
         }
     )
 
@@ -49,18 +51,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private(set) var configuration = AppConfiguration.defaultValue
     private var menuController: MenuBarController?
-    private var onboardingController: OnboardingWindowController?
     private var accessibilityPollingTimer: Timer?
 
     init(
         configurationStore: ConfigurationStore = ConfigurationStore(),
         openURL: @escaping (URL) -> Bool = { NSWorkspace.shared.open($0) },
+        accessibilityStatusProvider: (() -> Bool)? = nil,
+        accessibilityPromptRequester: (() -> Bool)? = nil,
         notifyUser: @escaping (String, String) -> Void = { title, body in
             AppDelegate.postSystemNotification(title: title, body: body)
         }
     ) {
         self.configurationStore = configurationStore
         self.openURL = openURL
+        self.injectedAccessibilityStatusProvider = accessibilityStatusProvider
+        self.injectedAccessibilityPromptRequester = accessibilityPromptRequester
         self.notifyUser = notifyUser
         super.init()
     }
@@ -115,7 +120,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         commandRelay.stopListening()
     }
 
-    private func evaluateAccessibilityState() {
+    func evaluateAccessibilityState() {
         let didChange = accessibilityMonitor.refresh()
         restartAccessibilityPolling()
 
@@ -124,15 +129,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         if accessibilityMonitor.hasAccess {
-            onboardingController?.close()
-            onboardingController = nil
             dragGridController.start()
             shortcutController.start()
             applyGlobalEnabledState()
         } else {
             dragGridController.stop()
             shortcutController.stop()
-            showOnboardingIfNeeded()
+            _ = requestAccessibilityPrompt()
         }
     }
 
@@ -220,19 +223,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         dragGridController.isEnabled = configuration.general.isEnabled
         shortcutController.isEnabled = configuration.general.isEnabled
         menuController?.setEnabled(configuration.general.isEnabled)
-    }
-
-    private func showOnboardingIfNeeded() {
-        guard onboardingController == nil else {
-            return
-        }
-
-        onboardingController = OnboardingWindowController(
-            onRequestAccessibility: { [weak self] in
-                _ = self?.windowController.isAccessibilityTrusted(prompt: true)
-            }
-        )
-        onboardingController?.show()
     }
 
     private func makeMenuActionItems(configuration: AppConfiguration) -> [MenuBarController.ActionItem] {
@@ -349,6 +339,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             modifierLeftMouseDragEnabled: configuration.dragTriggers.enableModifierLeftMouseDrag,
             preferLayoutMode: configuration.dragTriggers.preferLayoutMode
         )
+    }
+
+    private func currentAccessibilityStatus() -> Bool {
+        injectedAccessibilityStatusProvider?() ?? windowController.isAccessibilityTrusted(prompt: false)
+    }
+
+    private func requestAccessibilityPrompt() -> Bool {
+        injectedAccessibilityPromptRequester?() ?? windowController.isAccessibilityTrusted(prompt: true)
     }
 
     nonisolated private static func postSystemNotification(title: String, body: String) {

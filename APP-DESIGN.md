@@ -16,7 +16,6 @@ This document records the current software behavior and implementation details b
 The current codebase implements these user-visible surfaces:
 
 - menu bar app
-- Accessibility onboarding window
 - CLI entrypoint for layout actions
 - JSON configuration at `~/.config/GridMove/config.json`
 
@@ -33,7 +32,7 @@ Main responsibilities:
 - keep the menu bar state in sync with the current configuration
 - start and stop the drag controller and shortcut controller based on Accessibility status
 - listen for remote CLI commands
-- show onboarding when Accessibility is missing
+- request Accessibility permission from the system when access is missing
 - post a notification when manual config reload falls back to defaults
 
 Main runtime components:
@@ -155,7 +154,6 @@ Polling behavior:
 
 When permission is available:
 
-- onboarding is closed
 - drag interactions are enabled
 - shortcut handling is enabled
 
@@ -163,7 +161,8 @@ When permission is missing or revoked:
 
 - drag interactions stop
 - shortcut handling stops
-- onboarding is shown
+- the app directly triggers one system Accessibility permission request for that state transition
+- if access stays missing, the app does not keep re-requesting until the next transition or the next launch
 
 ## 6. Target Window Resolution
 
