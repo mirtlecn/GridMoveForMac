@@ -6,18 +6,11 @@ struct SettingsRootView: View {
 
     var body: some View {
         ZStack {
-            LinearGradient(
-                colors: [
-                    Color(nsColor: .windowBackgroundColor),
-                    Color(nsColor: .underPageBackgroundColor),
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .ignoresSafeArea()
+            Color(nsColor: .windowBackgroundColor)
+                .ignoresSafeArea()
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 28) {
+                VStack(alignment: .leading, spacing: 22) {
                     SettingsPrototypeHeader(
                         title: UICopy.settingsWindowTitle,
                         subtitle: "Previewing a simpler settings window before wiring real behavior."
@@ -27,10 +20,10 @@ struct SettingsRootView: View {
 
                     currentPage
                 }
-                .frame(maxWidth: 800, alignment: .leading)
-                .padding(.horizontal, 32)
-                .padding(.top, 32)
-                .padding(.bottom, 40)
+                .frame(maxWidth: 760, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.top, 24)
+                .padding(.bottom, 32)
                 .frame(maxWidth: .infinity, alignment: .top)
             }
             .scrollIndicators(.never)
@@ -103,12 +96,12 @@ private struct SettingsPrototypeHeader: View {
     let subtitle: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.system(size: 32, weight: .semibold, design: .rounded))
+                .font(.system(size: 26, weight: .semibold, design: .rounded))
 
             Text(subtitle)
-                .font(.system(size: 14, weight: .medium))
+                .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.secondary)
         }
     }
@@ -118,30 +111,30 @@ private struct SettingsPrototypeTabs: View {
     @Binding var selectedTab: SettingsPrototypeTab
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             ForEach(SettingsPrototypeTab.allCases) { tab in
                 Button {
                     selectedTab = tab
                 } label: {
                     Text(tab.title)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 12, weight: .semibold))
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
+                        .padding(.vertical, 9)
                         .foregroundStyle(selectedTab == tab ? Color.white : Color.primary)
                         .background {
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            RoundedRectangle(cornerRadius: 13, style: .continuous)
                                 .fill(selectedTab == tab ? Color.accentColor : Color.white.opacity(0.62))
                         }
                         .overlay {
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            RoundedRectangle(cornerRadius: 13, style: .continuous)
                                 .strokeBorder(Color.white.opacity(selectedTab == tab ? 0 : 0.55), lineWidth: 1)
                         }
                 }
                 .buttonStyle(.plain)
             }
         }
-        .padding(8)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .padding(6)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 }
 
@@ -151,12 +144,12 @@ private struct SettingsPrototypePlaceholderPage: View {
 
     var body: some View {
         SettingsPrototypeCard {
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 8) {
                 Text(title)
-                    .font(.system(size: 24, weight: .semibold, design: .rounded))
+                    .font(.system(size: 20, weight: .semibold, design: .rounded))
 
                 Text(message)
-                    .font(.body)
+                    .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -195,7 +188,7 @@ private struct SettingsPrototypeGeneralView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 22) {
+        VStack(alignment: .leading, spacing: 18) {
             SettingsPrototypeSectionHeader(
                 eyebrow: "General",
                 title: "Core controls first",
@@ -211,7 +204,7 @@ private struct SettingsPrototypeGeneralView: View {
             }
 
             SettingsPrototypeCard {
-                VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 14) {
                     SettingsPrototypeCardTitle(title: UICopy.pressAndDragSectionTitle)
 
                     SettingsPrototypeToggleRow(
@@ -223,7 +216,7 @@ private struct SettingsPrototypeGeneralView: View {
 
                     SettingsPrototypeDivider()
 
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 12) {
                         SettingsPrototypeToggleRow(
                             title: UICopy.modifierLeftMouseTitle,
                             subtitle: UICopy.modifierLeftMouseSubtitle,
@@ -232,7 +225,7 @@ private struct SettingsPrototypeGeneralView: View {
                         .opacity(isEnabled ? 1 : 0.5)
 
                         SettingsPrototypeInsetCard {
-                            VStack(alignment: .leading, spacing: 10) {
+                            VStack(alignment: .leading, spacing: 8) {
                                 ForEach(Array(modifierGroupItems.enumerated()), id: \.offset) { index, title in
                                     SettingsPrototypeSelectableRow(
                                         title: title,
@@ -257,15 +250,16 @@ private struct SettingsPrototypeGeneralView: View {
             }
 
             SettingsPrototypeCard {
-                VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 14) {
                     SettingsPrototypeCardTitle(title: UICopy.excludedWindowsSectionTitle)
 
                     SettingsPrototypeInsetCard {
-                        VStack(alignment: .leading, spacing: 10) {
+                        VStack(alignment: .leading, spacing: 8) {
                             if excludedWindowItems.isEmpty {
                                 Text("No excluded windows yet.")
+                                    .font(.system(size: 13, weight: .medium))
                                     .foregroundStyle(.secondary)
-                                    .padding(.vertical, 10)
+                                    .padding(.vertical, 8)
                             } else {
                                 ForEach(Array(excludedWindowItems.enumerated()), id: \.element.id) { index, item in
                                     SettingsPrototypeSelectableRow(
@@ -298,17 +292,17 @@ private struct SettingsPrototypeSectionHeader: View {
     let detail: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(eyebrow.uppercased())
-                .font(.system(size: 12, weight: .bold))
-                .kerning(0.8)
+                .font(.system(size: 11, weight: .bold))
+                .kerning(0.7)
                 .foregroundStyle(.secondary)
 
             Text(title)
-                .font(.system(size: 28, weight: .semibold, design: .rounded))
+                .font(.system(size: 22, weight: .semibold, design: .rounded))
 
             Text(detail)
-                .font(.body)
+                .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -320,7 +314,7 @@ private struct SettingsPrototypeCardTitle: View {
 
     var body: some View {
         Text(title)
-            .font(.system(size: 22, weight: .semibold, design: .rounded))
+            .font(.system(size: 18, weight: .semibold, design: .rounded))
     }
 }
 
@@ -331,14 +325,14 @@ private struct SettingsPrototypeCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             content
         }
-        .padding(24)
+        .padding(18)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.white.opacity(0.72), in: RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .background(Color.white.opacity(0.72), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay {
-            RoundedRectangle(cornerRadius: 28, style: .continuous)
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .strokeBorder(Color.white.opacity(0.65), lineWidth: 1)
         }
-        .shadow(color: Color.black.opacity(0.06), radius: 28, x: 0, y: 14)
+        .shadow(color: Color.black.opacity(0.05), radius: 18, x: 0, y: 10)
     }
 }
 
@@ -349,9 +343,9 @@ private struct SettingsPrototypeInsetCard<Content: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             content
         }
-        .padding(16)
+        .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.black.opacity(0.035), in: RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .background(Color.black.opacity(0.035), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
@@ -361,23 +355,23 @@ private struct SettingsPrototypeToggleRow: View {
     @Binding var isOn: Bool
 
     var body: some View {
-        HStack(alignment: .top, spacing: 20) {
-            VStack(alignment: .leading, spacing: 6) {
+        HStack(alignment: .top, spacing: 16) {
+            VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.system(size: 22, weight: .semibold, design: .rounded))
+                    .font(.system(size: 18, weight: .semibold, design: .rounded))
 
                 Text(subtitle)
-                    .font(.system(size: 15, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
             }
 
-            Spacer(minLength: 16)
+            Spacer(minLength: 12)
 
             Toggle("", isOn: $isOn)
                 .labelsHidden()
                 .toggleStyle(.switch)
-                .controlSize(.large)
+                .controlSize(.regular)
         }
     }
 }
@@ -388,15 +382,15 @@ private struct SettingsPrototypeSelectableRow: View {
     let isSelected: Bool
 
     var body: some View {
-        HStack(spacing: 12) {
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.primary)
 
                 if let detail {
                     Text(detail)
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
             }
@@ -408,10 +402,10 @@ private struct SettingsPrototypeSelectableRow: View {
                     .foregroundStyle(Color.accentColor)
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
         .background {
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(isSelected ? Color.accentColor.opacity(0.12) : Color.white.opacity(0.72))
         }
     }
@@ -423,19 +417,19 @@ private struct SettingsPrototypeActionBar: View {
     let isSecondaryEnabled: Bool
 
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 8) {
             Button(primaryTitle) {}
                 .buttonStyle(.borderedProminent)
-                .controlSize(.large)
+                .controlSize(.regular)
 
             Button(secondaryTitle) {}
                 .buttonStyle(.bordered)
-                .controlSize(.large)
+                .controlSize(.regular)
                 .disabled(!isSecondaryEnabled)
 
             Spacer()
         }
-        .padding(.top, 8)
+        .padding(.top, 6)
     }
 }
 
