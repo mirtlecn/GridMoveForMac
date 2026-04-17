@@ -11,6 +11,7 @@ import Testing
             modifierLeftMouseDragEnabled: true,
             preferLayoutMode: true
         ),
+        layoutGroupState: .init(groupNames: ["built-in", "work"], activeGroupName: "built-in"),
         actionItems: [
             .init(title: UICopy.applyPreviousLayout, action: .cyclePrevious, shortcut: nil),
             .init(title: UICopy.applyNextLayout, action: .cycleNext, shortcut: nil),
@@ -19,6 +20,7 @@ import Testing
         onToggleMiddleMouseDrag: { _ in true },
         onToggleModifierLeftMouseDrag: { _ in true },
         onTogglePreferLayoutMode: { _ in true },
+        onSelectLayoutGroup: { _ in true },
         onPerformAction: { _ in },
         onReloadConfiguration: {},
         onCustomize: {},
@@ -32,6 +34,7 @@ import Testing
             "Middle mouse drag",
             "Modifier + left mouse drag",
             "Prefer layout mode",
+            "Layout group",
             "|",
             "Apply previous layout",
             "Apply next layout",
@@ -53,11 +56,13 @@ import Testing
             modifierLeftMouseDragEnabled: true,
             preferLayoutMode: false
         ),
+        layoutGroupState: .init(groupNames: ["built-in", "work"], activeGroupName: "work"),
         actionItems: [],
         onToggleDragGrid: { _ in true },
         onToggleMiddleMouseDrag: { _ in true },
         onToggleModifierLeftMouseDrag: { _ in true },
         onTogglePreferLayoutMode: { _ in true },
+        onSelectLayoutGroup: { _ in true },
         onPerformAction: { _ in },
         onReloadConfiguration: {},
         onCustomize: {},
@@ -69,6 +74,13 @@ import Testing
             UICopy.middleMouseDragMenuTitle: false,
             UICopy.modifierLeftMouseDragMenuTitle: true,
             UICopy.preferLayoutModeMenuTitle: false,
+        ]
+    )
+
+    #expect(
+        controller.layoutGroupDescriptorsForTesting == [
+            "built-in": false,
+            "work": true,
         ]
     )
 }

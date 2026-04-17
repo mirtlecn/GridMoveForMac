@@ -65,17 +65,20 @@ struct KeyboardShortcut: Codable, Equatable, Hashable {
 }
 
 enum HotkeyAction: Codable, Equatable, Hashable {
-    case applyLayout(layoutID: String)
+    case applyLayoutByIndex(layout: Int)
+    case applyLayoutByName(name: String)
     case cycleNext
     case cyclePrevious
 
     private enum CodingKeys: String, CodingKey {
         case kind
-        case layoutID
+        case layout
+        case name
     }
 
     private enum Kind: String, Codable {
-        case applyLayout
+        case applyLayoutByIndex
+        case applyLayoutByName
         case cycleNext
         case cyclePrevious
     }
@@ -83,8 +86,14 @@ enum HotkeyAction: Codable, Equatable, Hashable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         switch try container.decode(Kind.self, forKey: .kind) {
-        case .applyLayout:
-            self = .applyLayout(layoutID: try container.decode(String.self, forKey: .layoutID))
+        case .applyLayoutByIndex:
+            let layout = try container.decode(Int.self, forKey: .layout)
+            guard layout >= 1 else {
+                throw DecodingError.dataCorruptedError(forKey: .layout, in: container, debugDescription: "Layout index must be positive.")
+            }
+            self = .applyLayoutByIndex(layout: layout)
+        case .applyLayoutByName:
+            self = .applyLayoutByName(name: try container.decode(String.self, forKey: .name))
         case .cycleNext:
             self = .cycleNext
         case .cyclePrevious:
@@ -95,9 +104,12 @@ enum HotkeyAction: Codable, Equatable, Hashable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         switch self {
-        case let .applyLayout(layoutID):
-            try container.encode(Kind.applyLayout, forKey: .kind)
-            try container.encode(layoutID, forKey: .layoutID)
+        case let .applyLayoutByIndex(layout):
+            try container.encode(Kind.applyLayoutByIndex, forKey: .kind)
+            try container.encode(layout, forKey: .layout)
+        case let .applyLayoutByName(name):
+            try container.encode(Kind.applyLayoutByName, forKey: .kind)
+            try container.encode(name, forKey: .name)
         case .cycleNext:
             try container.encode(Kind.cycleNext, forKey: .kind)
         case .cyclePrevious:
@@ -107,11 +119,13 @@ enum HotkeyAction: Codable, Equatable, Hashable {
 
     func displayName(layouts: [LayoutPreset]) -> String {
         switch self {
-        case let .applyLayout(layoutID):
-            if let name = layouts.first(where: { $0.id == layoutID })?.name {
-                return UICopy.applyLayout(name)
+        case let .applyLayoutByIndex(layoutIndex):
+            if layoutIndex >= 1, layoutIndex <= layouts.count {
+                return UICopy.applyLayout(layouts[layoutIndex - 1].name)
             }
             return UICopy.applyLayout(UICopy.unknownLayout)
+        case let .applyLayoutByName(name):
+            return UICopy.applyLayout(name)
         case .cycleNext:
             return UICopy.applyNextLayout
         case .cyclePrevious:
@@ -213,8 +227,87 @@ struct LayoutPreset: Codable, Equatable, Hashable, Identifiable {
     var gridColumns: Int
     var gridRows: Int
     var windowSelection: GridSelection
-    var triggerRegion: TriggerRegion
+    var triggerRegion: TriggerRegion?
     var includeInCycle: Bool
+}
+
+enum LayoutSetMonitor: Codable, Equatable, Hashable {
+    case all
+    case main
+    case displays([String])
+
+    init(from decoder: Decoder) throws {
+        if var unkeyedContainer = try? decoder.unkeyedContainer() {
+            var displayIDs: [String] = []
+            while !unkeyedContainer.isAtEnd {
+                let value = try unkeyedContainer.decode(String.self).trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !value.isEmpty, value.lowercased() != "all", value.lowercased() != "main" else {
+                    throw DecodingError.dataCorruptedError(in: unkeyedContainer, debugDescription: "Monitor arrays may only contain explicit display IDs.")
+                }
+                displayIDs.append(value)
+            }
+            guard !displayIDs.isEmpty else {
+                throw DecodingError.dataCorruptedError(in: unkeyedContainer, debugDescription: "Monitor array must not be empty.")
+            }
+            self = .displays(displayIDs)
+            return
+        }
+
+        let container = try decoder.singleValueContainer()
+        let rawValue = try container.decode(String.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !rawValue.isEmpty else {
+            throw DecodingError.dataCorruptedError(in: container, debugDescription: "Monitor value must not be empty.")
+        }
+
+        switch rawValue.lowercased() {
+        case "all":
+            self = .all
+        case "main":
+            self = .main
+        default:
+            self = .displays([rawValue])
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        switch self {
+        case .all:
+            var container = encoder.singleValueContainer()
+            try container.encode("all")
+        case .main:
+            var container = encoder.singleValueContainer()
+            try container.encode("main")
+        case let .displays(displayIDs):
+            if displayIDs.count == 1, let firstID = displayIDs.first {
+                var container = encoder.singleValueContainer()
+                try container.encode(firstID)
+            } else {
+                var container = encoder.unkeyedContainer()
+                for displayID in displayIDs {
+                    try container.encode(displayID)
+                }
+            }
+        }
+    }
+
+    var explicitDisplayIDs: [String] {
+        switch self {
+        case .displays(let displayIDs):
+            return displayIDs
+        case .all, .main:
+            return []
+        }
+    }
+}
+
+struct LayoutSet: Codable, Equatable, Hashable {
+    var monitor: LayoutSetMonitor
+    var layouts: [LayoutPreset]
+}
+
+struct LayoutGroup: Codable, Equatable, Hashable {
+    var name: String
+    var sets: [LayoutSet]
 }
 
 struct RGBAColor: Codable, Equatable, Hashable {
@@ -298,21 +391,25 @@ struct GeneralSettings: Codable, Equatable {
     var isEnabled: Bool
     var excludedBundleIDs: [String]
     var excludedWindowTitles: [String]
+    var activeLayoutGroup: String
 
     private enum CodingKeys: String, CodingKey {
         case isEnabled
         case excludedBundleIDs
         case excludedWindowTitles
+        case activeLayoutGroup
     }
 
     init(
         isEnabled: Bool,
         excludedBundleIDs: [String],
-        excludedWindowTitles: [String]
+        excludedWindowTitles: [String],
+        activeLayoutGroup: String
     ) {
         self.isEnabled = isEnabled
         self.excludedBundleIDs = excludedBundleIDs
         self.excludedWindowTitles = excludedWindowTitles
+        self.activeLayoutGroup = activeLayoutGroup
     }
 
     init(from decoder: Decoder) throws {
@@ -320,6 +417,7 @@ struct GeneralSettings: Codable, Equatable {
         isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? true
         excludedBundleIDs = try container.decode([String].self, forKey: .excludedBundleIDs)
         excludedWindowTitles = try container.decode([String].self, forKey: .excludedWindowTitles)
+        activeLayoutGroup = try container.decode(String.self, forKey: .activeLayoutGroup)
     }
 }
 
@@ -437,11 +535,14 @@ struct HotkeySettings: Codable, Equatable {
 }
 
 struct AppConfiguration: Codable, Equatable {
+    static let builtInGroupName = "built-in"
+
     var general: GeneralSettings
     var appearance: AppearanceSettings
     var dragTriggers: DragTriggerSettings
     var hotkeys: HotkeySettings
-    var layouts: [LayoutPreset]
+    var layoutGroups: [LayoutGroup]
+    var monitors: [String: String]
 
     static let builtInExcludedBundleIDs = [
         "com.apple.Spotlight",
@@ -472,19 +573,29 @@ struct AppConfiguration: Codable, Equatable {
         ]
     }
 
+    static var defaultLayoutGroups: [LayoutGroup] {
+        [
+            LayoutGroup(
+                name: builtInGroupName,
+                sets: [
+                    LayoutSet(monitor: .all, layouts: defaultLayouts),
+                ]
+            ),
+        ]
+    }
+
     static var defaultBindings: [ShortcutBinding] {
-        let layoutIDs = defaultLayouts.map(\.id)
-        return [
+        [
             ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "l"), action: .cycleNext),
             ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "j"), action: .cyclePrevious),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "\\"), action: .applyLayout(layoutID: layoutIDs[3])),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "["), action: .applyLayout(layoutID: layoutIDs[1])),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "]"), action: .applyLayout(layoutID: layoutIDs[5])),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: ";"), action: .applyLayout(layoutID: layoutIDs[2])),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "'"), action: .applyLayout(layoutID: layoutIDs[6])),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "-"), action: .applyLayout(layoutID: layoutIDs[0])),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "="), action: .applyLayout(layoutID: layoutIDs[4])),
-            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "return"), action: .applyLayout(layoutID: layoutIDs[9])),
+            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "\\"), action: .applyLayoutByIndex(layout: 4)),
+            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "["), action: .applyLayoutByIndex(layout: 2)),
+            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "]"), action: .applyLayoutByIndex(layout: 6)),
+            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: ";"), action: .applyLayoutByIndex(layout: 3)),
+            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "'"), action: .applyLayoutByIndex(layout: 7)),
+            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "-"), action: .applyLayoutByIndex(layout: 1)),
+            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "="), action: .applyLayoutByIndex(layout: 5)),
+            ShortcutBinding(shortcut: KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "return"), action: .applyLayoutByIndex(layout: 10)),
         ]
     }
 
@@ -492,7 +603,8 @@ struct AppConfiguration: Codable, Equatable {
         general: GeneralSettings(
             isEnabled: true,
             excludedBundleIDs: ["com.apple.Spotlight"],
-            excludedWindowTitles: []
+            excludedWindowTitles: [],
+            activeLayoutGroup: builtInGroupName
         ),
         appearance: AppearanceSettings(
             renderTriggerAreas: false,
@@ -517,16 +629,55 @@ struct AppConfiguration: Codable, Equatable {
             activationMoveThreshold: 10
         ),
         hotkeys: HotkeySettings(bindings: defaultBindings),
-        layouts: defaultLayouts
+        layoutGroups: defaultLayoutGroups,
+        monitors: [:]
     )
 
+    var activeGroup: LayoutGroup? {
+        layoutGroups.first(where: { $0.name == general.activeLayoutGroup })
+    }
+
+    var layouts: [LayoutPreset] {
+        get {
+            flattenedLayouts(in: activeGroup)
+        }
+        set {
+            replaceActiveGroupLayouts(with: newValue)
+        }
+    }
+
+    func flattenedLayouts(in group: LayoutGroup?) -> [LayoutPreset] {
+        group?.sets.flatMap(\.layouts) ?? []
+    }
+
+    func layoutGroupNames() -> [String] {
+        layoutGroups.map(\.name)
+    }
+
     mutating func removeLayout(id: String) {
-        layouts.removeAll { $0.id == id }
+        guard let removedIndex = layouts.firstIndex(where: { $0.id == id }) else {
+            return
+        }
+
+        var nextLayouts = layouts
+        nextLayouts.remove(at: removedIndex)
+        layouts = nextLayouts
+
         hotkeys.bindings.removeAll { binding in
-            if case let .applyLayout(layoutID) = binding.action {
-                return layoutID == id
+            if case let .applyLayoutByIndex(layoutIndex) = binding.action {
+                return layoutIndex == removedIndex + 1
             }
             return false
+        }
+
+        hotkeys.bindings = hotkeys.bindings.map { binding in
+            guard case let .applyLayoutByIndex(layoutIndex) = binding.action, layoutIndex > removedIndex + 1 else {
+                return binding
+            }
+
+            var updatedBinding = binding
+            updatedBinding.action = .applyLayoutByIndex(layout: layoutIndex - 1)
+            return updatedBinding
         }
     }
 
@@ -535,14 +686,32 @@ struct AppConfiguration: Codable, Equatable {
             return
         }
 
+        var nextLayouts = layouts
         var destinationIndex = targetIndex
         if sourceIndex < destinationIndex {
             destinationIndex -= 1
         }
-        destinationIndex = max(0, min(destinationIndex, layouts.count - 1))
+        destinationIndex = max(0, min(destinationIndex, nextLayouts.count - 1))
 
-        let movedLayout = layouts.remove(at: sourceIndex)
-        layouts.insert(movedLayout, at: destinationIndex)
+        let movedLayout = nextLayouts.remove(at: sourceIndex)
+        nextLayouts.insert(movedLayout, at: destinationIndex)
+        layouts = nextLayouts
+    }
+
+    private mutating func replaceActiveGroupLayouts(with layouts: [LayoutPreset]) {
+        guard let groupIndex = layoutGroups.firstIndex(where: { $0.name == general.activeLayoutGroup }) else {
+            return
+        }
+
+        if layoutGroups[groupIndex].sets.isEmpty {
+            layoutGroups[groupIndex].sets = [LayoutSet(monitor: .all, layouts: layouts)]
+            return
+        }
+
+        layoutGroups[groupIndex].sets[0].layouts = layouts
+        for setIndex in layoutGroups[groupIndex].sets.indices.dropFirst() {
+            layoutGroups[groupIndex].sets[setIndex].layouts = []
+        }
     }
 }
 
@@ -646,7 +815,8 @@ enum ShortcutKeyMap {
         case kVK_ANSI_Slash: return "/"
         case kVK_Return: return "return"
         case kVK_Escape: return "escape"
-        default: return nil
+        default:
+            return nil
         }
     }
 }

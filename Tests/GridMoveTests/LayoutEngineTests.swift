@@ -65,7 +65,12 @@ import Testing
     let screenFrame = CGRect(x: 0, y: 0, width: 1800, height: 930)
     let usableFrame = CGRect(x: 0, y: 0, width: 1800, height: 900)
 
-    let slots = engine.resolveTriggerSlots(screenFrame: screenFrame, usableFrame: usableFrame, configuration: configuration)
+    let slots = engine.resolveTriggerSlots(
+        screenFrame: screenFrame,
+        usableFrame: usableFrame,
+        layouts: configuration.layouts,
+        triggerGap: configuration.appearance.triggerGap
+    )
     let firstSlot = try #require(slots.first(where: { $0.layoutID == "layout-1" }))
     let fullscreenSlot = try #require(slots.first(where: { $0.layoutID == "layout-10" }))
     let menuBarSlot = try #require(slots.first(where: { $0.layoutID == "layout-11" }))

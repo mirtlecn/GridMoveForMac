@@ -8,6 +8,11 @@ final class MenuBarController: NSObject {
         let shortcut: KeyboardShortcut?
     }
 
+    struct LayoutGroupState: Equatable {
+        let groupNames: [String]
+        let activeGroupName: String
+    }
+
     struct ToggleSettingsState: Equatable {
         let middleMouseDragEnabled: Bool
         let modifierLeftMouseDragEnabled: Bool
@@ -21,17 +26,21 @@ final class MenuBarController: NSObject {
     private let middleMouseDragMenuItem = NSMenuItem(title: UICopy.middleMouseDragMenuTitle, action: nil, keyEquivalent: "")
     private let modifierLeftMouseDragMenuItem = NSMenuItem(title: UICopy.modifierLeftMouseDragMenuTitle, action: nil, keyEquivalent: "")
     private let preferLayoutModeMenuItem = NSMenuItem(title: UICopy.preferLayoutModeMenuTitle, action: nil, keyEquivalent: "")
+    private let layoutGroupMenuItem = NSMenuItem(title: UICopy.layoutGroupMenuTitle, action: nil, keyEquivalent: "")
+    private let layoutGroupSubmenu = NSMenu()
     private let settingsSectionSeparatorItem = NSMenuItem.separator()
     private let actionSectionSeparatorItem = NSMenuItem.separator()
     private let reloadConfigMenuItem = NSMenuItem(title: UICopy.reloadConfigMenuTitle, action: nil, keyEquivalent: "")
     private let customizeMenuItem = NSMenuItem(title: UICopy.customizeMenuTitle, action: nil, keyEquivalent: "")
     private var actionMenuItems: [NSMenuItem] = []
     private var actionItems: [ActionItem]
+    private var layoutGroupState: LayoutGroupState
 
     private let onToggleDragGrid: (Bool) -> Bool
     private let onToggleMiddleMouseDrag: (Bool) -> Bool
     private let onToggleModifierLeftMouseDrag: (Bool) -> Bool
     private let onTogglePreferLayoutMode: (Bool) -> Bool
+    private let onSelectLayoutGroup: (String) -> Bool
     private let onPerformAction: (HotkeyAction) -> Void
     private let onReloadConfiguration: () -> Void
     private let onCustomize: () -> Void
@@ -40,21 +49,25 @@ final class MenuBarController: NSObject {
     init(
         dragGridEnabled: Bool,
         toggleSettings: ToggleSettingsState,
+        layoutGroupState: LayoutGroupState,
         actionItems: [ActionItem],
         onToggleDragGrid: @escaping (Bool) -> Bool,
         onToggleMiddleMouseDrag: @escaping (Bool) -> Bool,
         onToggleModifierLeftMouseDrag: @escaping (Bool) -> Bool,
         onTogglePreferLayoutMode: @escaping (Bool) -> Bool,
+        onSelectLayoutGroup: @escaping (String) -> Bool,
         onPerformAction: @escaping (HotkeyAction) -> Void,
         onReloadConfiguration: @escaping () -> Void,
         onCustomize: @escaping () -> Void,
         onQuit: @escaping () -> Void
     ) {
         self.actionItems = actionItems
+        self.layoutGroupState = layoutGroupState
         self.onToggleDragGrid = onToggleDragGrid
         self.onToggleMiddleMouseDrag = onToggleMiddleMouseDrag
         self.onToggleModifierLeftMouseDrag = onToggleModifierLeftMouseDrag
         self.onTogglePreferLayoutMode = onTogglePreferLayoutMode
+        self.onSelectLayoutGroup = onSelectLayoutGroup
         self.onPerformAction = onPerformAction
         self.onReloadConfiguration = onReloadConfiguration
         self.onCustomize = onCustomize
@@ -77,6 +90,7 @@ final class MenuBarController: NSObject {
         menu.addItem(enableSeparatorItem)
 
         configureToggleMenuItems(toggleSettings)
+        configureLayoutGroupMenu()
         menu.addItem(settingsSectionSeparatorItem)
 
         rebuildActionItems(isEnabled: dragGridEnabled)
@@ -123,9 +137,16 @@ final class MenuBarController: NSObject {
         menu.addItem(preferLayoutModeMenuItem)
     }
 
+    private func configureLayoutGroupMenu() {
+        layoutGroupMenuItem.submenu = layoutGroupSubmenu
+        menu.addItem(layoutGroupMenuItem)
+        rebuildLayoutGroupItems()
+    }
+
     func setEnabled(_ isEnabled: Bool) {
         dragGridMenuItem.state = isEnabled ? .on : .off
         actionMenuItems.forEach { $0.isEnabled = isEnabled }
+        layoutGroupSubmenu.items.forEach { $0.isEnabled = isEnabled }
     }
 
     func updateToggleStates(_ toggleSettings: ToggleSettingsState) {
@@ -137,6 +158,12 @@ final class MenuBarController: NSObject {
     func updateActionItems(_ actionItems: [ActionItem], isEnabled: Bool) {
         self.actionItems = actionItems
         rebuildActionItems(isEnabled: isEnabled)
+    }
+
+    func updateLayoutGroupState(_ layoutGroupState: LayoutGroupState, isEnabled: Bool) {
+        self.layoutGroupState = layoutGroupState
+        rebuildLayoutGroupItems()
+        layoutGroupSubmenu.items.forEach { $0.isEnabled = isEnabled }
     }
 
     private func rebuildActionItems(isEnabled: Bool) {
@@ -167,6 +194,18 @@ final class MenuBarController: NSObject {
         }
 
         actionSectionSeparatorItem.isHidden = false
+    }
+
+    private func rebuildLayoutGroupItems() {
+        layoutGroupSubmenu.removeAllItems()
+
+        for groupName in layoutGroupState.groupNames {
+            let item = NSMenuItem(title: groupName, action: #selector(selectLayoutGroup(_:)), keyEquivalent: "")
+            item.target = self
+            item.representedObject = groupName
+            item.state = groupName == layoutGroupState.activeGroupName ? .on : .off
+            layoutGroupSubmenu.addItem(item)
+        }
     }
 
     @objc private func reloadConfiguration() {
@@ -205,6 +244,17 @@ final class MenuBarController: NSObject {
         onPerformAction(action)
     }
 
+    @objc private func selectLayoutGroup(_ sender: NSMenuItem) {
+        guard let groupName = sender.representedObject as? String else {
+            return
+        }
+
+        if onSelectLayoutGroup(groupName) {
+            layoutGroupState = LayoutGroupState(groupNames: layoutGroupState.groupNames, activeGroupName: groupName)
+            rebuildLayoutGroupItems()
+        }
+    }
+
     @objc private func quit() {
         onQuit()
     }
@@ -221,5 +271,9 @@ final class MenuBarController: NSObject {
             UICopy.modifierLeftMouseDragMenuTitle: modifierLeftMouseDragMenuItem.state == .on,
             UICopy.preferLayoutModeMenuTitle: preferLayoutModeMenuItem.state == .on,
         ]
+    }
+
+    var layoutGroupDescriptorsForTesting: [String: Bool] {
+        Dictionary(uniqueKeysWithValues: layoutGroupSubmenu.items.map { ($0.title, $0.state == .on) })
     }
 }

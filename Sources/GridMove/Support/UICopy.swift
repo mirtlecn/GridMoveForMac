@@ -7,6 +7,7 @@ enum UICopy {
     static let middleMouseDragMenuTitle = "Middle mouse drag"
     static let modifierLeftMouseDragMenuTitle = "Modifier + left mouse drag"
     static let preferLayoutModeMenuTitle = "Prefer layout mode"
+    static let layoutGroupMenuTitle = "Layout group"
     static let reloadConfigMenuTitle = "Reload"
     static let customizeMenuTitle = "Customize... ↗"
     static let configReloadFailedTitle = "GridMove config reload failed"

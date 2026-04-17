@@ -54,8 +54,10 @@ Important properties:
 
 - layout IDs are internal only and are regenerated from array order
 - hotkey binding IDs are internal only and are regenerated from array order
-- persisted `applyLayout` actions point to the 1-based layout index
+- persisted `applyLayoutByIndex` actions point to the 1-based layout index within the resolved display set
 - stroke colors are stored as `#RRGGBBAA`
+- `general.activeLayoutGroup` selects the currently active layout group
+- `layoutGroups[*].sets[*].monitor` routes layouts to `all`, `main`, one display ID, or multiple display IDs
 
 Current drag-trigger configuration fields:
 
@@ -102,18 +104,18 @@ The built-in default configuration currently resolves to the following values.
 
 - `ctrl + cmd + shift + alt + l` -> cycle next layout
 - `ctrl + cmd + shift + alt + j` -> cycle previous layout
-- `ctrl + cmd + shift + alt + \` -> apply `layout-4`
-- `ctrl + cmd + shift + alt + [` -> apply `layout-2`
-- `ctrl + cmd + shift + alt + ]` -> apply `layout-6`
-- `ctrl + cmd + shift + alt + ;` -> apply `layout-3`
-- `ctrl + cmd + shift + alt + '` -> apply `layout-7`
-- `ctrl + cmd + shift + alt + -` -> apply `layout-1`
-- `ctrl + cmd + shift + alt + =` -> apply `layout-5`
-- `ctrl + cmd + shift + alt + return` -> apply `layout-10`
+- `ctrl + cmd + shift + alt + \` -> apply current display set layout `1`
+- `ctrl + cmd + shift + alt + [` -> apply current display set layout `2`
+- `ctrl + cmd + shift + alt + ]` -> apply current display set layout `6`
+- `ctrl + cmd + shift + alt + ;` -> apply current display set layout `3`
+- `ctrl + cmd + shift + alt + '` -> apply current display set layout `7`
+- `ctrl + cmd + shift + alt + -` -> apply current display set layout `1`
+- `ctrl + cmd + shift + alt + =` -> apply current display set layout `5`
+- `ctrl + cmd + shift + alt + return` -> apply current display set layout `10`
 
-`layouts`
+`layoutGroups`
 
-- the default set contains 11 layouts
+- the default `built-in` group contains one `all` set with 11 layouts
 - all layouts use a `12 x 6` grid
 - `layout-1` to `layout-9` use screen trigger regions
 - `layout-10` uses a screen trigger region
@@ -140,6 +142,7 @@ Compatibility behavior:
 - if config decoding fails, the file is left untouched
 - the app falls back to built-in defaults for the current launch
 - missing `preferLayoutMode` defaults to `true`
+- missing `triggerRegion` means the layout is menu, shortcut, and CLI only
 
 ## 5. Accessibility Lifecycle
 
@@ -276,12 +279,14 @@ There are three non-pointer action entry points:
 Menu actions:
 
 - are built from current configuration
+- include a `Layout group` submenu that switches `general.activeLayoutGroup`
 - always go through `LayoutActionExecutor`
 
 Keyboard shortcuts:
 
 - are captured through a global event tap
 - resolve to the first matching enabled binding
+- interpret `applyLayoutByIndex` within the target window's current display set
 - operate on the currently resolved target window
 
 CLI:
@@ -292,6 +297,14 @@ CLI:
 - fails fast if the app is not running
 
 This relay exists so CLI actions share the same runtime window-targeting behavior as the app instead of manipulating windows from a short-lived helper process.
+
+Display set resolution:
+
+- each physical display resolves exactly one set from the active layout group
+- priority is explicit display ID or ID array, then `main`, then `all`
+- drag overlays and trigger hit testing only use the resolved set for the current display
+- `cycleNext` and `cyclePrevious` only use the resolved set for the target window's current display and never move the window across displays
+- menu and CLI direct layout application may move the window across displays when the chosen layout belongs to another resolved set
 
 ## 9. Overlay Behavior
 

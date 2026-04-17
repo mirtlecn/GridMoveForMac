@@ -59,7 +59,13 @@ extension DragGridController {
         let nextScreen = windowController.resolvedScreen(for: point, fallback: state.activeScreen)
         if nextScreen.map(Geometry.screenIdentifier(for:)) != state.activeScreen.map(Geometry.screenIdentifier(for:)) {
             state.activeScreen = nextScreen
-            state.resolvedSlots = nextScreen.map { layoutEngine.resolveTriggerSlots(on: $0, configuration: configuration) } ?? []
+            state.resolvedSlots = nextScreen.map {
+                layoutEngine.resolveTriggerSlots(
+                    on: $0,
+                    layouts: LayoutGroupResolver.triggerableLayouts(for: $0, configuration: configuration),
+                    triggerGap: configuration.appearance.triggerGap
+                )
+            } ?? []
             state.hoveredLayoutID = nil
             state.lastAppliedLayoutID = nil
         }
@@ -138,7 +144,13 @@ extension DragGridController {
                 windowController.screenContaining(point: CGPoint(x: frame.midX, y: frame.midY))
             }
         state.activeScreen = windowController.resolvedScreen(for: point, fallback: fallbackScreen)
-        state.resolvedSlots = state.activeScreen.map { layoutEngine.resolveTriggerSlots(on: $0, configuration: configuration) } ?? []
+        state.resolvedSlots = state.activeScreen.map {
+            layoutEngine.resolveTriggerSlots(
+                on: $0,
+                layouts: LayoutGroupResolver.triggerableLayouts(for: $0, configuration: configuration),
+                triggerGap: configuration.appearance.triggerGap
+            )
+        } ?? []
 
         if shouldApplyImmediately {
             state.hasDraggedPastThreshold = true

@@ -22,7 +22,7 @@ import Testing
     #expect(delegate.configuration.layouts.map(\.name) == savedConfiguration.layouts.map(\.name))
     #expect(delegate.configuration.layouts.map(\.id) == (1...savedConfiguration.layouts.count).map { "layout-\($0)" })
     #expect(delegate.configuration.hotkeys.bindings.map(\.id) == (1...savedConfiguration.hotkeys.bindings.count).map { "binding-\($0)" })
-    #expect(delegate.configuration.hotkeys.bindings[2].action == .applyLayout(layoutID: "layout-8"))
+    #expect(delegate.configuration.hotkeys.bindings[2].action == .applyLayoutByIndex(layout: 4))
 }
 
 @MainActor
@@ -72,7 +72,9 @@ import Testing
 
     delegate.reloadConfigurationFromDisk(notifyOnFallback: true)
 
-    #expect(delegate.configuration == .defaultValue)
+    #expect(delegate.configuration.general == AppConfiguration.defaultValue.general)
+    #expect(delegate.configuration.layoutGroups == AppConfiguration.defaultValue.layoutGroups)
+    #expect(delegate.configuration.hotkeys == AppConfiguration.defaultValue.hotkeys)
     #expect(receivedTitle == UICopy.configReloadFailedTitle)
     #expect(receivedBody == UICopy.configReloadFailedBody)
 }

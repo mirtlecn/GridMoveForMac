@@ -168,7 +168,7 @@ final class WindowController {
         configuration: AppConfiguration
     ) {
         guard
-            let preset = layoutEngine.layoutPreset(for: layoutID, in: configuration),
+            let preset = layoutEngine.layoutPreset(for: layoutID, in: configuration.layouts),
             let targetScreen = preferredScreen ?? screenContaining(point: CGPoint(x: window.frame.midX, y: window.frame.midY))
         else {
             return

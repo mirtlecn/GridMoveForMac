@@ -4,8 +4,10 @@ GridMove is a native macOS menu bar app for applying window layouts and moving w
 
 ## Features
 
-- Global keyboard shortcuts for cycling layouts and applying named layouts
+- Global keyboard shortcuts for cycling layouts and applying per-display layout indexes
 - Drag-triggered layout selection and move-only mode
+- Layout groups that can be switched from the menu bar
+- Per-display layout sets with `all`, `main`, single-display, and multi-display targeting
 - Trigger regions on the screen grid or menu bar strip
 - Accessibility-based window lookup, focus, move, resize, and fullscreen exit
 - CLI actions relayed to the running app
@@ -63,7 +65,8 @@ The real file must be plain JSON and does not support comments. The example belo
     ],
     "excludedWindowTitles": [
       // Exact-match window titles to ignore.
-    ]
+    ],
+    "activeLayoutGroup": "built-in" // The menu-bar-selected layout group.
   },
   "appearance": {
     "renderTriggerAreas": false, // Show trigger-region overlay while in layout mode. The default is off.
@@ -96,47 +99,73 @@ The real file must be plain JSON and does not support comments. The example belo
           "key": "\\" // Supported keys: a-z, -, =, [, ], \, ;, ', ,, ., /, return, enter, escape, esc.
         },
         "action": {
-          "kind": "applyLayout", // Allowed values are applyLayout, cycleNext, cyclePrevious.
-          "layout": 4 // Required only for applyLayout. This is a 1-based index into the layouts array.
+          "kind": "applyLayoutByIndex", // Allowed values are applyLayoutByIndex, cycleNext, cyclePrevious.
+          "layout": 4 // Required only for applyLayoutByIndex. This is a 1-based index into the current display set.
         }
       }
       // The default file contains more bindings in the same shape.
     ]
   },
-  "layouts": [
+  "layoutGroups": [
     {
-      "name": "Center", // Name shown in the menu bar. CLI can also look up layouts by this name.
-      "gridColumns": 12, // Column count of the layout grid.
-      "gridRows": 6, // Row count of the layout grid.
-      "windowSelection": {
-        "x": 3, // Target window origin column inside the grid.
-        "y": 1, // Target window origin row inside the grid.
-        "w": 6, // Target window width in grid cells.
-        "h": 4 // Target window height in grid cells.
-      },
-      "triggerRegion": {
-        "kind": "screen", // Allowed values are screen and menuBar.
-        "gridSelection": {
-          "x": 5, // Trigger origin column for screen mode.
-          "y": 2, // Trigger origin row for screen mode.
-          "w": 2, // Trigger width in cells for screen mode.
-          "h": 2 // Trigger height in cells for screen mode.
+      "name": "built-in",
+      "sets": [
+        {
+          "monitor": "all", // Allowed values: "all", "main", "<display-id>", ["<display-id>", ...]
+          "layouts": [
+            {
+              "name": "Center", // Names must be unique within one group. CLI uses these names.
+              "gridColumns": 12,
+              "gridRows": 6,
+              "windowSelection": {
+                "x": 3,
+                "y": 1,
+                "w": 6,
+                "h": 4
+              },
+              "triggerRegion": {
+                "kind": "screen", // Allowed values are screen and menuBar.
+                "gridSelection": {
+                  "x": 5,
+                  "y": 2,
+                  "w": 2,
+                  "h": 2
+                }
+                // If kind is menuBar, use:
+                // "menuBarSelection": { "x": 1, "w": 4 }
+              },
+              "includeInCycle": true
+            },
+            {
+              "name": "Centered no trigger",
+              "gridColumns": 12,
+              "gridRows": 6,
+              "windowSelection": {
+                "x": 3,
+                "y": 1,
+                "w": 6,
+                "h": 4
+              },
+              "includeInCycle": false // Missing triggerRegion means menu/shortcut/CLI only.
+            }
+          ]
         }
-        // If kind is menuBar, use:
-        // "menuBarSelection": { "x": 1, "w": 4 }
-        // x is the start cell in the menu bar strip, w is the width in cells.
-      },
-      "includeInCycle": true // Whether this layout participates in next/previous layout cycling.
+      ]
     }
-    // The default file contains more layouts in the same shape.
-  ]
+  ],
+  "monitors": {
+    "Built-in Retina Display": "69732928" // Filled or refreshed by GridMove on successful reload/startup.
+  }
 }
 ```
 
 Notes:
 
-- `layouts` order matters. `layout-1`, `layout-2`, and other generated layout identifiers come from this order.
-- `hotkeys.bindings[*].action.layout` is also based on this order and starts from `1`, not `0`.
+- `layoutGroups[*].sets[*].layouts` order matters.
+- `hotkeys.bindings[*].action.layout` is 1-based within the current display's resolved set, not across the whole group.
+- GridMove resolves one active set per display in this order: explicit display ID or ID array, then `main`, then `all`.
+- `cycleNext` and `cyclePrevious` only cycle inside the target window's current display set. They never move the window to another display.
+- Menu and CLI direct layout application may move the target window to another display if the matched layout belongs to another set.
 - Internal layout IDs and binding IDs are not stored in `config.json`. GridMove regenerates them when loading.
 - If the file is invalid JSON, contains comments, or references a missing layout index, GridMove falls back to built-in defaults for the current launch and keeps the broken file unchanged.
 

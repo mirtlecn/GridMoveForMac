@@ -46,8 +46,8 @@ final class LayoutActionExecutor {
             resolvedAction = .cyclePrevious
         case let .applyLayout(identifier):
             do {
-                let layout = try LayoutIdentifierResolver.resolveLayout(identifier: identifier, in: configuration.layouts)
-                resolvedAction = .applyLayout(layoutID: layout.id)
+                let layout = try LayoutIdentifierResolver.resolveLayout(identifier: identifier, in: configuration)
+                resolvedAction = .applyLayoutByName(name: layout.layout.name)
             } catch let error as CommandLineLayoutResolutionError {
                 return .failure(error.message)
             } catch {
@@ -88,33 +88,63 @@ final class LayoutActionExecutor {
         }
 
         switch hotkeyAction {
-        case let .applyLayout(layoutID):
+        case let .applyLayoutByName(name):
+            let currentScreen = screen(for: window)
+            guard let entry = try? LayoutGroupResolver.resolveNamedLayout(identifier: name, configuration: configuration) else {
+                return .failure("No layout named \(name).")
+            }
+            guard let targetScreen = LayoutGroupResolver.targetScreen(for: entry, currentScreen: currentScreen) else {
+                return .failure("No target display found for layout \(name).")
+            }
             windowController.applyLayout(
-                layoutID: layoutID,
+                layoutID: entry.layout.id,
                 to: window,
-                preferredScreen: nil,
+                preferredScreen: targetScreen,
+                configuration: configuration
+            )
+            return .success
+        case let .applyLayoutByIndex(layoutIndex):
+            let currentScreen = screen(for: window)
+            guard let currentScreen else {
+                return .failure("No display found for the target window.")
+            }
+            guard let entry = LayoutGroupResolver.entry(at: layoutIndex, on: currentScreen, configuration: configuration) else {
+                return .failure("No layout found at index \(layoutIndex) for the current display.")
+            }
+            windowController.applyLayout(
+                layoutID: entry.layout.id,
+                to: window,
+                preferredScreen: currentScreen,
                 configuration: configuration
             )
             return .success
         case .cycleNext:
-            guard let layoutID = layoutEngine.nextLayoutID(for: window.identity, layouts: configuration.layouts) else {
+            guard let currentScreen = screen(for: window) else {
+                return .failure("No display found for the target window.")
+            }
+            let layouts = LayoutGroupResolver.resolvedLayouts(for: currentScreen, configuration: configuration)
+            guard let layoutID = layoutEngine.nextLayoutID(for: window.identity, layouts: layouts) else {
                 return .failure("No layout available for cycling.")
             }
             windowController.applyLayout(
                 layoutID: layoutID,
                 to: window,
-                preferredScreen: nil,
+                preferredScreen: currentScreen,
                 configuration: configuration
             )
             return .success
         case .cyclePrevious:
-            guard let layoutID = layoutEngine.previousLayoutID(for: window.identity, layouts: configuration.layouts) else {
+            guard let currentScreen = screen(for: window) else {
+                return .failure("No display found for the target window.")
+            }
+            let layouts = LayoutGroupResolver.resolvedLayouts(for: currentScreen, configuration: configuration)
+            guard let layoutID = layoutEngine.previousLayoutID(for: window.identity, layouts: layouts) else {
                 return .failure("No layout available for cycling.")
             }
             windowController.applyLayout(
                 layoutID: layoutID,
                 to: window,
-                preferredScreen: nil,
+                preferredScreen: currentScreen,
                 configuration: configuration
             )
             return .success
@@ -127,5 +157,9 @@ final class LayoutActionExecutor {
         }
 
         return windowController.windowForLayoutAction(configuration: configuration)
+    }
+
+    private func screen(for window: ManagedWindow) -> NSScreen? {
+        windowController.screenContaining(point: CGPoint(x: window.frame.midX, y: window.frame.midY))
     }
 }

@@ -42,30 +42,34 @@ final class LayoutEngine {
         ).integral
     }
 
-    func resolveTriggerSlots(on screen: NSScreen, configuration: AppConfiguration) -> [ResolvedTriggerSlot] {
+    func resolveTriggerSlots(on screen: NSScreen, layouts: [LayoutPreset], triggerGap: Double) -> [ResolvedTriggerSlot] {
         resolveTriggerSlots(
             screenFrame: screen.frame,
             usableFrame: screen.visibleFrame,
-            configuration: configuration
+            layouts: layouts,
+            triggerGap: triggerGap
         )
     }
 
-    func resolveTriggerSlots(in usableFrame: CGRect, configuration: AppConfiguration) -> [ResolvedTriggerSlot] {
-        resolveTriggerSlots(screenFrame: usableFrame, usableFrame: usableFrame, configuration: configuration)
+    func resolveTriggerSlots(in usableFrame: CGRect, layouts: [LayoutPreset], triggerGap: Double) -> [ResolvedTriggerSlot] {
+        resolveTriggerSlots(screenFrame: usableFrame, usableFrame: usableFrame, layouts: layouts, triggerGap: triggerGap)
     }
 
     func resolveTriggerSlots(
         screenFrame: CGRect,
         usableFrame: CGRect,
-        configuration: AppConfiguration
+        layouts: [LayoutPreset],
+        triggerGap: Double
     ) -> [ResolvedTriggerSlot] {
-        configuration.layouts.map { preset in
-            let triggerFrame = triggerFrame(
+        layouts.compactMap { preset in
+            guard let triggerFrame = triggerFrame(
                 for: preset,
                 screenFrame: screenFrame,
                 usableFrame: usableFrame,
-                gap: configuration.appearance.triggerGap
-            )
+                gap: triggerGap
+            ) else {
+                return nil
+            }
 
             return ResolvedTriggerSlot(
                 layoutID: preset.id,
@@ -136,8 +140,8 @@ final class LayoutEngine {
         slots.first { $0.triggerFrame.contains(point) }
     }
 
-    func layoutPreset(for layoutID: String, in configuration: AppConfiguration) -> LayoutPreset? {
-        configuration.layouts.first(where: { $0.id == layoutID })
+    func layoutPreset(for layoutID: String, in layouts: [LayoutPreset]) -> LayoutPreset? {
+        layouts.first(where: { $0.id == layoutID })
     }
 
     private func cycleEligibleLayouts(from layouts: [LayoutPreset]) -> [LayoutPreset] {
@@ -156,8 +160,12 @@ final class LayoutEngine {
         screenFrame: CGRect,
         usableFrame: CGRect,
         gap: Double
-    ) -> CGRect {
-        switch preset.triggerRegion {
+    ) -> CGRect? {
+        guard let triggerRegion = preset.triggerRegion else {
+            return nil
+        }
+
+        switch triggerRegion {
         case let .screen(selection):
             return frame(
                 for: selection,

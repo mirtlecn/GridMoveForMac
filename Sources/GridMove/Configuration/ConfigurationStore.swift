@@ -51,7 +51,7 @@ final class ConfigurationStore {
 
     func save(_ configuration: AppConfiguration) throws {
         try ensureDirectoryExists()
-        let configurationFile = ConfigurationSchemaConverter.makeConfigurationFile(from: configuration)
+        let configurationFile = try ConfigurationSchemaConverter.makeConfigurationFile(from: configuration)
         let data = try makeEncoder().encode(configurationFile)
         try data.write(to: fileURL, options: .atomic)
     }
@@ -76,12 +76,13 @@ private struct ConfigurationFile: Codable {
     let appearance: AppearanceConfiguration
     let dragTriggers: DragTriggerSettings
     let hotkeys: HotkeyConfiguration
-    let layouts: [LayoutConfiguration]
+    let layoutGroups: [LayoutGroupConfiguration]
+    let monitors: [String: String]
 }
 
 private enum ConfigurationSchemaConverter {
-    static func makeConfigurationFile(from configuration: AppConfiguration) -> ConfigurationFile {
-        let normalizedConfiguration = normalizeConfiguration(configuration)
+    static func makeConfigurationFile(from configuration: AppConfiguration) throws -> ConfigurationFile {
+        let normalizedConfiguration = try normalizeConfiguration(configuration)
         return ConfigurationFile(
             general: normalizedConfiguration.general,
             appearance: AppearanceConfiguration(settings: normalizedConfiguration.appearance),
@@ -91,91 +92,124 @@ private enum ConfigurationSchemaConverter {
                     HotkeyBindingConfiguration(
                         isEnabled: binding.isEnabled,
                         shortcut: binding.shortcut,
-                        action: HotkeyActionConfiguration(
-                            action: binding.action,
-                            layouts: normalizedConfiguration.layouts
-                        )
+                        action: HotkeyActionConfiguration(action: binding.action)
                     )
                 }
             ),
-            layouts: normalizedConfiguration.layouts.map(LayoutConfiguration.init(layout:))
+            layoutGroups: normalizedConfiguration.layoutGroups.map(LayoutGroupConfiguration.init(group:)),
+            monitors: normalizedConfiguration.monitors
         )
     }
 
     static func makeAppConfiguration(from configurationFile: ConfigurationFile) throws -> AppConfiguration {
-        let generatedLayouts = configurationFile.layouts.enumerated().map { index, layout in
-            LayoutPreset(
-                id: "layout-\(index + 1)",
-                name: layout.name,
-                gridColumns: layout.gridColumns,
-                gridRows: layout.gridRows,
-                windowSelection: layout.windowSelection,
-                triggerRegion: layout.triggerRegion,
-                includeInCycle: layout.includeInCycle
-            )
-        }
-
+        let generatedLayoutGroups = normalizeLayoutGroups(configurationFile.layoutGroups)
         let generatedBindings = try configurationFile.hotkeys.bindings.enumerated().map { index, binding in
             ShortcutBinding(
                 id: "binding-\(index + 1)",
                 isEnabled: binding.isEnabled,
                 shortcut: binding.shortcut,
-                action: try binding.action.makeAction(layouts: generatedLayouts)
+                action: try binding.action.makeAction()
             )
         }
 
-        return AppConfiguration(
+        let configuration = AppConfiguration(
             general: configurationFile.general,
             appearance: try configurationFile.appearance.makeSettings(),
             dragTriggers: configurationFile.dragTriggers,
             hotkeys: HotkeySettings(bindings: generatedBindings),
-            layouts: generatedLayouts
+            layoutGroups: generatedLayoutGroups,
+            monitors: configurationFile.monitors
         )
+        try validateConfiguration(configuration)
+        return configuration
     }
 
-    private static func normalizeConfiguration(_ configuration: AppConfiguration) -> AppConfiguration {
-        let normalizedLayouts = configuration.layouts.enumerated().map { index, layout in
-            LayoutPreset(
-                id: "layout-\(index + 1)",
-                name: layout.name,
-                gridColumns: layout.gridColumns,
-                gridRows: layout.gridRows,
-                windowSelection: layout.windowSelection,
-                triggerRegion: layout.triggerRegion,
-                includeInCycle: layout.includeInCycle
-            )
-        }
-
-        let layoutIDMap = Dictionary(
-            uniqueKeysWithValues: zip(configuration.layouts.map(\.id), normalizedLayouts.map(\.id))
-        )
-
+    private static func normalizeConfiguration(_ configuration: AppConfiguration) throws -> AppConfiguration {
+        let normalizedLayoutGroups = normalizeLayoutGroups(configuration.layoutGroups.map(LayoutGroupConfiguration.init(group:)))
         let normalizedBindings = configuration.hotkeys.bindings.enumerated().map { index, binding in
             ShortcutBinding(
                 id: "binding-\(index + 1)",
                 isEnabled: binding.isEnabled,
                 shortcut: binding.shortcut,
-                action: normalizeAction(binding.action, layoutIDMap: layoutIDMap)
+                action: binding.action
             )
         }
 
-        return AppConfiguration(
+        let normalizedConfiguration = AppConfiguration(
             general: configuration.general,
             appearance: configuration.appearance,
             dragTriggers: configuration.dragTriggers,
             hotkeys: HotkeySettings(bindings: normalizedBindings),
-            layouts: normalizedLayouts
+            layoutGroups: normalizedLayoutGroups,
+            monitors: configuration.monitors
         )
+        try validateConfiguration(normalizedConfiguration)
+        return normalizedConfiguration
     }
 
-    private static func normalizeAction(_ action: HotkeyAction, layoutIDMap: [String: String]) -> HotkeyAction {
-        switch action {
-        case let .applyLayout(layoutID):
-            return .applyLayout(layoutID: layoutIDMap[layoutID] ?? layoutID)
-        case .cycleNext:
-            return .cycleNext
-        case .cyclePrevious:
-            return .cyclePrevious
+    private static func normalizeLayoutGroups(_ groups: [LayoutGroupConfiguration]) -> [LayoutGroup] {
+        var nextLayoutIndex = 1
+        return groups.map { groupConfiguration in
+            let sets = groupConfiguration.sets.map { setConfiguration in
+                let layouts = setConfiguration.layouts.map { layoutConfiguration in
+                    defer { nextLayoutIndex += 1 }
+                    return LayoutPreset(
+                        id: "layout-\(nextLayoutIndex)",
+                        name: layoutConfiguration.name,
+                        gridColumns: layoutConfiguration.gridColumns,
+                        gridRows: layoutConfiguration.gridRows,
+                        windowSelection: layoutConfiguration.windowSelection,
+                        triggerRegion: layoutConfiguration.triggerRegion,
+                        includeInCycle: layoutConfiguration.includeInCycle
+                    )
+                }
+                return LayoutSet(monitor: setConfiguration.monitor, layouts: layouts)
+            }
+            return LayoutGroup(name: groupConfiguration.name, sets: sets)
+        }
+    }
+
+    private static func validateConfiguration(_ configuration: AppConfiguration) throws {
+        guard configuration.layoutGroups.contains(where: { $0.name == configuration.general.activeLayoutGroup }) else {
+            throw ConfigurationFileError.missingActiveLayoutGroup(configuration.general.activeLayoutGroup)
+        }
+
+        let groupNames = configuration.layoutGroups.map(\.name)
+        guard Set(groupNames).count == groupNames.count else {
+            throw ConfigurationFileError.duplicateLayoutGroupName
+        }
+
+        for group in configuration.layoutGroups {
+            let layoutNames = configuration.flattenedLayouts(in: group).map { $0.name.lowercased() }
+            guard Set(layoutNames).count == layoutNames.count else {
+                throw ConfigurationFileError.duplicateLayoutName(group.name)
+            }
+
+            var explicitDisplayIDs: Set<String> = []
+            var hasMainSet = false
+            var hasAllSet = false
+
+            for set in group.sets {
+                switch set.monitor {
+                case .all:
+                    guard !hasAllSet else {
+                        throw ConfigurationFileError.overlappingMonitorBindings(group.name)
+                    }
+                    hasAllSet = true
+                case .main:
+                    guard !hasMainSet else {
+                        throw ConfigurationFileError.overlappingMonitorBindings(group.name)
+                    }
+                    hasMainSet = true
+                case let .displays(displayIDs):
+                    for displayID in displayIDs {
+                        guard !explicitDisplayIDs.contains(displayID) else {
+                            throw ConfigurationFileError.overlappingMonitorBindings(group.name)
+                        }
+                        explicitDisplayIDs.insert(displayID)
+                    }
+                }
+            }
         }
     }
 }
@@ -233,7 +267,7 @@ private struct HotkeyBindingConfiguration: Codable {
 
 private struct HotkeyActionConfiguration: Codable {
     enum Kind: String, Codable {
-        case applyLayout
+        case applyLayoutByIndex
         case cycleNext
         case cyclePrevious
     }
@@ -241,32 +275,54 @@ private struct HotkeyActionConfiguration: Codable {
     let kind: Kind
     let layout: Int?
 
-    init(action: HotkeyAction, layouts: [LayoutPreset]) {
+    init(action: HotkeyAction) {
         switch action {
-        case let .applyLayout(layoutID):
-            kind = .applyLayout
-            layout = layouts.firstIndex(where: { $0.id == layoutID }).map { $0 + 1 }
+        case let .applyLayoutByIndex(layoutIndex):
+            kind = .applyLayoutByIndex
+            layout = layoutIndex
         case .cycleNext:
             kind = .cycleNext
             layout = nil
         case .cyclePrevious:
             kind = .cyclePrevious
             layout = nil
+        case .applyLayoutByName:
+            preconditionFailure("Menu-only actions must not be written into hotkey configuration.")
         }
     }
 
-    func makeAction(layouts: [LayoutPreset]) throws -> HotkeyAction {
+    func makeAction() throws -> HotkeyAction {
         switch kind {
         case .cycleNext:
             return .cycleNext
         case .cyclePrevious:
             return .cyclePrevious
-        case .applyLayout:
-            guard let layout, layout >= 1, layout <= layouts.count else {
+        case .applyLayoutByIndex:
+            guard let layout, layout >= 1 else {
                 throw ConfigurationFileError.invalidLayoutReference(layout ?? -1)
             }
-            return .applyLayout(layoutID: layouts[layout - 1].id)
+            return .applyLayoutByIndex(layout: layout)
         }
+    }
+}
+
+private struct LayoutGroupConfiguration: Codable {
+    let name: String
+    let sets: [LayoutSetConfiguration]
+
+    init(group: LayoutGroup) {
+        name = group.name
+        sets = group.sets.map(LayoutSetConfiguration.init(set:))
+    }
+}
+
+private struct LayoutSetConfiguration: Codable {
+    let monitor: LayoutSetMonitor
+    let layouts: [LayoutConfiguration]
+
+    init(set: LayoutSet) {
+        monitor = set.monitor
+        layouts = set.layouts.map(LayoutConfiguration.init(layout:))
     }
 }
 
@@ -275,7 +331,7 @@ private struct LayoutConfiguration: Codable {
     let gridColumns: Int
     let gridRows: Int
     let windowSelection: GridSelection
-    let triggerRegion: TriggerRegion
+    let triggerRegion: TriggerRegion?
     let includeInCycle: Bool
 
     init(layout: LayoutPreset) {
@@ -290,4 +346,8 @@ private struct LayoutConfiguration: Codable {
 
 private enum ConfigurationFileError: Error {
     case invalidLayoutReference(Int)
+    case missingActiveLayoutGroup(String)
+    case duplicateLayoutGroupName
+    case duplicateLayoutName(String)
+    case overlappingMonitorBindings(String)
 }

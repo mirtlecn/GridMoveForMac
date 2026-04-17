@@ -21,13 +21,17 @@ enum CommandLineLayoutResolutionError: Error, Equatable {
 }
 
 enum LayoutIdentifierResolver {
+    static func resolveLayout(identifier: String, in configuration: AppConfiguration) throws -> ResolvedLayoutEntry {
+        try LayoutGroupResolver.resolveNamedLayout(identifier: identifier, configuration: configuration)
+    }
+
     static func resolveLayout(identifier: String, in layouts: [LayoutPreset]) throws -> LayoutPreset {
         if let layoutByID = layouts.first(where: { $0.id.caseInsensitiveCompare(identifier) == .orderedSame }) {
             return layoutByID
         }
 
         let matchedLayouts = layouts.filter { $0.name.caseInsensitiveCompare(identifier) == .orderedSame }
-        if let matchedLayout = matchedLayouts.onlyElement {
+        if matchedLayouts.count == 1, let matchedLayout = matchedLayouts.first {
             return matchedLayout
         }
         if !matchedLayouts.isEmpty {
@@ -35,11 +39,5 @@ enum LayoutIdentifierResolver {
         }
 
         throw CommandLineLayoutResolutionError.unknownLayout(identifier)
-    }
-}
-
-private extension Collection {
-    var onlyElement: Element? {
-        count == 1 ? first : nil
     }
 }

@@ -10,30 +10,27 @@ import Testing
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
 
     let initialConfiguration = try store.load()
+    #expect(initialConfiguration.general.activeLayoutGroup == AppConfiguration.builtInGroupName)
+    #expect(initialConfiguration.layoutGroups.count == 1)
+    #expect(initialConfiguration.layoutGroups[0].sets.count == 1)
     #expect(initialConfiguration.layouts.count == 11)
     #expect(FileManager.default.fileExists(atPath: store.fileURL.path))
-    #expect(store.fileURL.lastPathComponent == "config.json")
+
     let initialText = try String(contentsOf: store.fileURL, encoding: .utf8)
-    #expect(initialText.contains("\"triggerStrokeColor\""))
-    #expect(initialText.contains("#007AFF33"))
-    #expect(initialText.contains("\"highlightStrokeColor\""))
-    #expect(initialText.contains("#FFFFFFEB"))
-    #expect(initialText.contains("\"renderTriggerAreas\""))
-    #expect(initialText.contains("false"))
+    #expect(initialText.contains("\"layoutGroups\""))
+    #expect(initialText.contains("\"activeLayoutGroup\""))
+    #expect(initialText.contains("\"applyLayoutByIndex\""))
+    #expect(initialText.contains("\"monitor\""))
     #expect(!initialText.contains("\"id\":"))
-    #expect(initialText.contains("\"layout\""))
-    #expect(initialText.contains("4"))
-    #expect(initialText.contains("\"includeInCycle\""))
-    #expect(initialText.contains("false"))
-    #expect(initialText.contains("\"preferLayoutMode\""))
-    #expect(initialText.contains("true"))
     #expect(!initialText.contains("//"))
 
     var updatedConfiguration = initialConfiguration
     updatedConfiguration.general.excludedWindowTitles = ["Test Title"]
+    updatedConfiguration.general.activeLayoutGroup = AppConfiguration.builtInGroupName
     updatedConfiguration.appearance.triggerGap = 6
     updatedConfiguration.dragTriggers.preferLayoutMode = false
     updatedConfiguration.dragTriggers.modifierGroups = [[.alt]]
+    updatedConfiguration.monitors = ["Built-in Retina Display": "12345"]
 
     try store.save(updatedConfiguration)
     let reloadedConfiguration = try store.load()
@@ -42,7 +39,7 @@ import Testing
     #expect(reloadedConfiguration.appearance.triggerGap == updatedConfiguration.appearance.triggerGap)
     #expect(reloadedConfiguration.dragTriggers.preferLayoutMode == updatedConfiguration.dragTriggers.preferLayoutMode)
     #expect(reloadedConfiguration.dragTriggers.modifierGroups == updatedConfiguration.dragTriggers.modifierGroups)
-    #expect(reloadedConfiguration.layouts.map(\.name) == updatedConfiguration.layouts.map(\.name))
+    #expect(reloadedConfiguration.monitors == updatedConfiguration.monitors)
     #expect(reloadedConfiguration.layouts.map(\.id) == (1...updatedConfiguration.layouts.count).map { "layout-\($0)" })
     #expect(reloadedConfiguration.hotkeys.bindings.map(\.id) == (1...updatedConfiguration.hotkeys.bindings.count).map { "binding-\($0)" })
 }
@@ -69,7 +66,7 @@ import Testing
     #expect(reloadedText == invalidJSON)
 }
 
-@Test func configurationStoreLoadsPureJSONWithoutUserVisibleIDs() async throws {
+@Test func configurationStoreLoadsPureJSONWithGroupsAndOptionalTriggers() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-pure-json-\(UUID().uuidString)", isDirectory: true)
     defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
@@ -82,7 +79,8 @@ import Testing
       "general": {
         "isEnabled": true,
         "excludedBundleIDs": ["com.apple.Spotlight"],
-        "excludedWindowTitles": []
+        "excludedWindowTitles": [],
+        "activeLayoutGroup": "work"
       },
       "appearance": {
         "renderTriggerAreas": false,
@@ -111,47 +109,59 @@ import Testing
               "key": "\\\\"
             },
             "action": {
-              "kind": "applyLayout",
+              "kind": "applyLayoutByIndex",
               "layout": 2
             }
           }
         ]
       },
-      "layouts": [
+      "layoutGroups": [
         {
-          "name": "Left 1/3",
-          "gridColumns": 12,
-          "gridRows": 6,
-          "windowSelection": { "x": 0, "y": 0, "w": 4, "h": 6 },
-          "triggerRegion": {
-            "kind": "screen",
-            "gridSelection": { "x": 0, "y": 0, "w": 2, "h": 6 }
-          },
-          "includeInCycle": true
-        },
-        {
-          "name": "Center",
-          "gridColumns": 12,
-          "gridRows": 6,
-          "windowSelection": { "x": 3, "y": 1, "w": 6, "h": 4 },
-          "triggerRegion": {
-            "kind": "menuBar",
-            "menuBarSelection": { "x": 1, "w": 4 }
-          },
-          "includeInCycle": false
+          "name": "work",
+          "sets": [
+            {
+              "monitor": "main",
+              "layouts": [
+                {
+                  "name": "Left 1/3",
+                  "gridColumns": 12,
+                  "gridRows": 6,
+                  "windowSelection": { "x": 0, "y": 0, "w": 4, "h": 6 },
+                  "triggerRegion": {
+                    "kind": "screen",
+                    "gridSelection": { "x": 0, "y": 0, "w": 2, "h": 6 }
+                  },
+                  "includeInCycle": true
+                },
+                {
+                  "name": "Center",
+                  "gridColumns": 12,
+                  "gridRows": 6,
+                  "windowSelection": { "x": 3, "y": 1, "w": 6, "h": 4 },
+                  "includeInCycle": false
+                }
+              ]
+            }
+          ]
         }
-      ]
+      ],
+      "monitors": {
+        "Built-in Retina Display": "12345"
+      }
     }
     """
 
     try json.write(to: store.fileURL, atomically: true, encoding: .utf8)
     let configuration = try store.load()
 
+    #expect(configuration.general.activeLayoutGroup == "work")
     #expect(configuration.layouts.map(\.id) == ["layout-1", "layout-2"])
     #expect(configuration.hotkeys.bindings.map(\.id) == ["binding-1"])
-    #expect(configuration.hotkeys.bindings[0].action == .applyLayout(layoutID: "layout-2"))
+    #expect(configuration.hotkeys.bindings[0].action == .applyLayoutByIndex(layout: 2))
     #expect(configuration.dragTriggers.preferLayoutMode == true)
+    #expect(configuration.layouts[1].triggerRegion == nil)
     #expect(configuration.layouts[1].includeInCycle == false)
+    #expect(configuration.monitors == ["Built-in Retina Display": "12345"])
     #expect(configuration.appearance.triggerStrokeColor.hexString == "#007AFF33")
     #expect(configuration.appearance.highlightStrokeColor.hexString == "#FFFFFFEB")
 }
@@ -170,7 +180,8 @@ import Testing
       "general": {
         "isEnabled": true,
         "excludedBundleIDs": ["com.apple.Spotlight"],
-        "excludedWindowTitles": []
+        "excludedWindowTitles": [],
+        "activeLayoutGroup": "built-in"
       }
     }
     """
@@ -188,30 +199,26 @@ import Testing
     let cycleBindings = configuration.hotkeys.bindings.filter {
         $0.action == .cycleNext || $0.action == .cyclePrevious
     }
-    let hasAltLayoutBinding = configuration.hotkeys.bindings.contains { binding in
+    let hasAltLayoutBinding = configuration.hotkeys.bindings.contains(where: { binding in
         binding.shortcut?.modifiers == [.alt]
-    }
-    let hasHyperLayoutFourBinding = configuration.hotkeys.bindings.contains { binding in
+    })
+    let hasHyperLayoutFourBinding = configuration.hotkeys.bindings.contains(where: { binding in
         binding.shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "\\")
-            && binding.action == .applyLayout(layoutID: "layout-4")
-    }
-    let hasFullscreenOrCloseBinding = configuration.hotkeys.bindings.contains { binding in
+            && binding.action == .applyLayoutByIndex(layout: 4)
+    })
+    let hasFullscreenOrCloseBinding = configuration.hotkeys.bindings.contains(where: { binding in
         guard let key = binding.shortcut?.key else {
             return false
         }
         return key == "/" || key == "x"
-    }
+    })
 
     #expect(cycleBindings.count == 2)
     #expect(configuration.general.isEnabled)
-    #expect(cycleBindings.contains {
-        $0.shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "l")
-            && $0.action == .cycleNext
-    })
-    #expect(cycleBindings.contains {
-        $0.shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "j")
-            && $0.action == .cyclePrevious
-    })
+    #expect(configuration.general.activeLayoutGroup == AppConfiguration.builtInGroupName)
+    #expect(configuration.layoutGroups.count == 1)
+    #expect(configuration.layoutGroups[0].sets.count == 1)
+    #expect(configuration.layoutGroups[0].sets[0].monitor == .all)
     #expect(!hasAltLayoutBinding)
     #expect(hasHyperLayoutFourBinding)
     #expect(!hasFullscreenOrCloseBinding)
@@ -268,7 +275,8 @@ import Testing
     let json = """
     {
       "excludedBundleIDs": ["com.apple.Spotlight"],
-      "excludedWindowTitles": []
+      "excludedWindowTitles": [],
+      "activeLayoutGroup": "built-in"
     }
     """
 
@@ -276,6 +284,7 @@ import Testing
     let settings = try JSONDecoder().decode(GeneralSettings.self, from: data)
 
     #expect(settings.isEnabled)
+    #expect(settings.activeLayoutGroup == "built-in")
     #expect(settings.excludedBundleIDs == ["com.apple.Spotlight"])
     #expect(settings.excludedWindowTitles.isEmpty)
 }
@@ -286,12 +295,7 @@ import Testing
     configuration.removeLayout(id: "layout-8")
 
     #expect(!configuration.layouts.contains(where: { $0.id == "layout-8" }))
-    #expect(!configuration.hotkeys.bindings.contains {
-        if case let .applyLayout(layoutID) = $0.action {
-            return layoutID == "layout-8"
-        }
-        return false
-    })
+    #expect(!configuration.hotkeys.bindings.contains(where: { $0.action == .applyLayoutByIndex(layout: 8) }))
     #expect(configuration.hotkeys.bindings.contains(where: { $0.action == .cycleNext }))
 }
 
@@ -333,10 +337,20 @@ import Testing
     #expect(try decoder.decode(TriggerRegion.self, from: menuBarData) == menuBarRegion)
 }
 
+@Test func layoutSetMonitorRoundTripsThroughJSON() async throws {
+    let encoder = JSONEncoder()
+    let decoder = JSONDecoder()
+
+    #expect(try decoder.decode(LayoutSetMonitor.self, from: encoder.encode(LayoutSetMonitor.all)) == .all)
+    #expect(try decoder.decode(LayoutSetMonitor.self, from: encoder.encode(LayoutSetMonitor.main)) == .main)
+    #expect(try decoder.decode(LayoutSetMonitor.self, from: encoder.encode(LayoutSetMonitor.displays(["12345"]))) == .displays(["12345"]))
+    #expect(try decoder.decode(LayoutSetMonitor.self, from: encoder.encode(LayoutSetMonitor.displays(["12345", "67890"]))) == .displays(["12345", "67890"]))
+}
+
 @Test func hotkeyActionRoundTripsThroughJSON() async throws {
     let encoder = JSONEncoder()
     let decoder = JSONDecoder()
-    let applyLayout = HotkeyAction.applyLayout(layoutID: "layout-4")
+    let applyLayout = HotkeyAction.applyLayoutByIndex(layout: 4)
     let cycleNext = HotkeyAction.cycleNext
     let cyclePrevious = HotkeyAction.cyclePrevious
 

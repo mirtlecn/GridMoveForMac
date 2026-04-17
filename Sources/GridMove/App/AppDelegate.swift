@@ -88,6 +88,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menuController = MenuBarController(
             dragGridEnabled: configuration.general.isEnabled,
             toggleSettings: makeToggleSettingsState(configuration: configuration),
+            layoutGroupState: makeLayoutGroupState(configuration: configuration),
             actionItems: makeMenuActionItems(configuration: configuration),
             onToggleDragGrid: { [weak self] isEnabled in
                 self?.updateGlobalEnabledState(isEnabled) ?? false
@@ -100,6 +101,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             },
             onTogglePreferLayoutMode: { [weak self] isEnabled in
                 self?.updatePreferLayoutMode(isEnabled) ?? false
+            },
+            onSelectLayoutGroup: { [weak self] groupName in
+                self?.updateActiveLayoutGroup(groupName) ?? false
             },
             onPerformAction: { [weak self] action in
                 self?.performMenuAction(action)
@@ -178,7 +182,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func reloadConfigurationFromDisk(notifyOnFallback: Bool = false) {
         do {
             let result = try configurationStore.loadWithStatus()
-            applyConfiguration(result.configuration)
+            var configuration = result.configuration
+            synchronizeMonitorMetadata(configuration: &configuration)
+            applyConfiguration(configuration)
             if result.didFallBackToDefault && notifyOnFallback {
                 notifyUser(
                     UICopy.configReloadFailedTitle,
@@ -241,6 +247,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    @discardableResult
+    func updateActiveLayoutGroup(_ groupName: String) -> Bool {
+        guard configuration.general.activeLayoutGroup != groupName else {
+            return true
+        }
+
+        guard configuration.layoutGroups.contains(where: { $0.name == groupName }) else {
+            return false
+        }
+
+        return updateConfiguration { configuration in
+            configuration.general.activeLayoutGroup = groupName
+        }
+    }
+
     private func synchronizeRuntimeControllers() {
         let shouldListenForGlobalInput = accessibilityMonitor.hasAccess && configuration.general.isEnabled
         if shouldListenForGlobalInput {
@@ -270,16 +291,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             ),
         ]
 
-        let layoutItems = configuration.layouts.enumerated().map { index, layout in
+        let layoutItems = LayoutGroupResolver.flattenedActiveEntries(in: configuration).enumerated().map { index, entry in
             MenuBarController.ActionItem(
                 title: UICopy.applyLayout(
                     UICopy.layoutMenuName(
-                        name: layout.name,
+                        name: entry.layout.name,
                         fallbackIdentifier: "layout_\(index + 1)"
                     )
                 ),
-                action: .applyLayout(layoutID: layout.id),
-                shortcut: configuration.hotkeys.firstShortcut(for: .applyLayout(layoutID: layout.id))
+                action: .applyLayoutByName(name: entry.layout.name),
+                shortcut: nil
             )
         }
 
@@ -346,6 +367,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func updateConfiguration(_ mutate: (inout AppConfiguration) -> Void) -> Bool {
         var candidateConfiguration = configuration
         mutate(&candidateConfiguration)
+        synchronizeMonitorMetadata(configuration: &candidateConfiguration)
 
         do {
             try configurationStore.save(candidateConfiguration)
@@ -361,13 +383,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func applyConfiguration(_ configuration: AppConfiguration) {
-        if self.configuration.layouts != configuration.layouts {
+        if self.configuration.layoutGroups != configuration.layoutGroups
+            || self.configuration.general.activeLayoutGroup != configuration.general.activeLayoutGroup {
             layoutEngine.resetRecordedLayoutIDs()
         }
         self.configuration = configuration
         synchronizeRuntimeControllers()
         menuController?.updateActionItems(
             makeMenuActionItems(configuration: configuration),
+            isEnabled: configuration.general.isEnabled
+        )
+        menuController?.updateLayoutGroupState(
+            makeLayoutGroupState(configuration: configuration),
             isEnabled: configuration.general.isEnabled
         )
         menuController?.updateToggleStates(makeToggleSettingsState(configuration: configuration))
@@ -401,12 +428,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         layoutEngine.nextLayoutID(for: windowIdentity, layouts: configuration.layouts)
     }
 
+    private func makeLayoutGroupState(configuration: AppConfiguration) -> MenuBarController.LayoutGroupState {
+        MenuBarController.LayoutGroupState(
+            groupNames: configuration.layoutGroupNames(),
+            activeGroupName: configuration.general.activeLayoutGroup
+        )
+    }
+
     private func makeToggleSettingsState(configuration: AppConfiguration) -> MenuBarController.ToggleSettingsState {
         MenuBarController.ToggleSettingsState(
             middleMouseDragEnabled: configuration.dragTriggers.enableMiddleMouseDrag,
             modifierLeftMouseDragEnabled: configuration.dragTriggers.enableModifierLeftMouseDrag,
             preferLayoutMode: configuration.dragTriggers.preferLayoutMode
         )
+    }
+
+    private func synchronizeMonitorMetadata(configuration: inout AppConfiguration) {
+        let monitorMap = MonitorDiscovery.currentMonitorMap()
+        configuration.monitors = monitorMap
     }
 
     private func currentAccessibilityStatus() -> Bool {
