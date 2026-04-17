@@ -51,3 +51,21 @@ import Testing
 
     #expect(anchor.movedOrigin(for: CGPoint(x: 460, y: 355)) == CGPoint(x: 180, y: 135))
 }
+
+@MainActor
+@Test func moveOnlyFlashPrefersWindowScreenOverActiveScreen() async throws {
+    #expect(
+        DragGridController.preferredMoveOnlyFlashScreen(
+            windowScreen: "window-screen",
+            activeScreen: "active-screen",
+            pointerScreen: "pointer-screen"
+        ) == "window-screen"
+    )
+    #expect(
+        DragGridController.preferredMoveOnlyFlashScreen(
+            windowScreen: nil,
+            activeScreen: "active-screen",
+            pointerScreen: "pointer-screen"
+        ) == "active-screen"
+    )
+}

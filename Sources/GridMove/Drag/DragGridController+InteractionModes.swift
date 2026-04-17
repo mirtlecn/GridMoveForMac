@@ -2,6 +2,14 @@ import CoreGraphics
 import Foundation
 
 extension DragGridController {
+    static func preferredMoveOnlyFlashScreen<Screen>(
+        windowScreen: Screen?,
+        activeScreen: Screen?,
+        pointerScreen: Screen?
+    ) -> Screen? {
+        windowScreen ?? activeScreen ?? pointerScreen
+    }
+
     func enterDragMode(
         button: DragTriggerButton,
         targetWindow: ManagedWindow,
@@ -23,9 +31,14 @@ extension DragGridController {
         let initialMode = Self.preferredInteractionMode(preferLayoutMode: configuration.dragTriggers.preferLayoutMode)
         switch initialMode {
         case .layoutSelection:
-            configureLayoutSelectionMode(at: point, configuration: configuration, shouldApplyImmediately: false)
+            configureLayoutSelectionMode(
+                at: point,
+                configuration: configuration,
+                shouldApplyImmediately: false,
+                shouldFlashHighlight: false
+            )
         case .moveOnly:
-            configureMoveOnlyMode(at: point)
+            configureMoveOnlyMode(at: point, configuration: configuration, shouldFlashHighlight: true)
         }
     }
 
@@ -97,16 +110,22 @@ extension DragGridController {
 
         switch state.interactionMode {
         case .layoutSelection:
-            configureMoveOnlyMode(at: point)
+            configureMoveOnlyMode(at: point, configuration: configuration, shouldFlashHighlight: true)
         case .moveOnly:
-            configureLayoutSelectionMode(at: point, configuration: configuration, shouldApplyImmediately: false)
+            configureLayoutSelectionMode(
+                at: point,
+                configuration: configuration,
+                shouldApplyImmediately: false,
+                shouldFlashHighlight: false
+            )
         }
     }
 
     func configureLayoutSelectionMode(
         at point: CGPoint,
         configuration: AppConfiguration,
-        shouldApplyImmediately: Bool
+        shouldApplyImmediately: Bool,
+        shouldFlashHighlight: Bool
     ) {
         state.interactionMode = .layoutSelection
         state.moveAnchor = nil
@@ -128,23 +147,56 @@ extension DragGridController {
         }
 
         state.hasDraggedPastThreshold = false
+
+        if shouldFlashHighlight,
+           let screen = state.activeScreen,
+           let frame = currentWindowFrame()
+        {
+            overlayController.flashHighlight(
+                frame: frame,
+                screen: screen,
+                slots: state.resolvedSlots,
+                configuration: configuration,
+                keepsOverlayVisibleAfterFlash: true
+            )
+            return
+        }
+
         refreshOverlay(configuration: configuration)
     }
 
-    func configureMoveOnlyMode(at point: CGPoint) {
+    func configureMoveOnlyMode(
+        at point: CGPoint,
+        configuration: AppConfiguration,
+        shouldFlashHighlight: Bool
+    ) {
         state.interactionMode = .moveOnly
         state.overlayActivationPoint = point
         state.hoveredLayoutID = nil
         state.lastAppliedLayoutID = nil
         state.hasDraggedPastThreshold = true
 
-        if let frame = currentWindowFrame() {
+        let windowFrame = currentWindowFrame()
+        if let frame = windowFrame {
             state.moveAnchor = MoveAnchor(mousePoint: point, windowOrigin: frame.origin)
         } else {
             state.moveAnchor = nil
         }
 
-        overlayController.dismiss()
+        let fallbackScreen = windowFrame.flatMap { frame in
+            windowController.screenContaining(point: CGPoint(x: frame.midX, y: frame.midY))
+        }
+        let pointerScreen = windowController.resolvedScreen(for: point, fallback: fallbackScreen)
+        let screen = Self.preferredMoveOnlyFlashScreen(
+            windowScreen: fallbackScreen,
+            activeScreen: state.activeScreen,
+            pointerScreen: pointerScreen
+        )
+        if shouldFlashHighlight, let screen, let windowFrame {
+            overlayController.flashHighlight(frame: windowFrame, screen: screen, configuration: configuration)
+        } else {
+            overlayController.dismiss()
+        }
     }
 
     func applyLayoutSelection(at point: CGPoint, configuration: AppConfiguration) {

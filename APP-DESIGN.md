@@ -251,7 +251,10 @@ Cross-screen behavior:
 
 Behavior:
 
-- overlay is hidden immediately
+- when entering move-only mode, the current window frame is briefly highlighted with a fade-out flash
+- the flash uses the same style as the window highlight overlay (stroke color, stroke width, fill opacity)
+- the flash is only shown when `appearance.renderWindowHighlight` is enabled
+- after the flash fades out, the overlay is dismissed
 - only window position is updated
 - window size is preserved
 - movement keeps the pointer-to-window grab offset captured at mode entry
@@ -299,7 +302,8 @@ Runtime rules:
 - overlay is only relevant in `layoutSelection`
 - before threshold crossing, it highlights the current target window
 - after threshold crossing, it highlights the target frame of the hovered slot
-- in `moveOnly`, overlay is dismissed
+- in `moveOnly`, a brief highlight flash of the current window frame is shown at mode entry, then the overlay fades out and is dismissed
+- the flash respects `appearance.renderWindowHighlight` and uses the same highlight style
 
 Appearance is controlled by configuration:
 
