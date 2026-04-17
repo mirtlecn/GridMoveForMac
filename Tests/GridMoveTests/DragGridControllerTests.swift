@@ -274,7 +274,7 @@ private func makeOtherMouseEvent(type: CGEventType, buttonNumber: Int64) throws 
     let passthroughResult = controller.handleOtherMouseDown(event: middleButtonDown, configuration: configuration)
 
     #expect(consumedResult == nil)
-    #expect(controller.state.activeButton == .middle)
+    #expect(controller.state.activeButton == .mouseButton)
     #expect(controller.state.activeOtherMouseButtonNumber == 4)
     #expect(passthroughResult?.takeUnretainedValue() === middleButtonDown)
 
@@ -300,7 +300,7 @@ private func makeOtherMouseEvent(type: CGEventType, buttonNumber: Int64) throws 
         onAccessibilityRevoked: {}
     )
 
-    controller.state.activeButton = .middle
+    controller.state.activeButton = .mouseButton
     controller.state.activeOtherMouseButtonNumber = 4
     controller.state.active = true
 
@@ -312,7 +312,7 @@ private func makeOtherMouseEvent(type: CGEventType, buttonNumber: Int64) throws 
     #expect(matchingResult == nil)
     #expect(controller.state.active == false)
 
-    controller.state.activeButton = .middle
+    controller.state.activeButton = .mouseButton
     controller.state.activeOtherMouseButtonNumber = 4
     controller.state.active = true
 

@@ -114,7 +114,7 @@ final class DragGridController {
     // 2. layout-selection vs move-only sub-mode
     // 3. overlay + target-window lifecycle while the trigger stays active
     func handle(type: CGEventType, event: CGEvent) -> Unmanaged<CGEvent>? {
-        if SyntheticEventMarker.isMiddleMouseReplay(event) {
+        if SyntheticEventMarker.isMouseButtonReplay(event) {
             return Unmanaged.passUnretained(event)
         }
 
@@ -147,7 +147,7 @@ final class DragGridController {
         case .otherMouseDown:
             return handleOtherMouseDown(event: event, configuration: configuration)
         case .otherMouseDragged:
-            return handleMouseDragged(event: event, expectedButton: .middle, configuration: configuration)
+            return handleMouseDragged(event: event, expectedButton: .mouseButton, configuration: configuration)
         case .otherMouseUp:
             return handleOtherMouseUp(event: event)
         case .scrollWheel:

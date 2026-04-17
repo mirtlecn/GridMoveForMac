@@ -561,7 +561,7 @@ struct AppearanceSettings: Codable, Equatable {
 }
 
 struct DragTriggerSettings: Codable, Equatable {
-    var enableMiddleMouseDrag: Bool
+    var enableMouseButtonDrag: Bool
     var enableModifierLeftMouseDrag: Bool
     var preferLayoutMode: Bool
     var modifierGroups: [[ModifierKey]]
@@ -569,7 +569,7 @@ struct DragTriggerSettings: Codable, Equatable {
     var activationMoveThreshold: Double
 
     enum CodingKeys: String, CodingKey {
-        case enableMiddleMouseDrag
+        case enableMouseButtonDrag
         case enableModifierLeftMouseDrag
         case preferLayoutMode
         case modifierGroups
@@ -578,14 +578,14 @@ struct DragTriggerSettings: Codable, Equatable {
     }
 
     init(
-        enableMiddleMouseDrag: Bool,
+        enableMouseButtonDrag: Bool,
         enableModifierLeftMouseDrag: Bool,
         preferLayoutMode: Bool,
         modifierGroups: [[ModifierKey]],
         activationDelaySeconds: Double,
         activationMoveThreshold: Double
     ) {
-        self.enableMiddleMouseDrag = enableMiddleMouseDrag
+        self.enableMouseButtonDrag = enableMouseButtonDrag
         self.enableModifierLeftMouseDrag = enableModifierLeftMouseDrag
         self.preferLayoutMode = preferLayoutMode
         self.modifierGroups = modifierGroups
@@ -595,7 +595,7 @@ struct DragTriggerSettings: Codable, Equatable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        enableMiddleMouseDrag = try container.decode(Bool.self, forKey: .enableMiddleMouseDrag)
+        enableMouseButtonDrag = try container.decode(Bool.self, forKey: .enableMouseButtonDrag)
         enableModifierLeftMouseDrag = try container.decode(Bool.self, forKey: .enableModifierLeftMouseDrag)
         preferLayoutMode = try container.decodeIfPresent(Bool.self, forKey: .preferLayoutMode) ?? true
         modifierGroups = try container.decode([[ModifierKey]].self, forKey: .modifierGroups)

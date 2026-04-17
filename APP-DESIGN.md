@@ -71,7 +71,7 @@ Important properties:
 - stroke colors are stored as `#RRGGBBAA`
 - `general.activeLayoutGroup` selects the currently active layout group
 - `general.mouseButtonNumber` selects the hold-to-drag mouse button using user-facing numbering, where `3` is the standard middle button
-- the menu bar shows `Middle mouse drag` when `general.mouseButtonNumber == 3`, and `Middle <n> drag` for other configured button numbers
+- the menu bar shows `Mouse button drag` when `general.mouseButtonNumber == 3`, and `Mouse button <n> drag` for other configured button numbers
 - `layoutGroups[*].includeInGroupCycle` controls whether layout-mode Shift cycling can switch to that group
 - `layoutGroups[*].sets[*].monitor` routes layouts to `all`, `main`, one display ID, or multiple display IDs
 - `layoutGroups[*].sets[*].layouts` order drives menu order, layout-index numbering, and same-display trigger precedence
@@ -79,7 +79,7 @@ Important properties:
 
 Current drag-trigger configuration fields:
 
-- `enableMiddleMouseDrag`
+- `enableMouseButtonDrag`
 - `enableModifierLeftMouseDrag`
 - `preferLayoutMode`
 - `modifierGroups`
@@ -110,7 +110,7 @@ The built-in default configuration currently resolves to the following values.
 
 `dragTriggers`
 
-- `enableMiddleMouseDrag = true`
+- `enableMouseButtonDrag = true`
 - `enableModifierLeftMouseDrag = true`
 - `preferLayoutMode = true`
 - `modifierGroups = [[ctrl, cmd, shift, alt], [ctrl, shift, alt]]`

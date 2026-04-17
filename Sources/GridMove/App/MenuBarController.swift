@@ -15,7 +15,7 @@ final class MenuBarController: NSObject {
 
     struct ToggleSettingsState: Equatable {
         let mouseButtonNumber: Int
-        let middleMouseDragEnabled: Bool
+        let mouseButtonDragEnabled: Bool
         let modifierLeftMouseDragEnabled: Bool
         let preferLayoutMode: Bool
     }
@@ -24,7 +24,7 @@ final class MenuBarController: NSObject {
     private let menu = NSMenu()
     private let dragGridMenuItem = NSMenuItem(title: UICopy.enableMenuTitle, action: nil, keyEquivalent: "")
     private let enableSeparatorItem = NSMenuItem.separator()
-    private let middleMouseDragMenuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+    private let mouseButtonDragMenuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
     private let modifierLeftMouseDragMenuItem = NSMenuItem(title: UICopy.modifierLeftMouseDragMenuTitle, action: nil, keyEquivalent: "")
     private let preferLayoutModeMenuItem = NSMenuItem(title: UICopy.preferLayoutModeMenuTitle, action: nil, keyEquivalent: "")
     private let layoutGroupSectionSeparatorItem = NSMenuItem.separator()
@@ -39,7 +39,7 @@ final class MenuBarController: NSObject {
     private var layoutGroupState: LayoutGroupState
 
     private let onToggleDragGrid: (Bool) -> Bool
-    private let onToggleMiddleMouseDrag: (Bool) -> Bool
+    private let onToggleMouseButtonDrag: (Bool) -> Bool
     private let onToggleModifierLeftMouseDrag: (Bool) -> Bool
     private let onTogglePreferLayoutMode: (Bool) -> Bool
     private let onSelectLayoutGroup: (String) -> Bool
@@ -54,7 +54,7 @@ final class MenuBarController: NSObject {
         layoutGroupState: LayoutGroupState,
         actionItems: [ActionItem],
         onToggleDragGrid: @escaping (Bool) -> Bool,
-        onToggleMiddleMouseDrag: @escaping (Bool) -> Bool,
+        onToggleMouseButtonDrag: @escaping (Bool) -> Bool,
         onToggleModifierLeftMouseDrag: @escaping (Bool) -> Bool,
         onTogglePreferLayoutMode: @escaping (Bool) -> Bool,
         onSelectLayoutGroup: @escaping (String) -> Bool,
@@ -66,7 +66,7 @@ final class MenuBarController: NSObject {
         self.actionItems = actionItems
         self.layoutGroupState = layoutGroupState
         self.onToggleDragGrid = onToggleDragGrid
-        self.onToggleMiddleMouseDrag = onToggleMiddleMouseDrag
+        self.onToggleMouseButtonDrag = onToggleMouseButtonDrag
         self.onToggleModifierLeftMouseDrag = onToggleModifierLeftMouseDrag
         self.onTogglePreferLayoutMode = onTogglePreferLayoutMode
         self.onSelectLayoutGroup = onSelectLayoutGroup
@@ -125,8 +125,8 @@ final class MenuBarController: NSObject {
     }
 
     private func configureToggleMenuItems(_ toggleSettings: ToggleSettingsState) {
-        middleMouseDragMenuItem.target = self
-        middleMouseDragMenuItem.action = #selector(toggleMiddleMouseDrag)
+        mouseButtonDragMenuItem.target = self
+        mouseButtonDragMenuItem.action = #selector(toggleMouseButtonDrag)
         modifierLeftMouseDragMenuItem.target = self
         modifierLeftMouseDragMenuItem.action = #selector(toggleModifierLeftMouseDrag)
         preferLayoutModeMenuItem.target = self
@@ -134,7 +134,7 @@ final class MenuBarController: NSObject {
 
         updateToggleStates(toggleSettings)
 
-        menu.addItem(middleMouseDragMenuItem)
+        menu.addItem(mouseButtonDragMenuItem)
         menu.addItem(modifierLeftMouseDragMenuItem)
         menu.addItem(preferLayoutModeMenuItem)
     }
@@ -153,10 +153,10 @@ final class MenuBarController: NSObject {
     }
 
     func updateToggleStates(_ toggleSettings: ToggleSettingsState) {
-        middleMouseDragMenuItem.title = UICopy.middleMouseDragMenuTitle(
+        mouseButtonDragMenuItem.title = UICopy.mouseButtonDragMenuTitle(
             mouseButtonNumber: toggleSettings.mouseButtonNumber
         )
-        middleMouseDragMenuItem.state = toggleSettings.middleMouseDragEnabled ? .on : .off
+        mouseButtonDragMenuItem.state = toggleSettings.mouseButtonDragEnabled ? .on : .off
         modifierLeftMouseDragMenuItem.state = toggleSettings.modifierLeftMouseDragEnabled ? .on : .off
         preferLayoutModeMenuItem.state = toggleSettings.preferLayoutMode ? .on : .off
     }
@@ -222,10 +222,10 @@ final class MenuBarController: NSObject {
         onCustomize()
     }
 
-    @objc private func toggleMiddleMouseDrag() {
-        let nextState: NSControl.StateValue = middleMouseDragMenuItem.state == .on ? .off : .on
-        if onToggleMiddleMouseDrag(nextState == .on) {
-            middleMouseDragMenuItem.state = nextState
+    @objc private func toggleMouseButtonDrag() {
+        let nextState: NSControl.StateValue = mouseButtonDragMenuItem.state == .on ? .off : .on
+        if onToggleMouseButtonDrag(nextState == .on) {
+            mouseButtonDragMenuItem.state = nextState
         }
     }
 
@@ -273,7 +273,7 @@ final class MenuBarController: NSObject {
 
     var toggleStateDescriptorsForTesting: [String: Bool] {
         [
-            middleMouseDragMenuItem.title: middleMouseDragMenuItem.state == .on,
+            mouseButtonDragMenuItem.title: mouseButtonDragMenuItem.state == .on,
             UICopy.modifierLeftMouseDragMenuTitle: modifierLeftMouseDragMenuItem.state == .on,
             UICopy.preferLayoutModeMenuTitle: preferLayoutModeMenuItem.state == .on,
         ]

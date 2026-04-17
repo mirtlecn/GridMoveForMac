@@ -3,7 +3,7 @@ import Foundation
 import Testing
 @testable import GridMove
 
-@Test func syntheticMiddleMouseReplayMarkerRoundTrips() async throws {
+@Test func syntheticMouseButtonReplayMarkerRoundTrips() async throws {
     let source = try #require(CGEventSource(stateID: .hidSystemState))
     let event = try #require(
         CGEvent(
@@ -14,9 +14,9 @@ import Testing
         )
     )
 
-    #expect(!SyntheticEventMarker.isMiddleMouseReplay(event))
+    #expect(!SyntheticEventMarker.isMouseButtonReplay(event))
 
-    SyntheticEventMarker.markMiddleMouseReplay(event)
+    SyntheticEventMarker.markMouseButtonReplay(event)
 
-    #expect(SyntheticEventMarker.isMiddleMouseReplay(event))
+    #expect(SyntheticEventMarker.isMouseButtonReplay(event))
 }

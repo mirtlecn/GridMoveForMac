@@ -439,7 +439,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "highlightStrokeColor": "#FFFFFFEB"
           },
           "dragTriggers": {
-            "enableMiddleMouseDrag": true,
+            "enableMouseButtonDrag": true,
             "enableModifierLeftMouseDrag": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
             "activationDelaySeconds": 0.3,
@@ -615,9 +615,9 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     let store = ConfigurationStore(baseDirectoryURL: blockedStoreURL)
     let delegate = AppDelegate(configurationStore: store, openURL: { _ in true })
 
-    #expect(delegate.configuration.dragTriggers.enableMiddleMouseDrag == true)
-    #expect(delegate.updateMiddleMouseDragEnabled(false) == false)
-    #expect(delegate.configuration.dragTriggers.enableMiddleMouseDrag == true)
+    #expect(delegate.configuration.dragTriggers.enableMouseButtonDrag == true)
+    #expect(delegate.updateMouseButtonDragEnabled(false) == false)
+    #expect(delegate.configuration.dragTriggers.enableMouseButtonDrag == true)
 }
 
 @MainActor
@@ -654,16 +654,16 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     let delegate = AppDelegate(configurationStore: store, openURL: { _ in true })
     delegate.reloadConfigurationFromDisk(mode: .launch)
 
-    delegate.updateMiddleMouseDragEnabled(false)
+    delegate.updateMouseButtonDragEnabled(false)
     delegate.updateModifierLeftMouseDragEnabled(false)
     delegate.updatePreferLayoutMode(false)
 
     let reloadedConfiguration = try store.load()
 
-    #expect(delegate.configuration.dragTriggers.enableMiddleMouseDrag == false)
+    #expect(delegate.configuration.dragTriggers.enableMouseButtonDrag == false)
     #expect(delegate.configuration.dragTriggers.enableModifierLeftMouseDrag == false)
     #expect(delegate.configuration.dragTriggers.preferLayoutMode == false)
-    #expect(reloadedConfiguration.dragTriggers.enableMiddleMouseDrag == false)
+    #expect(reloadedConfiguration.dragTriggers.enableMouseButtonDrag == false)
     #expect(reloadedConfiguration.dragTriggers.enableModifierLeftMouseDrag == false)
     #expect(reloadedConfiguration.dragTriggers.preferLayoutMode == false)
 }

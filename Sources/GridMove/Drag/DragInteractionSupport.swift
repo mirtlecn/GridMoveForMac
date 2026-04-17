@@ -13,7 +13,7 @@ enum LayoutGroupCycleDirection: Equatable {
 
 enum DragTriggerButton: Int {
     case left = 0
-    case middle = 2
+    case mouseButton = 2
 }
 
 enum OptionToggleEventResult: Equatable {

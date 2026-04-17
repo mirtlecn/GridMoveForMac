@@ -64,7 +64,7 @@ extension DragGridController {
         let buttonNumber = event.getIntegerValueField(.mouseEventButtonNumber)
         guard
             isEnabled,
-            configuration.dragTriggers.enableMiddleMouseDrag,
+            configuration.dragTriggers.enableMouseButtonDrag,
             buttonNumber == configuredOtherMouseButtonNumber(for: configuration)
         else {
             return Unmanaged.passUnretained(event)
@@ -76,7 +76,7 @@ extension DragGridController {
 
         let point = appKitPoint(from: event)
         resetState()
-        state.activeButton = .middle
+        state.activeButton = .mouseButton
         state.activeOtherMouseButtonNumber = buttonNumber
         state.mouseDownPoint = point
 
@@ -91,7 +91,7 @@ extension DragGridController {
             self.state.activationTimer = nil
 
             guard
-                self.state.activeButton == .middle,
+                self.state.activeButton == .mouseButton,
                 let point = self.state.mouseDownPoint,
                 let activeOtherMouseButtonNumber = self.state.activeOtherMouseButtonNumber
             else {
@@ -111,7 +111,7 @@ extension DragGridController {
                 return
             }
 
-            self.enterDragMode(button: .middle, targetWindow: targetWindow, point: point, configuration: configuration)
+            self.enterDragMode(button: .mouseButton, targetWindow: targetWindow, point: point, configuration: configuration)
         }
         state.activationTimer = timer
         timer.resume()
@@ -128,7 +128,7 @@ extension DragGridController {
         }
 
         guard state.active else {
-            if expectedButton == .middle, state.activationTimer != nil {
+            if expectedButton == .mouseButton, state.activationTimer != nil {
                 return nil
             }
             return expectedButton == .left ? nil : Unmanaged.passUnretained(event)
@@ -150,7 +150,7 @@ extension DragGridController {
 
         if state.activationTimer != nil {
             state.activationTimer?.cancel()
-            if button == .middle,
+            if button == .mouseButton,
                let mouseDownPoint = state.mouseDownPoint,
                let activeOtherMouseButtonNumber = state.activeOtherMouseButtonNumber
             {
@@ -181,7 +181,7 @@ extension DragGridController {
             return Unmanaged.passUnretained(event)
         }
 
-        return handleMouseUp(event: event, button: .middle)
+        return handleMouseUp(event: event, button: .mouseButton)
     }
 
     func handleScrollWheel(event: CGEvent) -> Unmanaged<CGEvent>? {

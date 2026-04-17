@@ -26,7 +26,7 @@ extension DragGridController {
             return
         }
 
-        SyntheticEventMarker.markMiddleMouseReplay(syntheticEvent)
+        SyntheticEventMarker.markMouseButtonReplay(syntheticEvent)
         syntheticEvent.setIntegerValueField(CGEventField.mouseEventButtonNumber, value: buttonNumber)
         syntheticEvent.post(tap: CGEventTapLocation.cghidEventTap)
     }
@@ -57,8 +57,8 @@ extension DragGridController {
             return
         }
 
-        SyntheticEventMarker.markMiddleMouseReplay(downEvent)
-        SyntheticEventMarker.markMiddleMouseReplay(upEvent)
+        SyntheticEventMarker.markMouseButtonReplay(downEvent)
+        SyntheticEventMarker.markMouseButtonReplay(upEvent)
         downEvent.setIntegerValueField(CGEventField.mouseEventButtonNumber, value: buttonNumber)
         upEvent.setIntegerValueField(CGEventField.mouseEventButtonNumber, value: buttonNumber)
         downEvent.post(tap: CGEventTapLocation.cghidEventTap)

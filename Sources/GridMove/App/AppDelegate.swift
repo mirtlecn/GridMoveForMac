@@ -114,8 +114,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onToggleDragGrid: { [weak self] isEnabled in
                 self?.updateGlobalEnabledState(isEnabled) ?? false
             },
-            onToggleMiddleMouseDrag: { [weak self] isEnabled in
-                self?.updateMiddleMouseDragEnabled(isEnabled) ?? false
+            onToggleMouseButtonDrag: { [weak self] isEnabled in
+                self?.updateMouseButtonDragEnabled(isEnabled) ?? false
             },
             onToggleModifierLeftMouseDrag: { [weak self] isEnabled in
                 self?.updateModifierLeftMouseDragEnabled(isEnabled) ?? false
@@ -211,13 +211,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @discardableResult
-    func updateMiddleMouseDragEnabled(_ isEnabled: Bool) -> Bool {
-        guard configuration.dragTriggers.enableMiddleMouseDrag != isEnabled else {
+    func updateMouseButtonDragEnabled(_ isEnabled: Bool) -> Bool {
+        guard configuration.dragTriggers.enableMouseButtonDrag != isEnabled else {
             return true
         }
 
         return updateConfiguration { configuration in
-            configuration.dragTriggers.enableMiddleMouseDrag = isEnabled
+            configuration.dragTriggers.enableMouseButtonDrag = isEnabled
         }
     }
 
@@ -446,7 +446,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func makeToggleSettingsState(configuration: AppConfiguration) -> MenuBarController.ToggleSettingsState {
         MenuBarController.ToggleSettingsState(
             mouseButtonNumber: configuration.general.mouseButtonNumber,
-            middleMouseDragEnabled: configuration.dragTriggers.enableMiddleMouseDrag,
+            mouseButtonDragEnabled: configuration.dragTriggers.enableMouseButtonDrag,
             modifierLeftMouseDragEnabled: configuration.dragTriggers.enableModifierLeftMouseDrag,
             preferLayoutMode: configuration.dragTriggers.preferLayoutMode
         )

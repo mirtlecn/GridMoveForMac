@@ -39,7 +39,6 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(initialText.contains("\"mouseButtonNumber\""))
     #expect(initialText.contains("\"applyLayoutByIndex\""))
     #expect(!initialText.contains("\"layoutGroups\""))
-    #expect(!initialText.contains("\"middleMouseButtonNumber\""))
     #expect(!initialText.contains("\"includeInCycle\""))
     #expect(!initialText.contains("\"id\":"))
     #expect(!initialText.contains("//"))
@@ -166,7 +165,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         "highlightStrokeColor": "#FFFFFFEB"
       },
       "dragTriggers": {
-        "enableMiddleMouseDrag": true,
+        "enableMouseButtonDrag": true,
         "enableModifierLeftMouseDrag": true,
         "modifierGroups": [["ctrl", "cmd", "shift", "alt"], ["ctrl", "shift", "alt"]],
         "activationDelaySeconds": 0.3,
@@ -272,7 +271,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         "highlightStrokeColor": "#FFFFFFEB"
       },
       "dragTriggers": {
-        "enableMiddleMouseDrag": true,
+        "enableMouseButtonDrag": true,
         "enableModifierLeftMouseDrag": true,
         "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
         "activationDelaySeconds": 0.3,
@@ -378,7 +377,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "highlightStrokeColor": "#FFFFFFEB"
           },
           "dragTriggers": {
-            "enableMiddleMouseDrag": true,
+            "enableMouseButtonDrag": true,
             "enableModifierLeftMouseDrag": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
             "activationDelaySeconds": 0.3,
@@ -477,7 +476,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "highlightStrokeColor": "#FFFFFFEB"
           },
           "dragTriggers": {
-            "enableMiddleMouseDrag": true,
+            "enableMouseButtonDrag": true,
             "enableModifierLeftMouseDrag": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
             "activationDelaySeconds": 0.3,
@@ -559,7 +558,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "highlightStrokeColor": "#FFFFFFEB"
           },
           "dragTriggers": {
-            "enableMiddleMouseDrag": true,
+            "enableMouseButtonDrag": true,
             "enableModifierLeftMouseDrag": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
             "activationDelaySeconds": 0.3,
@@ -619,7 +618,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "highlightStrokeColor": "#FFFFFFEB"
           },
           "dragTriggers": {
-            "enableMiddleMouseDrag": true,
+            "enableMouseButtonDrag": true,
             "enableModifierLeftMouseDrag": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
             "activationDelaySeconds": 0.3,
@@ -696,7 +695,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "highlightStrokeColor": "#FFFFFFEB"
           },
           "dragTriggers": {
-            "enableMiddleMouseDrag": true,
+            "enableMouseButtonDrag": true,
             "enableModifierLeftMouseDrag": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
             "activationDelaySeconds": 0.3,

@@ -8,7 +8,7 @@ import Testing
         dragGridEnabled: true,
         toggleSettings: .init(
             mouseButtonNumber: 3,
-            middleMouseDragEnabled: true,
+            mouseButtonDragEnabled: true,
             modifierLeftMouseDragEnabled: true,
             preferLayoutMode: true
         ),
@@ -18,7 +18,7 @@ import Testing
             .init(title: UICopy.applyNextLayout, action: .cycleNext, shortcut: nil),
         ],
         onToggleDragGrid: { _ in true },
-        onToggleMiddleMouseDrag: { _ in true },
+        onToggleMouseButtonDrag: { _ in true },
         onToggleModifierLeftMouseDrag: { _ in true },
         onTogglePreferLayoutMode: { _ in true },
         onSelectLayoutGroup: { _ in true },
@@ -32,7 +32,7 @@ import Testing
         controller.menuItemDescriptorsForTesting == [
             "Enable",
             "|",
-            "Middle mouse drag",
+            "Mouse button drag",
             "Modifier + left mouse drag",
             "Prefer layout mode",
             "|",
@@ -55,14 +55,14 @@ import Testing
         dragGridEnabled: true,
         toggleSettings: .init(
             mouseButtonNumber: 3,
-            middleMouseDragEnabled: false,
+            mouseButtonDragEnabled: false,
             modifierLeftMouseDragEnabled: true,
             preferLayoutMode: false
         ),
         layoutGroupState: .init(groupNames: ["built-in", "work"], activeGroupName: "work"),
         actionItems: [],
         onToggleDragGrid: { _ in true },
-        onToggleMiddleMouseDrag: { _ in true },
+        onToggleMouseButtonDrag: { _ in true },
         onToggleModifierLeftMouseDrag: { _ in true },
         onTogglePreferLayoutMode: { _ in true },
         onSelectLayoutGroup: { _ in true },
@@ -74,7 +74,7 @@ import Testing
 
     #expect(
         controller.toggleStateDescriptorsForTesting == [
-            UICopy.middleMouseDragMenuTitle(mouseButtonNumber: 3): false,
+            UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 3): false,
             UICopy.modifierLeftMouseDragMenuTitle: true,
             UICopy.preferLayoutModeMenuTitle: false,
         ]
@@ -94,14 +94,14 @@ import Testing
         dragGridEnabled: true,
         toggleSettings: .init(
             mouseButtonNumber: 5,
-            middleMouseDragEnabled: true,
+            mouseButtonDragEnabled: true,
             modifierLeftMouseDragEnabled: true,
             preferLayoutMode: true
         ),
         layoutGroupState: .init(groupNames: ["built-in"], activeGroupName: "built-in"),
         actionItems: [],
         onToggleDragGrid: { _ in true },
-        onToggleMiddleMouseDrag: { _ in true },
+        onToggleMouseButtonDrag: { _ in true },
         onToggleModifierLeftMouseDrag: { _ in true },
         onTogglePreferLayoutMode: { _ in true },
         onSelectLayoutGroup: { _ in true },
@@ -111,8 +111,8 @@ import Testing
         onQuit: {}
     )
 
-    #expect(controller.menuItemDescriptorsForTesting.contains("Middle 5 drag"))
+    #expect(controller.menuItemDescriptorsForTesting.contains("Mouse button 5 drag"))
     #expect(
-        controller.toggleStateDescriptorsForTesting[UICopy.middleMouseDragMenuTitle(mouseButtonNumber: 5)] == true
+        controller.toggleStateDescriptorsForTesting[UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 5)] == true
     )
 }

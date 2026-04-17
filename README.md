@@ -91,7 +91,7 @@ The example below uses `jsonc` only for explanation. Real files must be plain JS
     "highlightStrokeColor": "#FFFFFFEB" // Border color for the window highlight. Accepts #RRGGBB or #RRGGBBAA.
   },
   "dragTriggers": {
-    "enableMiddleMouseDrag": true, // Enable the mouse-button hold trigger path.
+    "enableMouseButtonDrag": true, // Enable the mouse-button hold trigger path.
     "enableModifierLeftMouseDrag": true, // Enable the modifier-plus-left-click trigger path.
     "preferLayoutMode": true, // true: start drag interaction in layout mode. false: start in move-only mode.
     "modifierGroups": [

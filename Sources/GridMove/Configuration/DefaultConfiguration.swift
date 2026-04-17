@@ -142,7 +142,7 @@ extension AppConfiguration {
             highlightStrokeColor: RGBAColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.92)
         ),
         dragTriggers: DragTriggerSettings(
-            enableMiddleMouseDrag: true,
+            enableMouseButtonDrag: true,
             enableModifierLeftMouseDrag: true,
             preferLayoutMode: true,
             modifierGroups: [
