@@ -11,7 +11,7 @@ GridMove is a native macOS menu bar app for applying window layouts and moving w
 - Trigger regions on the screen grid or menu bar strip
 - Accessibility-based window lookup, focus, move, resize, and fullscreen exit
 - CLI actions relayed to the running app
-- JSON configuration stored at `~/.config/GridMove/config.json`
+- Split JSON configuration stored at `~/.config/GridMove/config.json` and `~/.config/GridMove/layout/*.grid.json`
 
 ## Dev
 
@@ -50,12 +50,22 @@ If `-window-id <cg-window-id>` is not provided, GridMove targets the currently f
 
 ## Configuration
 
-Config file location is `~/.config/GridMove/config.json`.
+Config files are stored at:
 
-On first launch, GridMove writes a default file to that path if it does not exist.
-The built-in default file contains two groups: `built-in` and `fullscreen`.
+- `~/.config/GridMove/config.json`
+- `~/.config/GridMove/layout/*.grid.json`
 
-The example below uses `jsonc` only for explanation. The real file must be plain JSON and does not support comments.
+On first launch, GridMove writes default files if they do not exist:
+
+- `layout/1.grid.json` for `built-in`
+- `layout/2.grid.json` for `fullscreen`
+
+`config.json` stores non-layout settings only. Each `layout/*.grid.json` file stores one layout-group object.
+Managed layout filenames must match `<positive-integer>.grid.json`, and GridMove loads them in numeric order.
+
+The example below uses `jsonc` only for explanation. Real files must be plain JSON and do not support comments.
+
+`config.json`
 
 ```jsonc
 {
@@ -107,61 +117,75 @@ The example below uses `jsonc` only for explanation. The real file must be plain
       // The default file contains more bindings in the same shape.
     ]
   },
-  "layoutGroups": [
-    {
-      "name": "built-in",
-      "includeInGroupCycle": true, // Missing includeInGroupCycle means this group still participates in Shift-based group cycling while layout mode is active.
-      "sets": [
-        {
-          "monitor": "all", // Allowed values: "all", "main", "<display-id>", ["<display-id>", ...]. Trigger overlays resolve sets by explicit ID or ID array, then main, then all.
-          "layouts": [
-            {
-              "name": "Center", // CLI -layout "<name>" looks up this value inside the active layout group.
-              "gridColumns": 12,
-              "gridRows": 6,
-              "windowSelection": {
-                "x": 3,
-                "y": 1,
-                "w": 6,
-                "h": 4
-              },
-              "triggerRegion": {
-                "kind": "screen", // Allowed values are screen and menuBar.
-                "gridSelection": {
-                  "x": 5,
-                  "y": 2,
-                  "w": 2,
-                  "h": 2
-                }
-                // If kind is menuBar, use:
-                // "menuBarSelection": { "x": 1, "w": 4 }
-              },
-              "includeInLayoutIndex": true, // false excludes the layout from layout-index shortcuts and from cycle order, but CLI -layout "<name>" can still resolve the layout.
-              "includeInMenu": true // false hides the layout from the menu bar only.
-            },
-            {
-              "name": "Centered no trigger",
-              "gridColumns": 12,
-              "gridRows": 6,
-              "windowSelection": {
-                "x": 3,
-                "y": 1,
-                "w": 6,
-                "h": 4
-              },
-              "includeInLayoutIndex": false,
-              "includeInMenu": false // Missing triggerRegion means drag trigger is unavailable; menu-hidden layouts remain available to CLI, and to layout-index shortcuts only when includeInLayoutIndex is true.
-            }
-          ]
-        }
-      ]
-    }
-  ],
   "monitors": {
     "Built-in Retina Display": "69732928" // Filled or refreshed by GridMove on successful reload/startup.
   }
 }
 ```
+
+`layout/1.grid.json`
+
+```jsonc
+{
+  "name": "built-in",
+  "includeInGroupCycle": true, // Missing includeInGroupCycle means this group still participates in Shift-based group cycling while layout mode is active.
+  "sets": [
+    {
+      "monitor": "all", // Allowed values: "all", "main", "<display-id>", ["<display-id>", ...]. Trigger overlays resolve sets by explicit ID or ID array, then main, then all.
+      "layouts": [
+        {
+          "name": "Center", // CLI -layout "<name>" looks up this value inside the active layout group.
+          "gridColumns": 12,
+          "gridRows": 6,
+          "windowSelection": {
+            "x": 3,
+            "y": 1,
+            "w": 6,
+            "h": 4
+          },
+          "triggerRegion": {
+            "kind": "screen", // Allowed values are screen and menuBar.
+            "gridSelection": {
+              "x": 5,
+              "y": 2,
+              "w": 2,
+              "h": 2
+            }
+            // If kind is menuBar, use:
+            // "menuBarSelection": { "x": 1, "w": 4 }
+          },
+          "includeInLayoutIndex": true, // false excludes the layout from layout-index shortcuts and from cycle order, but CLI -layout "<name>" can still resolve the layout.
+          "includeInMenu": true // false hides the layout from the menu bar only.
+        },
+        {
+          "name": "Centered no trigger",
+          "gridColumns": 12,
+          "gridRows": 6,
+          "windowSelection": {
+            "x": 3,
+            "y": 1,
+            "w": 6,
+            "h": 4
+          },
+          "includeInLayoutIndex": false,
+          "includeInMenu": false // Missing triggerRegion means drag trigger is unavailable; menu-hidden layouts remain available to CLI, and to layout-index shortcuts only when includeInLayoutIndex is true.
+        }
+      ]
+    }
+  ]
+}
+```
+
+Compatibility and reload behavior:
+
+- `config.json` must not contain embedded `layoutGroups`
+- files in `layout/` that do not match `<positive-integer>.grid.json` are ignored
+- matching layout files are loaded in numeric order
+- invalid matching layout files are skipped individually
+- after skipping invalid layout files, the merged config must still pass validation or the whole load fails
+- successful saves also refresh `~/.config/GridMove/config.last-known-good.json` and `~/.config/GridMove/layout.last-known-good/*.grid.json`
+- launch falls back to the split last-known-good snapshot first, then to built-in defaults
+- manual reload keeps the current in-memory config on full failure, and warns when it skips invalid layout files
 
 
 ## Additional docs

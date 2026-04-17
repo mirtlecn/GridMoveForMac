@@ -1,28 +1,38 @@
 import Foundation
 
+struct PersistedConfigurationSnapshot {
+    let configurationFile: ConfigurationFile
+    let layoutGroups: [LayoutGroupConfiguration]
+}
+
 enum ConfigurationSchemaConverter {
-    static func makeConfigurationFile(from configuration: AppConfiguration) throws -> ConfigurationFile {
+    static func makePersistedConfigurationSnapshot(from configuration: AppConfiguration) throws -> PersistedConfigurationSnapshot {
         let normalizedConfiguration = try normalizeConfiguration(configuration)
-        return ConfigurationFile(
-            general: normalizedConfiguration.general,
-            appearance: AppearanceConfiguration(settings: normalizedConfiguration.appearance),
-            dragTriggers: normalizedConfiguration.dragTriggers,
-            hotkeys: HotkeyConfiguration(
-                bindings: normalizedConfiguration.hotkeys.bindings.map { binding in
-                    HotkeyBindingConfiguration(
-                        isEnabled: binding.isEnabled,
-                        shortcut: binding.shortcut,
-                        action: HotkeyActionConfiguration(action: binding.action)
-                    )
-                }
+        return PersistedConfigurationSnapshot(
+            configurationFile: ConfigurationFile(
+                general: normalizedConfiguration.general,
+                appearance: AppearanceConfiguration(settings: normalizedConfiguration.appearance),
+                dragTriggers: normalizedConfiguration.dragTriggers,
+                hotkeys: HotkeyConfiguration(
+                    bindings: normalizedConfiguration.hotkeys.bindings.map { binding in
+                        HotkeyBindingConfiguration(
+                            isEnabled: binding.isEnabled,
+                            shortcut: binding.shortcut,
+                            action: HotkeyActionConfiguration(action: binding.action)
+                        )
+                    }
+                ),
+                monitors: normalizedConfiguration.monitors
             ),
-            layoutGroups: normalizedConfiguration.layoutGroups.map(LayoutGroupConfiguration.init(group:)),
-            monitors: normalizedConfiguration.monitors
+            layoutGroups: normalizedConfiguration.layoutGroups.map(LayoutGroupConfiguration.init(group:))
         )
     }
 
-    static func makeAppConfiguration(from configurationFile: ConfigurationFile) throws -> AppConfiguration {
-        let generatedLayoutGroups = normalizeLayoutGroups(configurationFile.layoutGroups)
+    static func makeAppConfiguration(
+        from configurationFile: ConfigurationFile,
+        layoutGroups: [LayoutGroupConfiguration]
+    ) throws -> AppConfiguration {
+        let generatedLayoutGroups = normalizeLayoutGroups(layoutGroups)
         let generatedBindings = try configurationFile.hotkeys.bindings.enumerated().map { index, binding in
             ShortcutBinding(
                 id: "binding-\(index + 1)",

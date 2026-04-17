@@ -18,6 +18,7 @@ The current codebase implements these user-visible surfaces:
 - menu bar app
 - CLI entrypoint for layout actions
 - JSON configuration at `~/.config/GridMove/config.json`
+- layout-group files at `~/.config/GridMove/layout/*.grid.json`
 
 There is no full settings window implementation in the current codebase.
 `UI-UX.md` records the intended interaction model for future UI work.
@@ -33,7 +34,8 @@ Main responsibilities:
 - start and stop the drag controller and shortcut controller based on Accessibility status
 - listen for remote CLI commands
 - request Accessibility permission from the system when access is missing
-- post a diagnostic notification when manual config reload rejects an invalid config file
+- post a diagnostic notification when manual config reload rejects the full config
+- post a warning when manual config reload skips invalid layout files but still applies the remaining layout groups
 
 Main runtime components:
 
@@ -55,12 +57,15 @@ CLI layout lookup rules:
 
 ## 4. Configuration Model
 
-Persistent configuration is stored in JSON and normalized on read and write.
+Persistent configuration is stored in one main JSON file plus numbered layout-group JSON files.
 
 Important properties:
 
 - layout IDs are internal only and are regenerated from array order
 - hotkey binding IDs are internal only and are regenerated from array order
+- `config.json` stores `general`, `appearance`, `dragTriggers`, `hotkeys`, and `monitors`
+- `layout/*.grid.json` stores one `layoutGroups[]` object per file
+- managed layout-group file names must match `<positive-integer>.grid.json`
 - persisted `applyLayoutByIndex` actions point to the 1-based layout index within the active layout group's indexed layouts
 - stroke colors are stored as `#RRGGBBAA`
 - `general.activeLayoutGroup` selects the currently active layout group
@@ -158,10 +163,15 @@ Default layout names in order:
 
 Compatibility behavior:
 
-- if config decoding fails, including invalid JSON, comments, or an invalid persisted layout index, the file is left untouched
-- successful saves also refresh `~/.config/GridMove/config.last-known-good.json`
-- on launch, the app loads `config.last-known-good.json` when `config.json` is invalid, and only falls back to built-in defaults when no valid recovery snapshot exists
-- on manual reload, invalid config files are rejected and the current in-memory configuration keeps running
+- `config.json` must not contain embedded `layoutGroups`
+- if `config.json` decoding fails, including invalid JSON, comments, embedded `layoutGroups`, or an invalid persisted layout index, the file is left untouched
+- matching layout files that fail to decode are skipped individually
+- unmatched files in `layout/` are ignored
+- after skipping invalid layout files, the merged configuration must still pass validation or the whole load fails
+- successful saves also refresh `~/.config/GridMove/config.last-known-good.json` and `~/.config/GridMove/layout.last-known-good/*.grid.json`
+- on launch, the app loads `config.last-known-good.json` plus `layout.last-known-good/` when the primary config is invalid, and only falls back to built-in defaults when no valid recovery snapshot exists
+- on manual reload, full-load failures are rejected and the current in-memory configuration keeps running
+- on manual reload, partial success applies valid layout files and warns about skipped files
 - missing `preferLayoutMode` defaults to `true`
 - missing `includeInGroupCycle` defaults to `true`
 - missing `triggerRegion` means the layout is menu, shortcut, and CLI only

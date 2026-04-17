@@ -11,6 +11,7 @@ enum UICopy {
     static let reloadConfigMenuTitle = "Reload"
     static let customizeMenuTitle = "Customize... ↗"
     static let configReloadFailedTitle = "GridMove config reload failed"
+    static let configReloadSkippedLayoutsTitle = "GridMove skipped invalid layout files"
     static let quitMenuTitle = "Quit"
     static let quitAppMenuTitle = "Quit GridMove"
     static let applyNextLayout = "Apply next layout"
@@ -56,5 +57,26 @@ enum UICopy {
         }
 
         return "\(prefix) \(diagnostic.message)"
+    }
+
+    static func configReloadSkippedLayoutsBody(diagnostics: [LayoutFileDiagnostic]) -> String {
+        let prefix = "Config was applied, but some layout files were skipped."
+        guard !diagnostics.isEmpty else {
+            return prefix
+        }
+
+        let details = diagnostics.map { diagnostic in
+            let fileName = diagnostic.fileURL.lastPathComponent
+            if let line = diagnostic.line, let column = diagnostic.column {
+                return "\(fileName) (line \(line), column \(column)): \(diagnostic.message)"
+            }
+            if let codingPath = diagnostic.codingPathDescription {
+                return "\(fileName) (\(codingPath)): \(diagnostic.message)"
+            }
+            return "\(fileName): \(diagnostic.message)"
+        }
+        .joined(separator: " ")
+
+        return "\(prefix) \(details)"
     }
 }

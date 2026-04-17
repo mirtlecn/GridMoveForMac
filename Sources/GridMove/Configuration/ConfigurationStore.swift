@@ -19,17 +19,54 @@ struct ConfigurationLoadDiagnostic: Equatable {
     }
 }
 
+struct LayoutFileDiagnostic: Equatable {
+    let fileURL: URL
+    let message: String
+    let line: Int?
+    let column: Int?
+    let codingPath: [String]
+
+    var codingPathDescription: String? {
+        let path = codingPath.joined(separator: ".")
+        return path.isEmpty ? nil : path
+    }
+}
+
 final class ConfigurationStore {
     struct LoadResult {
         let configuration: AppConfiguration
         let source: ConfigurationLoadSource
         let diagnostic: ConfigurationLoadDiagnostic?
+        let skippedLayoutDiagnostics: [LayoutFileDiagnostic]
+    }
+
+    private struct LoadedSnapshot {
+        let configuration: AppConfiguration
+        let skippedLayoutDiagnostics: [LayoutFileDiagnostic]
+    }
+
+    private struct DiagnosticComponents {
+        let message: String
+        let line: Int?
+        let column: Int?
+        let codingPath: [String]
+    }
+
+    private struct LayoutFileMatch {
+        let index: Int
+        let fileURL: URL
+    }
+
+    private struct ConfigurationSnapshotLoadError: Error {
+        let diagnostic: ConfigurationLoadDiagnostic
     }
 
     private let fileManager: FileManager
     let directoryURL: URL
     let fileURL: URL
+    let layoutDirectoryURL: URL
     let lastKnownGoodFileURL: URL
+    let lastKnownGoodLayoutDirectoryURL: URL
 
     init(
         fileManager: FileManager = .default,
@@ -42,7 +79,9 @@ final class ConfigurationStore {
                 .appendingPathComponent("GridMove", isDirectory: true)
         directoryURL = baseURL
         fileURL = baseURL.appendingPathComponent("config.json")
+        layoutDirectoryURL = baseURL.appendingPathComponent("layout", isDirectory: true)
         lastKnownGoodFileURL = baseURL.appendingPathComponent("config.last-known-good.json")
+        lastKnownGoodLayoutDirectoryURL = baseURL.appendingPathComponent("layout.last-known-good", isDirectory: true)
     }
 
     func load() throws -> AppConfiguration {
@@ -50,28 +89,36 @@ final class ConfigurationStore {
     }
 
     func loadWithStatus() throws -> LoadResult {
-        try ensureDirectoryExists()
+        try ensureBaseDirectoryExists()
 
         if fileManager.fileExists(atPath: fileURL.path) {
             do {
-                let data = try Data(contentsOf: fileURL)
-                return LoadResult(
-                    configuration: try decodeConfiguration(from: data),
-                    source: .persistedConfiguration,
-                    diagnostic: nil
+                let snapshot = try loadConfigurationSnapshot(
+                    configurationFileURL: fileURL,
+                    layoutDirectoryURL: layoutDirectoryURL,
+                    failureDiagnosticFileURL: fileURL
                 )
-            } catch {
-                let data = (try? Data(contentsOf: fileURL)) ?? Data()
-                let diagnostic = makeDiagnostic(for: error, fileURL: fileURL, data: data)
-                AppLogger.shared.error("Failed to load configuration from \(self.fileURL.path, privacy: .public): \(diagnostic.message, privacy: .public)")
+                return LoadResult(
+                    configuration: snapshot.configuration,
+                    source: .persistedConfiguration,
+                    diagnostic: nil,
+                    skippedLayoutDiagnostics: snapshot.skippedLayoutDiagnostics
+                )
+            } catch let error as ConfigurationSnapshotLoadError {
+                AppLogger.shared.error("Failed to load configuration from \(self.fileURL.path, privacy: .public): \(error.diagnostic.message, privacy: .public)")
 
                 if fileManager.fileExists(atPath: lastKnownGoodFileURL.path) {
                     do {
-                        let recoveryData = try Data(contentsOf: lastKnownGoodFileURL)
+                        let recoverySnapshot = try loadConfigurationSnapshot(
+                            configurationFileURL: lastKnownGoodFileURL,
+                            layoutDirectoryURL: lastKnownGoodLayoutDirectoryURL,
+                            failureDiagnosticFileURL: lastKnownGoodFileURL
+                        )
                         return LoadResult(
-                            configuration: try decodeConfiguration(from: recoveryData),
+                            configuration: recoverySnapshot.configuration,
                             source: .lastKnownGood,
-                            diagnostic: diagnostic
+                            diagnostic: error.diagnostic,
+                            skippedLayoutDiagnostics: recoverySnapshot.skippedLayoutDiagnostics
                         )
                     } catch {
                         AppLogger.shared.error("Failed to load last-known-good configuration from \(self.lastKnownGoodFileURL.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
@@ -81,7 +128,8 @@ final class ConfigurationStore {
                 return LoadResult(
                     configuration: .defaultValue,
                     source: .builtInDefault,
-                    diagnostic: diagnostic
+                    diagnostic: error.diagnostic,
+                    skippedLayoutDiagnostics: []
                 )
             }
         }
@@ -91,45 +139,212 @@ final class ConfigurationStore {
         return LoadResult(
             configuration: configuration,
             source: .persistedConfiguration,
-            diagnostic: nil
+            diagnostic: nil,
+            skippedLayoutDiagnostics: []
         )
     }
 
     func save(_ configuration: AppConfiguration) throws {
-        try ensureDirectoryExists()
-        let data = try encodedConfigurationData(for: configuration)
-        try data.write(to: fileURL, options: .atomic)
+        try ensureBaseDirectoryExists()
+        let snapshot = try ConfigurationSchemaConverter.makePersistedConfigurationSnapshot(from: configuration)
+        try writeSnapshot(
+            snapshot,
+            configurationFileURL: fileURL,
+            layoutDirectoryURL: layoutDirectoryURL
+        )
         do {
-            try data.write(to: lastKnownGoodFileURL, options: .atomic)
+            try writeSnapshot(
+                snapshot,
+                configurationFileURL: lastKnownGoodFileURL,
+                layoutDirectoryURL: lastKnownGoodLayoutDirectoryURL
+            )
         } catch {
             AppLogger.shared.error("Failed to update last-known-good configuration at \(self.lastKnownGoodFileURL.path, privacy: .public): \(error.localizedDescription, privacy: .public)")
         }
     }
 
-    private func ensureDirectoryExists() throws {
+    private func ensureBaseDirectoryExists() throws {
         try fileManager.createDirectory(at: directoryURL, withIntermediateDirectories: true)
     }
 
-    private func decodeConfiguration(from data: Data) throws -> AppConfiguration {
-        let configurationFile = try makeDecoder().decode(ConfigurationFile.self, from: data)
-        return try ConfigurationSchemaConverter.makeAppConfiguration(from: configurationFile)
+    private func loadConfigurationSnapshot(
+        configurationFileURL: URL,
+        layoutDirectoryURL: URL,
+        failureDiagnosticFileURL: URL
+    ) throws -> LoadedSnapshot {
+        let configurationData = try Data(contentsOf: configurationFileURL)
+        let configurationFile: ConfigurationFile
+        do {
+            configurationFile = try decodeConfigurationFile(from: configurationData)
+        } catch {
+            throw ConfigurationSnapshotLoadError(
+                diagnostic: makeConfigurationLoadDiagnostic(
+                    for: error,
+                    fileURL: configurationFileURL,
+                    data: configurationData
+                )
+            )
+        }
+
+        let layoutLoadResult = loadLayoutGroups(from: layoutDirectoryURL)
+
+        do {
+            let configuration = try ConfigurationSchemaConverter.makeAppConfiguration(
+                from: configurationFile,
+                layoutGroups: layoutLoadResult.layoutGroups
+            )
+            return LoadedSnapshot(
+                configuration: configuration,
+                skippedLayoutDiagnostics: layoutLoadResult.skippedLayoutDiagnostics
+            )
+        } catch {
+            throw ConfigurationSnapshotLoadError(
+                diagnostic: makeConfigurationLoadDiagnostic(
+                    for: error,
+                    fileURL: failureDiagnosticFileURL,
+                    data: Data()
+                )
+            )
+        }
     }
 
-    private func encodedConfigurationData(for configuration: AppConfiguration) throws -> Data {
-        let configurationFile = try ConfigurationSchemaConverter.makeConfigurationFile(from: configuration)
-        return try makeEncoder().encode(configurationFile)
+    private func loadLayoutGroups(from directoryURL: URL) -> (layoutGroups: [LayoutGroupConfiguration], skippedLayoutDiagnostics: [LayoutFileDiagnostic]) {
+        let layoutFiles = managedLayoutFiles(in: directoryURL)
+        var decodedLayoutGroups: [LayoutGroupConfiguration] = []
+        var skippedDiagnostics: [LayoutFileDiagnostic] = []
+
+        for layoutFile in layoutFiles {
+            let data = (try? Data(contentsOf: layoutFile.fileURL)) ?? Data()
+            do {
+                let layoutGroup = try decodeLayoutGroup(from: data)
+                decodedLayoutGroups.append(layoutGroup)
+            } catch {
+                let diagnostic = makeLayoutFileDiagnostic(
+                    for: error,
+                    fileURL: layoutFile.fileURL,
+                    data: data
+                )
+                skippedDiagnostics.append(diagnostic)
+                AppLogger.shared.error("Skipped invalid layout file \(layoutFile.fileURL.lastPathComponent, privacy: .public): \(diagnostic.message, privacy: .public)")
+            }
+        }
+
+        return (decodedLayoutGroups, skippedDiagnostics)
     }
 
-    private func makeDiagnostic(for error: Error, fileURL: URL, data: Data) -> ConfigurationLoadDiagnostic {
+    private func writeSnapshot(
+        _ snapshot: PersistedConfigurationSnapshot,
+        configurationFileURL: URL,
+        layoutDirectoryURL: URL
+    ) throws {
+        let encoder = makeEncoder()
+        let configurationData = try encoder.encode(snapshot.configurationFile)
+        let layoutFiles = try snapshot.layoutGroups.enumerated().map { offset, layoutGroup in
+            let fileURL = layoutDirectoryURL.appendingPathComponent("\(offset + 1).grid.json")
+            return (fileURL: fileURL, data: try encoder.encode(layoutGroup))
+        }
+
+        try fileManager.createDirectory(at: layoutDirectoryURL, withIntermediateDirectories: true)
+        for layoutFile in layoutFiles {
+            try layoutFile.data.write(to: layoutFile.fileURL, options: .atomic)
+        }
+
+        let desiredFileNames = Set(layoutFiles.map { $0.fileURL.lastPathComponent })
+        for existingFile in managedLayoutFiles(in: layoutDirectoryURL) where !desiredFileNames.contains(existingFile.fileURL.lastPathComponent) {
+            try fileManager.removeItem(at: existingFile.fileURL)
+        }
+
+        try configurationData.write(to: configurationFileURL, options: .atomic)
+    }
+
+    private func decodeConfigurationFile(from data: Data) throws -> ConfigurationFile {
+        try makeDecoder().decode(ConfigurationFile.self, from: data)
+    }
+
+    private func decodeLayoutGroup(from data: Data) throws -> LayoutGroupConfiguration {
+        try makeDecoder().decode(LayoutGroupConfiguration.self, from: data)
+    }
+
+    private func managedLayoutFiles(in directoryURL: URL) -> [LayoutFileMatch] {
+        guard let fileURLs = try? fileManager.contentsOfDirectory(
+            at: directoryURL,
+            includingPropertiesForKeys: nil,
+            options: [.skipsHiddenFiles]
+        ) else {
+            return []
+        }
+
+        return fileURLs.compactMap { fileURL in
+            guard
+                let index = managedLayoutFileIndex(for: fileURL.lastPathComponent)
+            else {
+                return nil
+            }
+            return LayoutFileMatch(index: index, fileURL: fileURL)
+        }
+        .sorted { lhs, rhs in
+            if lhs.index == rhs.index {
+                return lhs.fileURL.lastPathComponent < rhs.fileURL.lastPathComponent
+            }
+            return lhs.index < rhs.index
+        }
+    }
+
+    private func managedLayoutFileIndex(for fileName: String) -> Int? {
+        let pattern = #"^([1-9][0-9]*)\.grid\.json$"#
+        guard
+            let expression = try? NSRegularExpression(pattern: pattern),
+            let match = expression.firstMatch(
+                in: fileName,
+                range: NSRange(fileName.startIndex..., in: fileName)
+            ),
+            let range = Range(match.range(at: 1), in: fileName)
+        else {
+            return nil
+        }
+
+        return Int(fileName[range])
+    }
+
+    private func makeConfigurationLoadDiagnostic(
+        for error: Error,
+        fileURL: URL,
+        data: Data
+    ) -> ConfigurationLoadDiagnostic {
+        let components = diagnosticComponents(for: error, data: data)
+        return ConfigurationLoadDiagnostic(
+            fileURL: fileURL,
+            message: components.message,
+            line: components.line,
+            column: components.column,
+            codingPath: components.codingPath
+        )
+    }
+
+    private func makeLayoutFileDiagnostic(
+        for error: Error,
+        fileURL: URL,
+        data: Data
+    ) -> LayoutFileDiagnostic {
+        let components = diagnosticComponents(for: error, data: data)
+        return LayoutFileDiagnostic(
+            fileURL: fileURL,
+            message: components.message,
+            line: components.line,
+            column: components.column,
+            codingPath: components.codingPath
+        )
+    }
+
+    private func diagnosticComponents(for error: Error, data: Data) -> DiagnosticComponents {
         if let decodingError = error as? DecodingError {
-            return diagnostic(from: decodingError, fileURL: fileURL, data: data)
+            return diagnosticComponents(from: decodingError, data: data)
         }
 
         let nsError = error as NSError
         let message = diagnosticMessage(for: error)
         let location = diagnosticLocation(from: nsError, data: data)
-        return ConfigurationLoadDiagnostic(
-            fileURL: fileURL,
+        return DiagnosticComponents(
             message: message,
             line: location?.line,
             column: location?.column,
@@ -137,45 +352,40 @@ final class ConfigurationStore {
         )
     }
 
-    private func diagnostic(from error: DecodingError, fileURL: URL, data: Data) -> ConfigurationLoadDiagnostic {
+    private func diagnosticComponents(from error: DecodingError, data: Data) -> DiagnosticComponents {
         switch error {
         case let .dataCorrupted(context):
             let underlyingError = context.underlyingError as NSError?
             let location = diagnosticLocation(from: underlyingError, data: data)
-            return ConfigurationLoadDiagnostic(
-                fileURL: fileURL,
+            return DiagnosticComponents(
                 message: diagnosticMessage(forDataCorruption: context, underlyingError: underlyingError),
                 line: location?.line,
                 column: location?.column,
                 codingPath: context.codingPath.map(\.stringValue)
             )
         case let .keyNotFound(key, context):
-            return ConfigurationLoadDiagnostic(
-                fileURL: fileURL,
+            return DiagnosticComponents(
                 message: "Missing required key '\(key.stringValue)'.",
                 line: nil,
                 column: nil,
                 codingPath: (context.codingPath + [key]).map(\.stringValue)
             )
         case let .typeMismatch(_, context):
-            return ConfigurationLoadDiagnostic(
-                fileURL: fileURL,
+            return DiagnosticComponents(
                 message: context.debugDescription,
                 line: nil,
                 column: nil,
                 codingPath: context.codingPath.map(\.stringValue)
             )
         case let .valueNotFound(_, context):
-            return ConfigurationLoadDiagnostic(
-                fileURL: fileURL,
+            return DiagnosticComponents(
                 message: context.debugDescription,
                 line: nil,
                 column: nil,
                 codingPath: context.codingPath.map(\.stringValue)
             )
         @unknown default:
-            return ConfigurationLoadDiagnostic(
-                fileURL: fileURL,
+            return DiagnosticComponents(
                 message: diagnosticMessage(for: error),
                 line: nil,
                 column: nil,
@@ -196,6 +406,8 @@ final class ConfigurationStore {
                 return "layoutGroups contains duplicate group names."
             case let .overlappingMonitorBindings(groupName):
                 return "layout group '\(groupName)' contains overlapping monitor bindings."
+            case .embeddedLayoutGroupsNotSupported:
+                return "config.json must not contain embedded layoutGroups. Move them into layout/*.grid.json."
             }
         default:
             return error.localizedDescription

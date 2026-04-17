@@ -5,6 +5,7 @@ enum ConfigurationFileError: Error {
     case missingActiveLayoutGroup(String)
     case duplicateLayoutGroupName
     case overlappingMonitorBindings(String)
+    case embeddedLayoutGroupsNotSupported
 }
 
 enum ConfigurationValidator {

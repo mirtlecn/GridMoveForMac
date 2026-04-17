@@ -5,8 +5,58 @@ struct ConfigurationFile: Codable {
     let appearance: AppearanceConfiguration
     let dragTriggers: DragTriggerSettings
     let hotkeys: HotkeyConfiguration
-    let layoutGroups: [LayoutGroupConfiguration]
     let monitors: [String: String]
+
+    private enum CodingKeys: String, CodingKey {
+        case general
+        case appearance
+        case dragTriggers
+        case hotkeys
+        case monitors
+    }
+
+    init(
+        general: GeneralSettings,
+        appearance: AppearanceConfiguration,
+        dragTriggers: DragTriggerSettings,
+        hotkeys: HotkeyConfiguration,
+        monitors: [String: String]
+    ) {
+        self.general = general
+        self.appearance = appearance
+        self.dragTriggers = dragTriggers
+        self.hotkeys = hotkeys
+        self.monitors = monitors
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let anyContainer = try decoder.container(keyedBy: AnyCodingKey.self)
+        if anyContainer.allKeys.contains(where: { $0.stringValue == "layoutGroups" }) {
+            throw ConfigurationFileError.embeddedLayoutGroupsNotSupported
+        }
+
+        general = try container.decode(GeneralSettings.self, forKey: .general)
+        appearance = try container.decode(AppearanceConfiguration.self, forKey: .appearance)
+        dragTriggers = try container.decode(DragTriggerSettings.self, forKey: .dragTriggers)
+        hotkeys = try container.decode(HotkeyConfiguration.self, forKey: .hotkeys)
+        monitors = try container.decode([String: String].self, forKey: .monitors)
+    }
+}
+
+private struct AnyCodingKey: CodingKey {
+    let stringValue: String
+    let intValue: Int?
+
+    init?(stringValue: String) {
+        self.stringValue = stringValue
+        intValue = nil
+    }
+
+    init?(intValue: Int) {
+        stringValue = String(intValue)
+        self.intValue = intValue
+    }
 }
 
 struct AppearanceConfiguration: Codable {

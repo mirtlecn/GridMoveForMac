@@ -195,6 +195,69 @@ import Testing
 }
 
 @MainActor
+@Test func appDelegateWarnsWhenManualReloadSkipsInvalidLayoutFiles() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-partial-reload-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    _ = try store.load()
+
+    try """
+    {
+      "name": "built-in",
+      "sets": [
+        {
+          "monitor": "all",
+          "layouts": [
+            {
+              "name": "Modified built-in",
+              "gridColumns": 12,
+              "gridRows": 6,
+              "windowSelection": { "x": 0, "y": 0, "w": 12, "h": 6 }
+            }
+          ]
+        }
+      ]
+    }
+    """.write(
+        to: store.layoutDirectoryURL.appendingPathComponent("1.grid.json"),
+        atomically: true,
+        encoding: .utf8
+    )
+    try """
+    {
+      "name":
+    """.write(
+        to: store.layoutDirectoryURL.appendingPathComponent("2.grid.json"),
+        atomically: true,
+        encoding: .utf8
+    )
+
+    var receivedTitle: String?
+    var receivedBody: String?
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        currentMonitorMapProvider: { [:] },
+        notifyUser: { title, body in
+            receivedTitle = title
+            receivedBody = body
+        }
+    )
+
+    let expectedResult = try store.loadWithStatus()
+    delegate.reloadConfigurationFromDisk(mode: .manual)
+
+    #expect(expectedResult.source == .persistedConfiguration)
+    #expect(expectedResult.skippedLayoutDiagnostics.count == 1)
+    #expect(delegate.configuration.layoutGroupNames() == ["built-in"])
+    #expect(delegate.configuration.layouts.map(\.name) == ["Modified built-in"])
+    #expect(receivedTitle == UICopy.configReloadSkippedLayoutsTitle)
+    #expect(receivedBody?.contains("2.grid.json") == true)
+}
+
+@MainActor
 @Test func appDelegateRequestsAccessibilityPromptOnlyOnceWhileAccessRemainsMissing() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-accessibility-prompt-\(UUID().uuidString)", isDirectory: true)

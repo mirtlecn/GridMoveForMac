@@ -164,6 +164,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             case .manual:
                 if result.source == .persistedConfiguration {
                     applyConfiguration(result.configuration)
+                    if !result.skippedLayoutDiagnostics.isEmpty {
+                        userNotifier.notify(
+                            title: UICopy.configReloadSkippedLayoutsTitle,
+                            body: UICopy.configReloadSkippedLayoutsBody(diagnostics: result.skippedLayoutDiagnostics)
+                        )
+                    }
                 } else {
                     userNotifier.notify(
                         title: UICopy.configReloadFailedTitle,

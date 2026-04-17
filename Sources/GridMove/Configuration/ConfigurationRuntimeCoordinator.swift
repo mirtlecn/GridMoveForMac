@@ -5,6 +5,7 @@ final class ConfigurationRuntimeCoordinator {
         let configuration: AppConfiguration
         let source: ConfigurationLoadSource
         let diagnostic: ConfigurationLoadDiagnostic?
+        let skippedLayoutDiagnostics: [LayoutFileDiagnostic]
     }
 
     private let configurationStore: ConfigurationStore
@@ -37,7 +38,8 @@ final class ConfigurationRuntimeCoordinator {
         return LoadResult(
             configuration: configuration,
             source: result.source,
-            diagnostic: result.diagnostic
+            diagnostic: result.diagnostic,
+            skippedLayoutDiagnostics: result.skippedLayoutDiagnostics
         )
     }
 

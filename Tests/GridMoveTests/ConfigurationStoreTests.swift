@@ -2,6 +2,20 @@ import Foundation
 import Testing
 @testable import GridMove
 
+private func writeMainConfigurationJSON(_ json: String, to store: ConfigurationStore) throws {
+    try FileManager.default.createDirectory(at: store.directoryURL, withIntermediateDirectories: true)
+    try json.write(to: store.fileURL, atomically: true, encoding: .utf8)
+}
+
+private func writeLayoutFile(_ fileName: String, json: String, to store: ConfigurationStore) throws {
+    try FileManager.default.createDirectory(at: store.layoutDirectoryURL, withIntermediateDirectories: true)
+    try json.write(
+        to: store.layoutDirectoryURL.appendingPathComponent(fileName),
+        atomically: true,
+        encoding: .utf8
+    )
+}
+
 @Test func configurationStoreWritesDefaultJSONAndCanReload() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-tests-\(UUID().uuidString)", isDirectory: true)
@@ -16,18 +30,39 @@ import Testing
     #expect(initialConfiguration.layouts.count == 11)
     #expect(initialConfiguration.layoutGroupNames() == [AppConfiguration.builtInGroupName, AppConfiguration.fullscreenGroupName])
     #expect(FileManager.default.fileExists(atPath: store.fileURL.path))
+    #expect(FileManager.default.fileExists(atPath: store.layoutDirectoryURL.path))
     #expect(FileManager.default.fileExists(atPath: store.lastKnownGoodFileURL.path))
+    #expect(FileManager.default.fileExists(atPath: store.lastKnownGoodLayoutDirectoryURL.path))
 
     let initialText = try String(contentsOf: store.fileURL, encoding: .utf8)
-    #expect(initialText.contains("\"layoutGroups\""))
     #expect(initialText.contains("\"activeLayoutGroup\""))
     #expect(initialText.contains("\"applyLayoutByIndex\""))
-    #expect(initialText.contains("\"includeInGroupCycle\""))
-    #expect(initialText.contains("\"includeInLayoutIndex\""))
-    #expect(initialText.contains("\"monitor\""))
+    #expect(!initialText.contains("\"layoutGroups\""))
     #expect(!initialText.contains("\"includeInCycle\""))
     #expect(!initialText.contains("\"id\":"))
     #expect(!initialText.contains("//"))
+
+    let layoutFiles = try FileManager.default.contentsOfDirectory(
+        at: store.layoutDirectoryURL,
+        includingPropertiesForKeys: nil
+    )
+    .map(\.lastPathComponent)
+    .sorted()
+    #expect(layoutFiles == ["1.grid.json", "2.grid.json"])
+
+    let firstLayoutText = try String(
+        contentsOf: store.layoutDirectoryURL.appendingPathComponent("1.grid.json"),
+        encoding: .utf8
+    )
+    let secondLayoutText = try String(
+        contentsOf: store.layoutDirectoryURL.appendingPathComponent("2.grid.json"),
+        encoding: .utf8
+    )
+    #expect(firstLayoutText.contains("\"name\""))
+    #expect(firstLayoutText.contains(AppConfiguration.builtInGroupName))
+    #expect(firstLayoutText.contains("\"includeInGroupCycle\""))
+    #expect(secondLayoutText.contains(AppConfiguration.fullscreenGroupName))
+    #expect(secondLayoutText.contains("\"monitor\""))
 
     var updatedConfiguration = initialConfiguration
     updatedConfiguration.general.excludedWindowTitles = ["Test Title"]
@@ -55,14 +90,13 @@ import Testing
     defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
 
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
-    try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
 
     let invalidJSON = """
     {
       "general": {
         "isEnabled": true,
     """
-    try invalidJSON.write(to: store.fileURL, atomically: true, encoding: .utf8)
+    try writeMainConfigurationJSON(invalidJSON, to: store)
 
     let result = try store.loadWithStatus()
     let reloadedText = try String(contentsOf: store.fileURL, encoding: .utf8)
@@ -108,9 +142,8 @@ import Testing
     defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
 
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
-    try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
 
-    let json = """
+    let mainJSON = """
     {
       "general": {
         "isEnabled": true,
@@ -151,44 +184,46 @@ import Testing
           }
         ]
       },
-      "layoutGroups": [
-        {
-          "name": "work",
-          "includeInGroupCycle": false,
-          "sets": [
-            {
-              "monitor": "main",
-              "layouts": [
-                {
-                  "name": "Left 1/3",
-                  "gridColumns": 12,
-                  "gridRows": 6,
-                  "windowSelection": { "x": 0, "y": 0, "w": 4, "h": 6 },
-                  "triggerRegion": {
-                    "kind": "screen",
-                    "gridSelection": { "x": 0, "y": 0, "w": 2, "h": 6 }
-                  },
-                  "includeInLayoutIndex": true
-                },
-                {
-                  "name": "Center",
-                  "gridColumns": 12,
-                  "gridRows": 6,
-                  "windowSelection": { "x": 3, "y": 1, "w": 6, "h": 4 },
-                  "includeInLayoutIndex": false
-                }
-              ]
-            }
-          ]
-        }
-      ],
       "monitors": {
         "Built-in Retina Display": "12345"
       }
     }
     """
 
-    try json.write(to: store.fileURL, atomically: true, encoding: .utf8)
+    let layoutJSON = """
+    {
+      "name": "work",
+      "includeInGroupCycle": false,
+      "sets": [
+        {
+          "monitor": "main",
+          "layouts": [
+            {
+              "name": "Left 1/3",
+              "gridColumns": 12,
+              "gridRows": 6,
+              "windowSelection": { "x": 0, "y": 0, "w": 4, "h": 6 },
+              "triggerRegion": {
+                "kind": "screen",
+                "gridSelection": { "x": 0, "y": 0, "w": 2, "h": 6 }
+              },
+              "includeInLayoutIndex": true
+            },
+            {
+              "name": "Center",
+              "gridColumns": 12,
+              "gridRows": 6,
+              "windowSelection": { "x": 3, "y": 1, "w": 6, "h": 4 },
+              "includeInLayoutIndex": false
+            }
+          ]
+        }
+      ]
+    }
+    """
+
+    try writeMainConfigurationJSON(mainJSON, to: store)
+    try writeLayoutFile("1.grid.json", json: layoutJSON, to: store)
     let configuration = try store.load()
 
     #expect(configuration.general.activeLayoutGroup == "work")
@@ -212,9 +247,8 @@ import Testing
     defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
 
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
-    try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
 
-    let json = """
+    let mainJSON = """
     {
       "general": {
         "isEnabled": true,
@@ -243,35 +277,37 @@ import Testing
       "hotkeys": {
         "bindings": []
       },
-      "layoutGroups": [
-        {
-          "name": "work",
-          "sets": [
-            {
-              "monitor": "main",
-              "layouts": [
-                {
-                  "name": "Center",
-                  "gridColumns": 12,
-                  "gridRows": 6,
-                  "windowSelection": { "x": 0, "y": 0, "w": 6, "h": 6 }
-                },
-                {
-                  "name": "Center",
-                  "gridColumns": 12,
-                  "gridRows": 6,
-                  "windowSelection": { "x": 6, "y": 0, "w": 6, "h": 6 }
-                }
-              ]
-            }
-          ]
-        }
-      ],
       "monitors": {}
     }
     """
 
-    try json.write(to: store.fileURL, atomically: true, encoding: .utf8)
+    let layoutJSON = """
+    {
+      "name": "work",
+      "sets": [
+        {
+          "monitor": "main",
+          "layouts": [
+            {
+              "name": "Center",
+              "gridColumns": 12,
+              "gridRows": 6,
+              "windowSelection": { "x": 0, "y": 0, "w": 6, "h": 6 }
+            },
+            {
+              "name": "Center",
+              "gridColumns": 12,
+              "gridRows": 6,
+              "windowSelection": { "x": 6, "y": 0, "w": 6, "h": 6 }
+            }
+          ]
+        }
+      ]
+    }
+    """
+
+    try writeMainConfigurationJSON(mainJSON, to: store)
+    try writeLayoutFile("1.grid.json", json: layoutJSON, to: store)
     let result = try store.loadWithStatus()
 
     #expect(result.source == .persistedConfiguration)
@@ -287,7 +323,6 @@ import Testing
     defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
 
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
-    try FileManager.default.createDirectory(at: temporaryDirectory, withIntermediateDirectories: true)
 
     let json = """
     {
@@ -301,7 +336,7 @@ import Testing
     }
     """
 
-    try json.write(to: store.fileURL, atomically: true, encoding: .utf8)
+    try writeMainConfigurationJSON(json, to: store)
     let result = try store.loadWithStatus()
 
     #expect(result.source == .builtInDefault)
@@ -309,6 +344,322 @@ import Testing
     #expect(result.diagnostic != nil)
     #expect(result.diagnostic?.line != nil)
     #expect(result.diagnostic?.column != nil)
+}
+
+@Test func configurationStoreIgnoresNonMatchingLayoutFilesAndSortsManagedFilesNumerically() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-layout-order-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+
+    try writeMainConfigurationJSON(
+        """
+        {
+          "general": {
+            "isEnabled": true,
+            "excludedBundleIDs": ["com.apple.Spotlight"],
+            "excludedWindowTitles": [],
+            "activeLayoutGroup": "two"
+          },
+          "appearance": {
+            "renderTriggerAreas": false,
+            "triggerOpacity": 0.2,
+            "triggerGap": 2,
+            "triggerStrokeColor": "#007AFF33",
+            "renderWindowHighlight": true,
+            "highlightFillOpacity": 0.08,
+            "highlightStrokeWidth": 3,
+            "highlightStrokeColor": "#FFFFFFEB"
+          },
+          "dragTriggers": {
+            "middleMouseButtonNumber": 2,
+            "enableMiddleMouseDrag": true,
+            "enableModifierLeftMouseDrag": true,
+            "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
+            "activationDelaySeconds": 0.3,
+            "activationMoveThreshold": 10
+          },
+          "hotkeys": {
+            "bindings": []
+          },
+          "monitors": {}
+        }
+        """,
+        to: store
+    )
+    try writeLayoutFile(
+        "10.grid.json",
+        json: """
+        {
+          "name": "ten",
+          "sets": [
+            {
+              "monitor": "all",
+              "layouts": [
+                {
+                  "name": "Ten",
+                  "gridColumns": 12,
+                  "gridRows": 6,
+                  "windowSelection": { "x": 0, "y": 0, "w": 12, "h": 6 }
+                }
+              ]
+            }
+          ]
+        }
+        """,
+        to: store
+    )
+    try writeLayoutFile(
+        "2.grid.json",
+        json: """
+        {
+          "name": "two",
+          "sets": [
+            {
+              "monitor": "all",
+              "layouts": [
+                {
+                  "name": "Two",
+                  "gridColumns": 12,
+                  "gridRows": 6,
+                  "windowSelection": { "x": 0, "y": 0, "w": 12, "h": 6 }
+                }
+              ]
+            }
+          ]
+        }
+        """,
+        to: store
+    )
+    try writeLayoutFile("notes.json", json: "{\"ignored\":true}", to: store)
+    try writeLayoutFile("03.grid.json", json: "{\"ignored\":true}", to: store)
+
+    let configuration = try store.load()
+
+    #expect(configuration.layoutGroupNames() == ["two", "ten"])
+    #expect(
+        configuration.layoutGroups.flatMap { group in
+            group.sets.flatMap(\.layouts).map(\.name)
+        } == ["Two", "Ten"]
+    )
+}
+
+@Test func configurationStoreSkipsInvalidLayoutFilesWhenMergedConfigurationRemainsValid() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-skip-invalid-layout-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+
+    try writeMainConfigurationJSON(
+        """
+        {
+          "general": {
+            "isEnabled": true,
+            "excludedBundleIDs": ["com.apple.Spotlight"],
+            "excludedWindowTitles": [],
+            "activeLayoutGroup": "work"
+          },
+          "appearance": {
+            "renderTriggerAreas": false,
+            "triggerOpacity": 0.2,
+            "triggerGap": 2,
+            "triggerStrokeColor": "#007AFF33",
+            "renderWindowHighlight": true,
+            "highlightFillOpacity": 0.08,
+            "highlightStrokeWidth": 3,
+            "highlightStrokeColor": "#FFFFFFEB"
+          },
+          "dragTriggers": {
+            "middleMouseButtonNumber": 2,
+            "enableMiddleMouseDrag": true,
+            "enableModifierLeftMouseDrag": true,
+            "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
+            "activationDelaySeconds": 0.3,
+            "activationMoveThreshold": 10
+          },
+          "hotkeys": {
+            "bindings": []
+          },
+          "monitors": {}
+        }
+        """,
+        to: store
+    )
+    try writeLayoutFile(
+        "1.grid.json",
+        json: """
+        {
+          "name": "work",
+          "sets": [
+            {
+              "monitor": "all",
+              "layouts": [
+                {
+                  "name": "Valid",
+                  "gridColumns": 12,
+                  "gridRows": 6,
+                  "windowSelection": { "x": 0, "y": 0, "w": 12, "h": 6 }
+                }
+              ]
+            }
+          ]
+        }
+        """,
+        to: store
+    )
+    try writeLayoutFile(
+        "2.grid.json",
+        json: """
+        {
+          "name":
+        """,
+        to: store
+    )
+
+    let result = try store.loadWithStatus()
+
+    #expect(result.source == .persistedConfiguration)
+    #expect(result.diagnostic == nil)
+    #expect(result.skippedLayoutDiagnostics.count == 1)
+    #expect(result.skippedLayoutDiagnostics[0].fileURL.lastPathComponent == "2.grid.json")
+    #expect(result.configuration.layoutGroupNames() == ["work"])
+}
+
+@Test func configurationStoreFallsBackWhenSkippingInvalidLayoutFilesBreaksValidation() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-invalid-layout-breaks-validation-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+
+    try writeMainConfigurationJSON(
+        """
+        {
+          "general": {
+            "isEnabled": true,
+            "excludedBundleIDs": ["com.apple.Spotlight"],
+            "excludedWindowTitles": [],
+            "activeLayoutGroup": "missing-after-skip"
+          },
+          "appearance": {
+            "renderTriggerAreas": false,
+            "triggerOpacity": 0.2,
+            "triggerGap": 2,
+            "triggerStrokeColor": "#007AFF33",
+            "renderWindowHighlight": true,
+            "highlightFillOpacity": 0.08,
+            "highlightStrokeWidth": 3,
+            "highlightStrokeColor": "#FFFFFFEB"
+          },
+          "dragTriggers": {
+            "middleMouseButtonNumber": 2,
+            "enableMiddleMouseDrag": true,
+            "enableModifierLeftMouseDrag": true,
+            "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
+            "activationDelaySeconds": 0.3,
+            "activationMoveThreshold": 10
+          },
+          "hotkeys": {
+            "bindings": []
+          },
+          "monitors": {}
+        }
+        """,
+        to: store
+    )
+    try writeLayoutFile(
+        "1.grid.json",
+        json: """
+        {
+          "name":
+        """,
+        to: store
+    )
+
+    let result = try store.loadWithStatus()
+
+    #expect(result.source == .builtInDefault)
+    #expect(result.configuration == .defaultValue)
+    #expect(result.diagnostic?.message.contains("missing layout group") == true)
+}
+
+@Test func configurationStoreRejectsLegacyEmbeddedLayoutGroupsInConfigJSON() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-legacy-layoutgroups-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+
+    try writeMainConfigurationJSON(
+        """
+        {
+          "general": {
+            "isEnabled": true,
+            "excludedBundleIDs": ["com.apple.Spotlight"],
+            "excludedWindowTitles": [],
+            "activeLayoutGroup": "built-in"
+          },
+          "appearance": {
+            "renderTriggerAreas": false,
+            "triggerOpacity": 0.2,
+            "triggerGap": 2,
+            "triggerStrokeColor": "#007AFF33",
+            "renderWindowHighlight": true,
+            "highlightFillOpacity": 0.08,
+            "highlightStrokeWidth": 3,
+            "highlightStrokeColor": "#FFFFFFEB"
+          },
+          "dragTriggers": {
+            "middleMouseButtonNumber": 2,
+            "enableMiddleMouseDrag": true,
+            "enableModifierLeftMouseDrag": true,
+            "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
+            "activationDelaySeconds": 0.3,
+            "activationMoveThreshold": 10
+          },
+          "hotkeys": {
+            "bindings": []
+          },
+          "layoutGroups": [],
+          "monitors": {}
+        }
+        """,
+        to: store
+    )
+
+    let result = try store.loadWithStatus()
+
+    #expect(result.source == .builtInDefault)
+    #expect(result.configuration == .defaultValue)
+    #expect(result.diagnostic?.message.contains("must not contain embedded layoutGroups") == true)
+}
+
+@Test func configurationStoreSaveRewritesManagedLayoutFilesAndPreservesUnmanagedFiles() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-rewrite-layout-files-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    _ = try store.load()
+    try writeLayoutFile("3.grid.json", json: "{\"stale\":true}", to: store)
+    try writeLayoutFile("custom-note.json", json: "{\"keep\":true}", to: store)
+
+    var configuration = AppConfiguration.defaultValue
+    configuration.layoutGroups = [configuration.layoutGroups[0]]
+    configuration.general.activeLayoutGroup = AppConfiguration.builtInGroupName
+
+    try store.save(configuration)
+
+    let layoutFiles = try FileManager.default.contentsOfDirectory(
+        at: store.layoutDirectoryURL,
+        includingPropertiesForKeys: nil
+    )
+    .map(\.lastPathComponent)
+    .sorted()
+
+    #expect(layoutFiles == ["1.grid.json", "custom-note.json"])
 }
 
 @Test func defaultConfigurationKeepsExpectedShortcutAndModifierDefaults() async throws {
