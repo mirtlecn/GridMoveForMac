@@ -45,7 +45,7 @@ final class OverlayController {
             context.duration = FlashDuration.seconds
             self.panel?.animator().alphaValue = 0.0
         } completionHandler: { [weak self] in
-            MainActor.assumeIsolated {
+            Task { @MainActor in
                 guard let self else { return }
                 if self.flashGeneration == expectedGeneration {
                     self.dismissPanel()

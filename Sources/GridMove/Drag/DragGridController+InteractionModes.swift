@@ -2,6 +2,14 @@ import CoreGraphics
 import Foundation
 
 extension DragGridController {
+    static func preferredMoveOnlyFlashScreen<Screen>(
+        windowScreen: Screen?,
+        activeScreen: Screen?,
+        pointerScreen: Screen?
+    ) -> Screen? {
+        windowScreen ?? activeScreen ?? pointerScreen
+    }
+
     func enterDragMode(
         button: DragTriggerButton,
         targetWindow: ManagedWindow,
@@ -148,7 +156,12 @@ extension DragGridController {
         let fallbackScreen = windowFrame.flatMap { frame in
             windowController.screenContaining(point: CGPoint(x: frame.midX, y: frame.midY))
         }
-        let screen = state.activeScreen ?? windowController.resolvedScreen(for: point, fallback: fallbackScreen)
+        let pointerScreen = windowController.resolvedScreen(for: point, fallback: fallbackScreen)
+        let screen = Self.preferredMoveOnlyFlashScreen(
+            windowScreen: fallbackScreen,
+            activeScreen: state.activeScreen,
+            pointerScreen: pointerScreen
+        )
         if let screen, let windowFrame {
             overlayController.flashHighlight(frame: windowFrame, screen: screen, configuration: configuration)
         } else {
