@@ -11,6 +11,7 @@ APP_AUTHOR_URL ?= https://github.com/mirtlecn
 APP_COMMIT_SHA ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
 PACKAGE_VERSION_INFO ?= $(APP_VERSION)+$(APP_COMMIT_SHA)
 RELEASE_VERSION ?= $(word 2,$(MAKECMDGOALS))
+RELEASE_TAG ?= $(if $(RELEASE_VERSION),v$(shell printf '%s' "$(RELEASE_VERSION)" | sed 's/^[vV]//'))
 
 ifeq ($(firstword $(MAKECMDGOALS)),release)
 ifneq ($(RELEASE_VERSION),)
@@ -20,7 +21,7 @@ $(RELEASE_VERSION):
 endif
 endif
 
-.PHONY: build test dev run sign-app verify-app clean update-version release
+.PHONY: build test dev run sign-app verify-app clean update-version release release-vcs
 
 build: clean test
 	swift build -c release	
@@ -41,7 +42,14 @@ update-version:
 
 release:
 	@if [[ -n "$(RELEASE_VERSION)" ]]; then $(MAKE) update-version VERSION="$(RELEASE_VERSION)"; fi
+	@if [[ -n "$(RELEASE_VERSION)" ]]; then $(MAKE) release-vcs RELEASE_TAG="$(RELEASE_TAG)"; fi
 	$(MAKE) build APP_VERSION="$(shell tr -d '\n' < $(VERSION_FILE))" BUILD_NUMBER="$(shell tr -d '\n' < $(VERSION_FILE))" PACKAGE_VERSION_INFO="$(shell tr -d '\n' < $(VERSION_FILE))"
+
+release-vcs:
+	@if [[ -z "$(RELEASE_TAG)" ]]; then echo 'usage: make release v0.1.1'; exit 1; fi
+	git add -A
+	git commit -m "chore: release $(RELEASE_TAG)"
+	git tag "$(RELEASE_TAG)"
 
 test:
 	swift test

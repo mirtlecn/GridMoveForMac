@@ -22,10 +22,9 @@ make build
 # build a release package for the current VERSION
 make release
 
-# update VERSION and build a release package
+# update VERSION, create a release commit and tag, then build a release package
 make release v0.1.1
 ```
-
 The default signing mode is ad-hoc signing for local testing. To use a real certificate, override `SIGN_IDENTITY`:
 
 ```bash
