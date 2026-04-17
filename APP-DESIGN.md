@@ -71,7 +71,7 @@ Important properties:
 - stroke colors are stored as `#RRGGBBAA`
 - `general.activeLayoutGroup` selects the currently active layout group
 - `general.mouseButtonNumber` selects the hold-to-drag mouse button using user-facing numbering, where `3` is the standard middle button
-- the menu bar shows `Mouse button drag` when `general.mouseButtonNumber == 3`, and `Mouse button <n> drag` for other configured button numbers
+- the menu bar shows `Middle mouse drag` when `general.mouseButtonNumber == 3`, and `Mouse button <n> drag` for other configured button numbers
 - `layoutGroups[*].includeInGroupCycle` controls whether layout-mode Shift cycling can switch to that group
 - `layoutGroups[*].sets[*].monitor` routes layouts to `all`, `main`, one display ID, or multiple display IDs
 - `layoutGroups[*].sets[*].layouts` order drives menu order, layout-index numbering, and same-display trigger precedence

@@ -37,7 +37,7 @@ enum UICopy {
     }
 
     static func mouseButtonDragMenuTitle(mouseButtonNumber: Int) -> String {
-        mouseButtonNumber == 3 ? "Mouse button drag" : "Mouse button \(mouseButtonNumber) drag"
+        mouseButtonNumber == 3 ? "Middle mouse drag" : "Mouse button \(mouseButtonNumber) drag"
     }
 
     static func layoutMenuName(name: String, fallbackIdentifier: String) -> String {
