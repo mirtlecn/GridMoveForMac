@@ -57,6 +57,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
         showWindow(nil)
         window.makeKeyAndOrderFront(nil)
+        clearEditingFocus(in: window)
         NSApp.activate(ignoringOtherApps: true)
     }
 
@@ -86,6 +87,11 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
             display: true,
             animate: animated
         )
+    }
+
+    private func clearEditingFocus(in window: NSWindow) {
+        window.endEditing(for: nil)
+        _ = window.makeFirstResponder(nil)
     }
 }
 
@@ -160,11 +166,13 @@ final class SettingsTabViewController: NSTabViewController {
     override func viewDidAppear() {
         super.viewDidAppear()
         onSelectedMetricsChanged?(currentWindowMetrics)
+        clearAutomaticEditingFocus()
     }
 
     override func tabView(_ tabView: NSTabView, didSelect tabViewItem: NSTabViewItem?) {
         super.tabView(tabView, didSelect: tabViewItem)
         onSelectedMetricsChanged?(metrics(for: tabViewItem?.viewController))
+        clearAutomaticEditingFocus()
     }
 
     private func addSettingsTab(viewController: NSViewController, title: String, systemImageName: String) {
@@ -182,6 +190,15 @@ final class SettingsTabViewController: NSTabViewController {
                 preferredContentSize: NSSize(width: 700, height: 560),
                 minimumContentSize: NSSize(width: 680, height: 540)
             )
+    }
+
+    private func clearAutomaticEditingFocus() {
+        guard let window = view.window else {
+            return
+        }
+
+        window.endEditing(for: nil)
+        _ = window.makeFirstResponder(nil)
     }
 }
 

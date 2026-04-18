@@ -818,6 +818,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsWindowController?.window?.minSize
     }
 
+    var settingsUsesTextEditingFocusForTesting: Bool {
+        settingsWindowController?.window?.firstResponder is NSTextView
+    }
+
     func recordLayoutIDForTesting(_ layoutID: String, windowIdentity: String) {
         layoutEngine.recordLayoutID(layoutID, for: windowIdentity)
     }
