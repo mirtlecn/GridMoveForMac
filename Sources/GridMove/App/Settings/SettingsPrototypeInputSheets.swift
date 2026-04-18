@@ -276,9 +276,11 @@ final class HotkeyAddSheetContentView: NSView, SettingsPrototypeSheetValidating,
     }
 
     private func makeShortcutRow(shortcut: KeyboardShortcut, index: Int) -> NSView {
-        let shortcutDisplayView = ReadOnlyShortcutDisplayView(text: shortcut.prototypeDisplayName)
-        shortcutDisplayView.translatesAutoresizingMaskIntoConstraints = false
-        shortcutDisplayView.widthAnchor.constraint(equalToConstant: 240).isActive = true
+        let shortcutDisplayButton = NSButton(title: shortcut.prototypeDisplayName, target: nil, action: nil)
+        shortcutDisplayButton.bezelStyle = .rounded
+        shortcutDisplayButton.isEnabled = false
+        shortcutDisplayButton.translatesAutoresizingMaskIntoConstraints = false
+        shortcutDisplayButton.widthAnchor.constraint(equalToConstant: 240).isActive = true
 
         let deleteButton = NSButton(title: UICopy.settingsDeleteButtonTitle, target: self, action: #selector(handleDeleteShortcut(_:)))
         deleteButton.bezelStyle = .rounded
@@ -286,7 +288,7 @@ final class HotkeyAddSheetContentView: NSView, SettingsPrototypeSheetValidating,
 
         let row = makeHorizontalGroup(spacing: 8)
         row.alignment = .centerY
-        row.addArrangedSubview(shortcutDisplayView)
+        row.addArrangedSubview(shortcutDisplayButton)
         row.addArrangedSubview(deleteButton)
         row.addArrangedSubview(NSView())
         return row
@@ -334,39 +336,6 @@ final class HotkeyAddSheetContentView: NSView, SettingsPrototypeSheetValidating,
         } else {
             editedActionIDs.insert(actionID)
         }
-    }
-}
-
-@MainActor
-private final class ReadOnlyShortcutDisplayView: NSView {
-    private let label: NSTextField
-
-    init(text: String) {
-        label = NSTextField(labelWithString: text)
-        super.init(frame: .zero)
-
-        wantsLayer = true
-        layer?.cornerRadius = 8
-        layer?.backgroundColor = NSColor.controlBackgroundColor.cgColor
-        layer?.borderColor = NSColor.separatorColor.withAlphaComponent(0.6).cgColor
-        layer?.borderWidth = 1
-
-        label.textColor = .secondaryLabelColor
-        label.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(label)
-
-        NSLayoutConstraint.activate([
-            label.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
-            label.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -12),
-            label.topAnchor.constraint(equalTo: topAnchor, constant: 6),
-            label.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
-            heightAnchor.constraint(equalToConstant: 34),
-        ])
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        nil
     }
 }
 
