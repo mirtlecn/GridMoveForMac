@@ -125,9 +125,14 @@ enum SettingsPreviewSupport {
         let path = NSBezierPath(roundedRect: rect, xRadius: cornerRadius, yRadius: cornerRadius)
         let color = appearance.highlightStrokeColor.nsColor
         color.withAlphaComponent(appearance.highlightFillOpacity).setFill()
-        color.setStroke()
-        path.lineWidth = CGFloat(appearance.highlightStrokeWidth)
         path.fill()
+
+        guard let strokeWidth = windowHighlightStrokeWidth(for: appearance) else {
+            return
+        }
+
+        color.setStroke()
+        path.lineWidth = strokeWidth
         path.stroke()
     }
 
@@ -137,6 +142,14 @@ enum SettingsPreviewSupport {
         color.setStroke()
         path.lineWidth = 2
         path.stroke()
+    }
+
+    static func windowHighlightStrokeWidth(for appearance: AppearanceSettings) -> CGFloat? {
+        guard appearance.highlightStrokeWidth > 0 else {
+            return nil
+        }
+
+        return CGFloat(appearance.highlightStrokeWidth)
     }
 
     static func localRect(from globalRect: CGRect, in geometry: SettingsPreviewGeometry) -> CGRect {

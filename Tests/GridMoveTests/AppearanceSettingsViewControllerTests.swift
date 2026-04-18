@@ -32,6 +32,16 @@ struct AppearanceSettingsViewControllerTests {
         )
     }
 
+    @Test func windowHighlightStrokeWidthIsDisabledAtZero() async throws {
+        var appearance = AppConfiguration.defaultValue.appearance
+        appearance.highlightStrokeWidth = 0
+
+        #expect(SettingsPreviewSupport.windowHighlightStrokeWidth(for: appearance) == nil)
+
+        appearance.highlightStrokeWidth = 3
+        #expect(SettingsPreviewSupport.windowHighlightStrokeWidth(for: appearance) == 3)
+    }
+
     @Test func appearanceSettingsWritesRealConfigurationFieldsAndUpdatesPreview() async throws {
         let state = SettingsPrototypeState(configuration: .defaultValue)
         let recorder = TestSettingsActionRecorder()
