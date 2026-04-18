@@ -102,6 +102,14 @@ private func makeTestLayout(
 
     #expect(contentView.recordedShortcut == nil)
     #expect(contentView.isConfirmationEnabled == false)
+    #expect(contentView.shortcutButtonTitleForTesting == UICopy.settingsRecordShortcutButtonTitle)
+
+    contentView.beginShortcutRecordingForTesting()
+    #expect(contentView.shortcutButtonTitleForTesting == UICopy.settingsPressShortcutValue)
+
+    contentView.applyRecordedShortcutForTesting(KeyboardShortcut(modifiers: [.cmd, .shift], key: "k"))
+    #expect(contentView.shortcutButtonTitleForTesting == "⇧⌘K")
+    #expect(contentView.isConfirmationEnabled == true)
 }
 
 @MainActor
@@ -147,4 +155,15 @@ private func makeTestLayout(
     )
 
     #expect(state.configuration.hotkeys.bindings == originalBindings)
+}
+
+@MainActor
+@Test func hotkeysTableSupportsDoubleClickToOpenAddSheet() async throws {
+    let controller = HotkeysSettingsViewController(
+        prototypeState: SettingsPrototypeState(configuration: .defaultValue),
+        actionHandler: TestSettingsActionRecorder().makeActionHandler()
+    )
+    controller.loadViewIfNeeded()
+
+    #expect(controller.supportsDoubleClickAddShortcutForTesting == true)
 }

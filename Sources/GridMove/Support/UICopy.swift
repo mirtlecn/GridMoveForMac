@@ -92,7 +92,6 @@ enum UICopy {
     static let settingsBehaviorLabel = "Behavior"
     static let settingsShortcutLabel = "Shortcut"
     static let settingsRecordShortcutButtonTitle = "Record"
-    static let settingsRecordingShortcutButtonTitle = "Recording..."
     static let settingsPressShortcutValue = "Press shortcut"
     static let settingsStatusLabel = "Status"
     static let settingsStatusValue = "Prototype only"

@@ -103,6 +103,8 @@ final class HotkeysSettingsViewController: NSViewController, NSTableViewDataSour
         slotTableView.addTableColumn(shortcutsColumn)
         slotTableView.dataSource = self
         slotTableView.delegate = self
+        slotTableView.target = self
+        slotTableView.doubleAction = #selector(handleSlotDoubleClick(_:))
     }
 
     private func makeShortcutButtonsRow() -> NSView {
@@ -156,6 +158,20 @@ final class HotkeysSettingsViewController: NSViewController, NSTableViewDataSour
 
     @objc
     private func handleAddShortcut(_ sender: NSButton) {
+        presentAddShortcutSheet()
+    }
+
+    @objc
+    private func handleSlotDoubleClick(_ sender: Any?) {
+        let clickedRow = slotTableView.clickedRow
+        if slots.indices.contains(clickedRow) {
+            selectSlot(at: clickedRow)
+        }
+
+        presentAddShortcutSheet()
+    }
+
+    private func presentAddShortcutSheet() {
         let sheetContentView = HotkeyAddSheetContentView(
             actions: slots.map(\.actionDescriptor),
             selectedActionID: selectedSlot.actionDescriptor.id
@@ -202,6 +218,10 @@ final class HotkeysSettingsViewController: NSViewController, NSTableViewDataSour
         }) {
             reloadSlots(preservingSelection: index)
         }
+    }
+
+    var supportsDoubleClickAddShortcutForTesting: Bool {
+        slotTableView.target === self && slotTableView.doubleAction == #selector(handleSlotDoubleClick(_:))
     }
 }
 

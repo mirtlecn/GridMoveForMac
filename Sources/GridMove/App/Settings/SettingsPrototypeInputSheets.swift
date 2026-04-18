@@ -227,28 +227,18 @@ final class HotkeyAddSheetContentView: NSView, SettingsPrototypeSheetValidating,
 
 @MainActor
 private final class PrototypeShortcutRecorderView: NSView {
-    private let textField = NSTextField(string: "")
     private let recordButton = NSButton(title: UICopy.settingsRecordShortcutButtonTitle, target: nil, action: nil)
     private var eventMonitor: Any?
     var onShortcutChanged: (() -> Void)?
     private var isRecording = false {
         didSet {
-            recordButton.title = isRecording
-                ? UICopy.settingsRecordingShortcutButtonTitle
-                : UICopy.settingsRecordShortcutButtonTitle
-            if isRecording {
-                textField.stringValue = UICopy.settingsPressShortcutValue
-            } else {
-                textField.stringValue = recordedShortcutDisplayName ?? ""
-            }
+            updateButtonTitle()
         }
     }
 
     private(set) var recordedShortcut: KeyboardShortcut? {
         didSet {
-            if !isRecording {
-                textField.stringValue = recordedShortcutDisplayName ?? ""
-            }
+            updateButtonTitle()
             onShortcutChanged?()
         }
     }
@@ -260,30 +250,21 @@ private final class PrototypeShortcutRecorderView: NSView {
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
 
-        textField.isEditable = false
-        textField.isBezeled = true
-        textField.controlSize = .small
-        textField.placeholderString = UICopy.settingsPressShortcutValue
-        textField.stringValue = ""
-        textField.translatesAutoresizingMaskIntoConstraints = false
-        textField.widthAnchor.constraint(equalToConstant: 130).isActive = true
-
         recordButton.bezelStyle = .rounded
+        recordButton.controlSize = .small
         recordButton.target = self
         recordButton.action = #selector(handleRecord(_:))
+        recordButton.translatesAutoresizingMaskIntoConstraints = false
+        recordButton.widthAnchor.constraint(greaterThanOrEqualToConstant: 130).isActive = true
+        updateButtonTitle()
 
-        let row = makeHorizontalGroup(spacing: 8)
-        row.translatesAutoresizingMaskIntoConstraints = false
-        row.alignment = .centerY
-        row.addArrangedSubview(textField)
-        row.addArrangedSubview(recordButton)
-        addSubview(row)
+        addSubview(recordButton)
 
         NSLayoutConstraint.activate([
-            row.leadingAnchor.constraint(equalTo: leadingAnchor),
-            row.trailingAnchor.constraint(equalTo: trailingAnchor),
-            row.topAnchor.constraint(equalTo: topAnchor),
-            row.bottomAnchor.constraint(equalTo: bottomAnchor),
+            recordButton.leadingAnchor.constraint(equalTo: leadingAnchor),
+            recordButton.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor),
+            recordButton.topAnchor.constraint(equalTo: topAnchor),
+            recordButton.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
     }
 
@@ -320,6 +301,15 @@ private final class PrototypeShortcutRecorderView: NSView {
         }
     }
 
+    private func updateButtonTitle() {
+        if isRecording {
+            recordButton.title = UICopy.settingsPressShortcutValue
+            return
+        }
+
+        recordButton.title = recordedShortcutDisplayName ?? UICopy.settingsRecordShortcutButtonTitle
+    }
+
     private func stopRecording() {
         isRecording = false
         if let eventMonitor {
@@ -330,5 +320,33 @@ private final class PrototypeShortcutRecorderView: NSView {
 
     func prepareForDismissal() {
         stopRecording()
+    }
+
+    var buttonTitleForTesting: String {
+        recordButton.title
+    }
+
+    func beginRecordingForTesting() {
+        recordedShortcut = nil
+        isRecording = true
+    }
+
+    func applyRecordedShortcutForTesting(_ shortcut: KeyboardShortcut) {
+        recordedShortcut = shortcut
+        stopRecording()
+    }
+}
+
+extension HotkeyAddSheetContentView {
+    var shortcutButtonTitleForTesting: String {
+        recorderView.buttonTitleForTesting
+    }
+
+    func beginShortcutRecordingForTesting() {
+        recorderView.beginRecordingForTesting()
+    }
+
+    func applyRecordedShortcutForTesting(_ shortcut: KeyboardShortcut) {
+        recorderView.applyRecordedShortcutForTesting(shortcut)
     }
 }
