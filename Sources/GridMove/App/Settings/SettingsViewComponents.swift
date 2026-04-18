@@ -151,6 +151,7 @@ final class SettingsIntegerStepperControl: NSView, NSTextFieldDelegate {
         stepper.minValue = Double(minValue)
         stepper.maxValue = Double(maxValue ?? Int.max)
         stepper.increment = 1
+        stepper.valueWraps = false
         stepper.target = self
         stepper.action = #selector(handleStepperChanged(_:))
 
@@ -214,6 +215,11 @@ extension SettingsIntegerStepperControl {
 
     func commitTextEditingForTesting() {
         controlTextDidEndEditing(Notification(name: NSControl.textDidEndEditingNotification))
+    }
+
+    func decrementForTesting() {
+        stepper.integerValue -= Int(stepper.increment)
+        handleStepperChanged(stepper)
     }
 }
 

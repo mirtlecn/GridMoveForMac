@@ -127,4 +127,20 @@ struct GeneralSettingsViewControllerTests {
         #expect(state.configuration.general.mouseButtonNumber == GeneralSettings.defaultMouseButtonNumber)
         #expect(controller.mouseButtonNumberValueForTesting == GeneralSettings.defaultMouseButtonNumber)
     }
+
+    @Test func generalSettingsMouseButtonNumberDoesNotWrapBelowMinimum() async throws {
+        let state = SettingsPrototypeState(configuration: .defaultValue)
+        let recorder = TestSettingsActionRecorder()
+        let controller = GeneralSettingsViewController(
+            prototypeState: state,
+            actionHandler: recorder.makeActionHandler()
+        )
+        controller.loadViewIfNeeded()
+
+        controller.setMouseButtonNumberForTesting(GeneralSettings.defaultMouseButtonNumber)
+        controller.decrementMouseButtonNumberForTesting()
+
+        #expect(state.configuration.general.mouseButtonNumber == GeneralSettings.defaultMouseButtonNumber)
+        #expect(controller.mouseButtonNumberValueForTesting == GeneralSettings.defaultMouseButtonNumber)
+    }
 }

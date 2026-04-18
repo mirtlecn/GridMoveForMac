@@ -443,6 +443,10 @@ extension GeneralSettingsViewController {
         mouseButtonControl.commitTextEditingForTesting()
     }
 
+    func decrementMouseButtonNumberForTesting() {
+        mouseButtonControl.decrementForTesting()
+    }
+
     var mouseButtonNumberValueForTesting: Int {
         mouseButtonControl.value
     }
