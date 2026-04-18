@@ -73,6 +73,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var configuration = AppConfiguration.defaultValue
     private var menuController: MenuBarController?
     private var settingsWindowController: SettingsWindowController?
+    private var settingsPrototypeState: SettingsPrototypeState?
     private var pendingDeferredConfigurationSaveTask: Task<Void, Never>?
     private var isLaunchAtLoginReconciliationPending = false
 
@@ -177,12 +178,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let result = try configurationCoordinator.loadConfiguration()
             switch mode {
             case .launch:
-                applyConfiguration(result.configuration)
+                applyConfiguration(result.configuration, syncOpenSettingsState: false)
                 didApplyConfiguration = true
                 appliedConfiguration = result.configuration
             case .manual:
                 if result.source == .persistedConfiguration {
-                    applyConfiguration(result.configuration)
+                    applyConfiguration(result.configuration, syncOpenSettingsState: false)
                     didApplyConfiguration = true
                     appliedConfiguration = result.configuration
                     if result.skippedLayoutDiagnostics.isEmpty {
@@ -213,7 +214,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             AppLogger.shared.error("Failed to load configuration: \(error.localizedDescription)")
             switch mode {
             case .launch:
-                applyConfiguration(.defaultValue)
+                applyConfiguration(.defaultValue, syncOpenSettingsState: false)
                 didApplyConfiguration = true
                 appliedConfiguration = .defaultValue
             case .manual:
@@ -603,13 +604,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
+        let prototypeState = SettingsPrototypeState(configuration: configuration)
         let controller = SettingsWindowController(
-            prototypeState: SettingsPrototypeState(configuration: configuration),
+            prototypeState: prototypeState,
             actionHandler: makeSettingsActionHandler(),
             onWindowWillClose: { [weak self] in
                 self?.settingsWindowController = nil
+                self?.settingsPrototypeState = nil
             }
         )
+        settingsPrototypeState = prototypeState
         settingsWindowController = controller
         controller.present()
     }
@@ -667,11 +671,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return false
         }
 
-        applyConfiguration(candidate)
+        applyConfiguration(candidate, syncOpenSettingsState: false)
         return true
     }
 
-    private func applyConfiguration(_ configuration: AppConfiguration) {
+    private func applyConfiguration(_ configuration: AppConfiguration, syncOpenSettingsState: Bool = true) {
         if self.configuration.layoutGroups != configuration.layoutGroups
             || self.configuration.general.activeLayoutGroup != configuration.general.activeLayoutGroup {
             layoutEngine.resetRecordedLayoutIDs()
@@ -687,6 +691,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             isEnabled: configuration.general.isEnabled
         )
         menuController?.updateToggleStates(makeToggleSettingsState(configuration: configuration))
+        if syncOpenSettingsState {
+            settingsPrototypeState?.syncExternalConfiguration(configuration)
+        }
     }
 
     var isDragInputMonitoringActiveForTesting: Bool {
@@ -777,6 +784,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         tabViewController.selectedTabViewItemIndex = index
     }
 
+    var generalSettingsEnabledStateForTesting: Bool? {
+        guard let tabViewController = settingsWindowController?.window?.contentViewController as? NSTabViewController,
+              tabViewController.tabViewItems.indices.contains(0),
+              let generalController = tabViewController.tabViewItems[0].viewController as? GeneralSettingsViewController else {
+            return nil
+        }
+
+        generalController.loadViewIfNeeded()
+        return generalController.isEnabledForTesting
+    }
+
     func reloadSettingsFromAboutTabForTesting() {
         guard let tabViewController = settingsWindowController?.window?.contentViewController as? NSTabViewController,
               tabViewController.tabViewItems.indices.contains(4),
@@ -785,6 +803,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         aboutController.reloadForTesting()
+    }
+
+    @discardableResult
+    func updateGlobalEnabledStateForTesting(_ isEnabled: Bool) -> Bool {
+        updateGlobalEnabledState(isEnabled)
     }
 
     var settingsContentSizeForTesting: NSSize? {

@@ -20,6 +20,20 @@ final class SettingsPrototypeState {
         notifyDidChange()
     }
 
+    func syncExternalConfiguration(_ configuration: AppConfiguration) {
+        committedConfiguration = configuration
+
+        var updatedDraft = self.configuration
+        updatedDraft.general = configuration.general
+        updatedDraft.appearance = configuration.appearance
+        updatedDraft.dragTriggers = configuration.dragTriggers
+        updatedDraft.hotkeys = configuration.hotkeys
+        updatedDraft.monitors = configuration.monitors
+
+        self.configuration = updatedDraft
+        notifyDidChange()
+    }
+
     @discardableResult
     func applyImmediateMutation(
         using actionHandler: any SettingsActionHandling,

@@ -414,6 +414,10 @@ final class GeneralSettingsViewController: NSViewController {
 }
 
 extension GeneralSettingsViewController {
+    var isEnabledForTesting: Bool {
+        enableCheckbox.state == .on
+    }
+
     func setEnabledForTesting(_ isEnabled: Bool) {
         enableCheckbox.state = isEnabled ? .on : .off
         handleEnableToggle(enableCheckbox)

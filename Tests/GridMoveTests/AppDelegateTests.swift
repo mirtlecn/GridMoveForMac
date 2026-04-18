@@ -700,6 +700,31 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
 }
 
 @MainActor
+@Test func menuBarConfigurationChangesRefreshOpenSettingsImmediately() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-live-sync-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    delegate.showSettings()
+
+    #expect(delegate.generalSettingsEnabledStateForTesting == true)
+
+    #expect(delegate.updateGlobalEnabledStateForTesting(false) == true)
+    #expect(delegate.generalSettingsEnabledStateForTesting == false)
+
+    delegate.closeSettingsWindowForTesting()
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
 @Test func appDelegateKeepsCurrentConfigurationWhenManualReloadFails() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-notify-\(UUID().uuidString)", isDirectory: true)
