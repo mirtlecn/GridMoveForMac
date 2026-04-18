@@ -134,10 +134,8 @@ enum SettingsPreviewSupport {
     static func drawTriggerRegion(rect: CGRect, appearance: AppearanceSettings, cornerRadius: CGFloat) {
         let path = NSBezierPath(roundedRect: rect, xRadius: cornerRadius, yRadius: cornerRadius)
         let color = appearance.triggerStrokeColor.nsColor
-        color.withAlphaComponent(appearance.triggerOpacity).setFill()
         color.setStroke()
         path.lineWidth = 2
-        path.fill()
         path.stroke()
     }
 
