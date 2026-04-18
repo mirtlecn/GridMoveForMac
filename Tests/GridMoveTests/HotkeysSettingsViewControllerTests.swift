@@ -103,6 +103,7 @@ private func makeTestLayout(
     #expect(contentView.recordedShortcut == nil)
     #expect(contentView.isConfirmationEnabled == false)
     #expect(contentView.shortcutButtonTitleForTesting == UICopy.settingsRecordShortcutButtonTitle)
+    #expect(contentView.shortcutButtonControlSizeForTesting == .regular)
 
     contentView.beginShortcutRecordingForTesting()
     #expect(contentView.shortcutButtonTitleForTesting == UICopy.settingsPressShortcutValue)

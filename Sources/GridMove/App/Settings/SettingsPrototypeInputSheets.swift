@@ -251,7 +251,6 @@ private final class PrototypeShortcutRecorderView: NSView {
         super.init(frame: frameRect)
 
         recordButton.bezelStyle = .rounded
-        recordButton.controlSize = .small
         recordButton.target = self
         recordButton.action = #selector(handleRecord(_:))
         recordButton.translatesAutoresizingMaskIntoConstraints = false
@@ -326,6 +325,10 @@ private final class PrototypeShortcutRecorderView: NSView {
         recordButton.title
     }
 
+    var buttonControlSizeForTesting: NSControl.ControlSize {
+        recordButton.controlSize
+    }
+
     func beginRecordingForTesting() {
         recordedShortcut = nil
         isRecording = true
@@ -340,6 +343,10 @@ private final class PrototypeShortcutRecorderView: NSView {
 extension HotkeyAddSheetContentView {
     var shortcutButtonTitleForTesting: String {
         recorderView.buttonTitleForTesting
+    }
+
+    var shortcutButtonControlSizeForTesting: NSControl.ControlSize {
+        recorderView.buttonControlSizeForTesting
     }
 
     func beginShortcutRecordingForTesting() {
