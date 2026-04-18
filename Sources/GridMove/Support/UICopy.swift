@@ -81,7 +81,7 @@ enum UICopy {
     static let settingsOpenButtonTitle = "Open"
     static let settingsAdvancedSectionTitle = "Advanced"
     static let settingsRestoreSettingsButtonTitle = "Restore settings"
-    static let settingsProtectedGroupTooltip = "不能删除受保护的 group"
+    static let settingsProtectedGroupTooltip = "Can not remove a protected group"
     static let settingsTypeLabel = "Type"
     static let settingsValueLabel = "Value"
     static let settingsAddModifierGroupSheetTitle = "Add modifier group"
