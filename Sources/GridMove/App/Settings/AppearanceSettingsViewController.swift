@@ -34,7 +34,7 @@ final class AppearanceSettingsViewController: NSViewController {
                         makeLabeledControlRow(
                             label: UICopy.settingsStrokeWidthLabel,
                             control: makeNumericStepperControl(
-                                value: Int(configuration.appearance.highlightStrokeWidth.rounded()),
+                                value: configuration.appearance.highlightStrokeWidth,
                                 unit: "pt",
                                 minValue: 0,
                                 maxValue: 24
@@ -74,7 +74,7 @@ final class AppearanceSettingsViewController: NSViewController {
                         makeLabeledControlRow(
                             label: UICopy.settingsGapLabel,
                             control: makeNumericStepperControl(
-                                value: Int(configuration.appearance.triggerGap.rounded()),
+                                value: configuration.appearance.triggerGap,
                                 unit: "pt",
                                 minValue: 0,
                                 maxValue: 24

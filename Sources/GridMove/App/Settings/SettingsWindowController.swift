@@ -203,8 +203,8 @@ extension HotkeysSettingsViewController: SettingsWindowSizing {
 extension AboutSettingsViewController: SettingsWindowSizing {
     var settingsWindowMetrics: SettingsWindowMetrics {
         SettingsWindowMetrics(
-            preferredContentSize: NSSize(width: 700, height: 180),
-            minimumContentSize: NSSize(width: 680, height: 180)
+            preferredContentSize: NSSize(width: 700, height: 260),
+            minimumContentSize: NSSize(width: 680, height: 260)
         )
     }
 }

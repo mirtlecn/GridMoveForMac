@@ -121,6 +121,26 @@ enum SettingsPreviewSupport {
         path.stroke()
     }
 
+    static func drawWindowHighlight(rect: CGRect, appearance: AppearanceSettings, cornerRadius: CGFloat) {
+        let path = NSBezierPath(roundedRect: rect, xRadius: cornerRadius, yRadius: cornerRadius)
+        let color = appearance.highlightStrokeColor.nsColor
+        color.withAlphaComponent(appearance.highlightFillOpacity).setFill()
+        color.setStroke()
+        path.lineWidth = CGFloat(appearance.highlightStrokeWidth)
+        path.fill()
+        path.stroke()
+    }
+
+    static func drawTriggerRegion(rect: CGRect, appearance: AppearanceSettings, cornerRadius: CGFloat) {
+        let path = NSBezierPath(roundedRect: rect, xRadius: cornerRadius, yRadius: cornerRadius)
+        let color = appearance.triggerStrokeColor.nsColor
+        color.withAlphaComponent(appearance.triggerOpacity).setFill()
+        color.setStroke()
+        path.lineWidth = 2
+        path.fill()
+        path.stroke()
+    }
+
     static func localRect(from globalRect: CGRect, in geometry: SettingsPreviewGeometry) -> CGRect {
         if globalRect.minY >= geometry.usableFrame.maxY {
             return localRect(

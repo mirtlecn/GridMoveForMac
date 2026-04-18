@@ -65,16 +65,11 @@ final class LayoutPreviewView: NSView {
             in: geometry.usableRect
         )
         frame = frame.insetBy(dx: CGFloat(appearanceSettings.effectiveLayoutGap), dy: CGFloat(appearanceSettings.effectiveLayoutGap))
-
-        let fillColor = appearanceSettings.highlightStrokeColor.nsColor.withAlphaComponent(appearanceSettings.highlightFillOpacity + 0.08)
-        let strokeColor = appearanceSettings.highlightStrokeColor.nsColor
-
-        let path = NSBezierPath(roundedRect: frame, xRadius: 12, yRadius: 12)
-        fillColor.setFill()
-        path.fill()
-        strokeColor.setStroke()
-        path.lineWidth = max(2, appearanceSettings.highlightStrokeWidth)
-        path.stroke()
+        SettingsPreviewSupport.drawWindowHighlight(
+            rect: frame,
+            appearance: appearanceSettings,
+            cornerRadius: 12
+        )
     }
 
     private func drawTriggerRegion(in geometry: SettingsPreviewGeometry) {
@@ -90,23 +85,19 @@ final class LayoutPreviewView: NSView {
                 columns: layout.gridColumns,
                 rows: layout.gridRows,
                 in: geometry.usableRect
-            ).insetBy(dx: appearanceSettings.triggerGap, dy: appearanceSettings.triggerGap)
+            ).insetBy(dx: CGFloat(appearanceSettings.triggerGap), dy: CGFloat(appearanceSettings.triggerGap))
         case let .menuBar(selection):
             regionRect = SettingsPreviewSupport.frame(
                 for: selection,
                 segments: layout.gridRows,
                 in: geometry.menuBarRect
-            ).insetBy(dx: appearanceSettings.triggerGap, dy: appearanceSettings.triggerGap)
+            ).insetBy(dx: CGFloat(appearanceSettings.triggerGap), dy: CGFloat(appearanceSettings.triggerGap))
         }
 
-        let fillColor = appearanceSettings.triggerStrokeColor.nsColor.withAlphaComponent(appearanceSettings.triggerOpacity)
-        let strokeColor = appearanceSettings.triggerStrokeColor.nsColor.withAlphaComponent(0.9)
-
-        fillColor.setFill()
-        let path = NSBezierPath(roundedRect: regionRect, xRadius: 10, yRadius: 10)
-        path.fill()
-        strokeColor.setStroke()
-        path.lineWidth = 2
-        path.stroke()
+        SettingsPreviewSupport.drawTriggerRegion(
+            rect: regionRect,
+            appearance: appearanceSettings,
+            cornerRadius: 10
+        )
     }
 }

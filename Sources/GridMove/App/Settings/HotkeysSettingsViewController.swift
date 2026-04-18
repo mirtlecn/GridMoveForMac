@@ -190,7 +190,7 @@ struct HotkeyPrototypeAction {
     let action: HotkeyAction
 }
 
-private struct HotkeyPrototypeSlot {
+struct HotkeyPrototypeSlot {
     let title: String
     let currentTarget: String
     let action: HotkeyAction
@@ -203,30 +203,46 @@ private struct HotkeyPrototypeSlot {
     var actionDescriptor: HotkeyPrototypeAction {
         HotkeyPrototypeAction(
             id: action.prototypeIdentifier,
-            displayTitle: "\(title) - \(currentTarget)",
+            displayTitle: "\(title): \(currentTarget)",
             action: action
         )
     }
 
     static func makePrototypeSlots(configuration: AppConfiguration = .defaultValue) -> [HotkeyPrototypeSlot] {
-        let indexedLayouts = configuration.layouts.filter(\.includeInLayoutIndex)
+        let activeIndexedLayouts = LayoutGroupResolver.indexedActiveEntries(in: configuration).map(\.layout)
+        let maximumIndexedLayoutCount = configuration.layoutGroups
+            .map { group in
+                LayoutGroupResolver.flattenedEntries(in: group)
+                    .filter { $0.layout.includeInLayoutIndex }
+                    .count
+            }
+            .max() ?? 0
         let globalSlots: [(title: String, target: String, action: HotkeyAction)] = [
             (UICopy.applyPreviousLayout, UICopy.settingsHotkeysPreviousTargetValue, .cyclePrevious),
             (UICopy.applyNextLayout, UICopy.settingsHotkeysNextTargetValue, .cycleNext),
         ]
 
-        let layoutSlots: [(title: String, target: String, action: HotkeyAction)] = indexedLayouts
-            .enumerated()
-            .map { index, layout in
-                (
-                    UICopy.settingsLayoutSlotTitle(index + 1),
-                    layout.name,
-                    .applyLayoutByIndex(layout: index + 1)
+        let layoutIndices = maximumIndexedLayoutCount > 0 ? Array(1...maximumIndexedLayoutCount) : []
+        let layoutSlots: [(title: String, target: String, action: HotkeyAction)] = layoutIndices
+            .map { layoutIndex in
+                let targetName = activeIndexedLayouts[safe: layoutIndex - 1]
+                    .map {
+                        UICopy.layoutMenuName(
+                            name: $0.name,
+                            fallbackIdentifier: UICopy.settingsApplyLayoutSlotTitle(layoutIndex)
+                        )
+                    }
+                    ?? UICopy.settingsApplyLayoutSlotTitle(layoutIndex)
+
+                return (
+                    UICopy.settingsApplyLayoutSlotTitle(layoutIndex),
+                    targetName,
+                    HotkeyAction.applyLayoutByIndex(layout: layoutIndex)
                 )
             }
 
         return (globalSlots + layoutSlots).map { slot in
-        let bindings: [String] = configuration.hotkeys.bindings.compactMap { binding in
+            let bindings: [String] = configuration.hotkeys.bindings.compactMap { binding in
                 guard binding.isEnabled, binding.action == slot.action, let shortcut = binding.shortcut else {
                     return nil
                 }

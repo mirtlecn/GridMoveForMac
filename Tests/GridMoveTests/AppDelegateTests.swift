@@ -578,7 +578,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsShowOverlayTitle))
     delegate.selectSettingsTabForTesting(index: 3)
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.applyNextLayout))
-    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsLayoutSlotTitle(1)))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsApplyLayoutSlotTitle(1)))
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.defaultLayoutNames[0]))
     #expect(delegate.settingsVisibleStringsForTesting.contains("⌃⌥⇧⌘L"))
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsHotkeysAddButtonTitle))

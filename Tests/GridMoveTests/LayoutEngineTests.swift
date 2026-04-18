@@ -83,7 +83,7 @@ import Testing
         screenFrame: screenFrame,
         usableFrame: usableFrame,
         layouts: configuration.layouts,
-        triggerGap: configuration.appearance.triggerGap
+        triggerGap: Double(configuration.appearance.triggerGap)
     )
     let firstSlot = try #require(slots.first(where: { $0.layoutID == "layout-1" }))
     let fullscreenSlot = try #require(slots.first(where: { $0.layoutID == "layout-10" }))

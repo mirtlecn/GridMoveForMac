@@ -62,12 +62,12 @@ private struct AnyCodingKey: CodingKey {
 struct AppearanceConfiguration: Codable {
     let renderTriggerAreas: Bool
     let triggerOpacity: Double
-    let triggerGap: Double
+    let triggerGap: Int
     let triggerStrokeColor: String
     let layoutGap: Int
     let renderWindowHighlight: Bool
     let highlightFillOpacity: Double
-    let highlightStrokeWidth: Double
+    let highlightStrokeWidth: Int
     let highlightStrokeColor: String
 
     private enum CodingKeys: String, CodingKey {
@@ -97,13 +97,13 @@ struct AppearanceConfiguration: Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         renderTriggerAreas = try container.decode(Bool.self, forKey: .renderTriggerAreas)
-        triggerOpacity = try container.decode(Double.self, forKey: .triggerOpacity)
-        triggerGap = try container.decode(Double.self, forKey: .triggerGap)
+        triggerOpacity = AppearanceValueNormalizer.decodeOpacity(from: container, forKey: .triggerOpacity)
+        triggerGap = AppearanceValueNormalizer.decodeNonNegativeInt(from: container, forKey: .triggerGap, defaultValue: 0)
         triggerStrokeColor = try container.decode(String.self, forKey: .triggerStrokeColor)
         layoutGap = AppearanceValueNormalizer.decodeLayoutGap(from: container, forKey: .layoutGap)
         renderWindowHighlight = try container.decode(Bool.self, forKey: .renderWindowHighlight)
-        highlightFillOpacity = try container.decode(Double.self, forKey: .highlightFillOpacity)
-        highlightStrokeWidth = try container.decode(Double.self, forKey: .highlightStrokeWidth)
+        highlightFillOpacity = AppearanceValueNormalizer.decodeOpacity(from: container, forKey: .highlightFillOpacity)
+        highlightStrokeWidth = AppearanceValueNormalizer.decodeNonNegativeInt(from: container, forKey: .highlightStrokeWidth, defaultValue: 0)
         highlightStrokeColor = try container.decode(String.self, forKey: .highlightStrokeColor)
     }
 

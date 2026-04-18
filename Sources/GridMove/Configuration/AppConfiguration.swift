@@ -514,12 +514,12 @@ struct GeneralSettings: Codable, Equatable {
 struct AppearanceSettings: Codable, Equatable {
     var renderTriggerAreas: Bool
     var triggerOpacity: Double
-    var triggerGap: Double
+    var triggerGap: Int
     var triggerStrokeColor: RGBAColor
     var layoutGap: Int
     var renderWindowHighlight: Bool
     var highlightFillOpacity: Double
-    var highlightStrokeWidth: Double
+    var highlightStrokeWidth: Int
     var highlightStrokeColor: RGBAColor
 
     private enum CodingKeys: String, CodingKey {
@@ -537,41 +537,42 @@ struct AppearanceSettings: Codable, Equatable {
     init(
         renderTriggerAreas: Bool,
         triggerOpacity: Double,
-        triggerGap: Double,
+        triggerGap: Int,
         triggerStrokeColor: RGBAColor,
         layoutGap: Int = AppearanceValueNormalizer.defaultLayoutGap,
         renderWindowHighlight: Bool,
         highlightFillOpacity: Double,
-        highlightStrokeWidth: Double,
+        highlightStrokeWidth: Int,
         highlightStrokeColor: RGBAColor
     ) {
         self.renderTriggerAreas = renderTriggerAreas
-        self.triggerOpacity = triggerOpacity
-        self.triggerGap = triggerGap
+        self.triggerOpacity = AppearanceValueNormalizer.normalizeOpacity(triggerOpacity)
+        self.triggerGap = AppearanceValueNormalizer.normalizeNonNegativeInt(triggerGap, defaultValue: 0)
         self.triggerStrokeColor = triggerStrokeColor
         self.layoutGap = AppearanceValueNormalizer.normalizeLayoutGap(layoutGap)
         self.renderWindowHighlight = renderWindowHighlight
-        self.highlightFillOpacity = highlightFillOpacity
-        self.highlightStrokeWidth = highlightStrokeWidth
+        self.highlightFillOpacity = AppearanceValueNormalizer.normalizeOpacity(highlightFillOpacity)
+        self.highlightStrokeWidth = AppearanceValueNormalizer.normalizeNonNegativeInt(highlightStrokeWidth, defaultValue: 0)
         self.highlightStrokeColor = highlightStrokeColor
     }
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         renderTriggerAreas = try container.decode(Bool.self, forKey: .renderTriggerAreas)
-        triggerOpacity = try container.decode(Double.self, forKey: .triggerOpacity)
-        triggerGap = try container.decode(Double.self, forKey: .triggerGap)
+        triggerOpacity = AppearanceValueNormalizer.decodeOpacity(from: container, forKey: .triggerOpacity)
+        triggerGap = AppearanceValueNormalizer.decodeNonNegativeInt(from: container, forKey: .triggerGap, defaultValue: 0)
         triggerStrokeColor = try container.decodeIfPresent(RGBAColor.self, forKey: .triggerStrokeColor) ?? RGBAColor.defaultTriggerStrokeColor
         layoutGap = AppearanceValueNormalizer.decodeLayoutGap(from: container, forKey: .layoutGap)
         renderWindowHighlight = try container.decode(Bool.self, forKey: .renderWindowHighlight)
-        highlightFillOpacity = try container.decode(Double.self, forKey: .highlightFillOpacity)
-        highlightStrokeWidth = try container.decode(Double.self, forKey: .highlightStrokeWidth)
+        highlightFillOpacity = AppearanceValueNormalizer.decodeOpacity(from: container, forKey: .highlightFillOpacity)
+        highlightStrokeWidth = AppearanceValueNormalizer.decodeNonNegativeInt(from: container, forKey: .highlightStrokeWidth, defaultValue: 0)
         highlightStrokeColor = try container.decode(RGBAColor.self, forKey: .highlightStrokeColor)
     }
 
     var effectiveLayoutGap: Int {
         AppearanceValueNormalizer.normalizeLayoutGap(layoutGap)
     }
+
 }
 
 enum AppearanceValueNormalizer {
@@ -593,6 +594,32 @@ enum AppearanceValueNormalizer {
         return Int(value)
     }
 
+    static func normalizeOpacity(_ value: Double) -> Double {
+        guard value.isFinite else {
+            return 0
+        }
+
+        if value <= 1 {
+            return min(max(value, 0), 1)
+        }
+
+        return min(max(value / 100, 0), 1)
+    }
+
+    static func normalizeNonNegativeInt(_ value: Int, defaultValue: Int = 0) -> Int {
+        guard value >= 0 else {
+            return defaultValue
+        }
+        return value
+    }
+
+    static func normalizeNonNegativeInt(_ value: Double, defaultValue: Int = 0) -> Int {
+        guard value.isFinite, value >= 0, value.rounded(.towardZero) == value else {
+            return defaultValue
+        }
+        return Int(value)
+    }
+
     static func decodeLayoutGap<Key: CodingKey>(from container: KeyedDecodingContainer<Key>, forKey key: Key) -> Int {
         if let value = try? container.decode(Int.self, forKey: key) {
             return normalizeLayoutGap(value)
@@ -603,6 +630,34 @@ enum AppearanceValueNormalizer {
         }
 
         return defaultLayoutGap
+    }
+
+    static func decodeOpacity<Key: CodingKey>(from container: KeyedDecodingContainer<Key>, forKey key: Key) -> Double {
+        if let value = try? container.decode(Double.self, forKey: key) {
+            return normalizeOpacity(value)
+        }
+
+        if let value = try? container.decode(Int.self, forKey: key) {
+            return normalizeOpacity(Double(value))
+        }
+
+        return 0
+    }
+
+    static func decodeNonNegativeInt<Key: CodingKey>(
+        from container: KeyedDecodingContainer<Key>,
+        forKey key: Key,
+        defaultValue: Int = 0
+    ) -> Int {
+        if let value = try? container.decode(Int.self, forKey: key) {
+            return normalizeNonNegativeInt(value, defaultValue: defaultValue)
+        }
+
+        if let value = try? container.decode(Double.self, forKey: key) {
+            return normalizeNonNegativeInt(value, defaultValue: defaultValue)
+        }
+
+        return defaultValue
     }
 }
 

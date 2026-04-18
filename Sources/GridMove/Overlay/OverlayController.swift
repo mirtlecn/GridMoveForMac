@@ -263,11 +263,13 @@ private final class OverlayView: NSView {
 
     private func drawTriggerSlots() {
         let color = configuration.appearance.triggerStrokeColor.nsColor
-        color.setStroke()
 
         for slot in resolvedSlots {
             for hitTestFrame in slot.hitTestFrames {
                 let path = NSBezierPath(roundedRect: localRect(from: hitTestFrame), xRadius: 10, yRadius: 10)
+                color.withAlphaComponent(configuration.appearance.triggerOpacity).setFill()
+                path.fill()
+                color.setStroke()
                 path.lineWidth = 2
                 path.stroke()
             }
@@ -280,7 +282,7 @@ private final class OverlayView: NSView {
         color.setStroke()
 
         let path = NSBezierPath(roundedRect: localRect(from: frame), xRadius: 10, yRadius: 10)
-        path.lineWidth = configuration.appearance.highlightStrokeWidth
+        path.lineWidth = CGFloat(configuration.appearance.highlightStrokeWidth)
         path.fill()
         path.stroke()
     }

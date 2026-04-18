@@ -16,7 +16,7 @@ final class AppearancePreviewView: NSView {
             screenFrame: SettingsPreviewSupport.referenceScreenFrame,
             usableFrame: SettingsPreviewSupport.referenceUsableFrame,
             layouts: configuration.layouts.filter { $0.triggerRegion != nil },
-            triggerGap: configuration.appearance.triggerGap,
+            triggerGap: Double(configuration.appearance.triggerGap),
             layoutGap: configuration.appearance.effectiveLayoutGap
         )
         self.highlightFrame = resolvedSlots.first(where: { $0.layoutID == "layout-4" })?.targetFrame
@@ -54,31 +54,22 @@ final class AppearancePreviewView: NSView {
     }
 
     private func drawTriggerSlots(in geometry: SettingsPreviewGeometry) {
-        let color = configuration.appearance.triggerStrokeColor.nsColor
-        color.setStroke()
-
         for slot in resolvedSlots {
             for hitTestFrame in slot.hitTestFrames {
-                let path = NSBezierPath(
-                    roundedRect: SettingsPreviewSupport.localRect(from: hitTestFrame, in: geometry),
-                    xRadius: 10,
-                    yRadius: 10
+                SettingsPreviewSupport.drawTriggerRegion(
+                    rect: SettingsPreviewSupport.localRect(from: hitTestFrame, in: geometry),
+                    appearance: configuration.appearance,
+                    cornerRadius: 10
                 )
-                path.lineWidth = 2
-                path.stroke()
             }
         }
     }
 
     private func drawHighlight(frame: CGRect, geometry: SettingsPreviewGeometry) {
-        let rect = SettingsPreviewSupport.localRect(from: frame, in: geometry)
-        let color = configuration.appearance.highlightStrokeColor.nsColor
-        color.withAlphaComponent(configuration.appearance.highlightFillOpacity).setFill()
-        color.setStroke()
-
-        let path = NSBezierPath(roundedRect: rect, xRadius: 10, yRadius: 10)
-        path.lineWidth = configuration.appearance.highlightStrokeWidth
-        path.fill()
-        path.stroke()
+        SettingsPreviewSupport.drawWindowHighlight(
+            rect: SettingsPreviewSupport.localRect(from: frame, in: geometry),
+            appearance: configuration.appearance,
+            cornerRadius: 10
+        )
     }
 }

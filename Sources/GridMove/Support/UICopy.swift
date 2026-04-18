@@ -78,6 +78,10 @@ enum UICopy {
     static let settingsHotkeysNextTargetValue = "Next item in current cycle"
     static let settingsVersionLabel = "Version"
     static let settingsAuthorLabel = "Author"
+    static let settingsConfigFolderLabel = "Config folder"
+    static let settingsOpenButtonTitle = "Open"
+    static let settingsAdvancedSectionTitle = "Advanced"
+    static let settingsRestoreSettingsButtonTitle = "Restore settings"
     static let settingsTypeLabel = "Type"
     static let settingsValueLabel = "Value"
     static let settingsAddModifierGroupSheetTitle = "Add modifier group"
@@ -133,8 +137,8 @@ enum UICopy {
         "Apply \(name)"
     }
 
-    static func settingsLayoutSlotTitle(_ index: Int) -> String {
-        "Layout \(index)"
+    static func settingsApplyLayoutSlotTitle(_ index: Int) -> String {
+        "Apply layout \(index)"
     }
 
     static func mouseButtonDragMenuTitle(mouseButtonNumber: Int) -> String {
