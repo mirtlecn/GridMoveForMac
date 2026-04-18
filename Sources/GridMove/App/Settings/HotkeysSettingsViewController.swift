@@ -253,7 +253,7 @@ struct HotkeyPrototypeSlot {
                             fallbackIdentifier: UICopy.settingsApplyLayoutSlotTitle(layoutIndex)
                         )
                     }
-                    ?? UICopy.settingsApplyLayoutSlotTitle(layoutIndex)
+                    ?? ""
 
                 return (
                     UICopy.settingsApplyLayoutSlotTitle(layoutIndex),

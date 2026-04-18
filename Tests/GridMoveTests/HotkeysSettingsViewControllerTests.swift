@@ -66,7 +66,9 @@ private func makeTestLayout(
     #expect(layoutSlots[1].title == UICopy.settingsApplyLayoutSlotTitle(2))
     #expect(layoutSlots[1].currentTarget == UICopy.settingsApplyLayoutSlotTitle(2))
     #expect(layoutSlots[2].title == UICopy.settingsApplyLayoutSlotTitle(3))
-    #expect(layoutSlots[2].currentTarget == UICopy.settingsApplyLayoutSlotTitle(3))
+    #expect(layoutSlots[2].currentTarget == "")
+    #expect(layoutSlots[3].title == UICopy.settingsApplyLayoutSlotTitle(4))
+    #expect(layoutSlots[3].currentTarget == "")
 }
 
 @Test func appearanceConfigurationDecodesIntegerGapAndStrokeButKeepsOpacityAsDouble() async throws {
