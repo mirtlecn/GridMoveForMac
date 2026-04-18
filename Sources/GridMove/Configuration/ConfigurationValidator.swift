@@ -38,11 +38,10 @@ enum ConfigurationValidator {
                     hasMainSet = true
                 case let .displays(displayIDs):
                     for displayID in displayIDs {
-                        let canonicalDisplayID = configuration.monitors[displayID] ?? displayID
-                        guard !explicitDisplayIDs.contains(canonicalDisplayID) else {
+                        guard !explicitDisplayIDs.contains(displayID) else {
                             throw ConfigurationFileError.overlappingMonitorBindings(group.name)
                         }
-                        explicitDisplayIDs.insert(canonicalDisplayID)
+                        explicitDisplayIDs.insert(displayID)
                     }
                 }
             }

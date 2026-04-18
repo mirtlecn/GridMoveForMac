@@ -98,7 +98,7 @@ The examples below use `jsonc` for annotation only. Real files must be plain JSO
     ]
   },
   "monitors": {
-    "610-41535-0": "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4" // Refreshed only on startup or manual reload. Key is vendor-model-serial; value is the preferred runtime ID for that display: UUID when Quartz provides one, otherwise the same vendor-model-serial string. Previously learned displays stay in the file even when they are currently disconnected.
+    "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display" // Refreshed only on startup or manual reload. Key is the persistent monitor UUID; value is the last seen monitor name. Previously learned displays stay in the file even when they are currently disconnected.
   }
 }
 ```
@@ -111,7 +111,7 @@ The examples below use `jsonc` for annotation only. Real files must be plain JSO
   "includeInGroupCycle": true, // Missing includeInGroupCycle means this group still participates in layout-mode group cycling, including Shift taps and mouse-wheel scrolling.
   "sets": [
     {
-      "monitor": "all", // Allowed values: "all", "main", "<display-id>", ["<display-id>", ...]. Explicit display IDs may use either a display UUID or a vendor-model-serial fingerprint from monitors. Trigger overlays resolve sets by explicit ID or ID array, then main, then all.
+      "monitor": "all", // Allowed values: "all", "main", "<display-id>", ["<display-id>", ...]. Explicit display IDs must use monitor UUIDs from monitors. Trigger overlays resolve sets by explicit ID or ID array, then main, then all.
       "layouts": [
         {
           "name": "Center", // CLI -layout "<name>" looks up this value inside the active layout group.

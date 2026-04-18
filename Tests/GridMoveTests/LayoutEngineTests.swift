@@ -425,10 +425,10 @@ import Testing
     )
 }
 
-@Test func layoutGroupResolverResolvesFingerprintAliasesToUUIDDisplays() async throws {
-    let aliasedLayout = LayoutPreset(
-        id: "layout-alias",
-        name: "Alias",
+@Test func layoutGroupResolverTargetsExplicitUUIDDisplay() async throws {
+    let explicitLayout = LayoutPreset(
+        id: "layout-explicit-uuid",
+        name: "Explicit UUID",
         gridColumns: 12,
         gridRows: 6,
         windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
@@ -440,7 +440,7 @@ import Testing
             isEnabled: true,
             excludedBundleIDs: [],
             excludedWindowTitles: [],
-            activeLayoutGroup: "alias",
+            activeLayoutGroup: "uuid-only",
             mouseButtonNumber: 3
         ),
         appearance: AppConfiguration.defaultValue.appearance,
@@ -448,16 +448,16 @@ import Testing
         hotkeys: .init(bindings: []),
         layoutGroups: [
             LayoutGroup(
-                name: "alias",
+                name: "uuid-only",
                 includeInGroupCycle: true,
                 sets: [
-                    LayoutSet(monitor: .displays(["1552-41002-424242"]), layouts: [aliasedLayout]),
+                    LayoutSet(monitor: .displays(["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"]), layouts: [explicitLayout]),
                 ]
             ),
         ],
-        monitors: ["1552-41002-424242": "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"]
+        monitors: ["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display"]
     )
-    let entry = try #require(LayoutGroupResolver.entry(for: "layout-alias", configuration: configuration))
+    let entry = try #require(LayoutGroupResolver.entry(for: "layout-explicit-uuid", configuration: configuration))
 
     #expect(
         LayoutGroupResolver.targetDisplayID(
@@ -470,10 +470,10 @@ import Testing
     )
 }
 
-@Test func configurationValidatorRejectsOverlappingUUIDAndFingerprintAliases() async throws {
-    let aliasedLayout = LayoutPreset(
-        id: "layout-alias",
-        name: "Alias",
+@Test func configurationValidatorAllowsTwoDifferentUUIDDisplays() async throws {
+    let explicitLayout = LayoutPreset(
+        id: "layout-explicit-uuid",
+        name: "Explicit UUID",
         gridColumns: 12,
         gridRows: 6,
         windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
@@ -485,7 +485,7 @@ import Testing
             isEnabled: true,
             excludedBundleIDs: [],
             excludedWindowTitles: [],
-            activeLayoutGroup: "alias",
+            activeLayoutGroup: "uuid-only",
             mouseButtonNumber: 3
         ),
         appearance: AppConfiguration.defaultValue.appearance,
@@ -493,20 +493,21 @@ import Testing
         hotkeys: .init(bindings: []),
         layoutGroups: [
             LayoutGroup(
-                name: "alias",
+                name: "uuid-only",
                 includeInGroupCycle: true,
                 sets: [
-                    LayoutSet(monitor: .displays(["1552-41002-424242"]), layouts: [aliasedLayout]),
-                    LayoutSet(monitor: .displays(["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"]), layouts: [aliasedLayout]),
+                    LayoutSet(monitor: .displays(["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"]), layouts: [explicitLayout]),
+                    LayoutSet(monitor: .displays(["9b249d3c-1111-2222-3333-444455556666"]), layouts: [explicitLayout]),
                 ]
             ),
         ],
-        monitors: ["1552-41002-424242": "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"]
+        monitors: [
+            "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display",
+            "9b249d3c-1111-2222-3333-444455556666": "DELL U2720Q",
+        ]
     )
 
-    #expect(throws: ConfigurationFileError.overlappingMonitorBindings("alias")) {
-        try ConfigurationValidator.validate(configuration)
-    }
+    try ConfigurationValidator.validate(configuration)
 }
 
 @Test func layoutEngineKeepsOnlyTenRecentWindowLayoutRecords() async throws {

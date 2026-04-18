@@ -69,15 +69,11 @@ enum Geometry {
             preconditionFailure("Expected NSScreenNumber for every connected display.")
         }
 
-        if let uuid = stableDisplayUUID(for: displayID) {
-            return uuid
+        guard let uuid = stableDisplayUUID(for: displayID) else {
+            preconditionFailure("Expected persistent display UUID for display \(displayID).")
         }
 
-        guard let fingerprint = displayFingerprint(for: displayID) else {
-            preconditionFailure("Expected vendor-model-serial fingerprint for display \(displayID).")
-        }
-
-        return fingerprint
+        return uuid
     }
 
     static func stableDisplayUUID(for displayID: CGDirectDisplayID) -> String? {
@@ -86,21 +82,5 @@ enum Geometry {
         }
 
         return (CFUUIDCreateString(nil, uuid) as String?)?.lowercased()
-    }
-
-    static func displayFingerprint(for displayID: CGDirectDisplayID) -> String? {
-        displayFingerprint(
-            vendorID: CGDisplayVendorNumber(displayID),
-            modelID: CGDisplayModelNumber(displayID),
-            serialNumber: CGDisplaySerialNumber(displayID)
-        )
-    }
-
-    static func displayFingerprint(vendorID: UInt32, modelID: UInt32, serialNumber: UInt32) -> String? {
-        guard vendorID != 0 || modelID != 0 || serialNumber != 0 else {
-            return nil
-        }
-
-        return "\(vendorID)-\(modelID)-\(serialNumber)"
     }
 }

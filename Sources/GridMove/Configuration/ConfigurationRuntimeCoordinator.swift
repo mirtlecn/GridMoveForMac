@@ -66,8 +66,8 @@ final class ConfigurationRuntimeCoordinator {
         }
 
         var mergedMonitorMap = configuration.monitors
-        for (fingerprint, displayID) in connectedMonitorMap {
-            mergedMonitorMap[fingerprint] = displayID
+        for (monitorUUID, monitorName) in connectedMonitorMap {
+            mergedMonitorMap[monitorUUID] = monitorName
         }
 
         guard mergedMonitorMap != configuration.monitors else {

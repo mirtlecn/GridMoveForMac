@@ -47,8 +47,8 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
     let monitorMap = [
-        "610-41535-0": "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4",
-        "1552-41002-424242": "1552-41002-424242",
+        "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display",
+        "9b249d3c-1111-2222-3333-444455556666": "DELL U2720Q",
     ]
     let delegate = AppDelegate(
         configurationStore: store,
@@ -72,14 +72,14 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
     var savedConfiguration = AppConfiguration.defaultValue
     savedConfiguration.monitors = [
-        "610-41535-0": "old-uuid",
-        "9999-8888-7777": "retired-uuid",
+        "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Old Built-in Name",
+        "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee": "Retired Display",
     ]
     try store.save(savedConfiguration)
 
     let currentMonitorMap = [
-        "610-41535-0": "new-uuid",
-        "1552-41002-424242": "1552-41002-424242",
+        "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display",
+        "9b249d3c-1111-2222-3333-444455556666": "DELL U2720Q",
     ]
     let delegate = AppDelegate(
         configurationStore: store,
@@ -90,9 +90,9 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     delegate.reloadConfigurationFromDisk(mode: .launch)
 
     let expectedMonitorMap = [
-        "610-41535-0": "new-uuid",
-        "9999-8888-7777": "retired-uuid",
-        "1552-41002-424242": "1552-41002-424242",
+        "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display",
+        "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee": "Retired Display",
+        "9b249d3c-1111-2222-3333-444455556666": "DELL U2720Q",
     ]
     let persistedConfiguration = try store.load()
     #expect(delegate.configuration.monitors == expectedMonitorMap)
@@ -108,7 +108,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
     var savedConfiguration = AppConfiguration.defaultValue
     savedConfiguration.monitors = [
-        "610-41535-0": "old-uuid",
+        "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Old Built-in Name",
     ]
     savedConfiguration.layoutGroups = [
         LayoutGroup(
@@ -116,7 +116,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             includeInGroupCycle: true,
             sets: [
                 LayoutSet(
-                    monitor: .displays(["610-41535-0"]),
+                    monitor: .displays(["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"]),
                     layouts: AppConfiguration.defaultValue.layoutGroups[0].sets[0].layouts
                 ),
             ]
@@ -125,7 +125,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     try store.save(savedConfiguration)
 
     let currentMonitorMap = [
-        "610-41535-0": "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4",
+        "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display",
     ]
     let delegate = AppDelegate(
         configurationStore: store,
@@ -135,11 +135,11 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 
     delegate.reloadConfigurationFromDisk(mode: .launch)
 
-    #expect(delegate.configuration.layoutGroups[0].sets[0].monitor == .displays(["610-41535-0"]))
+    #expect(delegate.configuration.layoutGroups[0].sets[0].monitor == .displays(["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"]))
     #expect(delegate.configuration.monitors == currentMonitorMap)
 
     let persistedConfiguration = try store.load()
-    #expect(persistedConfiguration.layoutGroups[0].sets[0].monitor == .displays(["610-41535-0"]))
+    #expect(persistedConfiguration.layoutGroups[0].sets[0].monitor == .displays(["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"]))
     #expect(persistedConfiguration.monitors == currentMonitorMap)
 }
 
@@ -151,7 +151,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
     var currentMonitorMap = [
-        "610-41535-0": "launch-uuid",
+        "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display",
     ]
     let delegate = AppDelegate(
         configurationStore: store,
@@ -161,15 +161,15 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 
     delegate.reloadConfigurationFromDisk(mode: .launch)
     currentMonitorMap = [
-        "610-41535-0": "updated-uuid",
-        "1552-41002-424242": "1552-41002-424242",
+        "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Renamed Built-in Display",
+        "9b249d3c-1111-2222-3333-444455556666": "DELL U2720Q",
     ]
 
     #expect(delegate.updateMouseButtonDragEnabled(false) == true)
 
     let persistedConfiguration = try store.load()
-    #expect(delegate.configuration.monitors == ["610-41535-0": "launch-uuid"])
-    #expect(persistedConfiguration.monitors == ["610-41535-0": "launch-uuid"])
+    #expect(delegate.configuration.monitors == ["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display"])
+    #expect(persistedConfiguration.monitors == ["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display"])
 }
 
 @MainActor
@@ -368,7 +368,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     let delegate = AppDelegate(
         configurationStore: store,
         openURL: { _ in true },
-        currentMonitorMapProvider: { ["610-41535-0": "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"] },
+        currentMonitorMapProvider: { ["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display"] },
         notifyUser: { kind, title, body in
             receivedKind = kind
             receivedTitle = title
@@ -383,7 +383,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(expectedResult.skippedLayoutDiagnostics.count == 1)
     #expect(delegate.configuration.layoutGroupNames() == ["built-in"])
     #expect(delegate.configuration.layouts.map(\.name) == ["Modified built-in"])
-    #expect(delegate.configuration.monitors == ["610-41535-0": "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"])
+    #expect(delegate.configuration.monitors == ["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display"])
     #expect(receivedKind == .configReloadSkippedLayouts)
     #expect(receivedTitle == UICopy.configReloadSkippedLayoutsTitle)
     #expect(receivedBody?.contains("2.grid.json") == true)
@@ -513,14 +513,14 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     let delegate = AppDelegate(
         configurationStore: store,
         openURL: { _ in true },
-        currentMonitorMapProvider: { ["610-41535-0": "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"] }
+        currentMonitorMapProvider: { ["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display"] }
     )
 
     delegate.reloadConfigurationFromDisk(mode: .launch)
 
     #expect(delegate.configuration.layoutGroupNames() == ["built-in"])
     #expect(delegate.configuration.layouts.map(\.name) == ["Modified built-in"])
-    #expect(delegate.configuration.monitors == ["610-41535-0": "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"])
+    #expect(delegate.configuration.monitors == ["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display"])
     #expect(FileManager.default.fileExists(atPath: invalidLayoutURL.path))
     #expect(try String(contentsOf: invalidLayoutURL, encoding: .utf8) == invalidLayoutTextBeforeLaunch)
 }

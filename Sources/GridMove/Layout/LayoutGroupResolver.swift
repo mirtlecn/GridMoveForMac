@@ -47,8 +47,7 @@ enum LayoutGroupResolver {
         return resolvedSet(
             in: group,
             forDisplayID: displayID,
-            mainDisplayID: mainDisplayID,
-            monitors: configuration.monitors
+            mainDisplayID: mainDisplayID
         )
     }
 
@@ -129,8 +128,7 @@ enum LayoutGroupResolver {
                 resolvedSet(
                     in: group,
                     forDisplayID: displayID,
-                    mainDisplayID: mainDisplayID,
-                    monitors: configuration.monitors
+                    mainDisplayID: mainDisplayID
                 ) == entry.set
             }
 
@@ -147,8 +145,7 @@ enum LayoutGroupResolver {
             for: entry.set.monitor,
             currentDisplayID: currentDisplayID,
             mainDisplayID: mainDisplayID,
-            availableDisplayIDs: availableDisplayIDs,
-            monitors: configuration.monitors
+            availableDisplayIDs: availableDisplayIDs
         )
     }
 
@@ -156,8 +153,7 @@ enum LayoutGroupResolver {
         for monitor: LayoutSetMonitor,
         currentDisplayID: String?,
         mainDisplayID: String?,
-        availableDisplayIDs: [String],
-        monitors: [String: String] = [:]
+        availableDisplayIDs: [String]
     ) -> String? {
         switch monitor {
         case .all:
@@ -174,58 +170,35 @@ enum LayoutGroupResolver {
             }
             return availableDisplayIDs.first
         case let .displays(displayIDs):
-            let canonicalDisplayIDs = canonicalDisplayIDs(displayIDs, monitors: monitors)
             if let currentDisplayID,
-               canonicalDisplayIDs.contains(currentDisplayID),
+               displayIDs.contains(currentDisplayID),
                availableDisplayIDs.contains(currentDisplayID) {
                 return currentDisplayID
             }
-            return canonicalDisplayIDs.first(where: { availableDisplayIDs.contains($0) })
+            return displayIDs.first(where: { availableDisplayIDs.contains($0) })
         }
     }
 
     private static func resolvedSet(
         in group: LayoutGroup,
         forDisplayID displayID: String,
-        mainDisplayID: String?,
-        monitors: [String: String]
+        mainDisplayID: String?
     ) -> LayoutSet? {
-        let canonicalDisplayID = canonicalDisplayID(displayID, monitors: monitors)
-
         if let explicitSet = group.sets.first(where: { set in
             if case let .displays(displayIDs) = set.monitor {
-                return canonicalDisplayIDs(displayIDs, monitors: monitors).contains(canonicalDisplayID)
+                return displayIDs.contains(displayID)
             }
             return false
         }) {
             return explicitSet
         }
 
-        if canonicalDisplayID == mainDisplayID,
+        if displayID == mainDisplayID,
            let mainSet = group.sets.first(where: { $0.monitor == .main }) {
             return mainSet
         }
 
         return group.sets.first(where: { $0.monitor == .all })
-    }
-
-    private static func canonicalDisplayID(_ displayID: String, monitors: [String: String]) -> String {
-        monitors[displayID] ?? displayID
-    }
-
-    private static func canonicalDisplayIDs(_ displayIDs: [String], monitors: [String: String]) -> [String] {
-        var result: [String] = []
-        var seen: Set<String> = []
-
-        for displayID in displayIDs {
-            let canonicalID = canonicalDisplayID(displayID, monitors: monitors)
-            guard seen.insert(canonicalID).inserted else {
-                continue
-            }
-            result.append(canonicalID)
-        }
-
-        return result
     }
 }
 
