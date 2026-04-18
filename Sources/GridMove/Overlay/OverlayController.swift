@@ -262,13 +262,14 @@ private final class OverlayView: NSView {
     }
 
     private func drawTriggerSlots() {
+        let color = configuration.appearance.triggerStrokeColor.nsColor
+        color.setStroke()
+
         for slot in resolvedSlots {
             for hitTestFrame in slot.hitTestFrames {
-                SettingsPreviewSupport.drawTriggerRegion(
-                    rect: localRect(from: hitTestFrame),
-                    appearance: configuration.appearance,
-                    cornerRadius: 10
-                )
+                let path = NSBezierPath(roundedRect: localRect(from: hitTestFrame), xRadius: 10, yRadius: 10)
+                path.lineWidth = 2
+                path.stroke()
             }
         }
     }
