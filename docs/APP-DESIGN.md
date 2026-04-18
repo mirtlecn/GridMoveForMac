@@ -25,9 +25,11 @@ The settings window now uses the real configuration model:
 
 - `General`, `Appearance`, and `Hotkeys` apply immediately and save through the shared settings action path
 - `Layouts` keeps a draft and only saves when the user clicks `Save`
+- switching away from `Layouts` keeps that draft in memory without saving it
+- closing the settings window discards any unsaved `Layouts` draft
 - `About` can manually reload configuration and restore the built-in defaults
 
-`UI-UX.md` records the accepted interaction structure for this window.
+`UI.md` records the accepted interaction structure for this window.
 
 ## 3. Runtime Architecture
 
@@ -84,10 +86,12 @@ Important properties:
 - previously learned monitor UUIDs remain in `monitors` even when those displays are currently disconnected
 - `layoutGroups[*].includeInGroupCycle` controls whether layout-mode Shift cycling can switch to that group
 - `layoutGroups[*].protect` prevents removing a protected group from the settings UI and defaults to `false` when missing or invalid
+- protected groups keep their names read-only in the settings UI
 - `layoutGroups[*].sets[*].monitor` routes layouts to `all`, `main`, one monitor UUID, or multiple monitor UUIDs
 - `layoutGroups[*].sets[*].layouts` order drives menu order, layout-index numbering, and same-display trigger precedence
 - `layoutGroups[*].sets[*].layouts[*].includeInMenu` controls whether a layout appears in the menu bar
 - empty layout groups and empty monitor sets are allowed and remain inert at runtime
+- the settings outline shows `Layout №<index>` when a layout name is empty
 
 Current drag-trigger configuration fields:
 
@@ -113,7 +117,6 @@ The built-in default configuration currently resolves to the following values.
 `appearance`
 
 - `renderTriggerAreas = false`
-- `triggerOpacity = 0.2`
 - `triggerGap = 2`
 - `triggerStrokeColor = system accent color with alpha 0.2`
 - `layoutGap = 1` (integer, points)
@@ -414,7 +417,7 @@ Runtime rules:
 Appearance is controlled by configuration:
 
 - trigger area visibility
-- trigger stroke opacity and color
+- trigger stroke color
 - trigger gap
 - layout gap (integer, applied to window layout frames and overlay highlight; layouts whose target frame collapses on the current screen are skipped)
 - window highlight visibility

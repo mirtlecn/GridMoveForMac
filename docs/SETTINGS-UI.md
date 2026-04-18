@@ -2,11 +2,11 @@
 
 This document records the accepted settings-window baseline and the current real model integration rules.
 
-It is intentionally narrower than `APP-DESIGN.md` and less abstract than `UI-UX.md`.
+It is intentionally narrower than `APP-DESIGN.md` and less abstract than `UI.md`.
 
 - `APP-DESIGN.md`: program behavior, lifecycle, configuration flow
-- `UI-UX.md`: interaction structure and grouped control relationships
-- `UI-Info.md`: current accepted UI baseline, code entry points, and model-integration guidance
+- `UI.md`: interaction structure and grouped control relationships
+- `SETTINGS-UI.md`: current accepted UI baseline, code entry points, and model-integration guidance
 
 ## Status
 
@@ -143,6 +143,7 @@ Confirmed behavior:
 - layout rows can be drag-reordered inside the same display set
 - drag starts only from index + icon area, not from the name text
 - active group is visually distinguished in the tree
+- double-clicking a group row activates that group
 - group, display set, and layout each have distinct semantic icons
 
 Right detail behavior:
@@ -150,7 +151,6 @@ Right detail behavior:
 - selecting `group` shows:
   - `Name`
   - `Include in group cycle`
-  - `Active group`
 - selecting `display set` shows:
   - `Apply to`
   - values: `All monitor`, `Main monitor`, `Custom monitors`
@@ -174,6 +174,7 @@ Important semantic rule:
 - the UI activates a group by double-clicking a group row in the left tree
 - when one group becomes active, others become inactive
 - protected groups (`protect = true`) cannot be removed in UI
+- protected groups keep their names read-only in UI
 - empty groups and empty monitor sets are allowed and remain inert at runtime
 
 ### Appearance
@@ -182,18 +183,19 @@ Current structure:
 
 - top preview
 - inline tabs inside a light system panel:
-  - `Window highlight`
-  - `Trigger overlay`
+  - `Window area`
+  - `Trigger area`
 
 Current control shape is intentional:
 
-- `Show ...` rows are aligned like other rows
+- `Highlight ...` rows are aligned like other rows
 - numeric fields use integer steppers with unit labels
-- opacity controls are sliders
+- the window fill opacity control is a slider
+- the slider updates preview immediately and only saves when the drag ends
 
 Current model expectations:
 
-- `triggerOpacity` and `highlightFillOpacity` remain `Double`
+- `highlightFillOpacity` remains `Double`
 - `triggerGap`, `layoutGap`, and `highlightStrokeWidth` are integer-based
 
 Preview rules:
@@ -210,6 +212,7 @@ Current shared draw helpers:
 Known limitation:
 
 - trigger stroke width is still fixed in preview and runtime because there is no separate appearance field for it
+- trigger rendering is stroke-only; there is no trigger fill opacity field in the current model
 
 ### Hotkeys
 
