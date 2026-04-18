@@ -526,6 +526,10 @@ extension LayoutsSettingsViewController {
         saveButton.isEnabled
     }
 
+    var saveButtonUsesAccentStyleForTesting: Bool {
+        saveButton.bezelColor != nil
+    }
+
     var removeButtonEnabledForTesting: Bool {
         removeButton.isEnabled
     }
@@ -576,6 +580,10 @@ extension LayoutsSettingsViewController {
         handleSaveLayoutEdits(saveButton)
     }
 
+    func activateSelectedGroupForTesting() {
+        handleOutlineDoubleClick(outlineView)
+    }
+
     func updateSetMonitorForTesting(groupName: String, setIndex: Int, monitor: LayoutSetMonitor) {
         updateSetMonitor(groupName: groupName, setIndex: setIndex, monitor: monitor)
     }
@@ -593,6 +601,21 @@ extension LayoutsSettingsViewController {
             return nil
         }
         return (currentLayoutGridColumnsControl.value, currentLayoutGridRowsControl.value)
+    }
+
+    var currentLayoutWindowSelectionButtonStateForTesting: (xCanIncrement: Bool, yCanIncrement: Bool, widthCanIncrement: Bool, heightCanIncrement: Bool)? {
+        guard let currentLayoutWindowXControl,
+              let currentLayoutWindowYControl,
+              let currentLayoutWindowWidthControl,
+              let currentLayoutWindowHeightControl else {
+            return nil
+        }
+        return (
+            currentLayoutWindowXControl.canIncrementForTesting,
+            currentLayoutWindowYControl.canIncrementForTesting,
+            currentLayoutWindowWidthControl.canIncrementForTesting,
+            currentLayoutWindowHeightControl.canIncrementForTesting
+        )
     }
 
     func mutateLayoutsDraftForTesting(_ mutate: (inout AppConfiguration) -> Void) {

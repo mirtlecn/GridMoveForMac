@@ -52,7 +52,7 @@ release-vcs:
 	git tag "$(RELEASE_TAG)"
 
 test:
-	swift test
+	swift test --no-parallel
 
 dev:
 	swift run

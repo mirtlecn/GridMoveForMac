@@ -5,6 +5,10 @@ extension LayoutsSettingsViewController {
     func updateDetailView() {
         currentLayoutGridColumnsControl = nil
         currentLayoutGridRowsControl = nil
+        currentLayoutWindowXControl = nil
+        currentLayoutWindowYControl = nil
+        currentLayoutWindowWidthControl = nil
+        currentLayoutWindowHeightControl = nil
         detailContainerView.subviews.forEach { $0.removeFromSuperview() }
 
         guard let node = selectedNode else {
@@ -47,7 +51,7 @@ extension LayoutsSettingsViewController {
         return cellView
     }
 
-    func makeGroupDetailView(group: LayoutGroup, isActive: Bool) -> NSView {
+    func makeGroupDetailView(group: LayoutGroup, isActive _: Bool) -> NSView {
         let contentStackView = makeSettingsPageStackView()
         let nameControl = makeEditableTextControl(value: group.name, width: 220, isEditable: !group.protect) { [weak self] value in
             self?.renameGroup(from: group.name, to: value)
@@ -60,37 +64,12 @@ extension LayoutsSettingsViewController {
                 configuration.layoutGroups[groupIndex].includeInGroupCycle = isOn
             }
         }
-        let activeGroupControl = makeActiveGroupControl(groupName: group.name, isActive: isActive)
-
         let formView = makeInlineTabContent(rows: [
             makeLabeledControlRow(label: UICopy.settingsNameLabel, control: nameControl),
             makeLabeledControlRow(label: UICopy.settingsIncludeInGroupCycleLabel, control: includeInCycleControl),
-            makeLabeledControlRow(label: UICopy.settingsActiveGroupLabel, control: activeGroupControl),
         ], width: 460)
         contentStackView.addArrangedSubview(makeCenteredContainer(for: formView))
         return makeDetailPanelContainer(contentView: contentStackView)
-    }
-
-    func makeActiveGroupControl(groupName: String, isActive: Bool) -> NSButton {
-        let checkbox = makeEditableCheckboxControl(isOn: isActive) { [weak self] isOn in
-            self?.handleActiveGroupToggle(groupName: groupName, isOn: isOn)
-        }
-        return checkbox
-    }
-
-    func handleActiveGroupToggle(groupName: String, isOn: Bool) {
-        guard isOn else {
-            updateDetailView()
-            return
-        }
-
-        guard draftConfiguration.general.activeLayoutGroup != groupName else {
-            return
-        }
-
-        mutateLayoutsDraft(preserving: .group(name: groupName)) { configuration in
-            configuration.general.activeLayoutGroup = groupName
-        }
     }
 
     func makeSetDetailView(groupName: String, setIndex: Int, set: LayoutSet) -> NSView {
@@ -143,6 +122,54 @@ extension LayoutsSettingsViewController {
         }
         currentLayoutGridRowsControl = gridRowsControl
 
+        let windowXControl = SettingsIntegerStepperControl(
+            value: layout.windowSelection.x,
+            minValue: 0,
+            maxValue: max(0, layout.gridColumns - layout.windowSelection.w)
+        )
+        windowXControl.onValueChanged = { [weak self] value in
+            self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
+                draftLayout.windowSelection.x = value
+            }
+        }
+        currentLayoutWindowXControl = windowXControl
+
+        let windowYControl = SettingsIntegerStepperControl(
+            value: layout.windowSelection.y,
+            minValue: 0,
+            maxValue: max(0, layout.gridRows - layout.windowSelection.h)
+        )
+        windowYControl.onValueChanged = { [weak self] value in
+            self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
+                draftLayout.windowSelection.y = value
+            }
+        }
+        currentLayoutWindowYControl = windowYControl
+
+        let windowWidthControl = SettingsIntegerStepperControl(
+            value: layout.windowSelection.w,
+            minValue: 1,
+            maxValue: layout.gridColumns - layout.windowSelection.x
+        )
+        windowWidthControl.onValueChanged = { [weak self] value in
+            self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
+                draftLayout.windowSelection.w = value
+            }
+        }
+        currentLayoutWindowWidthControl = windowWidthControl
+
+        let windowHeightControl = SettingsIntegerStepperControl(
+            value: layout.windowSelection.h,
+            minValue: 1,
+            maxValue: layout.gridRows - layout.windowSelection.y
+        )
+        windowHeightControl.onValueChanged = { [weak self] value in
+            self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
+                draftLayout.windowSelection.h = value
+            }
+        }
+        currentLayoutWindowHeightControl = windowHeightControl
+
         let detailTabsView = SettingsInlineTabsView(
             tabs: [
                 SettingsInlineTab(
@@ -181,59 +208,19 @@ extension LayoutsSettingsViewController {
                     contentView: makeInlineTabContent(rows: [
                         makeLabeledControlRow(
                             label: UICopy.settingsXPositionLabel,
-                            control: makeNumericStepperControl(
-                                value: layout.windowSelection.x,
-                                unit: "grid",
-                                minValue: 0,
-                                maxValue: max(0, layout.gridColumns - 1),
-                                onValueChanged: { [weak self] value in
-                                    self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
-                                        draftLayout.windowSelection.x = value
-                                    }
-                                }
-                            )
+                            control: makeGridControlRow(control: windowXControl)
                         ),
                         makeLabeledControlRow(
                             label: UICopy.settingsYPositionLabel,
-                            control: makeNumericStepperControl(
-                                value: layout.windowSelection.y,
-                                unit: "grid",
-                                minValue: 0,
-                                maxValue: max(0, layout.gridRows - 1),
-                                onValueChanged: { [weak self] value in
-                                    self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
-                                        draftLayout.windowSelection.y = value
-                                    }
-                                }
-                            )
+                            control: makeGridControlRow(control: windowYControl)
                         ),
                         makeLabeledControlRow(
                             label: UICopy.settingsWidthLabel,
-                            control: makeNumericStepperControl(
-                                value: layout.windowSelection.w,
-                                unit: "grid",
-                                minValue: 1,
-                                maxValue: layout.gridColumns,
-                                onValueChanged: { [weak self] value in
-                                    self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
-                                        draftLayout.windowSelection.w = value
-                                    }
-                                }
-                            )
+                            control: makeGridControlRow(control: windowWidthControl)
                         ),
                         makeLabeledControlRow(
                             label: UICopy.settingsHeightLabel,
-                            control: makeNumericStepperControl(
-                                value: layout.windowSelection.h,
-                                unit: "grid",
-                                minValue: 1,
-                                maxValue: layout.gridRows,
-                                onValueChanged: { [weak self] value in
-                                    self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
-                                        draftLayout.windowSelection.h = value
-                                    }
-                                }
-                            )
+                            control: makeGridControlRow(control: windowHeightControl)
                         ),
                     ], width: 460)
                 ),
@@ -388,6 +375,8 @@ extension LayoutsSettingsViewController {
         saveButton.title = UICopy.settingsSaveButtonTitle
         removeButton.title = UICopy.settingsRemoveButtonTitle
         saveButton.isEnabled = prototypeState.hasLayoutsDraftChanges
+        saveButton.bezelColor = saveButton.isEnabled ? .controlAccentColor : nil
+        saveButton.contentTintColor = saveButton.isEnabled ? .white : nil
 
         let removeState = removeButtonState(for: selectedNode)
         removeButton.isEnabled = removeState.isEnabled

@@ -152,7 +152,8 @@ final class SettingsIntegerStepperControl: NSView, NSTextFieldDelegate {
     var onValueChanged: ((Int) -> Void)?
 
     private let textField = NSTextField(string: "")
-    private let stepper = NSStepper()
+    private let incrementButton = NSButton()
+    private let decrementButton = NSButton()
     private let minValue: Int
     private let maxValue: Int?
 
@@ -174,19 +175,27 @@ final class SettingsIntegerStepperControl: NSView, NSTextFieldDelegate {
         textField.translatesAutoresizingMaskIntoConstraints = false
         textField.widthAnchor.constraint(equalToConstant: textFieldWidth).isActive = true
 
-        stepper.controlSize = .small
-        stepper.minValue = Double(minValue)
-        stepper.maxValue = Double(maxValue ?? Int.max)
-        stepper.increment = 1
-        stepper.valueWraps = false
-        stepper.target = self
-        stepper.action = #selector(handleStepperChanged(_:))
+        configureStepButton(
+            incrementButton,
+            symbolName: "chevron.up",
+            action: #selector(handleIncrement(_:))
+        )
+        configureStepButton(
+            decrementButton,
+            symbolName: "chevron.down",
+            action: #selector(handleDecrement(_:))
+        )
+
+        let buttonsStackView = makeVerticalGroup(spacing: 1)
+        buttonsStackView.alignment = .centerX
+        buttonsStackView.addArrangedSubview(incrementButton)
+        buttonsStackView.addArrangedSubview(decrementButton)
 
         let stackView = makeHorizontalGroup(spacing: 6)
         stackView.alignment = .centerY
         stackView.translatesAutoresizingMaskIntoConstraints = false
         stackView.addArrangedSubview(textField)
-        stackView.addArrangedSubview(stepper)
+        stackView.addArrangedSubview(buttonsStackView)
         addSubview(stackView)
 
         NSLayoutConstraint.activate([
@@ -205,20 +214,52 @@ final class SettingsIntegerStepperControl: NSView, NSTextFieldDelegate {
     }
 
     var value: Int {
-        stepper.integerValue
+        Int(textField.stringValue) ?? minValue
     }
 
     func setValue(_ value: Int) {
         let boundedValue = boundedValue(for: value)
         textField.stringValue = String(boundedValue)
-        stepper.integerValue = boundedValue
+        updateButtonState(for: boundedValue)
+    }
+
+    private func configureStepButton(_ button: NSButton, symbolName: String, action: Selector) {
+        button.bezelStyle = .smallSquare
+        button.controlSize = .small
+        button.image = NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)
+        button.imagePosition = .imageOnly
+        button.target = self
+        button.action = action
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.widthAnchor.constraint(equalToConstant: 18).isActive = true
+        button.heightAnchor.constraint(equalToConstant: 11).isActive = true
+    }
+
+    private func updateButtonState(for value: Int) {
+        decrementButton.isEnabled = value > minValue
+        incrementButton.isEnabled = maxValue.map { value < $0 } ?? true
+    }
+
+    private func applyDelta(_ delta: Int) {
+        let boundedValue = boundedValue(for: value + delta)
+        setValue(boundedValue)
+        onValueChanged?(boundedValue)
     }
 
     @objc
-    private func handleStepperChanged(_ sender: NSStepper) {
-        let boundedValue = boundedValue(for: sender.integerValue)
-        setValue(boundedValue)
-        onValueChanged?(boundedValue)
+    private func handleIncrement(_ sender: NSButton) {
+        guard sender.isEnabled else {
+            return
+        }
+        applyDelta(1)
+    }
+
+    @objc
+    private func handleDecrement(_ sender: NSButton) {
+        guard sender.isEnabled else {
+            return
+        }
+        applyDelta(-1)
     }
 
     func controlTextDidEndEditing(_ notification: Notification) {
@@ -245,8 +286,19 @@ extension SettingsIntegerStepperControl {
     }
 
     func decrementForTesting() {
-        stepper.integerValue -= Int(stepper.increment)
-        handleStepperChanged(stepper)
+        handleDecrement(decrementButton)
+    }
+
+    func incrementForTesting() {
+        handleIncrement(incrementButton)
+    }
+
+    var canIncrementForTesting: Bool {
+        incrementButton.isEnabled
+    }
+
+    var canDecrementForTesting: Bool {
+        decrementButton.isEnabled
     }
 }
 

@@ -82,17 +82,20 @@ struct LayoutsSettingsViewControllerTests {
         let (controller, state, recorder) = makeController()
 
         #expect(controller.saveButtonEnabledForTesting == false)
+        #expect(controller.saveButtonUsesAccentStyleForTesting == false)
 
         state.applyLayoutsMutation { configuration in
             configuration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
         }
 
         #expect(controller.saveButtonEnabledForTesting == true)
+        #expect(controller.saveButtonUsesAccentStyleForTesting == true)
 
         controller.saveLayoutsForTesting()
 
         #expect(recorder.savedLayoutsCandidates.last?.general.activeLayoutGroup == AppConfiguration.fullscreenGroupName)
         #expect(controller.saveButtonEnabledForTesting == false)
+        #expect(controller.saveButtonUsesAccentStyleForTesting == false)
     }
 
     @Test func addGroupAppendsProtectedFalseGroupWithEmptyAllMonitorSet() async throws {
@@ -187,5 +190,32 @@ struct LayoutsSettingsViewControllerTests {
         )
         #expect(updatedLayout.gridColumns == 50)
         #expect(updatedLayout.gridRows == 60)
+    }
+
+    @Test func activatingGroupUsesDoubleClickInsteadOfCheckbox() async throws {
+        let (controller, _, recorder) = makeController()
+
+        controller.selectGroupForTesting(named: AppConfiguration.fullscreenGroupName)
+        controller.activateSelectedGroupForTesting()
+
+        #expect(controller.activeGroupNameForTesting == AppConfiguration.fullscreenGroupName)
+        #expect(controller.saveButtonEnabledForTesting == true)
+        #expect(recorder.savedLayoutsCandidates.isEmpty)
+    }
+
+    @Test func windowSelectionButtonsDisableIncrementAtEffectiveBounds() async throws {
+        var configuration = AppConfiguration.defaultValue
+        configuration.layoutGroups[0].sets[0].layouts[0].gridColumns = 4
+        configuration.layoutGroups[0].sets[0].layouts[0].gridRows = 2
+        configuration.layoutGroups[0].sets[0].layouts[0].windowSelection = GridSelection(x: 0, y: 0, w: 4, h: 2)
+        let (controller, _, _) = makeController(configuration: configuration)
+
+        controller.selectLayoutForTesting(id: "layout-1")
+
+        let buttonState = try #require(controller.currentLayoutWindowSelectionButtonStateForTesting)
+        #expect(buttonState.xCanIncrement == false)
+        #expect(buttonState.yCanIncrement == false)
+        #expect(buttonState.widthCanIncrement == false)
+        #expect(buttonState.heightCanIncrement == false)
     }
 }

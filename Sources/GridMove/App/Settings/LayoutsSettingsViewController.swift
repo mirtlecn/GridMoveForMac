@@ -40,6 +40,10 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
     var selectedLayoutDetailTabIndex = 0
     var currentLayoutGridColumnsControl: SettingsIntegerStepperControl?
     var currentLayoutGridRowsControl: SettingsIntegerStepperControl?
+    var currentLayoutWindowXControl: SettingsIntegerStepperControl?
+    var currentLayoutWindowYControl: SettingsIntegerStepperControl?
+    var currentLayoutWindowWidthControl: SettingsIntegerStepperControl?
+    var currentLayoutWindowHeightControl: SettingsIntegerStepperControl?
 
     private var hasAppliedInitialSplitPosition = false
 
@@ -209,6 +213,8 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
         outlineView.focusRingType = .none
         outlineView.dataSource = self
         outlineView.delegate = self
+        outlineView.target = self
+        outlineView.doubleAction = #selector(handleOutlineDoubleClick(_:))
         outlineView.setDraggingSourceOperationMask(.move, forLocal: true)
         outlineView.registerForDraggedTypes([DragPasteboard.layoutType])
     }
@@ -422,5 +428,20 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
             }
             return false
         })?.children[safe: setIndex]
+    }
+
+    @objc
+    func handleOutlineDoubleClick(_ sender: NSOutlineView) {
+        guard let node = selectedNode else {
+            return
+        }
+
+        guard case let .group(group, isActive) = node.kind, !isActive else {
+            return
+        }
+
+        mutateLayoutsDraft(preserving: .group(name: group.name)) { configuration in
+            configuration.general.activeLayoutGroup = group.name
+        }
     }
 }
