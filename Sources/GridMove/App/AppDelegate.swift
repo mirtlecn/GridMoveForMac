@@ -724,6 +724,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             .map { $0.isSeparatorItem ? "|" : $0.title } ?? []
     }
 
+    var mainMenuShortcutDescriptorsForTesting: [String: String] {
+        Dictionary(
+            uniqueKeysWithValues: NSApplication.shared.mainMenu?.items
+                .compactMap(\.submenu)
+                .flatMap(\.items)
+                .filter { !$0.isSeparatorItem }
+                .map { item in
+                    let modifiers = item.keyEquivalentModifierMask
+                    let modifierDisplay = [
+                        modifiers.contains(.control) ? "⌃" : "",
+                        modifiers.contains(.option) ? "⌥" : "",
+                        modifiers.contains(.shift) ? "⇧" : "",
+                        modifiers.contains(.command) ? "⌘" : "",
+                    ].joined()
+                    return (item.title, modifierDisplay + item.keyEquivalent.uppercased())
+                } ?? []
+        )
+    }
+
     var isSettingsWindowOpenForTesting: Bool {
         settingsWindowController?.window?.isVisible == true
     }

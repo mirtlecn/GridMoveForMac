@@ -34,10 +34,10 @@ final class MenuBarController: NSObject {
     private let layoutGroupSubmenu = NSMenu()
     private let settingsSectionSeparatorItem = NSMenuItem.separator()
     private let actionSectionSeparatorItem = NSMenuItem.separator()
-    private let settingsMenuItem = NSMenuItem(title: UICopy.settingsMenuTitle, action: nil, keyEquivalent: "")
+    private let settingsMenuItem = NSMenuItem(title: UICopy.settingsMenuTitle, action: nil, keyEquivalent: ",")
     private let launchAtLoginMenuItem = NSMenuItem(title: UICopy.launchAtLoginMenuTitle, action: nil, keyEquivalent: "")
     private let quitSectionSeparatorItem = NSMenuItem.separator()
-    private let quitMenuItem = NSMenuItem(title: UICopy.quitMenuTitle, action: nil, keyEquivalent: "")
+    private let quitMenuItem = NSMenuItem(title: UICopy.quitMenuTitle, action: nil, keyEquivalent: "q")
     private var actionMenuItems: [NSMenuItem] = []
     private var actionItems: [ActionItem]
     private var layoutGroupState: LayoutGroupState
@@ -114,6 +114,7 @@ final class MenuBarController: NSObject {
 
         settingsMenuItem.target = self
         settingsMenuItem.action = #selector(openSettings)
+        settingsMenuItem.keyEquivalentModifierMask = [.command]
         menu.addItem(settingsMenuItem)
 
         launchAtLoginMenuItem.target = self
@@ -124,6 +125,7 @@ final class MenuBarController: NSObject {
 
         quitMenuItem.target = self
         quitMenuItem.action = #selector(quit)
+        quitMenuItem.keyEquivalentModifierMask = [.command]
         menu.addItem(quitMenuItem)
 
         statusItem.menu = menu
@@ -324,5 +326,23 @@ final class MenuBarController: NSObject {
 
     var layoutGroupDescriptorsForTesting: [String: Bool] {
         Dictionary(uniqueKeysWithValues: layoutGroupSubmenu.items.map { ($0.title, $0.state == .on) })
+    }
+
+    var shortcutDescriptorsForTesting: [String: String] {
+        [
+            settingsMenuItem.title: shortcutDescriptor(for: settingsMenuItem),
+            quitMenuItem.title: shortcutDescriptor(for: quitMenuItem),
+        ]
+    }
+
+    private func shortcutDescriptor(for item: NSMenuItem) -> String {
+        let modifiers = item.keyEquivalentModifierMask
+        let modifierDisplay = [
+            modifiers.contains(.control) ? "⌃" : "",
+            modifiers.contains(.option) ? "⌥" : "",
+            modifiers.contains(.shift) ? "⇧" : "",
+            modifiers.contains(.command) ? "⌘" : "",
+        ].joined()
+        return modifierDisplay + item.keyEquivalent.uppercased()
     }
 }

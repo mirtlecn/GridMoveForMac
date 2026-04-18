@@ -525,6 +525,8 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
         "|",
         UICopy.quitAppMenuTitle,
     ])
+    #expect(delegate.mainMenuShortcutDescriptorsForTesting[UICopy.settingsMenuTitle] == "⌘,")
+    #expect(delegate.mainMenuShortcutDescriptorsForTesting[UICopy.quitAppMenuTitle] == "⌘Q")
     #expect(delegate.visibleMenuItemDescriptorsForTesting.contains(UICopy.settingsMenuTitle))
 
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))

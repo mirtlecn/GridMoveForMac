@@ -153,3 +153,32 @@ import Testing
 
     #expect(controller.menuItemDescriptorsForTesting == [UICopy.requestAccessibilityAccessMenuTitle])
 }
+
+@MainActor
+@Test func menuBarControllerShowsDefaultShortcutsForSettingsAndQuit() async throws {
+    let controller = MenuBarController(
+        dragGridEnabled: true,
+        toggleSettings: .init(
+            mouseButtonNumber: 3,
+            mouseButtonDragEnabled: true,
+            modifierLeftMouseDragEnabled: true,
+            preferLayoutMode: true,
+            launchAtLogin: true
+        ),
+        layoutGroupState: .init(groupNames: ["built-in"], activeGroupName: "built-in"),
+        actionItems: [],
+        onRequestAccessibilityAccess: {},
+        onToggleDragGrid: { _ in true },
+        onToggleMouseButtonDrag: { _ in true },
+        onToggleModifierLeftMouseDrag: { _ in true },
+        onTogglePreferLayoutMode: { _ in true },
+        onToggleLaunchAtLogin: { _ in true },
+        onSelectLayoutGroup: { _ in true },
+        onPerformAction: { _ in },
+        onOpenSettings: {},
+        onQuit: {}
+    )
+
+    #expect(controller.shortcutDescriptorsForTesting[UICopy.settingsMenuTitle] == "⌘,")
+    #expect(controller.shortcutDescriptorsForTesting[UICopy.quitMenuTitle] == "⌘Q")
+}
