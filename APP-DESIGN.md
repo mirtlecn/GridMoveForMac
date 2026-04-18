@@ -214,6 +214,9 @@ When permission is missing, revoked, or the app is disabled:
 - shortcut handling stops
 - if the access state changed to missing, the app directly triggers one system Accessibility permission request for that state transition
 - if access stays missing, the app does not keep re-requesting until the next transition or the next launch
+- while permission is missing, the menu bar menu collapses to a single `Get accessibility access` item
+- clicking `Get accessibility access` invalidates the cached permission state and triggers the same system Accessibility prompt path again
+- the normal menu items return only after Accessibility permission is actually available
 
 Launch-at-login coordination:
 
@@ -350,6 +353,7 @@ There are three non-pointer action entry points:
 Menu actions:
 
 - are built from current configuration
+- collapse to a single `Get accessibility access` item while Accessibility permission is missing
 - include a `Layout group` submenu that switches `general.activeLayoutGroup`
 - keep a separator between the drag-preference items and the `Layout group` submenu
 - include `Reload`, `Customize... ↗`, and `Launch at login` in the final settings section, in that order, before `Quit`

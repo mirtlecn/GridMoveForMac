@@ -898,6 +898,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     #expect(promptCount == 1)
     #expect(delegate.isAccessibilityPollingActiveForTesting == true)
     #expect(delegate.accessibilityPollingIntervalForTesting == 1.0)
+    #expect(delegate.visibleMenuItemDescriptorsForTesting == [UICopy.requestAccessibilityAccessMenuTitle])
 
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
 }
@@ -924,16 +925,19 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
     #expect(promptCount == 0)
     #expect(delegate.isAccessibilityPollingActiveForTesting == false)
+    #expect(delegate.visibleMenuItemDescriptorsForTesting.contains(UICopy.enableMenuTitle))
 
     trustState = false
     delegate.evaluateAccessibilityState()
     #expect(promptCount == 1)
     #expect(delegate.isAccessibilityPollingActiveForTesting == true)
     #expect(delegate.accessibilityPollingIntervalForTesting == 1.0)
+    #expect(delegate.visibleMenuItemDescriptorsForTesting == [UICopy.requestAccessibilityAccessMenuTitle])
 
     trustState = true
     delegate.evaluateAccessibilityState()
     #expect(delegate.isAccessibilityPollingActiveForTesting == false)
+    #expect(delegate.visibleMenuItemDescriptorsForTesting.contains(UICopy.enableMenuTitle))
     trustState = false
     delegate.evaluateAccessibilityState()
     #expect(promptCount == 2)
@@ -972,6 +976,37 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     #expect(launchAtLoginService.registerCallCount == 0)
     #expect(delegate.configuration.general.launchAtLogin == false)
     #expect((try store.load()).general.launchAtLogin == false)
+}
+
+@MainActor
+@Test func appDelegateRequestAccessibilityAccessMenuPromptsAgainWhileAccessIsStillMissing() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-accessibility-menu-request-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var promptCount = 0
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { false },
+        accessibilityPromptRequester: {
+            promptCount += 1
+            return false
+        }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+
+    #expect(promptCount == 1)
+    #expect(delegate.visibleMenuItemDescriptorsForTesting == [UICopy.requestAccessibilityAccessMenuTitle])
+
+    delegate.requestAccessibilityAccessFromMenu()
+
+    #expect(promptCount == 2)
+    #expect(delegate.visibleMenuItemDescriptorsForTesting == [UICopy.requestAccessibilityAccessMenuTitle])
+
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
 }
 
 @MainActor

@@ -4,6 +4,7 @@ enum UICopy {
     static let appName = "GridMove"
     static let applicationMenuTitle = "Application"
     static let enableMenuTitle = "Enable"
+    static let requestAccessibilityAccessMenuTitle = "Get accessibility access"
     static let modifierLeftMouseDragMenuTitle = "Modifier + left mouse drag"
     static let preferLayoutModeMenuTitle = "Prefer layout mode"
     static let layoutGroupMenuTitle = "Layout group"

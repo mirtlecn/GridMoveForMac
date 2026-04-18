@@ -23,6 +23,7 @@ final class MenuBarController: NSObject {
 
     private let statusItem: NSStatusItem
     private let menu = NSMenu()
+    private let requestAccessibilityAccessMenuItem = NSMenuItem(title: UICopy.requestAccessibilityAccessMenuTitle, action: nil, keyEquivalent: "")
     private let dragGridMenuItem = NSMenuItem(title: UICopy.enableMenuTitle, action: nil, keyEquivalent: "")
     private let enableSeparatorItem = NSMenuItem.separator()
     private let mouseButtonDragMenuItem = NSMenuItem(title: "", action: nil, keyEquivalent: "")
@@ -36,10 +37,14 @@ final class MenuBarController: NSObject {
     private let reloadConfigMenuItem = NSMenuItem(title: UICopy.reloadConfigMenuTitle, action: nil, keyEquivalent: "")
     private let customizeMenuItem = NSMenuItem(title: UICopy.customizeMenuTitle, action: nil, keyEquivalent: "")
     private let launchAtLoginMenuItem = NSMenuItem(title: UICopy.launchAtLoginMenuTitle, action: nil, keyEquivalent: "")
+    private let quitSectionSeparatorItem = NSMenuItem.separator()
+    private let quitMenuItem = NSMenuItem(title: UICopy.quitMenuTitle, action: nil, keyEquivalent: "")
     private var actionMenuItems: [NSMenuItem] = []
     private var actionItems: [ActionItem]
     private var layoutGroupState: LayoutGroupState
+    private var hasAccessibilityAccess = true
 
+    private let onRequestAccessibilityAccess: () -> Void
     private let onToggleDragGrid: (Bool) -> Bool
     private let onToggleMouseButtonDrag: (Bool) -> Bool
     private let onToggleModifierLeftMouseDrag: (Bool) -> Bool
@@ -56,6 +61,7 @@ final class MenuBarController: NSObject {
         toggleSettings: ToggleSettingsState,
         layoutGroupState: LayoutGroupState,
         actionItems: [ActionItem],
+        onRequestAccessibilityAccess: @escaping () -> Void,
         onToggleDragGrid: @escaping (Bool) -> Bool,
         onToggleMouseButtonDrag: @escaping (Bool) -> Bool,
         onToggleModifierLeftMouseDrag: @escaping (Bool) -> Bool,
@@ -69,6 +75,7 @@ final class MenuBarController: NSObject {
     ) {
         self.actionItems = actionItems
         self.layoutGroupState = layoutGroupState
+        self.onRequestAccessibilityAccess = onRequestAccessibilityAccess
         self.onToggleDragGrid = onToggleDragGrid
         self.onToggleMouseButtonDrag = onToggleMouseButtonDrag
         self.onToggleModifierLeftMouseDrag = onToggleModifierLeftMouseDrag
@@ -89,6 +96,10 @@ final class MenuBarController: NSObject {
         statusItem.button?.image = MenuBarIcon.makeImage()
         statusItem.button?.imagePosition = .imageOnly
         statusItem.button?.toolTip = UICopy.appName
+
+        requestAccessibilityAccessMenuItem.target = self
+        requestAccessibilityAccessMenuItem.action = #selector(requestAccessibilityAccess)
+        menu.addItem(requestAccessibilityAccessMenuItem)
 
         dragGridMenuItem.state = dragGridEnabled ? .on : .off
         dragGridMenuItem.target = self
@@ -117,13 +128,14 @@ final class MenuBarController: NSObject {
         launchAtLoginMenuItem.action = #selector(toggleLaunchAtLogin)
         menu.addItem(launchAtLoginMenuItem)
 
-        menu.addItem(.separator())
+        menu.addItem(quitSectionSeparatorItem)
 
-        let quitItem = NSMenuItem(title: UICopy.quitMenuTitle, action: #selector(quit), keyEquivalent: "")
-        quitItem.target = self
-        menu.addItem(quitItem)
+        quitMenuItem.target = self
+        quitMenuItem.action = #selector(quit)
+        menu.addItem(quitMenuItem)
 
         statusItem.menu = menu
+        updateAccessibilityAccess(hasAccessibilityAccess)
     }
 
     @objc private func toggleDragGrid() {
@@ -159,6 +171,27 @@ final class MenuBarController: NSObject {
         dragGridMenuItem.state = isEnabled ? .on : .off
         actionMenuItems.forEach { $0.isEnabled = isEnabled }
         layoutGroupSubmenu.items.forEach { $0.isEnabled = isEnabled }
+    }
+
+    func updateAccessibilityAccess(_ hasAccessibilityAccess: Bool) {
+        self.hasAccessibilityAccess = hasAccessibilityAccess
+
+        requestAccessibilityAccessMenuItem.isHidden = hasAccessibilityAccess
+        dragGridMenuItem.isHidden = !hasAccessibilityAccess
+        enableSeparatorItem.isHidden = !hasAccessibilityAccess
+        mouseButtonDragMenuItem.isHidden = !hasAccessibilityAccess
+        modifierLeftMouseDragMenuItem.isHidden = !hasAccessibilityAccess
+        preferLayoutModeMenuItem.isHidden = !hasAccessibilityAccess
+        layoutGroupSectionSeparatorItem.isHidden = !hasAccessibilityAccess
+        layoutGroupMenuItem.isHidden = !hasAccessibilityAccess
+        settingsSectionSeparatorItem.isHidden = !hasAccessibilityAccess
+        actionSectionSeparatorItem.isHidden = !hasAccessibilityAccess || actionItems.isEmpty
+        reloadConfigMenuItem.isHidden = !hasAccessibilityAccess
+        customizeMenuItem.isHidden = !hasAccessibilityAccess
+        launchAtLoginMenuItem.isHidden = !hasAccessibilityAccess
+        quitSectionSeparatorItem.isHidden = !hasAccessibilityAccess
+        quitMenuItem.isHidden = !hasAccessibilityAccess
+        actionMenuItems.forEach { $0.isHidden = !hasAccessibilityAccess }
     }
 
     func updateToggleStates(_ toggleSettings: ToggleSettingsState) {
@@ -205,11 +238,12 @@ final class MenuBarController: NSObject {
             menuItem.isEnabled = isEnabled
             menuItem.keyEquivalentModifierMask = item.shortcut?.menuModifierMask ?? []
             menu.insertItem(menuItem, at: nextIndex)
+            menuItem.isHidden = !hasAccessibilityAccess
             actionMenuItems.append(menuItem)
             nextIndex += 1
         }
 
-        actionSectionSeparatorItem.isHidden = false
+        actionSectionSeparatorItem.isHidden = !hasAccessibilityAccess
     }
 
     private func rebuildLayoutGroupItems() {
@@ -226,6 +260,10 @@ final class MenuBarController: NSObject {
 
     @objc private func reloadConfiguration() {
         onReloadConfiguration()
+    }
+
+    @objc private func requestAccessibilityAccess() {
+        onRequestAccessibilityAccess()
     }
 
     @objc private func customize() {
@@ -283,7 +321,7 @@ final class MenuBarController: NSObject {
     }
 
     var menuItemDescriptorsForTesting: [String] {
-        menu.items.map { item in
+        menu.items.filter { !$0.isHidden }.map { item in
             item.isSeparatorItem ? "|" : item.title
         }
     }

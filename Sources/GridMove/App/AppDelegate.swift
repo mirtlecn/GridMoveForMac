@@ -115,6 +115,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             toggleSettings: makeToggleSettingsState(configuration: configuration),
             layoutGroupState: makeLayoutGroupState(configuration: configuration),
             actionItems: makeMenuActionItems(configuration: configuration),
+            onRequestAccessibilityAccess: { [weak self] in
+                self?.requestAccessibilityAccessFromMenu()
+            },
             onToggleDragGrid: { [weak self] isEnabled in
                 self?.updateGlobalEnabledState(isEnabled) ?? false
             },
@@ -146,6 +149,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 NSApplication.shared.terminate(nil)
             }
         )
+        menuController?.updateAccessibilityAccess(currentAccessibilityStatus())
 
         _ = accessibilityCoordinator.evaluate(promptOnMissing: true)
         accessibilityCoordinator.startPollingIfNeeded()
@@ -160,6 +164,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func evaluateAccessibilityState() {
         _ = accessibilityCoordinator.evaluate(promptOnMissing: true)
+    }
+
+    func requestAccessibilityAccessFromMenu() {
+        accessibilityCoordinator.invalidateAndEvaluate(promptOnMissing: true)
+        accessibilityCoordinator.startPollingIfNeeded()
     }
 
     func reloadConfigurationFromDisk(mode: ConfigurationReloadMode) {
@@ -338,6 +347,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func handleAccessibilityStateDidUpdate() {
         synchronizeRuntimeControllers()
+        menuController?.updateAccessibilityAccess(accessibilityCoordinator.hasAccess)
         processPendingLaunchAtLoginReconciliationIfNeeded()
     }
 
@@ -598,6 +608,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func menuActionItemsForTesting() -> [MenuBarController.ActionItem] {
         makeMenuActionItems(configuration: configuration)
+    }
+
+    var visibleMenuItemDescriptorsForTesting: [String] {
+        menuController?.menuItemDescriptorsForTesting ?? []
     }
 
     func recordLayoutIDForTesting(_ layoutID: String, windowIdentity: String) {
