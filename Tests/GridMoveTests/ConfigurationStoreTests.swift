@@ -72,7 +72,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     updatedConfiguration.appearance.layoutGap = 4
     updatedConfiguration.dragTriggers.preferLayoutMode = false
     updatedConfiguration.dragTriggers.modifierGroups = [[.alt]]
-    updatedConfiguration.monitors = ["Built-in Retina Display": "12345"]
+    updatedConfiguration.monitors = ["610-41535-0": "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"]
 
     try store.save(updatedConfiguration)
     let reloadedConfiguration = try store.load()
@@ -189,7 +189,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         ]
       },
       "monitors": {
-        "Built-in Retina Display": "12345"
+        "610-41535-0": "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"
       }
     }
     """
@@ -241,7 +241,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(configuration.layouts[1].includeInLayoutIndex == false)
     #expect(configuration.layouts[0].includeInMenu == true)
     #expect(configuration.layouts[1].includeInMenu == true)
-    #expect(configuration.monitors == ["Built-in Retina Display": "12345"])
+    #expect(configuration.monitors == ["610-41535-0": "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"])
     #expect(configuration.appearance.triggerStrokeColor.hexString == "#007AFF33")
     #expect(configuration.appearance.highlightStrokeColor.hexString == "#FFFFFFEB")
 }
@@ -1115,12 +1115,12 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             from: encoder.encode(
                 LayoutSetMonitor.displays([
                     "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4",
-                    "fallback:1552-41002-424242",
+                    "1552-41002-424242",
                 ])
             )
         ) == .displays([
             "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4",
-            "fallback:1552-41002-424242",
+            "1552-41002-424242",
         ])
     )
 }

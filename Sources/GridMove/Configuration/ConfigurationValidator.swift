@@ -1,6 +1,6 @@
 import Foundation
 
-enum ConfigurationFileError: Error {
+enum ConfigurationFileError: Error, Equatable {
     case invalidLayoutReference(Int)
     case missingActiveLayoutGroup(String)
     case duplicateLayoutGroupName
@@ -38,10 +38,11 @@ enum ConfigurationValidator {
                     hasMainSet = true
                 case let .displays(displayIDs):
                     for displayID in displayIDs {
-                        guard !explicitDisplayIDs.contains(displayID) else {
+                        let canonicalDisplayID = configuration.monitors[displayID] ?? displayID
+                        guard !explicitDisplayIDs.contains(canonicalDisplayID) else {
                             throw ConfigurationFileError.overlappingMonitorBindings(group.name)
                         }
-                        explicitDisplayIDs.insert(displayID)
+                        explicitDisplayIDs.insert(canonicalDisplayID)
                     }
                 }
             }

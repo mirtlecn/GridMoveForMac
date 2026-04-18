@@ -425,6 +425,90 @@ import Testing
     )
 }
 
+@Test func layoutGroupResolverResolvesFingerprintAliasesToUUIDDisplays() async throws {
+    let aliasedLayout = LayoutPreset(
+        id: "layout-alias",
+        name: "Alias",
+        gridColumns: 12,
+        gridRows: 6,
+        windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
+        triggerRegion: nil,
+        includeInLayoutIndex: true
+    )
+    let configuration = AppConfiguration(
+        general: .init(
+            isEnabled: true,
+            excludedBundleIDs: [],
+            excludedWindowTitles: [],
+            activeLayoutGroup: "alias",
+            mouseButtonNumber: 3
+        ),
+        appearance: AppConfiguration.defaultValue.appearance,
+        dragTriggers: AppConfiguration.defaultValue.dragTriggers,
+        hotkeys: .init(bindings: []),
+        layoutGroups: [
+            LayoutGroup(
+                name: "alias",
+                includeInGroupCycle: true,
+                sets: [
+                    LayoutSet(monitor: .displays(["1552-41002-424242"]), layouts: [aliasedLayout]),
+                ]
+            ),
+        ],
+        monitors: ["1552-41002-424242": "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"]
+    )
+    let entry = try #require(LayoutGroupResolver.entry(for: "layout-alias", configuration: configuration))
+
+    #expect(
+        LayoutGroupResolver.targetDisplayID(
+            for: entry,
+            currentDisplayID: "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4",
+            mainDisplayID: "main",
+            availableDisplayIDs: ["main", "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"],
+            configuration: configuration
+        ) == "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"
+    )
+}
+
+@Test func configurationValidatorRejectsOverlappingUUIDAndFingerprintAliases() async throws {
+    let aliasedLayout = LayoutPreset(
+        id: "layout-alias",
+        name: "Alias",
+        gridColumns: 12,
+        gridRows: 6,
+        windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
+        triggerRegion: nil,
+        includeInLayoutIndex: true
+    )
+    let configuration = AppConfiguration(
+        general: .init(
+            isEnabled: true,
+            excludedBundleIDs: [],
+            excludedWindowTitles: [],
+            activeLayoutGroup: "alias",
+            mouseButtonNumber: 3
+        ),
+        appearance: AppConfiguration.defaultValue.appearance,
+        dragTriggers: AppConfiguration.defaultValue.dragTriggers,
+        hotkeys: .init(bindings: []),
+        layoutGroups: [
+            LayoutGroup(
+                name: "alias",
+                includeInGroupCycle: true,
+                sets: [
+                    LayoutSet(monitor: .displays(["1552-41002-424242"]), layouts: [aliasedLayout]),
+                    LayoutSet(monitor: .displays(["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"]), layouts: [aliasedLayout]),
+                ]
+            ),
+        ],
+        monitors: ["1552-41002-424242": "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"]
+    )
+
+    #expect(throws: ConfigurationFileError.overlappingMonitorBindings("alias")) {
+        try ConfigurationValidator.validate(configuration)
+    }
+}
+
 @Test func layoutEngineKeepsOnlyTenRecentWindowLayoutRecords() async throws {
     let engine = LayoutEngine()
     let layouts = AppConfiguration.defaultValue.layouts

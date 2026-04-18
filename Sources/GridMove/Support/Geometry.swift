@@ -65,18 +65,19 @@ enum Geometry {
     }
 
     static func screenIdentifier(for screen: NSScreen) -> String {
-        if let displayID = cgDisplayID(for: screen) {
-            if let uuid = stableDisplayUUID(for: displayID) {
-                return uuid
-            }
-
-            if let fingerprint = displayFingerprint(for: displayID) {
-                return fingerprint
-            }
+        guard let displayID = cgDisplayID(for: screen) else {
+            preconditionFailure("Expected NSScreenNumber for every connected display.")
         }
 
-        let frame = screen.frame
-        return "\(frame.origin.x),\(frame.origin.y),\(frame.width),\(frame.height)"
+        if let uuid = stableDisplayUUID(for: displayID) {
+            return uuid
+        }
+
+        guard let fingerprint = displayFingerprint(for: displayID) else {
+            preconditionFailure("Expected vendor-model-serial fingerprint for display \(displayID).")
+        }
+
+        return fingerprint
     }
 
     static func stableDisplayUUID(for displayID: CGDirectDisplayID) -> String? {
@@ -100,6 +101,6 @@ enum Geometry {
             return nil
         }
 
-        return "fallback:\(vendorID)-\(modelID)-\(serialNumber)"
+        return "\(vendorID)-\(modelID)-\(serialNumber)"
     }
 }
