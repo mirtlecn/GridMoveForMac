@@ -94,6 +94,33 @@ func makeMouseButtonControl() -> SettingsIntegerStepperControl {
 }
 
 @MainActor
+final class SettingsIntegerFormatter: NumberFormatter, @unchecked Sendable {
+    override init() {
+        super.init()
+        numberStyle = .none
+        allowsFloats = false
+        generatesDecimalNumbers = false
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        nil
+    }
+
+    override func isPartialStringValid(
+        _ partialString: String,
+        newEditingString newString: AutoreleasingUnsafeMutablePointer<NSString?>?,
+        errorDescription error: AutoreleasingUnsafeMutablePointer<NSString?>?
+    ) -> Bool {
+        guard partialString.isEmpty == false else {
+            return true
+        }
+
+        return partialString.unicodeScalars.allSatisfy(CharacterSet.decimalDigits.contains)
+    }
+}
+
+@MainActor
 final class SettingsIntegerStepperControl: NSView, NSTextFieldDelegate {
     var onValueChanged: ((Int) -> Void)?
 
@@ -107,8 +134,7 @@ final class SettingsIntegerStepperControl: NSView, NSTextFieldDelegate {
         self.maxValue = maxValue
         super.init(frame: .zero)
 
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .none
+        let formatter = SettingsIntegerFormatter()
         formatter.minimum = NSNumber(value: minValue)
         if let maxValue {
             formatter.maximum = NSNumber(value: maxValue)

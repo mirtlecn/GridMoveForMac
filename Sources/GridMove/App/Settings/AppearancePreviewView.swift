@@ -2,6 +2,10 @@ import AppKit
 
 @MainActor
 final class AppearancePreviewView: NSView {
+    private enum PreviewSampleLayout {
+        static let targetLayoutID = "layout-4"
+    }
+
     private var configuration: AppConfiguration = .defaultValue
     private var resolvedSlots: [ResolvedTriggerSlot] = []
     private var highlightFrame: CGRect?
@@ -22,20 +26,29 @@ final class AppearancePreviewView: NSView {
         self.configuration = configuration
 
         let engine = LayoutEngine()
+        let previewLayout = Self.sampleLayout()
         resolvedSlots = engine.resolveTriggerSlots(
             screenFrame: SettingsPreviewSupport.referenceScreenFrame,
             usableFrame: SettingsPreviewSupport.referenceUsableFrame,
-            layouts: configuration.layouts.filter { $0.triggerRegion != nil },
+            layouts: [previewLayout],
             triggerGap: Double(configuration.appearance.triggerGap),
             layoutGap: configuration.appearance.effectiveLayoutGap
         )
-        highlightFrame = resolvedSlots.first(where: { $0.layoutID == "layout-4" })?.targetFrame
+        highlightFrame = resolvedSlots.first(where: { $0.layoutID == PreviewSampleLayout.targetLayoutID })?.targetFrame
             ?? resolvedSlots.first?.targetFrame
         needsDisplay = true
     }
 
     var configurationForTesting: AppConfiguration {
         configuration
+    }
+
+    var resolvedSlotsForTesting: [ResolvedTriggerSlot] {
+        resolvedSlots
+    }
+
+    var highlightFrameForTesting: CGRect? {
+        highlightFrame
     }
 
     override func draw(_ dirtyRect: NSRect) {
@@ -80,5 +93,19 @@ final class AppearancePreviewView: NSView {
             appearance: configuration.appearance,
             cornerRadius: 10
         )
+    }
+
+    private static func sampleLayout() -> LayoutPreset {
+        AppConfiguration.defaultLayouts.first(where: { $0.id == PreviewSampleLayout.targetLayoutID })
+            ?? AppConfiguration.defaultLayouts.first
+            ?? LayoutPreset(
+                id: PreviewSampleLayout.targetLayoutID,
+                name: "Center",
+                gridColumns: SettingsPreviewSupport.defaultPreviewColumns,
+                gridRows: SettingsPreviewSupport.defaultPreviewRows,
+                windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4),
+                triggerRegion: .screen(GridSelection(x: 5, y: 2, w: 2, h: 2)),
+                includeInLayoutIndex: true
+            )
     }
 }

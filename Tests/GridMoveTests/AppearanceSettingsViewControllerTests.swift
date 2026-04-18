@@ -4,6 +4,34 @@ import Testing
 
 @MainActor
 struct AppearanceSettingsViewControllerTests {
+    @Test func settingsIntegerFormatterRejectsFractionalAndAlphabeticInput() async throws {
+        let formatter = SettingsIntegerFormatter()
+        var newEditingString: NSString?
+        var errorDescription: NSString?
+
+        #expect(
+            formatter.isPartialStringValid(
+                "12",
+                newEditingString: &newEditingString,
+                errorDescription: &errorDescription
+            ) == true
+        )
+        #expect(
+            formatter.isPartialStringValid(
+                "1.5",
+                newEditingString: &newEditingString,
+                errorDescription: &errorDescription
+            ) == false
+        )
+        #expect(
+            formatter.isPartialStringValid(
+                "abc",
+                newEditingString: &newEditingString,
+                errorDescription: &errorDescription
+            ) == false
+        )
+    }
+
     @Test func appearanceSettingsWritesRealConfigurationFieldsAndUpdatesPreview() async throws {
         let state = SettingsPrototypeState(configuration: .defaultValue)
         let recorder = TestSettingsActionRecorder()
@@ -29,6 +57,36 @@ struct AppearanceSettingsViewControllerTests {
         #expect(state.configuration.appearance.triggerOpacity == 0.35)
         #expect(state.configuration.appearance.triggerGap == 3)
         #expect(controller.previewConfigurationForTesting.appearance.triggerOpacity == 0.35)
+    }
+
+    @Test func appearancePreviewUsesBuiltInCenterTriggerSample() async throws {
+        var configuration = AppConfiguration.defaultValue
+        configuration.appearance.renderTriggerAreas = true
+        let state = SettingsPrototypeState(configuration: configuration)
+        let recorder = TestSettingsActionRecorder()
+        let controller = AppearanceSettingsViewController(
+            prototypeState: state,
+            actionHandler: recorder.makeActionHandler()
+        )
+        controller.loadViewIfNeeded()
+
+        let previewSlots = controller.previewResolvedSlotsForTesting
+        let previewSlot = try #require(previewSlots.first)
+        let sampleLayout = try #require(AppConfiguration.defaultLayouts.first(where: { $0.id == "layout-4" }))
+        let expectedSlot = try #require(
+            LayoutEngine().resolveTriggerSlots(
+                screenFrame: SettingsPreviewSupport.referenceScreenFrame,
+                usableFrame: SettingsPreviewSupport.referenceUsableFrame,
+                layouts: [sampleLayout],
+                triggerGap: Double(configuration.appearance.triggerGap),
+                layoutGap: configuration.appearance.effectiveLayoutGap
+            ).first
+        )
+
+        #expect(previewSlots.count == 1)
+        #expect(previewSlot.layoutID == "layout-4")
+        #expect(previewSlot.triggerFrame == expectedSlot.triggerFrame)
+        #expect(controller.previewHighlightFrameForTesting == expectedSlot.targetFrame)
     }
 
     @Test func appearancePreviewRefreshesAfterReload() async throws {

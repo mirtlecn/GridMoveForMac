@@ -236,49 +236,24 @@ private final class AppearanceSliderControl: NSView {
 }
 
 @MainActor
-private final class AppearanceStepperControl: NSView, NSTextFieldDelegate {
+private final class AppearanceStepperControl: NSView {
     var onValueChanged: ((Int) -> Void)?
 
-    private let textField = NSTextField(string: "")
-    private let stepper = NSStepper()
+    private let valueControl: SettingsIntegerStepperControl
     private let unitLabel: NSTextField
-    private let minValue: Int
-    private let maxValue: Int
 
     init(minValue: Int, maxValue: Int, unit: String) {
-        self.minValue = minValue
-        self.maxValue = maxValue
+        valueControl = SettingsIntegerStepperControl(value: minValue, minValue: minValue, maxValue: maxValue)
         unitLabel = makeFieldLabel(unit)
         super.init(frame: .zero)
-
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .none
-        formatter.minimum = NSNumber(value: minValue)
-        formatter.maximum = NSNumber(value: maxValue)
-
-        textField.controlSize = .small
-        textField.alignment = .right
-        textField.formatter = formatter
-        textField.delegate = self
-        textField.translatesAutoresizingMaskIntoConstraints = false
-        textField.widthAnchor.constraint(equalToConstant: 56).isActive = true
-
-        stepper.controlSize = .small
-        stepper.minValue = Double(minValue)
-        stepper.maxValue = Double(maxValue)
-        stepper.increment = 1
-        stepper.target = self
-        stepper.action = #selector(handleStepperChanged(_:))
-
-        let controls = makeHorizontalGroup(spacing: 6)
-        controls.alignment = .centerY
-        controls.addArrangedSubview(textField)
-        controls.addArrangedSubview(stepper)
+        valueControl.onValueChanged = { [weak self] value in
+            self?.onValueChanged?(value)
+        }
 
         let stackView = makeHorizontalGroup(spacing: 8)
         stackView.alignment = .centerY
         stackView.translatesAutoresizingMaskIntoConstraints = false
-        stackView.addArrangedSubview(controls)
+        stackView.addArrangedSubview(valueControl)
         stackView.addArrangedSubview(unitLabel)
         addSubview(stackView)
 
@@ -296,22 +271,7 @@ private final class AppearanceStepperControl: NSView, NSTextFieldDelegate {
     }
 
     func setValue(_ value: Int) {
-        let boundedValue = max(minValue, min(maxValue, value))
-        textField.stringValue = String(boundedValue)
-        stepper.integerValue = boundedValue
-    }
-
-    @objc
-    private func handleStepperChanged(_ sender: NSStepper) {
-        let value = sender.integerValue
-        textField.stringValue = String(value)
-        onValueChanged?(value)
-    }
-
-    func controlTextDidEndEditing(_ obj: Notification) {
-        let value = max(minValue, min(maxValue, Int(textField.stringValue) ?? minValue))
-        setValue(value)
-        onValueChanged?(value)
+        valueControl.setValue(value)
     }
 }
 
@@ -383,6 +343,14 @@ extension AppearanceSettingsViewController {
 
     func setTriggerGapForTesting(_ value: Int) {
         triggerGapControl.onValueChanged?(value)
+    }
+
+    var previewResolvedSlotsForTesting: [ResolvedTriggerSlot] {
+        previewView.resolvedSlotsForTesting
+    }
+
+    var previewHighlightFrameForTesting: CGRect? {
+        previewView.highlightFrameForTesting
     }
 
     var previewConfigurationForTesting: AppConfiguration {

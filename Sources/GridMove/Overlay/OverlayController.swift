@@ -262,29 +262,23 @@ private final class OverlayView: NSView {
     }
 
     private func drawTriggerSlots() {
-        let color = configuration.appearance.triggerStrokeColor.nsColor
-
         for slot in resolvedSlots {
             for hitTestFrame in slot.hitTestFrames {
-                let path = NSBezierPath(roundedRect: localRect(from: hitTestFrame), xRadius: 10, yRadius: 10)
-                color.withAlphaComponent(configuration.appearance.triggerOpacity).setFill()
-                path.fill()
-                color.setStroke()
-                path.lineWidth = 2
-                path.stroke()
+                SettingsPreviewSupport.drawTriggerRegion(
+                    rect: localRect(from: hitTestFrame),
+                    appearance: configuration.appearance,
+                    cornerRadius: 10
+                )
             }
         }
     }
 
     private func drawHighlight(frame: CGRect) {
-        let color = configuration.appearance.highlightStrokeColor.nsColor
-        color.withAlphaComponent(configuration.appearance.highlightFillOpacity).setFill()
-        color.setStroke()
-
-        let path = NSBezierPath(roundedRect: localRect(from: frame), xRadius: 10, yRadius: 10)
-        path.lineWidth = CGFloat(configuration.appearance.highlightStrokeWidth)
-        path.fill()
-        path.stroke()
+        SettingsPreviewSupport.drawWindowHighlight(
+            rect: localRect(from: frame),
+            appearance: configuration.appearance,
+            cornerRadius: 10
+        )
     }
 
     private func drawBadge(text: String, highlightedFrame: CGRect?) {
