@@ -98,7 +98,7 @@ The examples below use `jsonc` for annotation only. Real files must be plain JSO
     ]
   },
   "monitors": {
-    "610-41535-0": "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4" // Filled or refreshed by GridMove on successful reload/startup. Key is vendor-model-serial; value is the preferred runtime ID for that display: UUID when Quartz provides one, otherwise the same vendor-model-serial string.
+    "610-41535-0": "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4" // Refreshed only on startup or manual reload. Key is vendor-model-serial; value is the preferred runtime ID for that display: UUID when Quartz provides one, otherwise the same vendor-model-serial string. Previously learned displays stay in the file even when they are currently disconnected.
   }
 }
 ```

@@ -64,6 +64,42 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 }
 
 @MainActor
+@Test func appDelegateReloadMergesCurrentMonitorMetadataAndPreservesDisconnectedDisplays() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-monitor-metadata-merge-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var savedConfiguration = AppConfiguration.defaultValue
+    savedConfiguration.monitors = [
+        "610-41535-0": "old-uuid",
+        "9999-8888-7777": "retired-uuid",
+    ]
+    try store.save(savedConfiguration)
+
+    let currentMonitorMap = [
+        "610-41535-0": "new-uuid",
+        "1552-41002-424242": "1552-41002-424242",
+    ]
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        currentMonitorMapProvider: { currentMonitorMap }
+    )
+
+    delegate.reloadConfigurationFromDisk(mode: .launch)
+
+    let expectedMonitorMap = [
+        "610-41535-0": "new-uuid",
+        "9999-8888-7777": "retired-uuid",
+        "1552-41002-424242": "1552-41002-424242",
+    ]
+    let persistedConfiguration = try store.load()
+    #expect(delegate.configuration.monitors == expectedMonitorMap)
+    #expect(persistedConfiguration.monitors == expectedMonitorMap)
+}
+
+@MainActor
 @Test func appDelegateReloadDoesNotRewriteExplicitMonitorIDs() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-monitor-id-preserve-\(UUID().uuidString)", isDirectory: true)
@@ -105,6 +141,35 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     let persistedConfiguration = try store.load()
     #expect(persistedConfiguration.layoutGroups[0].sets[0].monitor == .displays(["610-41535-0"]))
     #expect(persistedConfiguration.monitors == currentMonitorMap)
+}
+
+@MainActor
+@Test func appDelegateSavingRegularSettingsDoesNotRefreshMonitorMetadata() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-monitor-metadata-no-refresh-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var currentMonitorMap = [
+        "610-41535-0": "launch-uuid",
+    ]
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        currentMonitorMapProvider: { currentMonitorMap }
+    )
+
+    delegate.reloadConfigurationFromDisk(mode: .launch)
+    currentMonitorMap = [
+        "610-41535-0": "updated-uuid",
+        "1552-41002-424242": "1552-41002-424242",
+    ]
+
+    #expect(delegate.updateMouseButtonDragEnabled(false) == true)
+
+    let persistedConfiguration = try store.load()
+    #expect(delegate.configuration.monitors == ["610-41535-0": "launch-uuid"])
+    #expect(persistedConfiguration.monitors == ["610-41535-0": "launch-uuid"])
 }
 
 @MainActor
