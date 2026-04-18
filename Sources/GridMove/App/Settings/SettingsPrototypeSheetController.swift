@@ -55,7 +55,7 @@ final class SettingsPrototypeSheetController: NSViewController {
             contentStackView.addArrangedSubview(makeSecondaryLabel(message))
         }
 
-        contentStackView.addArrangedSubview(bodyView)
+        contentStackView.addArrangedSubview(makeFullWidthContainer(for: bodyView))
         contentStackView.addArrangedSubview(makeSheetButtonsRow())
         view = makeSettingsPageContainerView(contentView: contentStackView)
         configureValidation()
