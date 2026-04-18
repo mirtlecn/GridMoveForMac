@@ -182,3 +182,38 @@ import Testing
     #expect(controller.shortcutDescriptorsForTesting[UICopy.settingsMenuTitle] == "⌘,")
     #expect(controller.shortcutDescriptorsForTesting[UICopy.quitMenuTitle] == "⌘Q")
 }
+
+@MainActor
+@Test func menuBarControllerKeepsStateColumnSpacingWhenItemsAreUnchecked() async throws {
+    let controller = MenuBarController(
+        dragGridEnabled: false,
+        toggleSettings: .init(
+            mouseButtonNumber: 3,
+            mouseButtonDragEnabled: false,
+            modifierLeftMouseDragEnabled: false,
+            preferLayoutMode: false,
+            launchAtLogin: false
+        ),
+        layoutGroupState: .init(groupNames: ["built-in"], activeGroupName: "built-in"),
+        actionItems: [
+            .init(title: UICopy.applyPreviousLayout, action: .cyclePrevious, shortcut: nil),
+            .init(title: UICopy.applyNextLayout, action: .cycleNext, shortcut: nil),
+        ],
+        onRequestAccessibilityAccess: {},
+        onToggleDragGrid: { _ in true },
+        onToggleMouseButtonDrag: { _ in true },
+        onToggleModifierLeftMouseDrag: { _ in true },
+        onTogglePreferLayoutMode: { _ in true },
+        onToggleLaunchAtLogin: { _ in true },
+        onSelectLayoutGroup: { _ in true },
+        onPerformAction: { _ in },
+        onOpenSettings: {},
+        onQuit: {}
+    )
+
+    #expect(controller.stateColumnSpacingDescriptorsForTesting[UICopy.enableMenuTitle] == true)
+    #expect(controller.stateColumnSpacingDescriptorsForTesting[UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 3)] == true)
+    #expect(controller.stateColumnSpacingDescriptorsForTesting[UICopy.applyPreviousLayout] == true)
+    #expect(controller.stateColumnSpacingDescriptorsForTesting[UICopy.settingsMenuTitle] == true)
+    #expect(controller.stateColumnSpacingDescriptorsForTesting[UICopy.quitMenuTitle] == true)
+}

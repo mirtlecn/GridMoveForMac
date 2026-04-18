@@ -2,6 +2,18 @@ import AppKit
 
 @MainActor
 final class MenuBarController: NSObject {
+    private static let menuStatePlaceholderImage: NSImage = {
+        let referenceImage = NSMenuItem(title: "", action: nil, keyEquivalent: "").onStateImage
+        let imageSize = referenceImage?.size ?? NSSize(width: 18, height: 18)
+        let image = NSImage(size: imageSize)
+        image.lockFocus()
+        NSColor.clear.setFill()
+        NSBezierPath(rect: NSRect(origin: .zero, size: imageSize)).fill()
+        image.unlockFocus()
+        image.isTemplate = true
+        return image
+    }()
+
     struct ActionItem: Equatable {
         let title: String
         let action: HotkeyAction
@@ -95,11 +107,13 @@ final class MenuBarController: NSObject {
 
         requestAccessibilityAccessMenuItem.target = self
         requestAccessibilityAccessMenuItem.action = #selector(requestAccessibilityAccess)
+        applyStateColumnSpacing(to: requestAccessibilityAccessMenuItem)
         menu.addItem(requestAccessibilityAccessMenuItem)
 
         dragGridMenuItem.state = dragGridEnabled ? .on : .off
         dragGridMenuItem.target = self
         dragGridMenuItem.action = #selector(toggleDragGrid)
+        applyStateColumnSpacing(to: dragGridMenuItem)
         menu.addItem(dragGridMenuItem)
         menu.addItem(enableSeparatorItem)
 
@@ -115,10 +129,12 @@ final class MenuBarController: NSObject {
         settingsMenuItem.target = self
         settingsMenuItem.action = #selector(openSettings)
         settingsMenuItem.keyEquivalentModifierMask = [.command]
+        applyStateColumnSpacing(to: settingsMenuItem)
         menu.addItem(settingsMenuItem)
 
         launchAtLoginMenuItem.target = self
         launchAtLoginMenuItem.action = #selector(toggleLaunchAtLogin)
+        applyStateColumnSpacing(to: launchAtLoginMenuItem)
         menu.addItem(launchAtLoginMenuItem)
 
         menu.addItem(quitSectionSeparatorItem)
@@ -126,6 +142,7 @@ final class MenuBarController: NSObject {
         quitMenuItem.target = self
         quitMenuItem.action = #selector(quit)
         quitMenuItem.keyEquivalentModifierMask = [.command]
+        applyStateColumnSpacing(to: quitMenuItem)
         menu.addItem(quitMenuItem)
 
         statusItem.menu = menu
@@ -146,6 +163,9 @@ final class MenuBarController: NSObject {
         modifierLeftMouseDragMenuItem.action = #selector(toggleModifierLeftMouseDrag)
         preferLayoutModeMenuItem.target = self
         preferLayoutModeMenuItem.action = #selector(togglePreferLayoutMode)
+        applyStateColumnSpacing(to: mouseButtonDragMenuItem)
+        applyStateColumnSpacing(to: modifierLeftMouseDragMenuItem)
+        applyStateColumnSpacing(to: preferLayoutModeMenuItem)
 
         updateToggleStates(toggleSettings)
 
@@ -157,6 +177,7 @@ final class MenuBarController: NSObject {
     private func configureLayoutGroupMenu() {
         menu.addItem(layoutGroupSectionSeparatorItem)
         layoutGroupMenuItem.submenu = layoutGroupSubmenu
+        applyStateColumnSpacing(to: layoutGroupMenuItem)
         menu.addItem(layoutGroupMenuItem)
         rebuildLayoutGroupItems()
     }
@@ -230,6 +251,7 @@ final class MenuBarController: NSObject {
             menuItem.representedObject = item.action
             menuItem.isEnabled = isEnabled
             menuItem.keyEquivalentModifierMask = item.shortcut?.menuModifierMask ?? []
+            applyStateColumnSpacing(to: menuItem)
             menu.insertItem(menuItem, at: nextIndex)
             menuItem.isHidden = !hasAccessibilityAccess
             actionMenuItems.append(menuItem)
@@ -247,8 +269,14 @@ final class MenuBarController: NSObject {
             item.target = self
             item.representedObject = groupName
             item.state = groupName == layoutGroupState.activeGroupName ? .on : .off
+            applyStateColumnSpacing(to: item)
             layoutGroupSubmenu.addItem(item)
         }
+    }
+
+    private func applyStateColumnSpacing(to item: NSMenuItem) {
+        item.offStateImage = Self.menuStatePlaceholderImage
+        item.mixedStateImage = Self.menuStatePlaceholderImage
     }
 
     @objc private func openSettings() {
@@ -333,6 +361,14 @@ final class MenuBarController: NSObject {
             settingsMenuItem.title: shortcutDescriptor(for: settingsMenuItem),
             quitMenuItem.title: shortcutDescriptor(for: quitMenuItem),
         ]
+    }
+
+    var stateColumnSpacingDescriptorsForTesting: [String: Bool] {
+        Dictionary(
+            uniqueKeysWithValues: menu.items
+                .filter { !$0.isSeparatorItem && !$0.title.isEmpty }
+                .map { ($0.title, $0.offStateImage != nil) }
+        )
     }
 
     private func shortcutDescriptor(for item: NSMenuItem) -> String {
