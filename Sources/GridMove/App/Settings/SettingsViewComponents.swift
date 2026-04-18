@@ -8,6 +8,7 @@ enum SettingsLayoutMetrics {
     static let sectionIndent: CGFloat = 12
     static let formColumnSpacing: CGFloat = 14
     static let formLabelWidth: CGFloat = 180
+    static let sheetFormLabelWidth: CGFloat = 96
     static let inlineTabSpacing: CGFloat = 14
     static let inlineTabContentWidth: CGFloat = 560
     static let inlineTabPanelCornerRadius: CGFloat = 10
@@ -44,13 +45,31 @@ func makeCheckboxRow(title: String, state: NSControl.StateValue = .on, isEnabled
 
 @MainActor
 func makeLabeledControlRow(label: String, control: NSView) -> NSView {
+    makeLabeledControlRow(
+        label: label,
+        control: control,
+        labelWidth: SettingsLayoutMetrics.formLabelWidth
+    )
+}
+
+@MainActor
+func makeSheetLabeledControlRow(label: String, control: NSView) -> NSView {
+    makeLabeledControlRow(
+        label: label,
+        control: control,
+        labelWidth: SettingsLayoutMetrics.sheetFormLabelWidth
+    )
+}
+
+@MainActor
+private func makeLabeledControlRow(label: String, control: NSView, labelWidth: CGFloat) -> NSView {
     let rowView = makeHorizontalGroup(spacing: SettingsLayoutMetrics.formColumnSpacing)
 
     let labelField = makeFieldLabel(label)
     labelField.alignment = .right
     labelField.setContentHuggingPriority(.required, for: .horizontal)
     labelField.setContentCompressionResistancePriority(.required, for: .horizontal)
-    labelField.widthAnchor.constraint(equalToConstant: SettingsLayoutMetrics.formLabelWidth).isActive = true
+    labelField.widthAnchor.constraint(equalToConstant: labelWidth).isActive = true
 
     control.setContentHuggingPriority(.defaultLow, for: .horizontal)
     control.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)

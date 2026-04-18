@@ -117,8 +117,8 @@ final class ExclusionEntrySheetContentView: NSView, SettingsPrototypeSheetValida
 
         let body = makeVerticalGroup(spacing: 10)
         body.translatesAutoresizingMaskIntoConstraints = false
-        body.addArrangedSubview(makeLabeledControlRow(label: UICopy.settingsTypeLabel, control: kindPopupButton))
-        body.addArrangedSubview(makeLabeledControlRow(label: UICopy.settingsValueLabel, control: valueField))
+        body.addArrangedSubview(makeSheetLabeledControlRow(label: UICopy.settingsTypeLabel, control: kindPopupButton))
+        body.addArrangedSubview(makeSheetLabeledControlRow(label: UICopy.settingsValueLabel, control: valueField))
         addSubview(body)
 
         NSLayoutConstraint.activate([
@@ -183,8 +183,8 @@ final class HotkeyAddSheetContentView: NSView, SettingsPrototypeSheetValidating,
 
         let body = makeVerticalGroup(spacing: 10)
         body.translatesAutoresizingMaskIntoConstraints = false
-        body.addArrangedSubview(makeLabeledControlRow(label: UICopy.settingsBehaviorLabel, control: behaviorPopupButton))
-        body.addArrangedSubview(makeLabeledControlRow(label: UICopy.settingsShortcutLabel, control: recorderView))
+        body.addArrangedSubview(makeSheetLabeledControlRow(label: UICopy.settingsBehaviorLabel, control: behaviorPopupButton))
+        body.addArrangedSubview(makeSheetLabeledControlRow(label: UICopy.settingsShortcutLabel, control: recorderView))
         addSubview(body)
 
         NSLayoutConstraint.activate([
