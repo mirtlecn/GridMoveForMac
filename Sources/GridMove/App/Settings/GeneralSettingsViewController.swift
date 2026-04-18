@@ -2,31 +2,31 @@ import AppKit
 
 @MainActor
 final class GeneralSettingsViewController: NSViewController {
+    private let prototypeState: SettingsPrototypeState
+
     private enum ExclusionSelection {
         case bundleID(Int)
         case windowTitle(Int)
     }
 
-    private var modifierGroups = [
-        "Ctrl + Cmd + Shift + Option",
-        "Ctrl + Shift + Option",
-    ]
-    private var excludedBundleIDs = [
-        "com.apple.Spotlight",
-        "com.example.HiddenApp",
-    ]
-    private var excludedWindowTitles = [
-        "Picture in Picture",
-        "Quick Look",
-    ]
     private var selectedExclusion: ExclusionSelection?
     private var isUpdatingExclusionSelection = false
     private let exclusionAddButton = NSButton(title: UICopy.settingsAddEllipsisButtonTitle, target: nil, action: nil)
     private let exclusionRemoveButton = NSButton(title: UICopy.settingsRemoveButtonTitle, target: nil, action: nil)
 
+    init(prototypeState: SettingsPrototypeState) {
+        self.prototypeState = prototypeState
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        nil
+    }
+
     private lazy var modifierGroupsControl: SelectableListControlView = {
         let control = SelectableListControlView(
-            items: modifierGroups,
+            items: modifierGroupDisplayNames,
             addButtonTitle: UICopy.settingsAddEllipsisButtonTitle,
             width: 420
         )
@@ -85,10 +85,34 @@ final class GeneralSettingsViewController: NSViewController {
         title = UICopy.settingsGeneralTabTitle
     }
 
+    private var modifierGroups: [[ModifierKey]] {
+        get { prototypeState.configuration.dragTriggers.modifierGroups }
+        set { prototypeState.configuration.dragTriggers.modifierGroups = newValue }
+    }
+
+    private var modifierGroupDisplayNames: [String] {
+        modifierGroups.map { group in
+            ModifierKey.allCases
+                .filter { group.contains($0) }
+                .map(\.displayName)
+                .joined(separator: " + ")
+        }
+    }
+
+    private var excludedBundleIDs: [String] {
+        get { prototypeState.configuration.general.excludedBundleIDs }
+        set { prototypeState.configuration.general.excludedBundleIDs = newValue }
+    }
+
+    private var excludedWindowTitles: [String] {
+        get { prototypeState.configuration.general.excludedWindowTitles }
+        set { prototypeState.configuration.general.excludedWindowTitles = newValue }
+    }
+
     private func makeRuntimeRows() -> NSView {
         let rowsStackView = makeVerticalGroup(spacing: 9)
-        rowsStackView.addArrangedSubview(makeCheckboxRow(title: UICopy.enableMenuTitle))
-        rowsStackView.addArrangedSubview(makeCheckboxRow(title: UICopy.launchAtLoginMenuTitle))
+        rowsStackView.addArrangedSubview(makeCheckboxRow(title: UICopy.enableMenuTitle, state: prototypeState.configuration.general.isEnabled ? .on : .off))
+        rowsStackView.addArrangedSubview(makeCheckboxRow(title: UICopy.launchAtLoginMenuTitle, state: prototypeState.configuration.general.launchAtLogin ? .on : .off))
         return makeIndentedContainer(for: rowsStackView)
     }
 
@@ -103,8 +127,15 @@ final class GeneralSettingsViewController: NSViewController {
             guard let self else {
                 return
             }
-            self.modifierGroups.append(sheetContentView.selectedModifierDisplayName)
-            self.modifierGroupsControl.items = self.modifierGroups
+            let selectedModifiers = sheetContentView.selectedModifiers
+            if let existingIndex = self.modifierGroups.firstIndex(of: selectedModifiers) {
+                self.modifierGroupsControl.items = self.modifierGroupDisplayNames
+                self.modifierGroupsControl.selectItem(at: existingIndex)
+                return
+            }
+
+            self.modifierGroups.append(selectedModifiers)
+            self.modifierGroupsControl.items = self.modifierGroupDisplayNames
             self.modifierGroupsControl.selectItem(at: self.modifierGroups.count - 1)
         }
         presentAsSheet(sheetController)
@@ -144,7 +175,7 @@ final class GeneralSettingsViewController: NSViewController {
             return
         }
         modifierGroups.remove(at: index)
-        modifierGroupsControl.items = modifierGroups
+        modifierGroupsControl.items = modifierGroupDisplayNames
     }
 
     private func removeExcludedBundleID(at index: Int) {

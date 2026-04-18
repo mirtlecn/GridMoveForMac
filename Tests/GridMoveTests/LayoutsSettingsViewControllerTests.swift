@@ -5,7 +5,7 @@ import Testing
 @MainActor
 struct LayoutsSettingsViewControllerTests {
     @Test func movingLayoutInsideSelectedSetReordersOnlyThatSet() async throws {
-        let controller = LayoutsSettingsViewController()
+        let controller = LayoutsSettingsViewController(prototypeState: SettingsPrototypeState())
 
         #expect(
             controller.moveLayoutForTesting(
@@ -31,7 +31,7 @@ struct LayoutsSettingsViewControllerTests {
     }
 
     @Test func movingLayoutIntoDifferentSetIsRejected() async throws {
-        let controller = LayoutsSettingsViewController()
+        let controller = LayoutsSettingsViewController(prototypeState: SettingsPrototypeState())
 
         #expect(
             controller.moveLayoutForTesting(

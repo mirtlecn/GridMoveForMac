@@ -32,7 +32,8 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
         }
     }
 
-    private var configuration = AppConfiguration.defaultValue
+    private let prototypeState: SettingsPrototypeState
+    private var draftConfiguration: AppConfiguration
     private let outlineView = LayoutsOutlineView()
     private let sidebarScrollView = NSScrollView()
     private let detailContainerView = NSView()
@@ -43,8 +44,13 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
     private var treeNodes: [LayoutsTreeNode]
     private var hasAppliedInitialSplitPosition = false
 
-    init() {
-        self.treeNodes = LayoutsTreeNode.makeTree(configuration: AppConfiguration.defaultValue)
+    init(prototypeState: SettingsPrototypeState) {
+        self.prototypeState = prototypeState
+        self.draftConfiguration = prototypeState.configuration
+        self.treeNodes = LayoutsTreeNode.makeTree(
+            configuration: prototypeState.configuration,
+            monitorMap: prototypeState.currentMonitorNameMap()
+        )
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -229,7 +235,12 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
         let identifier = NSUserInterfaceItemIdentifier("layout-tree-cell")
         let cellView = (outlineView.makeView(withIdentifier: identifier, owner: self) as? LayoutTreeCellView) ?? LayoutTreeCellView(frame: .zero)
         cellView.identifier = identifier
-        cellView.configure(title: node.title, kind: node.kind, icon: treeIcon(for: node))
+        cellView.configure(
+            title: node.title,
+            kind: node.kind,
+            icon: treeIcon(for: node),
+            iconTintColor: treeIconTintColor(for: node)
+        )
         return cellView
     }
 
@@ -238,16 +249,52 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
         let formView = makeInlineTabContent(rows: [
             makeLabeledControlRow(label: UICopy.settingsNameLabel, control: makeEditableTextControl(value: group.name, width: 220)),
             makeLabeledControlRow(label: UICopy.settingsIncludeInGroupCycleLabel, control: makeEditableCheckboxControl(isOn: group.includeInGroupCycle)),
-            makeLabeledControlRow(label: UICopy.settingsActiveGroupLabel, control: makeEditableCheckboxControl(isOn: isActive)),
+            makeLabeledControlRow(label: UICopy.settingsActiveGroupLabel, control: makeActiveGroupControl(groupName: group.name, isActive: isActive)),
         ], width: 460)
         contentStackView.addArrangedSubview(makeCenteredContainer(for: formView))
         return makeDetailPanelContainer(contentView: contentStackView)
     }
 
+    private func makeActiveGroupControl(groupName: String, isActive: Bool) -> NSButton {
+        let checkbox = makeEditableCheckboxControl(isOn: isActive)
+        checkbox.target = self
+        checkbox.action = #selector(handleActiveGroupToggle(_:))
+        checkbox.identifier = NSUserInterfaceItemIdentifier(groupName)
+        return checkbox
+    }
+
+    @objc
+    private func handleActiveGroupToggle(_ sender: NSButton) {
+        guard let groupName = sender.identifier?.rawValue else {
+            return
+        }
+
+        if sender.state != .on {
+            // There must always be one active group in the draft state.
+            sender.state = .on
+            return
+        }
+
+        guard draftConfiguration.general.activeLayoutGroup != groupName else {
+            return
+        }
+
+        draftConfiguration.general.activeLayoutGroup = groupName
+        reloadTree(preserving: .group(name: groupName))
+    }
+
     private func makeSetDetailView(set: LayoutSet, layoutCount: Int) -> NSView {
         let contentStackView = makeSettingsPageStackView()
         let formView = makeInlineTabContent(rows: [
-            makeLabeledControlRow(label: UICopy.settingsApplyToLabel, control: ApplyToControlView(set: set, monitorMap: configuration.monitors)),
+            makeLabeledControlRow(
+                label: UICopy.settingsApplyToLabel,
+                control: ApplyToControlView(
+                    set: set,
+                    persistedMonitorMapProvider: { [weak self] in
+                        self?.prototypeState.currentMonitorNameMap() ?? [:]
+                    }
+                )
+            ),
         ], width: 460)
         contentStackView.addArrangedSubview(makeCenteredContainer(for: formView))
         return makeDetailPanelContainer(contentView: contentStackView)
@@ -305,7 +352,7 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
     }
 
     private func makeLayoutPreviewView(layout: LayoutPreset, mode: LayoutPreviewView.Mode) -> LayoutPreviewView {
-        let previewView = LayoutPreviewView(layout: layout, appearance: configuration.appearance, mode: mode)
+        let previewView = LayoutPreviewView(layout: layout, appearance: draftConfiguration.appearance, mode: mode)
         previewView.translatesAutoresizingMaskIntoConstraints = false
         previewView.widthAnchor.constraint(equalToConstant: 420).isActive = true
         previewView.heightAnchor.constraint(equalToConstant: 260).isActive = true
@@ -379,6 +426,8 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
         addButton.bezelStyle = .rounded
         removeButton.bezelStyle = .rounded
         saveButton.bezelStyle = .rounded
+        saveButton.target = self
+        saveButton.action = #selector(handleSaveLayoutEdits(_:))
 
         let row = makeHorizontalGroup(spacing: 8)
         row.translatesAutoresizingMaskIntoConstraints = false
@@ -411,6 +460,14 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
         }
         removeButton.title = UICopy.settingsRemoveButtonTitle
         saveButton.title = UICopy.settingsSaveButtonTitle
+    }
+
+    @objc
+    private func handleSaveLayoutEdits(_ sender: NSButton) {
+        // TODO: When real configuration persistence is connected, this is the
+        // single save boundary for the Layouts page. Persist draftConfiguration
+        // here instead of letting individual controls write immediately.
+        prototypeState.configuration = draftConfiguration
     }
 
     func outlineView(_ outlineView: NSOutlineView, pasteboardWriterForItem item: Any) -> (any NSPasteboardWriting)? {
@@ -478,8 +535,8 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
 
     private func treeIcon(for node: LayoutsTreeNode) -> NSImage? {
         let symbolName: String = switch node.kind {
-        case .group:
-            "square.stack.3d.up"
+        case .group(_, let isActive):
+            isActive ? "checkmark.circle.fill" : "square.stack.3d.up"
         case .set:
             "display"
         case .layout:
@@ -488,19 +545,20 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
         return NSImage(systemSymbolName: symbolName, accessibilityDescription: nil)
     }
 
-    private func monitorTitle(for monitor: LayoutSetMonitor) -> String {
-        switch monitor {
-        case .all:
-            return UICopy.settingsAllDisplaysValue
-        case .main:
-            return UICopy.settingsMainDisplayValue
-        case let .displays(displayIDs):
-            return displayIDs.joined(separator: ", ")
+    private func treeIconTintColor(for node: LayoutsTreeNode) -> NSColor? {
+        switch node.kind {
+        case .group(_, let isActive):
+            return isActive ? .controlAccentColor : nil
+        default:
+            return nil
         }
     }
 
     private func reloadTree(preserving selection: NodeSelection?) {
-        treeNodes = LayoutsTreeNode.makeTree(configuration: configuration)
+        treeNodes = LayoutsTreeNode.makeTree(
+            configuration: draftConfiguration,
+            monitorMap: prototypeState.currentMonitorNameMap()
+        )
         outlineView.reloadData()
         outlineView.expandItem(nil, expandChildren: true)
 
@@ -602,12 +660,12 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
 
     @discardableResult
     private func moveLayout(id: String, groupName: String, setIndex: Int, toLocalIndex targetIndex: Int) -> Bool {
-        guard let groupIndex = configuration.layoutGroups.firstIndex(where: { $0.name == groupName }),
-              configuration.layoutGroups[groupIndex].sets.indices.contains(setIndex) else {
+        guard let groupIndex = draftConfiguration.layoutGroups.firstIndex(where: { $0.name == groupName }),
+              draftConfiguration.layoutGroups[groupIndex].sets.indices.contains(setIndex) else {
             return false
         }
 
-        var layouts = configuration.layoutGroups[groupIndex].sets[setIndex].layouts
+        var layouts = draftConfiguration.layoutGroups[groupIndex].sets[setIndex].layouts
         guard let sourceIndex = layouts.firstIndex(where: { $0.id == id }) else {
             return false
         }
@@ -623,7 +681,7 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
 
         let movedLayout = layouts.remove(at: sourceIndex)
         layouts.insert(movedLayout, at: max(0, min(destinationIndex, layouts.count)))
-        configuration.layoutGroups[groupIndex].sets[setIndex].layouts = layouts
+        draftConfiguration.layoutGroups[groupIndex].sets[setIndex].layouts = layouts
         return true
     }
 
@@ -632,7 +690,7 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
     }
 
     func layoutTitlesForTesting(groupName: String, setIndex: Int) -> [String] {
-        guard let group = configuration.layoutGroups.first(where: { $0.name == groupName }),
+        guard let group = draftConfiguration.layoutGroups.first(where: { $0.name == groupName }),
               group.sets.indices.contains(setIndex) else {
             return []
         }
@@ -649,14 +707,16 @@ private final class ApplyToControlView: NSView {
     }
 
     private let popupButton = NSPopUpButton()
+    private let refreshButton = NSButton()
     private let customMonitorsStackView = makeVerticalGroup(spacing: 8)
     private let rootStackView = makeVerticalGroup(spacing: 10)
     private let selectedMonitorIDs: [String]
-    private let monitorOptions: [(id: String, name: String)]
+    private let persistedMonitorMapProvider: () -> [String: String]
+    private var monitorOptions: [(id: String, name: String)] = []
 
-    init(set: LayoutSet, monitorMap: [String: String]) {
+    init(set: LayoutSet, persistedMonitorMapProvider: @escaping () -> [String: String]) {
         self.selectedMonitorIDs = set.monitor.explicitDisplayIDs
-        self.monitorOptions = Self.makeMonitorOptions(for: set.monitor, monitorMap: monitorMap)
+        self.persistedMonitorMapProvider = persistedMonitorMapProvider
         super.init(frame: .zero)
 
         popupButton.controlSize = .small
@@ -669,11 +729,23 @@ private final class ApplyToControlView: NSView {
         popupButton.target = self
         popupButton.action = #selector(handlePopupChange(_:))
 
+        refreshButton.bezelStyle = .rounded
+        refreshButton.image = NSImage(systemSymbolName: "arrow.clockwise", accessibilityDescription: UICopy.reloadConfigMenuTitle)
+        refreshButton.imagePosition = .imageOnly
+        refreshButton.target = self
+        refreshButton.action = #selector(handleRefreshMonitorOptions(_:))
+
+        let headerRow = makeHorizontalGroup(spacing: 8)
+        headerRow.alignment = .centerY
+        headerRow.addArrangedSubview(popupButton)
+        headerRow.addArrangedSubview(refreshButton)
+        headerRow.addArrangedSubview(NSView())
+
         rootStackView.translatesAutoresizingMaskIntoConstraints = false
         rootStackView.alignment = .leading
         addSubview(rootStackView)
 
-        rootStackView.addArrangedSubview(popupButton)
+        rootStackView.addArrangedSubview(headerRow)
         rootStackView.addArrangedSubview(customMonitorsStackView)
 
         NSLayoutConstraint.activate([
@@ -683,7 +755,7 @@ private final class ApplyToControlView: NSView {
             rootStackView.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
 
-        rebuildCustomMonitorList()
+        refreshMonitorOptions(for: set.monitor)
     }
 
     @available(*, unavailable)
@@ -693,6 +765,30 @@ private final class ApplyToControlView: NSView {
 
     @objc
     private func handlePopupChange(_ sender: NSPopUpButton) {
+        rebuildCustomMonitorList()
+    }
+
+    @objc
+    private func handleRefreshMonitorOptions(_ sender: NSButton) {
+        refreshMonitorOptions(for: resolvedMonitorTarget)
+    }
+
+    private var resolvedMonitorTarget: LayoutSetMonitor {
+        switch popupButton.selectedItem?.title {
+        case UICopy.settingsMainMonitorValue:
+            return .main
+        case UICopy.settingsCustomMonitorsValue:
+            return .displays(selectedMonitorIDs)
+        default:
+            return .all
+        }
+    }
+
+    private func refreshMonitorOptions(for monitor: LayoutSetMonitor) {
+        // TODO: When real reload wiring starts, hook this button to the same
+        // monitor refresh path used by config reload instead of only rebuilding
+        // from the persisted prototype snapshot.
+        monitorOptions = Self.makeMonitorOptions(for: monitor, monitorMap: persistedMonitorMapProvider())
         rebuildCustomMonitorList()
     }
 
@@ -736,7 +832,7 @@ private final class ApplyToControlView: NSView {
         return mergedIDs.map { ($0, monitorMap[$0] ?? fallbackDisplayName(for: $0)) }
     }
 
-    private static func fallbackDisplayName(for displayID: String) -> String {
+    nonisolated static func fallbackDisplayName(for displayID: String) -> String {
         if displayID.count > 10 {
             return "Monitor \(displayID.prefix(8))"
         }
@@ -951,7 +1047,7 @@ private final class LayoutsTreeNode {
         self.children = children
     }
 
-    static func makeTree(configuration: AppConfiguration) -> [LayoutsTreeNode] {
+    static func makeTree(configuration: AppConfiguration, monitorMap: [String: String]) -> [LayoutsTreeNode] {
         configuration.layoutGroups.map { group in
             let layoutMenuIndexByID = Dictionary(
                 uniqueKeysWithValues: LayoutGroupResolver
@@ -972,7 +1068,7 @@ private final class LayoutsTreeNode {
                 }
 
                 return LayoutsTreeNode(
-                    title: monitorTitle(for: set.monitor),
+                    title: monitorTitle(for: set.monitor, monitorMap: monitorMap),
                     kind: .set(groupName: group.name, setIndex: setIndex, set: set, layoutCount: set.layouts.count),
                     children: layoutNodes
                 )
@@ -986,14 +1082,16 @@ private final class LayoutsTreeNode {
         }
     }
 
-    private static func monitorTitle(for monitor: LayoutSetMonitor) -> String {
+    static func monitorTitle(for monitor: LayoutSetMonitor, monitorMap: [String: String]) -> String {
         switch monitor {
         case .all:
-            return UICopy.settingsAllDisplaysValue
+            return UICopy.settingsAllMonitorsValue
         case .main:
-            return UICopy.settingsMainDisplayValue
+            return UICopy.settingsMainMonitorValue
         case let .displays(displayIDs):
-            return displayIDs.joined(separator: ", ")
+            return displayIDs
+                .map { monitorMap[$0] ?? ApplyToControlView.fallbackDisplayName(for: $0) }
+                .joined(separator: "; ")
         }
     }
 }
@@ -1072,9 +1170,10 @@ private final class LayoutTreeCellView: NSTableCellView {
         nil
     }
 
-    func configure(title: String, kind: LayoutsTreeNode.Kind, icon: NSImage?) {
+    func configure(title: String, kind: LayoutsTreeNode.Kind, icon: NSImage?, iconTintColor: NSColor?) {
         titleLabel.stringValue = title
         iconView.image = icon
+        iconView.contentTintColor = iconTintColor
 
         switch kind {
         case .group:

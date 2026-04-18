@@ -17,7 +17,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     init(onWindowWillClose: @escaping () -> Void = {}) {
         self.onWindowWillClose = onWindowWillClose
 
-        let tabViewController = SettingsTabViewController()
+        let tabViewController = SettingsTabViewController(prototypeState: SettingsPrototypeState())
         let initialMetrics = tabViewController.currentWindowMetrics
         let window = NSWindow(contentViewController: tabViewController)
         window.title = UICopy.settingsWindowTitle
@@ -85,6 +85,17 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
 @MainActor
 final class SettingsTabViewController: NSTabViewController {
     var onSelectedMetricsChanged: ((SettingsWindowMetrics) -> Void)?
+    private let prototypeState: SettingsPrototypeState
+
+    init(prototypeState: SettingsPrototypeState) {
+        self.prototypeState = prototypeState
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        nil
+    }
 
     var currentWindowMetrics: SettingsWindowMetrics {
         let selectedViewController: NSViewController? = tabViewItems.indices.contains(selectedTabViewItemIndex)
@@ -99,12 +110,12 @@ final class SettingsTabViewController: NSTabViewController {
         transitionOptions = []
 
         addSettingsTab(
-            viewController: GeneralSettingsViewController(),
+            viewController: GeneralSettingsViewController(prototypeState: prototypeState),
             title: UICopy.settingsGeneralTabTitle,
             systemImageName: "gearshape"
         )
         addSettingsTab(
-            viewController: LayoutsSettingsViewController(),
+            viewController: LayoutsSettingsViewController(prototypeState: prototypeState),
             title: UICopy.settingsLayoutsTabTitle,
             systemImageName: "rectangle.3.group"
         )
@@ -114,7 +125,7 @@ final class SettingsTabViewController: NSTabViewController {
             systemImageName: "paintbrush"
         )
         addSettingsTab(
-            viewController: HotkeysSettingsViewController(),
+            viewController: HotkeysSettingsViewController(prototypeState: prototypeState),
             title: UICopy.settingsHotkeysTabTitle,
             systemImageName: "keyboard"
         )

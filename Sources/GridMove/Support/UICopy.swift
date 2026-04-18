@@ -65,6 +65,7 @@ enum UICopy {
     static let settingsAddDisplaySetButtonTitle = "Add display set"
     static let settingsAddLayoutButtonTitle = "Add layout"
     static let settingsHotkeysAddButtonTitle = "Add..."
+    static let settingsClearButtonTitle = "Clear"
     static let settingsRemoveButtonTitle = "Remove"
     static let settingsDeleteButtonTitle = "Delete"
     static let settingsSaveButtonTitle = "Save"

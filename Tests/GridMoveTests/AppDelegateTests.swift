@@ -562,7 +562,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsRuntimeSectionTitle) == false)
     delegate.selectSettingsTabForTesting(index: 1)
     #expect(delegate.settingsVisibleStringsForTesting.contains(AppConfiguration.builtInGroupName))
-    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsAllDisplaysValue))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsAllMonitorsValue))
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.defaultLayoutNames[0]))
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsNameLabel))
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsGeneralInlineTabTitle))

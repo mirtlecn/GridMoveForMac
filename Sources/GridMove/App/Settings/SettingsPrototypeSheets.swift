@@ -1,12 +1,26 @@
 import AppKit
 
 @MainActor
+protocol SettingsPrototypeSheetValidating: AnyObject {
+    var isConfirmationEnabled: Bool { get }
+    var onConfirmationStateChanged: (() -> Void)? { get set }
+}
+
+@MainActor
+protocol SettingsPrototypeSheetDisposable: AnyObject {
+    func prepareForDismissal()
+}
+
+@MainActor
 final class SettingsPrototypeSheetController: NSViewController {
     private let sheetTitle: String
     private let message: String?
     private let bodyView: NSView
     private let confirmButtonTitle: String
     private let onConfirm: () -> Void
+    private let confirmButton = NSButton(title: "", target: nil, action: nil)
+    private weak var validatingBodyView: (any SettingsPrototypeSheetValidating)?
+    private weak var disposableBodyView: (any SettingsPrototypeSheetDisposable)?
 
     init(
         title: String,
@@ -20,6 +34,8 @@ final class SettingsPrototypeSheetController: NSViewController {
         self.bodyView = bodyView
         self.confirmButtonTitle = confirmButtonTitle
         self.onConfirm = onConfirm
+        self.validatingBodyView = bodyView as? (any SettingsPrototypeSheetValidating)
+        self.disposableBodyView = bodyView as? (any SettingsPrototypeSheetDisposable)
         super.init(nibName: nil, bundle: nil)
         preferredContentSize = NSSize(width: 420, height: 240)
     }
@@ -42,16 +58,19 @@ final class SettingsPrototypeSheetController: NSViewController {
         contentStackView.addArrangedSubview(bodyView)
         contentStackView.addArrangedSubview(makeSheetButtonsRow())
         view = makeSettingsPageContainerView(contentView: contentStackView)
+        configureValidation()
     }
 
     @objc
     private func handleCancel(_ sender: NSButton) {
+        disposableBodyView?.prepareForDismissal()
         dismiss(self)
     }
 
     @objc
     private func handleConfirm(_ sender: NSButton) {
         onConfirm()
+        disposableBodyView?.prepareForDismissal()
         dismiss(self)
     }
 
@@ -59,7 +78,9 @@ final class SettingsPrototypeSheetController: NSViewController {
         let cancelButton = NSButton(title: UICopy.settingsCancelButtonTitle, target: self, action: #selector(handleCancel(_:)))
         cancelButton.bezelStyle = .rounded
 
-        let confirmButton = NSButton(title: confirmButtonTitle, target: self, action: #selector(handleConfirm(_:)))
+        confirmButton.title = confirmButtonTitle
+        confirmButton.target = self
+        confirmButton.action = #selector(handleConfirm(_:))
         confirmButton.bezelStyle = .rounded
         confirmButton.keyEquivalent = "\r"
 
@@ -69,22 +90,34 @@ final class SettingsPrototypeSheetController: NSViewController {
         row.addArrangedSubview(confirmButton)
         return row
     }
+
+    private func configureValidation() {
+        guard let validatingBodyView else {
+            return
+        }
+
+        validatingBodyView.onConfirmationStateChanged = { [weak self, weak validatingBodyView] in
+            self?.confirmButton.isEnabled = validatingBodyView?.isConfirmationEnabled ?? true
+        }
+        confirmButton.isEnabled = validatingBodyView.isConfirmationEnabled
+    }
 }
 
 @MainActor
-final class ModifierGroupSheetContentView: NSView {
+final class ModifierGroupSheetContentView: NSView, SettingsPrototypeSheetValidating {
     private struct ModifierOption {
         let title: String
-        let value: String
+        let modifierKey: ModifierKey
     }
 
     private let options: [ModifierOption] = [
-        ModifierOption(title: "Control", value: "Ctrl"),
-        ModifierOption(title: "Shift", value: "Shift"),
-        ModifierOption(title: "Option", value: "Option"),
-        ModifierOption(title: "Command", value: "Cmd"),
+        ModifierOption(title: "Control", modifierKey: .ctrl),
+        ModifierOption(title: "Shift", modifierKey: .shift),
+        ModifierOption(title: "Option", modifierKey: .alt),
+        ModifierOption(title: "Command", modifierKey: .cmd),
     ]
     private let checkboxes: [NSButton]
+    var onConfirmationStateChanged: (() -> Void)?
 
     override init(frame frameRect: NSRect) {
         self.checkboxes = options.map { option in
@@ -96,7 +129,11 @@ final class ModifierGroupSheetContentView: NSView {
 
         let rows = makeVerticalGroup(spacing: 10)
         rows.translatesAutoresizingMaskIntoConstraints = false
-        checkboxes.forEach { rows.addArrangedSubview($0) }
+        checkboxes.forEach {
+            $0.target = self
+            $0.action = #selector(handleCheckboxChange(_:))
+            rows.addArrangedSubview($0)
+        }
         addSubview(rows)
 
         NSLayoutConstraint.activate([
@@ -112,13 +149,26 @@ final class ModifierGroupSheetContentView: NSView {
         nil
     }
 
-    var selectedModifierDisplayName: String {
-        let selectedValues = zip(options, checkboxes)
+    var isConfirmationEnabled: Bool {
+        !selectedModifiers.isEmpty
+    }
+
+    var selectedModifiers: [ModifierKey] {
+        let orderedModifiers = zip(options, checkboxes)
             .compactMap { option, checkbox in
-                checkbox.state == .on ? option.value : nil
+                checkbox.state == .on ? option.modifierKey : nil
             }
 
-        return selectedValues.isEmpty ? "Ctrl + Option" : selectedValues.joined(separator: " + ")
+        return ModifierKey.allCases.filter { orderedModifiers.contains($0) }
+    }
+
+    var selectedModifierDisplayName: String {
+        selectedModifiers.map(\.displayName).joined(separator: " + ")
+    }
+
+    @objc
+    private func handleCheckboxChange(_ sender: NSButton) {
+        onConfirmationStateChanged?()
     }
 }
 
@@ -201,10 +251,11 @@ final class ExclusionEntrySheetContentView: NSView {
 }
 
 @MainActor
-final class HotkeyAddSheetContentView: NSView {
+final class HotkeyAddSheetContentView: NSView, SettingsPrototypeSheetValidating, SettingsPrototypeSheetDisposable {
     private let behaviorPopupButton = NSPopUpButton()
     private let recorderView = PrototypeShortcutRecorderView()
     private let actions: [HotkeyPrototypeAction]
+    var onConfirmationStateChanged: (() -> Void)?
 
     init(actions: [HotkeyPrototypeAction], selectedActionID: String?) {
         self.actions = actions
@@ -228,6 +279,10 @@ final class HotkeyAddSheetContentView: NSView {
             body.topAnchor.constraint(equalTo: topAnchor),
             body.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
+
+        recorderView.onShortcutChanged = { [weak self] in
+            self?.onConfirmationStateChanged?()
+        }
     }
 
     @available(*, unavailable)
@@ -243,8 +298,16 @@ final class HotkeyAddSheetContentView: NSView {
         return actions[selectedIndex].id
     }
 
-    var recordedShortcutDisplayName: String {
-        recorderView.recordedShortcutDisplayName
+    var isConfirmationEnabled: Bool {
+        recordedShortcut != nil
+    }
+
+    var recordedShortcut: KeyboardShortcut? {
+        recorderView.recordedShortcut
+    }
+
+    func prepareForDismissal() {
+        recorderView.prepareForDismissal()
     }
 }
 
@@ -253,6 +316,7 @@ private final class PrototypeShortcutRecorderView: NSView {
     private let textField = NSTextField(string: "")
     private let recordButton = NSButton(title: UICopy.settingsRecordShortcutButtonTitle, target: nil, action: nil)
     private var eventMonitor: Any?
+    var onShortcutChanged: (() -> Void)?
     private var isRecording = false {
         didSet {
             recordButton.title = isRecording
@@ -261,17 +325,22 @@ private final class PrototypeShortcutRecorderView: NSView {
             if isRecording {
                 textField.stringValue = UICopy.settingsPressShortcutValue
             } else {
-                textField.stringValue = recordedShortcutDisplayName
+                textField.stringValue = recordedShortcutDisplayName ?? ""
             }
         }
     }
 
-    private(set) var recordedShortcutDisplayName = "⌃⌘K" {
+    private(set) var recordedShortcut: KeyboardShortcut? {
         didSet {
             if !isRecording {
-                textField.stringValue = recordedShortcutDisplayName
+                textField.stringValue = recordedShortcutDisplayName ?? ""
             }
+            onShortcutChanged?()
         }
+    }
+
+    private var recordedShortcutDisplayName: String? {
+        recordedShortcut?.prototypeDisplayName
     }
 
     override init(frame frameRect: NSRect) {
@@ -281,7 +350,7 @@ private final class PrototypeShortcutRecorderView: NSView {
         textField.isBezeled = true
         textField.controlSize = .small
         textField.placeholderString = UICopy.settingsPressShortcutValue
-        textField.stringValue = recordedShortcutDisplayName
+        textField.stringValue = ""
         textField.translatesAutoresizingMaskIntoConstraints = false
         textField.widthAnchor.constraint(equalToConstant: 130).isActive = true
 
@@ -316,16 +385,22 @@ private final class PrototypeShortcutRecorderView: NSView {
             return
         }
 
+        recordedShortcut = nil
         isRecording = true
         eventMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
             guard let self else {
                 return event
             }
 
-            self.recordedShortcutDisplayName = KeyboardShortcut(
+            guard let key = ShortcutKeyMap.keyName(for: CGKeyCode(event.keyCode)) else {
+                NSSound.beep()
+                return nil
+            }
+
+            self.recordedShortcut = KeyboardShortcut(
                 modifiers: ModifierKey.from(event.modifierFlags),
-                key: event.charactersIgnoringModifiers ?? ""
-            ).prototypeDisplayName
+                key: key
+            )
             self.stopRecording()
             return nil
         }
@@ -337,5 +412,9 @@ private final class PrototypeShortcutRecorderView: NSView {
             NSEvent.removeMonitor(eventMonitor)
             self.eventMonitor = nil
         }
+    }
+
+    func prepareForDismissal() {
+        stopRecording()
     }
 }

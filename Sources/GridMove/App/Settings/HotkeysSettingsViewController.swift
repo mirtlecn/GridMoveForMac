@@ -2,11 +2,21 @@ import AppKit
 
 @MainActor
 final class HotkeysSettingsViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate {
-    private var slots: [HotkeyPrototypeSlot] = HotkeyPrototypeSlot.makePrototypeSlots()
+    private let prototypeState: SettingsPrototypeState
     private let slotTableView = makeSettingsTableView()
     private let addButton = NSButton(title: UICopy.settingsHotkeysAddButtonTitle, target: nil, action: nil)
-    private let removeButton = NSButton(title: UICopy.settingsRemoveButtonTitle, target: nil, action: nil)
+    private let clearButton = NSButton(title: UICopy.settingsClearButtonTitle, target: nil, action: nil)
     private var selectedSlotIndex = 0
+
+    init(prototypeState: SettingsPrototypeState) {
+        self.prototypeState = prototypeState
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        nil
+    }
 
     override func loadView() {
         configureSlotTableView()
@@ -67,6 +77,10 @@ final class HotkeysSettingsViewController: NSViewController, NSTableViewDataSour
         slots[selectedSlotIndex]
     }
 
+    private var slots: [HotkeyPrototypeSlot] {
+        HotkeyPrototypeSlot.makePrototypeSlots(configuration: prototypeState.configuration)
+    }
+
     private func configureSlotTableView() {
         let slotColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("slot"))
         slotColumn.title = UICopy.settingsSlotLabel
@@ -94,14 +108,14 @@ final class HotkeysSettingsViewController: NSViewController, NSTableViewDataSour
         addButton.target = self
         addButton.action = #selector(handleAddShortcut(_:))
 
-        removeButton.bezelStyle = .rounded
-        removeButton.target = self
-        removeButton.action = #selector(handleRemoveShortcut(_:))
+        clearButton.bezelStyle = .rounded
+        clearButton.target = self
+        clearButton.action = #selector(handleClearShortcuts(_:))
 
         let row = makeHorizontalGroup(spacing: 8)
         row.addArrangedSubview(NSView())
         row.addArrangedSubview(addButton)
-        row.addArrangedSubview(removeButton)
+        row.addArrangedSubview(clearButton)
         return row
     }
 
@@ -115,7 +129,7 @@ final class HotkeysSettingsViewController: NSViewController, NSTableViewDataSour
             slotTableView.selectRowIndexes(IndexSet(integer: index), byExtendingSelection: false)
         }
 
-        removeButton.isEnabled = !selectedSlot.bindings.isEmpty
+        clearButton.isEnabled = !selectedSlot.bindings.isEmpty
     }
 
     @objc
@@ -130,31 +144,41 @@ final class HotkeysSettingsViewController: NSViewController, NSTableViewDataSour
             bodyView: sheetContentView,
             confirmButtonTitle: UICopy.settingsAddButtonTitle
         ) { [weak self] in
+            guard let shortcut = sheetContentView.recordedShortcut else {
+                return
+            }
             self?.applyAddedShortcut(
                 actionID: sheetContentView.selectedActionID,
-                shortcutDisplayName: sheetContentView.recordedShortcutDisplayName
+                shortcut: shortcut
             )
         }
         presentAsSheet(sheetController)
     }
 
     @objc
-    private func handleRemoveShortcut(_ sender: NSButton) {
-        guard slots.indices.contains(selectedSlotIndex), !slots[selectedSlotIndex].bindings.isEmpty else {
+    private func handleClearShortcuts(_ sender: NSButton) {
+        guard slots.indices.contains(selectedSlotIndex) else {
             return
         }
 
-        slots[selectedSlotIndex].bindings.removeLast()
+        let selectedAction = slots[selectedSlotIndex].action
+        prototypeState.configuration.hotkeys.bindings.removeAll { $0.action == selectedAction }
         slotTableView.reloadData()
         selectSlot(at: selectedSlotIndex)
     }
 
-    private func applyAddedShortcut(actionID: String, shortcutDisplayName: String) {
-        guard let index = slots.firstIndex(where: { $0.actionDescriptor.id == actionID }) else {
+    private func applyAddedShortcut(actionID: String, shortcut: KeyboardShortcut) {
+        guard let slot = slots.first(where: { $0.actionDescriptor.id == actionID }),
+              let index = slots.firstIndex(where: { $0.actionDescriptor.id == actionID }) else {
             return
         }
 
-        slots[index].bindings.append(shortcutDisplayName)
+        // TODO: When real model wiring starts, replace this direct append with a
+        // proper binding editor flow that preserves ordering, enabled state, and
+        // conflict diagnostics across the shared settings draft.
+        prototypeState.configuration.hotkeys.bindings.append(
+            ShortcutBinding(shortcut: shortcut, action: slot.action)
+        )
         slotTableView.reloadData()
         selectSlot(at: index)
     }
@@ -163,6 +187,7 @@ final class HotkeysSettingsViewController: NSViewController, NSTableViewDataSour
 struct HotkeyPrototypeAction {
     let id: String
     let displayTitle: String
+    let action: HotkeyAction
 }
 
 private struct HotkeyPrototypeSlot {
@@ -178,7 +203,8 @@ private struct HotkeyPrototypeSlot {
     var actionDescriptor: HotkeyPrototypeAction {
         HotkeyPrototypeAction(
             id: action.prototypeIdentifier,
-            displayTitle: "\(title) - \(currentTarget)"
+            displayTitle: "\(title) - \(currentTarget)",
+            action: action
         )
     }
 
@@ -200,8 +226,8 @@ private struct HotkeyPrototypeSlot {
             }
 
         return (globalSlots + layoutSlots).map { slot in
-            let bindings: [String] = configuration.hotkeys.bindings.compactMap { binding in
-                guard binding.action == slot.action, let shortcut = binding.shortcut else {
+        let bindings: [String] = configuration.hotkeys.bindings.compactMap { binding in
+                guard binding.isEnabled, binding.action == slot.action, let shortcut = binding.shortcut else {
                     return nil
                 }
 
