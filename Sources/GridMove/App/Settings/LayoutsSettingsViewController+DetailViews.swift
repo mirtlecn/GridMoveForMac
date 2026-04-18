@@ -1,0 +1,445 @@
+import AppKit
+
+@MainActor
+extension LayoutsSettingsViewController {
+    func updateDetailView() {
+        currentLayoutGridColumnsControl = nil
+        currentLayoutGridRowsControl = nil
+        detailContainerView.subviews.forEach { $0.removeFromSuperview() }
+
+        guard let node = selectedNode else {
+            updateCommandBar()
+            return
+        }
+
+        let contentView: NSView
+        switch node.kind {
+        case let .group(group, isActive):
+            contentView = makeGroupDetailView(group: group, isActive: isActive)
+        case let .set(groupName, setIndex, set):
+            contentView = makeSetDetailView(groupName: groupName, setIndex: setIndex, set: set)
+        case let .layout(groupName, setIndex, layout, _):
+            contentView = makeLayoutDetailView(groupName: groupName, setIndex: setIndex, layout: layout)
+        }
+
+        detailContainerView.addSubview(contentView)
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            contentView.leadingAnchor.constraint(equalTo: detailContainerView.leadingAnchor, constant: 12),
+            contentView.trailingAnchor.constraint(equalTo: detailContainerView.trailingAnchor),
+            contentView.topAnchor.constraint(equalTo: detailContainerView.topAnchor),
+            contentView.bottomAnchor.constraint(equalTo: detailContainerView.bottomAnchor),
+        ])
+
+        updateCommandBar()
+    }
+
+    func makeTreeCellView(for node: LayoutsTreeNode) -> NSTableCellView {
+        let identifier = NSUserInterfaceItemIdentifier("layout-tree-cell")
+        let cellView = (outlineView.makeView(withIdentifier: identifier, owner: self) as? LayoutTreeCellView) ?? LayoutTreeCellView(frame: .zero)
+        cellView.identifier = identifier
+        cellView.configure(
+            title: node.title,
+            kind: node.kind,
+            icon: treeIcon(for: node),
+            iconTintColor: treeIconTintColor(for: node)
+        )
+        return cellView
+    }
+
+    func makeGroupDetailView(group: LayoutGroup, isActive: Bool) -> NSView {
+        let contentStackView = makeSettingsPageStackView()
+        let nameControl = makeEditableTextControl(value: group.name, width: 220, isEditable: !group.protect) { [weak self] value in
+            self?.renameGroup(from: group.name, to: value)
+        }
+        let includeInCycleControl = makeEditableCheckboxControl(isOn: group.includeInGroupCycle) { [weak self] isOn in
+            self?.mutateLayoutsDraft(preserving: .group(name: group.name)) { configuration in
+                guard let groupIndex = configuration.layoutGroups.firstIndex(where: { $0.name == group.name }) else {
+                    return
+                }
+                configuration.layoutGroups[groupIndex].includeInGroupCycle = isOn
+            }
+        }
+        let activeGroupControl = makeActiveGroupControl(groupName: group.name, isActive: isActive)
+
+        let formView = makeInlineTabContent(rows: [
+            makeLabeledControlRow(label: UICopy.settingsNameLabel, control: nameControl),
+            makeLabeledControlRow(label: UICopy.settingsIncludeInGroupCycleLabel, control: includeInCycleControl),
+            makeLabeledControlRow(label: UICopy.settingsActiveGroupLabel, control: activeGroupControl),
+        ], width: 460)
+        contentStackView.addArrangedSubview(makeCenteredContainer(for: formView))
+        return makeDetailPanelContainer(contentView: contentStackView)
+    }
+
+    func makeActiveGroupControl(groupName: String, isActive: Bool) -> NSButton {
+        let checkbox = makeEditableCheckboxControl(isOn: isActive) { [weak self] isOn in
+            self?.handleActiveGroupToggle(groupName: groupName, isOn: isOn)
+        }
+        return checkbox
+    }
+
+    func handleActiveGroupToggle(groupName: String, isOn: Bool) {
+        guard isOn else {
+            updateDetailView()
+            return
+        }
+
+        guard draftConfiguration.general.activeLayoutGroup != groupName else {
+            return
+        }
+
+        mutateLayoutsDraft(preserving: .group(name: groupName)) { configuration in
+            configuration.general.activeLayoutGroup = groupName
+        }
+    }
+
+    func makeSetDetailView(groupName: String, setIndex: Int, set: LayoutSet) -> NSView {
+        let contentStackView = makeSettingsPageStackView()
+        let applyToControl = ApplyToControlView(
+            set: set,
+            persistedMonitorMapProvider: { [weak self] in
+                self?.prototypeState.currentMonitorNameMap() ?? [:]
+            }
+        )
+        applyToControl.onMonitorChanged = { [weak self] monitor in
+            self?.updateSetMonitor(groupName: groupName, setIndex: setIndex, monitor: monitor)
+        }
+        applyToControl.onRefreshRequested = { [weak self] in
+            self?.refreshMonitorMetadata()
+        }
+        let formView = makeInlineTabContent(rows: [
+            makeLabeledControlRow(label: UICopy.settingsApplyToLabel, control: applyToControl),
+        ], width: 460)
+        contentStackView.addArrangedSubview(makeCenteredContainer(for: formView))
+        return makeDetailPanelContainer(contentView: contentStackView)
+    }
+
+    func makeLayoutDetailView(groupName: String, setIndex: Int, layout: LayoutPreset) -> NSView {
+        let contentStackView = makeSettingsPageStackView()
+
+        let previewView = makeLayoutPreviewView(layout: layout, mode: previewMode(for: selectedLayoutDetailTabIndex))
+        contentStackView.addArrangedSubview(makeCenteredContainer(for: previewView))
+
+        let triggerContentView = TriggerTabContentView(layout: layout)
+        previewView.triggerRegionOverride = triggerContentView.currentTriggerRegion
+        triggerContentView.onTriggerRegionChanged = { [weak self, weak previewView] triggerRegion in
+            previewView?.triggerRegionOverride = triggerRegion
+            self?.updateLayoutTriggerRegion(groupName: groupName, setIndex: setIndex, layoutID: layout.id, triggerRegion: triggerRegion)
+        }
+
+        let gridColumnsControl = SettingsIntegerStepperControl(value: layout.gridColumns, minValue: 1, maxValue: nil)
+        gridColumnsControl.onValueChanged = { [weak self] value in
+            self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
+                draftLayout.gridColumns = value
+            }
+        }
+        currentLayoutGridColumnsControl = gridColumnsControl
+
+        let gridRowsControl = SettingsIntegerStepperControl(value: layout.gridRows, minValue: 1, maxValue: nil)
+        gridRowsControl.onValueChanged = { [weak self] value in
+            self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
+                draftLayout.gridRows = value
+            }
+        }
+        currentLayoutGridRowsControl = gridRowsControl
+
+        let detailTabsView = SettingsInlineTabsView(
+            tabs: [
+                SettingsInlineTab(
+                    title: UICopy.settingsLayoutInlineTabTitle,
+                    contentView: makeInlineTabContent(rows: [
+                        makeLabeledControlRow(
+                            label: UICopy.settingsNameLabel,
+                            control: makeEditableTextControl(value: layout.name, width: 220) { [weak self] value in
+                                self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
+                                    draftLayout.name = value
+                                }
+                            }
+                        ),
+                        makeLabeledControlRow(
+                            label: UICopy.settingsIncludeInMenuLabel,
+                            control: makeEditableCheckboxControl(isOn: layout.includeInMenu) { [weak self] isOn in
+                                self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
+                                    draftLayout.includeInMenu = isOn
+                                }
+                            }
+                        ),
+                        makeLabeledControlRow(
+                            label: UICopy.settingsIncludeInLayoutIndexLabel,
+                            control: makeEditableCheckboxControl(isOn: layout.includeInLayoutIndex) { [weak self] isOn in
+                                self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
+                                    draftLayout.includeInLayoutIndex = isOn
+                                }
+                            }
+                        ),
+                        makeLabeledControlRow(label: UICopy.settingsGridColumnsLabel, control: makeGridControlRow(control: gridColumnsControl)),
+                        makeLabeledControlRow(label: UICopy.settingsGridRowsLabel, control: makeGridControlRow(control: gridRowsControl)),
+                    ], width: 460)
+                ),
+                SettingsInlineTab(
+                    title: UICopy.settingsWindowAreaInlineTabTitle,
+                    contentView: makeInlineTabContent(rows: [
+                        makeLabeledControlRow(
+                            label: UICopy.settingsXPositionLabel,
+                            control: makeNumericStepperControl(
+                                value: layout.windowSelection.x,
+                                unit: "grid",
+                                minValue: 0,
+                                maxValue: max(0, layout.gridColumns - 1),
+                                onValueChanged: { [weak self] value in
+                                    self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
+                                        draftLayout.windowSelection.x = value
+                                    }
+                                }
+                            )
+                        ),
+                        makeLabeledControlRow(
+                            label: UICopy.settingsYPositionLabel,
+                            control: makeNumericStepperControl(
+                                value: layout.windowSelection.y,
+                                unit: "grid",
+                                minValue: 0,
+                                maxValue: max(0, layout.gridRows - 1),
+                                onValueChanged: { [weak self] value in
+                                    self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
+                                        draftLayout.windowSelection.y = value
+                                    }
+                                }
+                            )
+                        ),
+                        makeLabeledControlRow(
+                            label: UICopy.settingsWidthLabel,
+                            control: makeNumericStepperControl(
+                                value: layout.windowSelection.w,
+                                unit: "grid",
+                                minValue: 1,
+                                maxValue: layout.gridColumns,
+                                onValueChanged: { [weak self] value in
+                                    self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
+                                        draftLayout.windowSelection.w = value
+                                    }
+                                }
+                            )
+                        ),
+                        makeLabeledControlRow(
+                            label: UICopy.settingsHeightLabel,
+                            control: makeNumericStepperControl(
+                                value: layout.windowSelection.h,
+                                unit: "grid",
+                                minValue: 1,
+                                maxValue: layout.gridRows,
+                                onValueChanged: { [weak self] value in
+                                    self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
+                                        draftLayout.windowSelection.h = value
+                                    }
+                                }
+                            )
+                        ),
+                    ], width: 460)
+                ),
+                SettingsInlineTab(
+                    title: UICopy.settingsTriggerAreaInlineTabTitle,
+                    contentView: triggerContentView
+                ),
+            ],
+            selectedIndex: selectedLayoutDetailTabIndex
+        )
+        detailTabsView.onSelectionChanged = { [weak self, weak previewView] selectedIndex in
+            self?.selectedLayoutDetailTabIndex = selectedIndex
+            previewView?.mode = self?.previewMode(for: selectedIndex) ?? .combined
+        }
+
+        contentStackView.addArrangedSubview(makeFullWidthContainer(for: detailTabsView))
+        return makeDetailPanelContainer(contentView: contentStackView)
+    }
+
+    private func makeGridControlRow(control: SettingsIntegerStepperControl) -> NSView {
+        let row = makeHorizontalGroup(spacing: 8)
+        row.alignment = .centerY
+        row.addArrangedSubview(control)
+        row.addArrangedSubview(makeFieldLabel("grid"))
+        return row
+    }
+
+    func makeLayoutPreviewView(layout: LayoutPreset, mode: LayoutPreviewView.Mode) -> LayoutPreviewView {
+        let previewView = LayoutPreviewView(layout: layout, appearance: draftConfiguration.appearance, mode: mode)
+        previewView.translatesAutoresizingMaskIntoConstraints = false
+        previewView.widthAnchor.constraint(equalToConstant: 420).isActive = true
+        previewView.heightAnchor.constraint(equalToConstant: 260).isActive = true
+        return previewView
+    }
+
+    func previewMode(for selectedIndex: Int) -> LayoutPreviewView.Mode {
+        switch selectedIndex {
+        case 1:
+            return .windowLayout
+        case 2:
+            return .triggerRegion
+        default:
+            return .combined
+        }
+    }
+
+    func makeEditableTextControl(
+        value: String,
+        width: CGFloat,
+        isEditable: Bool = true,
+        onCommit: @escaping (String) -> Void
+    ) -> NSTextField {
+        let textField = CallbackTextField(string: value)
+        textField.controlSize = .small
+        textField.translatesAutoresizingMaskIntoConstraints = false
+        textField.widthAnchor.constraint(equalToConstant: width).isActive = true
+        textField.isEditable = isEditable
+        textField.isSelectable = isEditable
+        textField.isEnabled = true
+        textField.onCommit = onCommit
+        if isEditable == false {
+            textField.textColor = .secondaryLabelColor
+            textField.backgroundColor = .controlBackgroundColor
+        }
+        return textField
+    }
+
+    func makeEditableCheckboxControl(isOn: Bool, onToggle: @escaping (Bool) -> Void) -> NSButton {
+        let checkbox = CallbackCheckbox()
+        checkbox.state = isOn ? .on : .off
+        checkbox.onToggle = onToggle
+        return checkbox
+    }
+
+    func makeDetailPanelContainer(contentView: NSView) -> NSView {
+        let containerView = NSView()
+        let panelView = NSBox()
+        panelView.boxType = .custom
+        panelView.titlePosition = .noTitle
+        panelView.borderColor = .separatorColor
+        panelView.fillColor = .clear
+        panelView.cornerRadius = 8
+        panelView.contentViewMargins = .zero
+        let panelContentView = panelView.contentView!
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        panelView.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(panelView)
+        panelContentView.addSubview(contentView)
+
+        NSLayoutConstraint.activate([
+            panelView.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            panelView.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            panelView.topAnchor.constraint(equalTo: containerView.topAnchor),
+            panelView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+            contentView.leadingAnchor.constraint(equalTo: panelContentView.leadingAnchor, constant: 18),
+            contentView.trailingAnchor.constraint(equalTo: panelContentView.trailingAnchor, constant: -18),
+            contentView.topAnchor.constraint(equalTo: panelContentView.topAnchor, constant: 18),
+            contentView.bottomAnchor.constraint(lessThanOrEqualTo: panelContentView.bottomAnchor),
+        ])
+
+        return containerView
+    }
+
+    func makeCommandBarView() -> NSView {
+        let containerView = NSView()
+        containerView.translatesAutoresizingMaskIntoConstraints = false
+
+        addButton.bezelStyle = .rounded
+        addButton.target = self
+        addButton.action = #selector(handleAddAction(_:))
+
+        removeButton.bezelStyle = .rounded
+        removeButton.target = self
+        removeButton.action = #selector(handleRemoveAction(_:))
+
+        saveButton.bezelStyle = .rounded
+        saveButton.target = self
+        saveButton.action = #selector(handleSaveLayoutEdits(_:))
+
+        let row = makeHorizontalGroup(spacing: 8)
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.alignment = .centerY
+        row.addArrangedSubview(addButton)
+        row.addArrangedSubview(NSView())
+        row.addArrangedSubview(saveButton)
+        row.addArrangedSubview(removeButton)
+        containerView.addSubview(row)
+
+        NSLayoutConstraint.activate([
+            containerView.heightAnchor.constraint(greaterThanOrEqualToConstant: 30),
+            row.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            row.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
+            row.topAnchor.constraint(equalTo: containerView.topAnchor),
+            row.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+        ])
+
+        return containerView
+    }
+
+    func updateCommandBar() {
+        switch preferredAddAction(for: selectedNode) {
+        case .group:
+            addButton.title = UICopy.settingsAddGroupButtonTitle
+        case .monitorSet:
+            addButton.title = UICopy.settingsAddDisplaySetButtonTitle
+        case .layout:
+            addButton.title = UICopy.settingsAddLayoutButtonTitle
+        case nil:
+            addButton.title = UICopy.settingsAddButtonTitle
+        }
+
+        saveButton.title = UICopy.settingsSaveButtonTitle
+        removeButton.title = UICopy.settingsRemoveButtonTitle
+        saveButton.isEnabled = prototypeState.hasLayoutsDraftChanges
+
+        let removeState = removeButtonState(for: selectedNode)
+        removeButton.isEnabled = removeState.isEnabled
+        removeButton.toolTip = removeState.toolTip
+
+        addButton.isEnabled = addActionState(for: selectedNode)
+    }
+}
+
+@MainActor
+private final class CallbackTextField: NSTextField, NSTextFieldDelegate {
+    var onCommit: ((String) -> Void)?
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        delegate = self
+    }
+
+    convenience init(string value: String) {
+        self.init(frame: .zero)
+        stringValue = value
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        nil
+    }
+
+    func controlTextDidEndEditing(_ notification: Notification) {
+        onCommit?(stringValue)
+    }
+}
+
+@MainActor
+private final class CallbackCheckbox: NSButton {
+    var onToggle: ((Bool) -> Void)?
+
+    init() {
+        super.init(frame: .zero)
+        setButtonType(.switch)
+        title = ""
+        target = self
+        action = #selector(handleToggle(_:))
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        nil
+    }
+
+    @objc
+    private func handleToggle(_ sender: NSButton) {
+        onToggle?(sender.state == .on)
+    }
+}

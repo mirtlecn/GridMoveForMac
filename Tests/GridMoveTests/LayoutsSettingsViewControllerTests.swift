@@ -167,4 +167,25 @@ struct LayoutsSettingsViewControllerTests {
         #expect(group.sets[0].monitor == .all)
         #expect(group.sets[1].monitor == .main)
     }
+
+    @Test func layoutGridControlsShowAndCommitValuesAboveTwentyFour() async throws {
+        var configuration = AppConfiguration.defaultValue
+        configuration.layoutGroups[0].sets[0].layouts[0].gridColumns = 30
+        configuration.layoutGroups[0].sets[0].layouts[0].gridRows = 40
+        let (controller, _, _) = makeController(configuration: configuration)
+
+        controller.selectLayoutForTesting(id: "layout-1")
+
+        let initialGridSize = try #require(controller.currentLayoutGridSizeValuesForTesting)
+        #expect(initialGridSize.columns == 30)
+        #expect(initialGridSize.rows == 40)
+
+        controller.updateCurrentLayoutGridSizeForTesting(columns: 50, rows: 60)
+
+        let updatedLayout = try #require(
+            controller.draftConfigurationForTesting.layoutGroups[0].sets[0].layouts.first(where: { $0.id == "layout-1" })
+        )
+        #expect(updatedLayout.gridColumns == 50)
+        #expect(updatedLayout.gridRows == 60)
+    }
 }

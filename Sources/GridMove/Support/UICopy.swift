@@ -109,6 +109,7 @@ enum UICopy {
     static let configReloadSucceededTitle = "GridMove config reloaded"
     static let configReloadFailedTitle = "GridMove config reload failed"
     static let configReloadSkippedLayoutsTitle = "GridMove skipped invalid layout files"
+    static let layoutsSaveFailedTitle = "GridMove could not save layouts"
     static let launchAtLoginEnableFailedTitle = "Unable to enable launch at login"
     static let launchAtLoginDisableFailedTitle = "Unable to disable launch at login"
     static let quitMenuTitle = "Quit"
@@ -216,6 +217,19 @@ enum UICopy {
 
     static func configReloadSucceededBody() -> String {
         "Config was applied successfully."
+    }
+
+    static func layoutsSaveFailedBody(details: String?) -> String {
+        var segments = [
+            "Layout changes were not applied.",
+            "GridMove kept running with the current configuration.",
+        ]
+
+        if let details, !details.isEmpty {
+            segments.append(details)
+        }
+
+        return segments.joined(separator: " ")
     }
 
     static func launchAtLoginEnableFailedBody(details: String?) -> String {

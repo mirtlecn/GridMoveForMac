@@ -665,7 +665,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @discardableResult
     private func saveLayoutsConfiguration(_ candidate: AppConfiguration) -> Bool {
-        saveSettingsConfigurationCandidate(candidate)
+        saveSettingsConfigurationCandidate(candidate, failureNotifier: .layoutsSaveFailed)
     }
 
     private func refreshMonitorMetadataFromSettings() -> AppConfiguration? {
@@ -681,11 +681,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func restoreDefaultConfigurationFromSettings() -> AppConfiguration? {
         let defaultConfiguration = AppConfiguration.defaultValue
-        return saveSettingsConfigurationCandidate(defaultConfiguration) ? defaultConfiguration : nil
+        guard saveSettingsConfigurationCandidate(defaultConfiguration) else {
+            return nil
+        }
+        return reloadConfigurationFromDisk(mode: .manual)
     }
 
     @discardableResult
-    private func saveSettingsConfigurationCandidate(_ candidate: AppConfiguration) -> Bool {
+    private func saveSettingsConfigurationCandidate(
+        _ candidate: AppConfiguration,
+        failureNotifier: UserNotifier.Kind? = nil
+    ) -> Bool {
         let previousConfiguration = configuration
         let didChangeLaunchAtLogin = previousConfiguration.general.launchAtLogin != candidate.general.launchAtLogin
 
@@ -698,6 +704,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             try configurationCoordinator.saveConfiguration(candidate)
         } catch {
             AppLogger.shared.error("Failed to save configuration from settings window: \(error.localizedDescription)")
+            if let failureNotifier {
+                userNotifier.notify(
+                    kind: failureNotifier,
+                    title: UICopy.layoutsSaveFailedTitle,
+                    body: UICopy.layoutsSaveFailedBody(details: settingsSaveFailureDetails(for: error))
+                )
+            }
             if didChangeLaunchAtLogin {
                 rollbackLaunchAtLoginServiceState(to: previousConfiguration.general.launchAtLogin)
             }
@@ -708,6 +721,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         applyConfiguration(candidate, syncOpenSettingsState: false)
         return true
+    }
+
+    private func settingsSaveFailureDetails(for error: Error) -> String {
+        if let configurationError = error as? ConfigurationFileError {
+            switch configurationError {
+            case let .invalidLayoutReference(index):
+                return "Layout reference \(index) is invalid."
+            case let .missingActiveLayoutGroup(groupName):
+                return "Active layout group '\(groupName)' does not exist."
+            case .duplicateLayoutGroupName:
+                return "Layout group names must be unique."
+            case let .overlappingMonitorBindings(groupName):
+                return "Layout group '\(groupName)' has overlapping monitor bindings."
+            case .embeddedLayoutGroupsNotSupported:
+                return "Embedded layout groups are not supported."
+            }
+        }
+
+        return error.localizedDescription
     }
 
     private func applyConfiguration(_ configuration: AppConfiguration, syncOpenSettingsState: Bool = true) {
@@ -868,6 +900,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func saveLayoutsFromSettingsForTesting() {
         layoutsSettingsControllerForTesting?.saveLayoutsForTesting()
+    }
+
+    func mutateLayoutsDraftForTesting(_ mutate: (inout AppConfiguration) -> Void) {
+        layoutsSettingsControllerForTesting?.mutateLayoutsDraftForTesting(mutate)
+    }
+
+    func selectLayoutsLayoutForTesting(id: String) {
+        layoutsSettingsControllerForTesting?.selectLayoutForTesting(id: id)
+    }
+
+    var currentLayoutsGridSizeValuesForTesting: (columns: Int, rows: Int)? {
+        layoutsSettingsControllerForTesting?.currentLayoutGridSizeValuesForTesting
+    }
+
+    func updateCurrentLayoutsGridSizeForTesting(columns: Int, rows: Int) {
+        layoutsSettingsControllerForTesting?.updateCurrentLayoutGridSizeForTesting(columns: columns, rows: rows)
     }
 
     @discardableResult

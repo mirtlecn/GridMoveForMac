@@ -740,6 +740,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     let delegate = AppDelegate(
         configurationStore: store,
         openURL: { _ in true },
+        currentMonitorMapProvider: { ["display-1": "Studio Display"] },
         accessibilityStatusProvider: { true }
     )
 
@@ -751,7 +752,9 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
 
     let persistedConfiguration = try store.load()
 
-    #expect(delegate.configuration == AppConfiguration.defaultValue)
+    #expect(delegate.configuration.general == AppConfiguration.defaultValue.general)
+    #expect(delegate.configuration.layoutGroups == AppConfiguration.defaultValue.layoutGroups)
+    #expect(delegate.configuration.monitors == ["display-1": "Studio Display"])
     #expect(persistedConfiguration.general == AppConfiguration.defaultValue.general)
     #expect(persistedConfiguration.appearance.renderTriggerAreas == AppConfiguration.defaultValue.appearance.renderTriggerAreas)
     #expect(persistedConfiguration.appearance.triggerGap == AppConfiguration.defaultValue.appearance.triggerGap)
@@ -763,6 +766,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     #expect(persistedConfiguration.hotkeys.bindings.map(\.shortcut) == AppConfiguration.defaultValue.hotkeys.bindings.map(\.shortcut))
     #expect(persistedConfiguration.hotkeys.bindings.map(\.action) == AppConfiguration.defaultValue.hotkeys.bindings.map(\.action))
     #expect(persistedConfiguration.layoutGroups == AppConfiguration.defaultValue.layoutGroups)
+    #expect(persistedConfiguration.monitors == ["display-1": "Studio Display"])
 
     delegate.closeSettingsWindowForTesting()
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
@@ -803,6 +807,45 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     #expect(persistedConfiguration.layoutGroups.count == 3)
     #expect(persistedConfiguration.layoutGroups.last?.sets == [LayoutSet(monitor: .all, layouts: [])])
     #expect(layoutFiles == ["1.grid.json", "2.grid.json", "3.grid.json"])
+
+    delegate.closeSettingsWindowForTesting()
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
+@Test func layoutsSaveFromSettingsNotifiesWhenSaveFails() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-layouts-save-failure-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var receivedKind: UserNotifier.Kind?
+    var receivedTitle: String?
+    var receivedBody: String?
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        notifyUser: { kind, title, body in
+            receivedKind = kind
+            receivedTitle = title
+            receivedBody = body
+        }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    delegate.showSettings()
+    delegate.selectSettingsTabForTesting(index: 1)
+    delegate.mutateLayoutsDraftForTesting { configuration in
+        configuration.general.activeLayoutGroup = "missing-group"
+    }
+
+    delegate.saveLayoutsFromSettingsForTesting()
+
+    #expect(receivedKind == .layoutsSaveFailed)
+    #expect(receivedTitle == UICopy.layoutsSaveFailedTitle)
+    #expect(receivedBody?.contains("missing-group") == true)
+    #expect(delegate.configuration.general.activeLayoutGroup == AppConfiguration.builtInGroupName)
+    #expect(delegate.layoutsDraftConfigurationForTesting?.general.activeLayoutGroup == "missing-group")
 
     delegate.closeSettingsWindowForTesting()
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
