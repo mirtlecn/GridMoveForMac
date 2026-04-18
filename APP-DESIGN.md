@@ -16,14 +16,18 @@ This document records the current software behavior and implementation details b
 The current codebase implements these user-visible surfaces:
 
 - menu bar app
-- settings window prototype with `General`, `Layouts`, `Appearance`, `Hotkeys`, and `About` tabs
+- settings window with `General`, `Layouts`, `Appearance`, `Hotkeys`, and `About` tabs
 - CLI entrypoint for layout actions
 - JSON configuration at `~/.config/GridMove/config.json`
 - layout-group files at `~/.config/GridMove/layout/*.grid.json`
 
-The settings window is currently a structure-only prototype.
-It does not edit persisted configuration yet.
-`UI-UX.md` records the intended interaction model for future UI work.
+The settings window now uses the real configuration model:
+
+- `General`, `Appearance`, and `Hotkeys` apply immediately and save through the shared settings action path
+- `Layouts` keeps a draft and only saves when the user clicks `Save`
+- `About` can manually reload configuration and restore the built-in defaults
+
+`UI-UX.md` records the accepted interaction structure for this window.
 
 ## 3. Runtime Architecture
 
@@ -79,9 +83,11 @@ Important properties:
 - monitor metadata refresh only happens on app startup and manual reload; normal setting saves do not rescan displays
 - previously learned monitor UUIDs remain in `monitors` even when those displays are currently disconnected
 - `layoutGroups[*].includeInGroupCycle` controls whether layout-mode Shift cycling can switch to that group
+- `layoutGroups[*].protect` prevents removing a protected group from the settings UI and defaults to `false` when missing or invalid
 - `layoutGroups[*].sets[*].monitor` routes layouts to `all`, `main`, one monitor UUID, or multiple monitor UUIDs
 - `layoutGroups[*].sets[*].layouts` order drives menu order, layout-index numbering, and same-display trigger precedence
 - `layoutGroups[*].sets[*].layouts[*].includeInMenu` controls whether a layout appears in the menu bar
+- empty layout groups and empty monitor sets are allowed and remain inert at runtime
 
 Current drag-trigger configuration fields:
 

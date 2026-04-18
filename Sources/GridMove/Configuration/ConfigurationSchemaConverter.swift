@@ -99,6 +99,7 @@ enum ConfigurationSchemaConverter {
             return LayoutGroup(
                 name: groupConfiguration.name,
                 includeInGroupCycle: groupConfiguration.includeInGroupCycle,
+                protect: groupConfiguration.protect,
                 sets: sets
             )
         }

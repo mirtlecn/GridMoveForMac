@@ -75,4 +75,71 @@ struct SettingsPrototypeStateTests {
 
         #expect(observer.notificationCount == 2)
     }
+
+    @Test func layoutsDraftCommitSuccessUpdatesCommittedSnapshot() async throws {
+        let state = SettingsPrototypeState(configuration: .defaultValue)
+        let recorder = TestSettingsActionRecorder()
+
+        state.applyLayoutsMutation { configuration in
+            configuration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
+        }
+
+        let didCommit = state.commitLayoutsDraft(using: recorder.makeActionHandler())
+
+        #expect(didCommit == true)
+        #expect(state.configuration.general.activeLayoutGroup == AppConfiguration.fullscreenGroupName)
+        #expect(state.committedConfiguration.general.activeLayoutGroup == AppConfiguration.fullscreenGroupName)
+        #expect(recorder.savedLayoutsCandidates.last?.general.activeLayoutGroup == AppConfiguration.fullscreenGroupName)
+    }
+
+    @Test func layoutsDraftCommitFailureKeepsDraftChanges() async throws {
+        let state = SettingsPrototypeState(configuration: .defaultValue)
+        let recorder = TestSettingsActionRecorder()
+        recorder.saveLayoutsSucceeds = false
+
+        state.applyLayoutsMutation { configuration in
+            configuration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
+        }
+
+        let didCommit = state.commitLayoutsDraft(using: recorder.makeActionHandler())
+
+        #expect(didCommit == false)
+        #expect(state.configuration.general.activeLayoutGroup == AppConfiguration.fullscreenGroupName)
+        #expect(state.committedConfiguration.general.activeLayoutGroup == AppConfiguration.builtInGroupName)
+        #expect(state.hasLayoutsDraftChanges == true)
+    }
+
+    @Test func syncExternalConfigurationUpdatesActiveGroupWithoutOverwritingDraftLayouts() async throws {
+        let state = SettingsPrototypeState(configuration: .defaultValue)
+        state.applyLayoutsMutation { configuration in
+            configuration.layoutGroups.append(
+                LayoutGroup(name: "Work", includeInGroupCycle: false, sets: [])
+            )
+        }
+
+        var externalConfiguration = AppConfiguration.defaultValue
+        externalConfiguration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
+        externalConfiguration.general.mouseButtonNumber = 5
+
+        state.syncExternalConfiguration(externalConfiguration)
+
+        #expect(state.configuration.general.activeLayoutGroup == AppConfiguration.fullscreenGroupName)
+        #expect(state.configuration.general.mouseButtonNumber == 5)
+        #expect(state.configuration.layoutGroups.contains(where: { $0.name == "Work" }))
+    }
+
+    @Test func syncExternalConfigurationFallsBackWhenExternalActiveGroupIsMissingFromDraft() async throws {
+        let state = SettingsPrototypeState(configuration: .defaultValue)
+        state.applyLayoutsMutation { configuration in
+            configuration.layoutGroups.removeAll { $0.name == AppConfiguration.fullscreenGroupName }
+            configuration.general.activeLayoutGroup = AppConfiguration.builtInGroupName
+        }
+
+        var externalConfiguration = AppConfiguration.defaultValue
+        externalConfiguration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
+
+        state.syncExternalConfiguration(externalConfiguration)
+
+        #expect(state.configuration.general.activeLayoutGroup == AppConfiguration.builtInGroupName)
+    }
 }

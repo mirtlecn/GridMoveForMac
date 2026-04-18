@@ -133,7 +133,10 @@ final class SettingsTabViewController: NSTabViewController {
             systemImageName: "gearshape"
         )
         addSettingsTab(
-            viewController: LayoutsSettingsViewController(prototypeState: prototypeState),
+            viewController: LayoutsSettingsViewController(
+                prototypeState: prototypeState,
+                actionHandler: actionHandler
+            ),
             title: UICopy.settingsLayoutsTabTitle,
             systemImageName: "rectangle.3.group"
         )

@@ -378,7 +378,20 @@ struct LayoutSet: Codable, Equatable, Hashable {
 struct LayoutGroup: Codable, Equatable, Hashable {
     var name: String
     var includeInGroupCycle: Bool
+    var protect: Bool
     var sets: [LayoutSet]
+
+    init(
+        name: String,
+        includeInGroupCycle: Bool,
+        protect: Bool = false,
+        sets: [LayoutSet]
+    ) {
+        self.name = name
+        self.includeInGroupCycle = includeInGroupCycle
+        self.protect = protect
+        self.sets = sets
+    }
 }
 
 struct RGBAColor: Codable, Equatable, Hashable {

@@ -640,8 +640,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             applyImmediateConfigurationHandler: { [weak self] candidate in
                 self?.applySettingsConfiguration(candidate) ?? false
             },
+            saveLayoutsConfigurationHandler: { [weak self] candidate in
+                self?.saveLayoutsConfiguration(candidate) ?? false
+            },
+            refreshMonitorMetadataHandler: { [weak self] in
+                self?.refreshMonitorMetadataFromSettings()
+            },
             reloadConfigurationHandler: { [weak self] in
                 self?.reloadConfigurationFromDisk(mode: .manual)
+            },
+            restoreDefaultConfigurationHandler: { [weak self] in
+                self?.restoreDefaultConfigurationFromSettings()
             },
             openConfigurationDirectoryHandler: { [weak self] in
                 self?.openConfigurationDirectory() ?? false
@@ -651,6 +660,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @discardableResult
     private func applySettingsConfiguration(_ candidate: AppConfiguration) -> Bool {
+        saveSettingsConfigurationCandidate(candidate)
+    }
+
+    @discardableResult
+    private func saveLayoutsConfiguration(_ candidate: AppConfiguration) -> Bool {
+        saveSettingsConfigurationCandidate(candidate)
+    }
+
+    private func refreshMonitorMetadataFromSettings() -> AppConfiguration? {
+        do {
+            let refreshedConfiguration = try configurationCoordinator.refreshMonitorMetadata(from: configuration)
+            applyConfiguration(refreshedConfiguration, syncOpenSettingsState: false)
+            return refreshedConfiguration
+        } catch {
+            AppLogger.shared.error("Failed to refresh monitor metadata from settings window: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
+    private func restoreDefaultConfigurationFromSettings() -> AppConfiguration? {
+        let defaultConfiguration = AppConfiguration.defaultValue
+        return saveSettingsConfigurationCandidate(defaultConfiguration) ? defaultConfiguration : nil
+    }
+
+    @discardableResult
+    private func saveSettingsConfigurationCandidate(_ candidate: AppConfiguration) -> Bool {
         let previousConfiguration = configuration
         let didChangeLaunchAtLogin = previousConfiguration.general.launchAtLogin != candidate.general.launchAtLogin
 
@@ -805,6 +840,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         aboutController.reloadForTesting()
     }
 
+    func restoreSettingsFromAboutTabForTesting() {
+        guard let tabViewController = settingsWindowController?.window?.contentViewController as? NSTabViewController,
+              tabViewController.tabViewItems.indices.contains(4),
+              let aboutController = tabViewController.tabViewItems[4].viewController as? AboutSettingsViewController else {
+            return
+        }
+
+        aboutController.restoreForTesting()
+    }
+
+    var layoutsSettingsActiveGroupNameForTesting: String? {
+        layoutsSettingsControllerForTesting?.activeGroupNameForTesting
+    }
+
+    var layoutsDraftConfigurationForTesting: AppConfiguration? {
+        layoutsSettingsControllerForTesting?.draftConfigurationForTesting
+    }
+
+    func selectLayoutsGroupForTesting(named groupName: String) {
+        layoutsSettingsControllerForTesting?.selectGroupForTesting(named: groupName)
+    }
+
+    func triggerLayoutsAddActionForTesting() {
+        layoutsSettingsControllerForTesting?.addActionForTesting()
+    }
+
+    func saveLayoutsFromSettingsForTesting() {
+        layoutsSettingsControllerForTesting?.saveLayoutsForTesting()
+    }
+
     @discardableResult
     func updateGlobalEnabledStateForTesting(_ isEnabled: Bool) -> Bool {
         updateGlobalEnabledState(isEnabled)
@@ -905,5 +970,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         return strings
+    }
+
+    private var layoutsSettingsControllerForTesting: LayoutsSettingsViewController? {
+        guard let tabViewController = settingsWindowController?.window?.contentViewController as? NSTabViewController,
+              tabViewController.tabViewItems.indices.contains(1),
+              let layoutsController = tabViewController.tabViewItems[1].viewController as? LayoutsSettingsViewController else {
+            return nil
+        }
+
+        layoutsController.loadViewIfNeeded()
+        return layoutsController
     }
 }

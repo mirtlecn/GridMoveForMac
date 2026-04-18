@@ -177,17 +177,20 @@ struct HotkeyActionConfiguration: Codable {
 struct LayoutGroupConfiguration: Codable {
     let name: String
     let includeInGroupCycle: Bool
+    let protect: Bool
     let sets: [LayoutSetConfiguration]
 
     private enum CodingKeys: String, CodingKey {
         case name
         case includeInGroupCycle
+        case protect
         case sets
     }
 
     init(group: LayoutGroup) {
         name = group.name
         includeInGroupCycle = group.includeInGroupCycle
+        protect = group.protect
         sets = group.sets.map(LayoutSetConfiguration.init(set:))
     }
 
@@ -195,6 +198,7 @@ struct LayoutGroupConfiguration: Codable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         name = try container.decode(String.self, forKey: .name)
         includeInGroupCycle = try container.decodeIfPresent(Bool.self, forKey: .includeInGroupCycle) ?? true
+        protect = (try? container.decode(Bool.self, forKey: .protect)) ?? false
         sets = try container.decode([LayoutSetConfiguration].self, forKey: .sets)
     }
 }

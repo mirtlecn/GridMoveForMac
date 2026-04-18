@@ -29,6 +29,7 @@ extension AppConfiguration {
             LayoutGroup(
                 name: builtInGroupName,
                 includeInGroupCycle: true,
+                protect: true,
                 sets: [
                     LayoutSet(monitor: .all, layouts: defaultLayouts),
                 ]
@@ -36,6 +37,7 @@ extension AppConfiguration {
             LayoutGroup(
                 name: fullscreenGroupName,
                 includeInGroupCycle: true,
+                protect: true,
                 sets: [
                     LayoutSet(
                         monitor: .main,

@@ -256,18 +256,19 @@ func makeNumericStepperControl(
     unit: String,
     minValue: Int = 0,
     maxValue: Int? = 99,
-    textFieldWidth: CGFloat = 56
+    textFieldWidth: CGFloat = 56,
+    onValueChanged: ((Int) -> Void)? = nil
 ) -> NSView {
     let stackView = makeHorizontalGroup(spacing: 8)
     stackView.alignment = .centerY
-    stackView.addArrangedSubview(
-        SettingsIntegerStepperControl(
-            value: value,
-            minValue: minValue,
-            maxValue: maxValue,
-            textFieldWidth: textFieldWidth
-        )
+    let control = SettingsIntegerStepperControl(
+        value: value,
+        minValue: minValue,
+        maxValue: maxValue,
+        textFieldWidth: textFieldWidth
     )
+    control.onValueChanged = onValueChanged
+    stackView.addArrangedSubview(control)
     stackView.addArrangedSubview(makeFieldLabel(unit))
     return stackView
 }

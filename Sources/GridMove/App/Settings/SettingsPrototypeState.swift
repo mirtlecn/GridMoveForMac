@@ -29,6 +29,11 @@ final class SettingsPrototypeState {
         updatedDraft.dragTriggers = configuration.dragTriggers
         updatedDraft.hotkeys = configuration.hotkeys
         updatedDraft.monitors = configuration.monitors
+        if updatedDraft.layoutGroups.contains(where: { $0.name == configuration.general.activeLayoutGroup }) {
+            updatedDraft.general.activeLayoutGroup = configuration.general.activeLayoutGroup
+        } else if let fallbackGroupName = updatedDraft.layoutGroups.first?.name {
+            updatedDraft.general.activeLayoutGroup = fallbackGroupName
+        }
 
         self.configuration = updatedDraft
         notifyDidChange()
@@ -61,8 +66,34 @@ final class SettingsPrototypeState {
         return true
     }
 
-    func updateDraftFromLayoutsPrototype(_ configuration: AppConfiguration) {
-        self.configuration = configuration
+    func applyLayoutsMutation(_ mutate: (inout AppConfiguration) -> Void) {
+        var updatedConfiguration = configuration
+        mutate(&updatedConfiguration)
+        configuration = updatedConfiguration
+        notifyDidChange()
+    }
+
+    var hasLayoutsDraftChanges: Bool {
+        configuration.general.activeLayoutGroup != committedConfiguration.general.activeLayoutGroup
+            || configuration.layoutGroups != committedConfiguration.layoutGroups
+    }
+
+    @discardableResult
+    func commitLayoutsDraft(using actionHandler: any SettingsActionHandling) -> Bool {
+        let candidate = configuration
+        guard actionHandler.saveLayoutsConfiguration(candidate) else {
+            notifyDidChange()
+            return false
+        }
+
+        committedConfiguration = candidate
+        notifyDidChange()
+        return true
+    }
+
+    func discardLayoutsDraft() {
+        configuration.general.activeLayoutGroup = committedConfiguration.general.activeLayoutGroup
+        configuration.layoutGroups = committedConfiguration.layoutGroups
         notifyDidChange()
     }
 

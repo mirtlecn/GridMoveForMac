@@ -59,6 +59,15 @@ final class ConfigurationRuntimeCoordinator {
         try configurationStore.save(configuration)
     }
 
+    func refreshMonitorMetadata(from configuration: AppConfiguration) throws -> AppConfiguration {
+        var candidateConfiguration = configuration
+        let didUpdateMonitorMetadata = refreshMonitorMetadata(configuration: &candidateConfiguration)
+        if didUpdateMonitorMetadata {
+            try configurationStore.save(candidateConfiguration)
+        }
+        return candidateConfiguration
+    }
+
     private func refreshMonitorMetadata(configuration: inout AppConfiguration) -> Bool {
         let connectedMonitorMap = currentMonitorMapProvider()
         guard !connectedMonitorMap.isEmpty else {

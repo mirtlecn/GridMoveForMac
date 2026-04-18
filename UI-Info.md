@@ -1,6 +1,6 @@
 # GridMove Settings UI Integration Notes
 
-This document is the handoff note for wiring the current settings-window prototype to the real configuration model.
+This document records the accepted settings-window baseline and the current real model integration rules.
 
 It is intentionally narrower than `APP-DESIGN.md` and less abstract than `UI-UX.md`.
 
@@ -10,14 +10,20 @@ It is intentionally narrower than `APP-DESIGN.md` and less abstract than `UI-UX.
 
 ## Status
 
-The current settings window is a reviewed static / prototype UI baseline.
+The current settings window is the accepted AppKit baseline and is already connected to the real configuration model.
 
-When starting model integration:
+Current save rules:
+
+- `General`, `Appearance`, and `Hotkeys` apply immediately and save through the shared action handler
+- `Layouts` keeps a shared draft and only applies when the user clicks `Save`
+- `About` can reload configuration and restore the built-in defaults
+
+UI review constraints remain unchanged:
 
 - keep the current visual style
 - keep the current interaction structure
 - do not redesign layout, spacing, or control hierarchy unless explicitly requested
-- prefer replacing prototype state and handlers under the existing UI surface
+- prefer replacing internals under the existing UI surface
 
 ## Hard Constraints
 
@@ -55,24 +61,20 @@ Contains:
 - per-tab window sizing
 - animated window resizing when switching tabs
 
-### Shared prototype state
+### Shared settings draft state
 
 - `Sources/GridMove/App/Settings/SettingsPrototypeState.swift`
 
-This is the current shared UI draft object.
+This is the shared UI draft object.
 
 Current purpose:
 
-- hold one mutable `AppConfiguration`
-- let multiple tabs read and write the same temporary draft
+- hold the current settings draft
+- hold the committed configuration snapshot
+- let multiple tabs read and write one shared mutable draft
+- separate immediate-save tabs from `Layouts`
 
-Future purpose:
-
-- remain the UI-side draft boundary
-- accept a real configuration snapshot when opening settings
-- support save / apply flows without forcing every tab to talk to persistence directly
-
-Do not delete this layer when wiring the model. Replace its internals and ownership, but keep the role.
+Do not delete this layer. It is the UI-side draft boundary for the current settings window.
 
 ### Tab controllers
 
@@ -117,9 +119,10 @@ Confirmed interactions:
   - one shared `Add...` / `Remove` row
   - `Add...` opens one sheet that can add either exclusion kind
 
-Model wiring expectation:
+Current model behavior:
 
-- this tab should later write through the shared draft and apply immediately
+- this tab writes through the shared draft
+- changes apply immediately through the shared action handler
 
 ### Layouts
 
@@ -158,7 +161,7 @@ Right detail behavior:
   - inline tabs: `General`, `Window`, `Trigger`
   - `Save` and `Remove` are outside the panel, in the bottom command row
 
-Special save rule:
+Current save rule:
 
 - this tab is draft-only until `Save`
 - no other tab shares this deferred-save rule
@@ -167,8 +170,10 @@ Important semantic rule:
 
 - `Active group` is a boolean-looking control in UI
 - but the real model is a single active group name
-- later wiring must keep this exclusive:
+- the real model keeps this exclusive:
   - when one group becomes active, others become inactive
+- protected groups (`protect = true`) cannot be removed in UI
+- empty groups and empty monitor sets are allowed and remain inert at runtime
 
 ### Appearance
 
@@ -254,16 +259,12 @@ Current prototype recorder:
   - field shows `Press shortcut`
   - old shortcut is not shown while recording
 
-Future wiring requirement:
+Current model behavior:
 
-- replace the prototype append logic with a real binding editor flow
-- preserve typed action + shortcut structure
-- preserve enabled state and ordering
-- add conflict diagnostics later
-
-There is already a code marker for this:
-
-- `HotkeysSettingsViewController.applyAddedShortcut(...)`
+- the editor writes real `ShortcutBinding` values
+- changes apply immediately through the shared action handler
+- bindings still preserve typed `HotkeyAction` and `KeyboardShortcut`
+- conflict diagnostics are still a later improvement
 
 ### About
 
@@ -281,7 +282,7 @@ Current behavior:
 - `Author` opens the GitHub profile
 - `Config folder` opens the configuration directory from inside Settings
 - `Reload` reuses the current reload path
-- `Restore settings` stays disabled in phase 1
+- `Restore settings` restores the built-in default configuration and reloads all tabs
 
 ## Preview Integration Rules
 
@@ -299,68 +300,38 @@ When wiring the real model, preserve these rules:
   - still show them even when render toggles are off
   - because the user needs to edit layout and trigger positions
 
-## Prototype State -> Real Model Plan
+## Current Integration Rules
 
-Recommended integration path:
+### Keep one UI draft object
 
-### Step 1. Keep one UI draft object
+`SettingsPrototypeState` remains the UI-facing draft boundary.
 
-Keep `SettingsPrototypeState` as the UI-facing draft boundary.
-
-Replace:
-
-- hardcoded `.defaultValue`
-- ad-hoc demo items
-
-with:
-
-- a real configuration snapshot when opening the settings window
-- a real monitor snapshot for display names and display-set options
-
-### Step 2. Keep controllers thin
+### Keep controllers thin
 
 Tab controllers should:
 
 - read from the shared draft
 - write to the shared draft
-- not call configuration persistence directly
+- not call persistence directly
 
-### Step 3. Centralize apply / save
+### Centralize apply and save
 
-Recommended split:
-
-- `General`, `Appearance`, `Hotkeys`
+- `General`, `Appearance`, and `Hotkeys`
   - apply immediately through one coordinator-owned path
 - `Layouts`
   - mutate only the layout draft
-  - apply / persist only on `Save`
+  - apply and persist only on `Save`
 
-### Step 4. Preserve typed values in sheets
+### Preserve typed values in sheets
 
-Do not let sheets return display strings when the real model wiring starts.
+Sheets should return typed values instead of display strings.
 
 Examples:
 
-- modifier groups should return `[ModifierKey]`
-- hotkey recorder should return `KeyboardShortcut`
-- hotkey action picker should return `HotkeyAction`
-- exclusion sheet should return a typed exclusion entry request
-
-## Known Prototype-Only Code That Must Be Replaced Later
-
-These are intentional placeholder areas, not bugs:
-
-- `SettingsPrototypeState`
-  - currently seeds extra demo exclusions
-- `HotkeysSettingsViewController.applyAddedShortcut(...)`
-  - direct append into prototype bindings
-- `AboutSettingsViewController.handleRestoreSettings(_:)`
-  - no real restore flow yet
-- display-set monitor refresh button
-  - currently UI-defined behavior only
-  - real monitor reload needs a concrete source of truth and refresh path
-
-If these remain when model integration is complete, the settings UI will still behave like a prototype.
+- modifier groups return `[ModifierKey]`
+- hotkey recorder returns `KeyboardShortcut`
+- hotkey action picker returns `HotkeyAction`
+- exclusion sheet returns a typed exclusion request
 
 ## Monitor Naming and Display-Set Rules
 
@@ -375,11 +346,11 @@ For custom monitor names:
 - use monitor names, not raw IDs
 - if multiple names are shown in one compact title, separate with `; `
 
-When real wiring starts:
+Current source of truth:
 
-- source of truth should be persisted monitor metadata first
-- not `NSScreen.screens` directly
-- refresh behavior may later repopulate from live screens, but only through an explicit refresh action
+- persisted monitor metadata is used first
+- refresh behavior repopulates through an explicit refresh action
+- the UI must not write an empty explicit monitor list
 
 ## Tests to Keep Running During Integration
 
@@ -388,6 +359,8 @@ Minimum targeted tests:
 - `swift test --filter appDelegateShowsSettingsPrototypeWithTwoTabs`
 - `swift test --filter settingsWindowUsesPerTabWindowMetrics`
 - `swift test --filter LayoutsSettingsViewControllerTests`
+- `swift test --filter SettingsPrototypeStateTests`
+- `swift test --filter AppDelegateTests`
 - `swift test --filter HotkeysSettingsViewControllerTests`
 
 Before reporting:

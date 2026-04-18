@@ -90,6 +90,116 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(reloadedConfiguration.hotkeys.bindings.map(\.id) == (1...updatedConfiguration.hotkeys.bindings.count).map { "binding-\($0)" })
 }
 
+@Test func defaultConfigurationMarksBuiltInGroupsAsProtected() async throws {
+    let defaultConfiguration = AppConfiguration.defaultValue
+
+    #expect(defaultConfiguration.layoutGroups.first(where: { $0.name == AppConfiguration.builtInGroupName })?.protect == true)
+    #expect(defaultConfiguration.layoutGroups.first(where: { $0.name == AppConfiguration.fullscreenGroupName })?.protect == true)
+}
+
+@Test func configurationStoreDecodesMissingAndInvalidProtectAsFalse() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-protect-default-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+
+    let mainJSON = """
+    {
+      "general": {
+        "isEnabled": true,
+        "excludedBundleIDs": [],
+        "excludedWindowTitles": [],
+        "launchAtLogin": true,
+        "mouseButtonNumber": 3,
+        "activeLayoutGroup": "work"
+      },
+      "appearance": {
+        "renderTriggerAreas": false,
+        "triggerOpacity": 0.2,
+        "triggerGap": 2,
+        "triggerStrokeColor": "#007AFF33",
+        "renderWindowHighlight": true,
+        "highlightFillOpacity": 0.08,
+        "highlightStrokeWidth": 3,
+        "highlightStrokeColor": "#FFFFFFEB"
+      },
+      "dragTriggers": {
+        "enableMouseButtonDrag": true,
+        "enableModifierLeftMouseDrag": true,
+        "preferLayoutMode": true,
+        "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
+        "activationDelaySeconds": 0.3,
+        "activationMoveThreshold": 10
+      },
+      "hotkeys": {
+        "bindings": []
+      },
+      "monitors": {}
+    }
+    """
+
+    let missingProtectJSON = """
+    {
+      "name": "work",
+      "includeInGroupCycle": false,
+      "sets": []
+    }
+    """
+
+    let invalidProtectJSON = """
+    {
+      "name": "play",
+      "protect": "yes",
+      "includeInGroupCycle": false,
+      "sets": []
+    }
+    """
+
+    try writeMainConfigurationJSON(mainJSON.replacingOccurrences(of: "\"work\"", with: "\"play\"", options: [], range: nil), to: store)
+    try writeLayoutFile("1.grid.json", json: missingProtectJSON, to: store)
+    try writeLayoutFile("2.grid.json", json: invalidProtectJSON, to: store)
+
+    let configuration = try store.load()
+
+    #expect(configuration.layoutGroups.first(where: { $0.name == "work" })?.protect == false)
+    #expect(configuration.layoutGroups.first(where: { $0.name == "play" })?.protect == false)
+}
+
+@Test func configurationStoreSavesEmptyGroupsAndSetsWithSequentialManagedFiles() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-empty-layout-groups-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var configuration = AppConfiguration.defaultValue
+    configuration.layoutGroups.append(
+        LayoutGroup(name: "empty-group", includeInGroupCycle: false, sets: [])
+    )
+    configuration.layoutGroups.append(
+        LayoutGroup(name: "empty-set-group", includeInGroupCycle: false, sets: [LayoutSet(monitor: .all, layouts: [])])
+    )
+    configuration.general.activeLayoutGroup = AppConfiguration.builtInGroupName
+
+    try store.save(configuration)
+
+    let reloadedConfiguration = try store.load()
+    let layoutFiles = try FileManager.default.contentsOfDirectory(
+        at: store.layoutDirectoryURL,
+        includingPropertiesForKeys: nil
+    ).map(\.lastPathComponent).sorted()
+
+    #expect(reloadedConfiguration.layoutGroups.map(\.name) == [
+        AppConfiguration.builtInGroupName,
+        AppConfiguration.fullscreenGroupName,
+        "empty-group",
+        "empty-set-group",
+    ])
+    #expect(reloadedConfiguration.layoutGroups[2].sets.isEmpty)
+    #expect(reloadedConfiguration.layoutGroups[3].sets == [LayoutSet(monitor: .all, layouts: [])])
+    #expect(layoutFiles == ["1.grid.json", "2.grid.json", "3.grid.json", "4.grid.json"])
+}
+
 @Test func configurationStoreReturnsBuiltInDefaultAndDiagnosticForBrokenJSONWithoutRecoverySnapshot() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-invalid-json-\(UUID().uuidString)", isDirectory: true)

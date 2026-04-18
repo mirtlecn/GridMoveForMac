@@ -107,9 +107,8 @@ final class AboutSettingsViewController: NSViewController {
         let reloadButton = NSButton(title: UICopy.reloadConfigMenuTitle, target: self, action: #selector(handleReloadConfiguration(_:)))
         reloadButton.bezelStyle = .rounded
 
-        let restoreButton = NSButton(title: UICopy.settingsRestoreSettingsButtonTitle, target: self, action: nil)
+        let restoreButton = NSButton(title: UICopy.settingsRestoreSettingsButtonTitle, target: self, action: #selector(handleRestoreSettings(_:)))
         restoreButton.bezelStyle = .rounded
-        restoreButton.isEnabled = false
 
         let row = makeHorizontalGroup(spacing: 8)
         row.addArrangedSubview(reloadButton)
@@ -140,10 +139,51 @@ final class AboutSettingsViewController: NSViewController {
 
         prototypeState.reload(from: reloadedConfiguration)
     }
+
+    @objc
+    private func handleRestoreSettings(_ sender: NSButton) {
+        presentRestoreConfirmation()
+    }
+
+    private func presentRestoreConfirmation() {
+        let alert = NSAlert()
+        alert.messageText = UICopy.settingsRestoreSettingsButtonTitle
+        alert.informativeText = "This restores all settings to the built-in defaults."
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: UICopy.settingsRestoreSettingsButtonTitle)
+        alert.addButton(withTitle: UICopy.settingsCancelButtonTitle)
+
+        if let window = view.window {
+            alert.beginSheetModal(for: window) { [weak self] response in
+                guard response == .alertFirstButtonReturn else {
+                    return
+                }
+                self?.performRestoreSettings()
+            }
+            return
+        }
+
+        guard alert.runModal() == .alertFirstButtonReturn else {
+            return
+        }
+        performRestoreSettings()
+    }
+
+    private func performRestoreSettings() {
+        guard let restoredConfiguration = actionHandler.restoreDefaultConfiguration() else {
+            return
+        }
+
+        prototypeState.reload(from: restoredConfiguration)
+    }
 }
 
 extension AboutSettingsViewController {
     func reloadForTesting() {
         handleReloadConfiguration(NSButton())
+    }
+
+    func restoreForTesting() {
+        performRestoreSettings()
     }
 }

@@ -6,9 +6,11 @@ final class ApplyToControlView: NSView {
     private let refreshButton = NSButton()
     private let customMonitorsStackView = makeVerticalGroup(spacing: 8)
     private let rootStackView = makeVerticalGroup(spacing: 10)
-    private let selectedMonitorIDs: [String]
     private let persistedMonitorMapProvider: () -> [String: String]
     private var monitorOptions: [(id: String, name: String)] = []
+    private var selectedMonitorIDs: [String]
+    var onMonitorChanged: ((LayoutSetMonitor) -> Void)?
+    var onRefreshRequested: (() -> Void)?
 
     init(set: LayoutSet, persistedMonitorMapProvider: @escaping () -> [String: String]) {
         self.selectedMonitorIDs = set.monitor.explicitDisplayIDs
@@ -61,12 +63,27 @@ final class ApplyToControlView: NSView {
 
     @objc
     private func handlePopupChange(_ sender: NSPopUpButton) {
+        guard popupButton.selectedItem?.title == UICopy.settingsCustomMonitorsValue else {
+            onMonitorChanged?(resolvedMonitorTarget)
+            rebuildCustomMonitorList()
+            return
+        }
+
+        if selectedMonitorIDs.isEmpty, let firstMonitorID = monitorOptions.first?.id {
+            selectedMonitorIDs = [firstMonitorID]
+        }
+        if selectedMonitorIDs.isEmpty {
+            popupButton.selectItem(withTitle: UICopy.settingsAllMonitorsValue)
+            onMonitorChanged?(.all)
+        } else {
+            onMonitorChanged?(.displays(selectedMonitorIDs))
+        }
         rebuildCustomMonitorList()
     }
 
     @objc
     private func handleRefreshMonitorOptions(_ sender: NSButton) {
-        refreshMonitorOptions(for: resolvedMonitorTarget)
+        onRefreshRequested?()
     }
 
     private var resolvedMonitorTarget: LayoutSetMonitor {
@@ -81,10 +98,27 @@ final class ApplyToControlView: NSView {
     }
 
     private func refreshMonitorOptions(for monitor: LayoutSetMonitor) {
-        // TODO: When real reload wiring starts, hook this button to the same
-        // monitor refresh path used by config reload instead of only rebuilding
-        // from the persisted prototype snapshot.
         monitorOptions = Self.makeMonitorOptions(for: monitor, monitorMap: persistedMonitorMapProvider())
+        if selectedMonitorIDs.isEmpty {
+            selectedMonitorIDs = monitor.explicitDisplayIDs
+        }
+        selectedMonitorIDs = selectedMonitorIDs.filter { selectedID in
+            monitorOptions.contains { $0.id == selectedID }
+        }
+
+        if popupButton.item(at: 2) != nil {
+            popupButton.item(at: 2)?.isEnabled = !monitorOptions.isEmpty
+        }
+
+        if popupButton.selectedItem?.title == UICopy.settingsCustomMonitorsValue, selectedMonitorIDs.isEmpty {
+            if let firstMonitorID = monitorOptions.first?.id {
+                selectedMonitorIDs = [firstMonitorID]
+                onMonitorChanged?(.displays(selectedMonitorIDs))
+            } else {
+                popupButton.selectItem(withTitle: UICopy.settingsAllMonitorsValue)
+                onMonitorChanged?(.all)
+            }
+        }
         rebuildCustomMonitorList()
     }
 
@@ -101,10 +135,32 @@ final class ApplyToControlView: NSView {
         }
 
         for (displayID, name) in monitorOptions {
-            let checkbox = NSButton(checkboxWithTitle: name, target: nil, action: nil)
+            let checkbox = NSButton(checkboxWithTitle: name, target: self, action: #selector(handleMonitorCheckboxToggle(_:)))
+            checkbox.identifier = NSUserInterfaceItemIdentifier(displayID)
             checkbox.state = selectedMonitorIDs.contains(displayID) ? .on : .off
             customMonitorsStackView.addArrangedSubview(checkbox)
         }
+    }
+
+    @objc
+    private func handleMonitorCheckboxToggle(_ sender: NSButton) {
+        guard let displayID = sender.identifier?.rawValue else {
+            return
+        }
+
+        if sender.state == .on {
+            if selectedMonitorIDs.contains(displayID) == false {
+                selectedMonitorIDs.append(displayID)
+            }
+        } else {
+            if selectedMonitorIDs.count <= 1 {
+                sender.state = .on
+                return
+            }
+            selectedMonitorIDs.removeAll { $0 == displayID }
+        }
+
+        onMonitorChanged?(.displays(selectedMonitorIDs))
     }
 
     private func selectedTitle(for monitor: LayoutSetMonitor) -> String {
@@ -144,12 +200,13 @@ final class TriggerTabContentView: NSView {
         case menuBar
     }
 
-    private let layout: LayoutPreset
+    private let gridColumns: Int
+    private let gridRows: Int
     private let popupButton = NSPopUpButton()
     private let dynamicRowsStackView = makeVerticalGroup(spacing: 9)
     private let rootStackView: NSView
-    private let screenSelection: GridSelection
-    private let menuBarSelection: MenuBarSelection
+    private var screenSelection: GridSelection
+    private var menuBarSelection: MenuBarSelection
     var onTriggerRegionChanged: ((TriggerRegion?) -> Void)?
 
     var currentTriggerRegion: TriggerRegion? {
@@ -175,7 +232,8 @@ final class TriggerTabContentView: NSView {
     }
 
     init(layout: LayoutPreset) {
-        self.layout = layout
+        self.gridColumns = layout.gridColumns
+        self.gridRows = layout.gridRows
 
         switch layout.triggerRegion {
         case let .screen(selection):
@@ -248,7 +306,12 @@ final class TriggerTabContentView: NSView {
                         value: screenSelection.x,
                         unit: "grid",
                         minValue: 0,
-                        maxValue: max(0, layout.gridColumns - 1)
+                        maxValue: max(0, gridColumns - 1),
+                        onValueChanged: { [weak self] value in
+                            guard let self else { return }
+                            screenSelection.x = value
+                            onTriggerRegionChanged?(currentTriggerRegion)
+                        }
                     )
                 ),
                 makeLabeledControlRow(
@@ -257,7 +320,12 @@ final class TriggerTabContentView: NSView {
                         value: screenSelection.y,
                         unit: "grid",
                         minValue: 0,
-                        maxValue: max(0, layout.gridRows - 1)
+                        maxValue: max(0, gridRows - 1),
+                        onValueChanged: { [weak self] value in
+                            guard let self else { return }
+                            screenSelection.y = value
+                            onTriggerRegionChanged?(currentTriggerRegion)
+                        }
                     )
                 ),
                 makeLabeledControlRow(
@@ -265,8 +333,13 @@ final class TriggerTabContentView: NSView {
                     control: makeNumericStepperControl(
                         value: screenSelection.w,
                         unit: "grid",
-                        minValue: 0,
-                        maxValue: layout.gridColumns
+                        minValue: 1,
+                        maxValue: gridColumns,
+                        onValueChanged: { [weak self] value in
+                            guard let self else { return }
+                            screenSelection.w = value
+                            onTriggerRegionChanged?(currentTriggerRegion)
+                        }
                     )
                 ),
                 makeLabeledControlRow(
@@ -274,8 +347,13 @@ final class TriggerTabContentView: NSView {
                     control: makeNumericStepperControl(
                         value: screenSelection.h,
                         unit: "grid",
-                        minValue: 0,
-                        maxValue: layout.gridRows
+                        minValue: 1,
+                        maxValue: gridRows,
+                        onValueChanged: { [weak self] value in
+                            guard let self else { return }
+                            screenSelection.h = value
+                            onTriggerRegionChanged?(currentTriggerRegion)
+                        }
                     )
                 ),
             ]
@@ -287,7 +365,12 @@ final class TriggerTabContentView: NSView {
                         value: menuBarSelection.x,
                         unit: "grid",
                         minValue: 0,
-                        maxValue: max(0, layout.gridRows - 1)
+                        maxValue: max(0, gridRows - 1),
+                        onValueChanged: { [weak self] value in
+                            guard let self else { return }
+                            menuBarSelection.x = value
+                            onTriggerRegionChanged?(currentTriggerRegion)
+                        }
                     )
                 ),
                 makeLabeledControlRow(
@@ -295,8 +378,13 @@ final class TriggerTabContentView: NSView {
                     control: makeNumericStepperControl(
                         value: menuBarSelection.w,
                         unit: "grid",
-                        minValue: 0,
-                        maxValue: layout.gridRows
+                        minValue: 1,
+                        maxValue: gridRows,
+                        onValueChanged: { [weak self] value in
+                            guard let self else { return }
+                            menuBarSelection.w = value
+                            onTriggerRegionChanged?(currentTriggerRegion)
+                        }
                     )
                 ),
             ]

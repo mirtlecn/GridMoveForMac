@@ -725,6 +725,115 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
 }
 
 @MainActor
+@Test func aboutRestoreSettingsResetsConfigurationAndReloadsTabs() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-about-restore-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var savedConfiguration = AppConfiguration.defaultValue
+    savedConfiguration.general.mouseButtonNumber = 5
+    savedConfiguration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
+    savedConfiguration.general.excludedWindowTitles = ["Restore Me"]
+    try store.save(savedConfiguration)
+
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    delegate.showSettings()
+
+    delegate.restoreSettingsFromAboutTabForTesting()
+    delegate.selectSettingsTabForTesting(index: 0)
+
+    let persistedConfiguration = try store.load()
+
+    #expect(delegate.configuration == AppConfiguration.defaultValue)
+    #expect(persistedConfiguration.general == AppConfiguration.defaultValue.general)
+    #expect(persistedConfiguration.appearance.renderTriggerAreas == AppConfiguration.defaultValue.appearance.renderTriggerAreas)
+    #expect(persistedConfiguration.appearance.triggerGap == AppConfiguration.defaultValue.appearance.triggerGap)
+    #expect(persistedConfiguration.appearance.layoutGap == AppConfiguration.defaultValue.appearance.layoutGap)
+    #expect(persistedConfiguration.appearance.renderWindowHighlight == AppConfiguration.defaultValue.appearance.renderWindowHighlight)
+    #expect(persistedConfiguration.appearance.highlightFillOpacity == AppConfiguration.defaultValue.appearance.highlightFillOpacity)
+    #expect(persistedConfiguration.appearance.highlightStrokeWidth == AppConfiguration.defaultValue.appearance.highlightStrokeWidth)
+    #expect(persistedConfiguration.dragTriggers == AppConfiguration.defaultValue.dragTriggers)
+    #expect(persistedConfiguration.hotkeys.bindings.map(\.shortcut) == AppConfiguration.defaultValue.hotkeys.bindings.map(\.shortcut))
+    #expect(persistedConfiguration.hotkeys.bindings.map(\.action) == AppConfiguration.defaultValue.hotkeys.bindings.map(\.action))
+    #expect(persistedConfiguration.layoutGroups == AppConfiguration.defaultValue.layoutGroups)
+
+    delegate.closeSettingsWindowForTesting()
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
+@Test func layoutsSaveFromSettingsPersistsNewGroupAndManagedFile() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-layouts-save-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    delegate.showSettings()
+    delegate.selectSettingsTabForTesting(index: 1)
+    delegate.selectLayoutsGroupForTesting(named: AppConfiguration.builtInGroupName)
+    delegate.triggerLayoutsAddActionForTesting()
+
+    let draftConfiguration = try #require(delegate.layoutsDraftConfigurationForTesting)
+    #expect(draftConfiguration.layoutGroups.count == 3)
+    #expect(delegate.configuration.layoutGroups.count == 2)
+
+    delegate.saveLayoutsFromSettingsForTesting()
+
+    let persistedConfiguration = try store.load()
+    let layoutFiles = try FileManager.default.contentsOfDirectory(
+        at: store.layoutDirectoryURL,
+        includingPropertiesForKeys: nil
+    ).map(\.lastPathComponent).sorted()
+
+    #expect(delegate.configuration.layoutGroups.count == 3)
+    #expect(persistedConfiguration.layoutGroups.count == 3)
+    #expect(persistedConfiguration.layoutGroups.last?.sets == [LayoutSet(monitor: .all, layouts: [])])
+    #expect(layoutFiles == ["1.grid.json", "2.grid.json", "3.grid.json"])
+
+    delegate.closeSettingsWindowForTesting()
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
+@Test func layoutsTabReflectsExternalActiveGroupChangesImmediately() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-layouts-active-group-sync-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    delegate.showSettings()
+    delegate.selectSettingsTabForTesting(index: 1)
+
+    #expect(delegate.layoutsSettingsActiveGroupNameForTesting == AppConfiguration.builtInGroupName)
+    _ = try #require(delegate.cycleToNextLayoutGroupForTesting())
+    #expect(delegate.layoutsSettingsActiveGroupNameForTesting == AppConfiguration.fullscreenGroupName)
+
+    delegate.closeSettingsWindowForTesting()
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
 @Test func menuBarConfigurationChangesRefreshOpenSettingsImmediately() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-settings-live-sync-\(UUID().uuidString)", isDirectory: true)

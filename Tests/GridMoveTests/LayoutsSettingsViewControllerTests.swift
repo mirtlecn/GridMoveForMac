@@ -4,8 +4,21 @@ import Testing
 
 @MainActor
 struct LayoutsSettingsViewControllerTests {
+    private func makeController(
+        configuration: AppConfiguration = .defaultValue
+    ) -> (controller: LayoutsSettingsViewController, state: SettingsPrototypeState, recorder: TestSettingsActionRecorder) {
+        let recorder = TestSettingsActionRecorder()
+        let state = SettingsPrototypeState(configuration: configuration)
+        let controller = LayoutsSettingsViewController(
+            prototypeState: state,
+            actionHandler: recorder.makeActionHandler()
+        )
+        _ = controller.view
+        return (controller, state, recorder)
+    }
+
     @Test func movingLayoutInsideSelectedSetReordersOnlyThatSet() async throws {
-        let controller = LayoutsSettingsViewController(prototypeState: SettingsPrototypeState())
+        let (controller, _, _) = makeController()
 
         #expect(
             controller.moveLayoutForTesting(
@@ -31,7 +44,7 @@ struct LayoutsSettingsViewControllerTests {
     }
 
     @Test func movingLayoutIntoDifferentSetIsRejected() async throws {
-        let controller = LayoutsSettingsViewController(prototypeState: SettingsPrototypeState())
+        let (controller, _, _) = makeController()
 
         #expect(
             controller.moveLayoutForTesting(
@@ -54,5 +67,104 @@ struct LayoutsSettingsViewControllerTests {
                 setIndex: 1
             ) == ["Fullscreen other", "Fullscreen other (menu bar)"]
         )
+    }
+
+    @Test func protectedGroupCannotBeRemovedAndShowsTooltip() async throws {
+        let (controller, _, _) = makeController()
+
+        controller.selectGroupForTesting(named: AppConfiguration.builtInGroupName)
+
+        #expect(controller.removeButtonEnabledForTesting == false)
+        #expect(controller.removeButtonToolTipForTesting == UICopy.settingsProtectedGroupTooltip)
+    }
+
+    @Test func saveButtonTracksLayoutsDraftChangesAndCommit() async throws {
+        let (controller, state, recorder) = makeController()
+
+        #expect(controller.saveButtonEnabledForTesting == false)
+
+        state.applyLayoutsMutation { configuration in
+            configuration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
+        }
+
+        #expect(controller.saveButtonEnabledForTesting == true)
+
+        controller.saveLayoutsForTesting()
+
+        #expect(recorder.savedLayoutsCandidates.last?.general.activeLayoutGroup == AppConfiguration.fullscreenGroupName)
+        #expect(controller.saveButtonEnabledForTesting == false)
+    }
+
+    @Test func addGroupAppendsProtectedFalseGroupWithEmptyAllMonitorSet() async throws {
+        let (controller, _, _) = makeController()
+
+        controller.selectGroupForTesting(named: AppConfiguration.builtInGroupName)
+        controller.addActionForTesting()
+
+        let groups = controller.draftConfigurationForTesting.layoutGroups
+        let newGroup = try #require(groups.last)
+        #expect(newGroup.name == "Group 1")
+        #expect(newGroup.includeInGroupCycle == false)
+        #expect(newGroup.protect == false)
+        #expect(newGroup.sets.count == 1)
+        #expect(newGroup.sets[0].monitor == .all)
+        #expect(newGroup.sets[0].layouts.isEmpty)
+        #expect(controller.selectedGroupNameForTesting == "Group 1")
+    }
+
+    @Test func addMonitorSetUsesNextLegalMonitorBinding() async throws {
+        let (controller, _, _) = makeController()
+
+        controller.selectSetForTesting(groupName: AppConfiguration.builtInGroupName, setIndex: 0)
+        controller.addActionForTesting()
+
+        let group = try #require(
+            controller.draftConfigurationForTesting.layoutGroups.first(where: { $0.name == AppConfiguration.builtInGroupName })
+        )
+        #expect(group.sets.count == 2)
+        #expect(group.sets[1].monitor == .main)
+        #expect(group.sets[1].layouts.isEmpty)
+    }
+
+    @Test func addLayoutToEmptySetUsesBuiltinTemplateFour() async throws {
+        let (controller, _, _) = makeController()
+        let templateLayout = AppConfiguration.defaultLayouts[3]
+
+        controller.selectSetForTesting(groupName: AppConfiguration.builtInGroupName, setIndex: 0)
+        controller.addActionForTesting()
+        controller.selectSetForTesting(groupName: AppConfiguration.builtInGroupName, setIndex: 1)
+        controller.addActionForTesting()
+
+        let group = try #require(
+            controller.draftConfigurationForTesting.layoutGroups.first(where: { $0.name == AppConfiguration.builtInGroupName })
+        )
+        let layouts = group.sets[1].layouts
+        let addedLayout = try #require(layouts.first)
+        #expect(layouts.count == 1)
+        #expect(addedLayout.name.isEmpty)
+        #expect(addedLayout.gridColumns == templateLayout.gridColumns)
+        #expect(addedLayout.gridRows == templateLayout.gridRows)
+        #expect(addedLayout.windowSelection == templateLayout.windowSelection)
+        #expect(addedLayout.triggerRegion == templateLayout.triggerRegion)
+        #expect(addedLayout.includeInMenu == templateLayout.includeInMenu)
+        #expect(addedLayout.includeInLayoutIndex == templateLayout.includeInLayoutIndex)
+    }
+
+    @Test func duplicateMonitorBindingsAreRejectedAndDraftStaysValid() async throws {
+        let (controller, _, _) = makeController()
+
+        controller.selectSetForTesting(groupName: AppConfiguration.builtInGroupName, setIndex: 0)
+        controller.addActionForTesting()
+        controller.updateSetMonitorForTesting(
+            groupName: AppConfiguration.builtInGroupName,
+            setIndex: 1,
+            monitor: .all
+        )
+
+        let group = try #require(
+            controller.draftConfigurationForTesting.layoutGroups.first(where: { $0.name == AppConfiguration.builtInGroupName })
+        )
+        #expect(group.sets[0].monitor == .all)
+        #expect(group.sets[1].monitor == .main)
     }
 }
