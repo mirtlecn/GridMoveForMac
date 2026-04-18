@@ -62,6 +62,14 @@ func makeSheetLabeledControlRow(label: String, control: NSView) -> NSView {
 }
 
 @MainActor
+func makeSheetStackedControlSection(label: String, control: NSView) -> NSView {
+    let stackView = makeVerticalGroup(spacing: 6)
+    stackView.addArrangedSubview(makeFieldLabel(label))
+    stackView.addArrangedSubview(control)
+    return stackView
+}
+
+@MainActor
 private func makeLabeledControlRow(label: String, control: NSView, labelWidth: CGFloat) -> NSView {
     let rowView = makeHorizontalGroup(spacing: SettingsLayoutMetrics.formColumnSpacing)
 

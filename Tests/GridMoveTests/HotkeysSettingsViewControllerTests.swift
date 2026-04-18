@@ -96,12 +96,18 @@ private func makeTestLayout(
 }
 
 @MainActor
-@Test func hotkeyAddSheetRequiresRecordedShortcut() async throws {
+@Test func hotkeySheetStagesShortcutChangesUntilSave() async throws {
     let actions = HotkeyPrototypeSlot.makePrototypeSlots(configuration: .defaultValue).map(\.actionDescriptor)
-    let contentView = HotkeyAddSheetContentView(actions: actions, selectedActionID: actions.first?.id)
+    let contentView = HotkeyAddSheetContentView(
+        actions: actions,
+        selectedActionID: "cycleNext",
+        initialShortcutsByActionID: [
+            "cycleNext": [KeyboardShortcut(modifiers: [.cmd], key: "k")]
+        ]
+    )
 
-    #expect(contentView.recordedShortcut == nil)
-    #expect(contentView.isConfirmationEnabled == false)
+    #expect(contentView.isConfirmationEnabled == true)
+    #expect(contentView.visibleShortcutDisplayNamesForTesting == ["⌘K"])
     #expect(contentView.shortcutButtonTitleForTesting == UICopy.settingsRecordShortcutButtonTitle)
     #expect(contentView.shortcutButtonControlSizeForTesting == .regular)
 
@@ -109,8 +115,12 @@ private func makeTestLayout(
     #expect(contentView.shortcutButtonTitleForTesting == UICopy.settingsPressShortcutValue)
 
     contentView.applyRecordedShortcutForTesting(KeyboardShortcut(modifiers: [.cmd, .shift], key: "k"))
-    #expect(contentView.shortcutButtonTitleForTesting == "⇧⌘K")
-    #expect(contentView.isConfirmationEnabled == true)
+    #expect(contentView.visibleShortcutDisplayNamesForTesting == ["⌘K", "⇧⌘K"])
+    #expect(contentView.shortcutButtonTitleForTesting == UICopy.settingsRecordShortcutButtonTitle)
+
+    contentView.removeVisibleShortcutForTesting(at: 0)
+    #expect(contentView.visibleShortcutDisplayNamesForTesting == ["⇧⌘K"])
+    #expect(contentView.editedActionIDsForTesting == Set(["cycleNext"]))
 }
 
 @MainActor
@@ -156,6 +166,34 @@ private func makeTestLayout(
     )
 
     #expect(state.configuration.hotkeys.bindings == originalBindings)
+}
+
+@MainActor
+@Test func hotkeysControllerSavesShortcutEditorChangesForSelectedAction() async throws {
+    let state = SettingsPrototypeState(configuration: .defaultValue)
+    state.reload(from: AppConfiguration.defaultValue)
+    let recorder = TestSettingsActionRecorder()
+    let controller = HotkeysSettingsViewController(
+        prototypeState: state,
+        actionHandler: recorder.makeActionHandler()
+    )
+    controller.loadViewIfNeeded()
+
+    let actions = HotkeyPrototypeSlot.makePrototypeSlots(configuration: state.configuration).map(\.actionDescriptor)
+    let contentView = HotkeyAddSheetContentView(
+        actions: actions,
+        selectedActionID: "cycleNext",
+        initialShortcutsByActionID: [
+            "cycleNext": [KeyboardShortcut(modifiers: [.ctrl, .cmd], key: "l")]
+        ]
+    )
+    contentView.applyRecordedShortcutForTesting(KeyboardShortcut(modifiers: [.cmd], key: "9"))
+    contentView.removeVisibleShortcutForTesting(at: 0)
+
+    controller.applyShortcutEditorChangesForTesting(contentView)
+
+    let cycleNextBindings = state.configuration.hotkeys.bindings.filter { $0.action == .cycleNext }
+    #expect(cycleNextBindings.compactMap(\.shortcut) == [KeyboardShortcut(modifiers: [.cmd], key: "9")])
 }
 
 @MainActor

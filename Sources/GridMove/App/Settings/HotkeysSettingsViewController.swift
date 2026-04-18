@@ -174,21 +174,16 @@ final class HotkeysSettingsViewController: NSViewController, NSTableViewDataSour
     private func presentAddShortcutSheet() {
         let sheetContentView = HotkeyAddSheetContentView(
             actions: slots.map(\.actionDescriptor),
-            selectedActionID: selectedSlot.actionDescriptor.id
+            selectedActionID: selectedSlot.actionDescriptor.id,
+            initialShortcutsByActionID: shortcutsByActionID()
         )
         let sheetController = SettingsPrototypeSheetController(
-            title: UICopy.settingsAddHotkeySheetTitle,
-            message: UICopy.settingsAddHotkeySheetMessage,
+            title: UICopy.settingsHotkeySheetTitle,
+            message: UICopy.settingsHotkeySheetMessage,
             bodyView: sheetContentView,
-            confirmButtonTitle: UICopy.settingsAddButtonTitle
+            confirmButtonTitle: UICopy.settingsSaveButtonTitle
         ) { [weak self] in
-            guard let shortcut = sheetContentView.recordedShortcut else {
-                return
-            }
-            self?.applyAddedShortcut(
-                actionID: sheetContentView.selectedActionID,
-                shortcut: shortcut
-            )
+            self?.applyShortcutEditorChanges(from: sheetContentView)
         }
         presentAsSheet(sheetController)
     }
@@ -220,8 +215,66 @@ final class HotkeysSettingsViewController: NSViewController, NSTableViewDataSour
         }
     }
 
+    private func shortcutsByActionID() -> [String: [KeyboardShortcut]] {
+        Dictionary(
+            uniqueKeysWithValues: slots.map { slot in
+                let shortcuts: [KeyboardShortcut] = prototypeState.configuration.hotkeys.bindings.compactMap { binding in
+                    guard binding.isEnabled,
+                          binding.action == slot.action,
+                          let shortcut = binding.shortcut else {
+                        return nil
+                    }
+                    return shortcut
+                }
+                return (slot.actionDescriptor.id, shortcuts)
+            }
+        )
+    }
+
+    private func applyShortcutEditorChanges(from sheetContentView: HotkeyAddSheetContentView) {
+        let editedActionIDs = sheetContentView.editedActionIDs
+        guard editedActionIDs.isEmpty == false else {
+            return
+        }
+
+        let actionsByID = Dictionary(uniqueKeysWithValues: slots.map { ($0.actionDescriptor.id, $0.action) })
+        let selectedActionID = sheetContentView.selectedActionID
+        if prototypeState.applyImmediateMutation(using: actionHandler, { configuration in
+            configuration.hotkeys.bindings.removeAll { binding in
+                let actionID = binding.action.prototypeIdentifier
+                guard editedActionIDs.contains(actionID) else {
+                    return false
+                }
+                return binding.isEnabled && binding.shortcut != nil
+            }
+
+            for actionID in editedActionIDs {
+                guard let action = actionsByID[actionID] else {
+                    continue
+                }
+
+                let shortcuts = sheetContentView.draftShortcutsByActionID[actionID] ?? []
+                configuration.hotkeys.bindings.append(
+                    contentsOf: shortcuts.map { shortcut in
+                        ShortcutBinding(shortcut: shortcut, action: action)
+                    }
+                )
+            }
+        }) {
+            if let selectedIndex = slots.firstIndex(where: { $0.actionDescriptor.id == selectedActionID }) {
+                reloadSlots(preservingSelection: selectedIndex)
+            } else {
+                reloadSlots(preservingSelection: selectedSlotIndex)
+            }
+        }
+    }
+
     var supportsDoubleClickAddShortcutForTesting: Bool {
         slotTableView.target === self && slotTableView.doubleAction == #selector(handleSlotDoubleClick(_:))
+    }
+
+    func applyShortcutEditorChangesForTesting(_ sheetContentView: HotkeyAddSheetContentView) {
+        applyShortcutEditorChanges(from: sheetContentView)
     }
 }
 
@@ -244,7 +297,7 @@ struct HotkeyPrototypeSlot {
     var actionDescriptor: HotkeyPrototypeAction {
         HotkeyPrototypeAction(
             id: action.prototypeIdentifier,
-            displayTitle: "\(title): \(currentTarget)",
+            displayTitle: currentTarget.isEmpty ? title : "\(title): \(currentTarget)",
             action: action
         )
     }

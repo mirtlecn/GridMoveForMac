@@ -108,17 +108,18 @@ final class ExclusionEntrySheetContentView: NSView, SettingsPrototypeSheetValida
         kindPopupButton.target = self
         kindPopupButton.action = #selector(handleKindChanged(_:))
         kindPopupButton.selectItem(at: initialKind.rawValue)
+        kindPopupButton.translatesAutoresizingMaskIntoConstraints = false
+        kindPopupButton.widthAnchor.constraint(equalToConstant: 320).isActive = true
 
         valueField.placeholderString = initialKind.placeholderValue
-        valueField.controlSize = .small
         valueField.delegate = self
         valueField.translatesAutoresizingMaskIntoConstraints = false
-        valueField.widthAnchor.constraint(equalToConstant: 240).isActive = true
+        valueField.widthAnchor.constraint(equalToConstant: 320).isActive = true
 
-        let body = makeVerticalGroup(spacing: 10)
+        let body = makeVerticalGroup(spacing: 14)
         body.translatesAutoresizingMaskIntoConstraints = false
-        body.addArrangedSubview(makeSheetLabeledControlRow(label: UICopy.settingsTypeLabel, control: kindPopupButton))
-        body.addArrangedSubview(makeSheetLabeledControlRow(label: UICopy.settingsValueLabel, control: valueField))
+        body.addArrangedSubview(makeSheetStackedControlSection(label: UICopy.settingsTypeLabel, control: kindPopupButton))
+        body.addArrangedSubview(makeSheetStackedControlSection(label: UICopy.settingsValueLabel, control: valueField))
         addSubview(body)
 
         NSLayoutConstraint.activate([
@@ -168,11 +169,23 @@ extension ExclusionEntrySheetContentView {
 final class HotkeyAddSheetContentView: NSView, SettingsPrototypeSheetValidating, SettingsPrototypeSheetDisposable {
     private let behaviorPopupButton = NSPopUpButton()
     private let recorderView = PrototypeShortcutRecorderView()
+    private let shortcutsStackView = makeVerticalGroup(spacing: 8)
     private let actions: [HotkeyPrototypeAction]
+    private var shortcutsByActionID: [String: [KeyboardShortcut]]
+    private(set) var editedActionIDs = Set<String>()
     var onConfirmationStateChanged: (() -> Void)?
 
-    init(actions: [HotkeyPrototypeAction], selectedActionID: String?) {
+    init(
+        actions: [HotkeyPrototypeAction],
+        selectedActionID: String?,
+        initialShortcutsByActionID: [String: [KeyboardShortcut]] = [:]
+    ) {
         self.actions = actions
+        self.shortcutsByActionID = Dictionary(
+            uniqueKeysWithValues: actions.map { action in
+                (action.id, initialShortcutsByActionID[action.id] ?? [])
+            }
+        )
         super.init(frame: .zero)
 
         behaviorPopupButton.addItems(withTitles: actions.map(\.displayTitle))
@@ -180,11 +193,15 @@ final class HotkeyAddSheetContentView: NSView, SettingsPrototypeSheetValidating,
            let selectedIndex = actions.firstIndex(where: { $0.id == selectedActionID }) {
             behaviorPopupButton.selectItem(at: selectedIndex)
         }
+        behaviorPopupButton.target = self
+        behaviorPopupButton.action = #selector(handleBehaviorChanged(_:))
+        behaviorPopupButton.translatesAutoresizingMaskIntoConstraints = false
+        behaviorPopupButton.widthAnchor.constraint(equalToConstant: 320).isActive = true
 
-        let body = makeVerticalGroup(spacing: 10)
+        let body = makeVerticalGroup(spacing: 14)
         body.translatesAutoresizingMaskIntoConstraints = false
-        body.addArrangedSubview(makeSheetLabeledControlRow(label: UICopy.settingsBehaviorLabel, control: behaviorPopupButton))
-        body.addArrangedSubview(makeSheetLabeledControlRow(label: UICopy.settingsShortcutLabel, control: recorderView))
+        body.addArrangedSubview(makeSheetStackedControlSection(label: UICopy.settingsBehaviorLabel, control: behaviorPopupButton))
+        body.addArrangedSubview(makeSheetStackedControlSection(label: UICopy.settingsShortcutsLabel, control: shortcutsStackView))
         addSubview(body)
 
         NSLayoutConstraint.activate([
@@ -194,9 +211,10 @@ final class HotkeyAddSheetContentView: NSView, SettingsPrototypeSheetValidating,
             body.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
 
-        recorderView.onShortcutChanged = { [weak self] in
-            self?.onConfirmationStateChanged?()
+        recorderView.onShortcutRecorded = { [weak self] shortcut in
+            self?.appendShortcut(shortcut)
         }
+        rebuildShortcutRows()
     }
 
     @available(*, unavailable)
@@ -213,15 +231,91 @@ final class HotkeyAddSheetContentView: NSView, SettingsPrototypeSheetValidating,
     }
 
     var isConfirmationEnabled: Bool {
-        recordedShortcut != nil
+        true
     }
 
-    var recordedShortcut: KeyboardShortcut? {
-        recorderView.recordedShortcut
+    var draftShortcutsByActionID: [String: [KeyboardShortcut]] {
+        shortcutsByActionID
     }
 
     func prepareForDismissal() {
         recorderView.prepareForDismissal()
+    }
+
+    @objc
+    private func handleBehaviorChanged(_ sender: NSPopUpButton) {
+        rebuildShortcutRows()
+    }
+
+    private var visibleShortcuts: [KeyboardShortcut] {
+        shortcutsByActionID[selectedActionID] ?? []
+    }
+
+    private func rebuildShortcutRows() {
+        shortcutsStackView.arrangedSubviews.forEach { view in
+            shortcutsStackView.removeArrangedSubview(view)
+            view.removeFromSuperview()
+        }
+
+        visibleShortcuts.enumerated().forEach { index, shortcut in
+            shortcutsStackView.addArrangedSubview(makeShortcutRow(shortcut: shortcut, index: index))
+        }
+        shortcutsStackView.addArrangedSubview(makeRecordRow())
+    }
+
+    private func makeShortcutRow(shortcut: KeyboardShortcut, index: Int) -> NSView {
+        let shortcutField = NSTextField(string: shortcut.prototypeDisplayName)
+        shortcutField.isEditable = false
+        shortcutField.isBezeled = true
+        shortcutField.drawsBackground = true
+        shortcutField.backgroundColor = .controlBackgroundColor
+        shortcutField.translatesAutoresizingMaskIntoConstraints = false
+        shortcutField.widthAnchor.constraint(equalToConstant: 240).isActive = true
+
+        let deleteButton = NSButton(title: UICopy.settingsDeleteButtonTitle, target: self, action: #selector(handleDeleteShortcut(_:)))
+        deleteButton.bezelStyle = .rounded
+        deleteButton.tag = index
+
+        let row = makeHorizontalGroup(spacing: 8)
+        row.alignment = .centerY
+        row.addArrangedSubview(shortcutField)
+        row.addArrangedSubview(deleteButton)
+        row.addArrangedSubview(NSView())
+        return row
+    }
+
+    private func makeRecordRow() -> NSView {
+        let row = makeHorizontalGroup(spacing: 8)
+        row.alignment = .centerY
+        row.addArrangedSubview(recorderView)
+        row.addArrangedSubview(NSView())
+        return row
+    }
+
+    @objc
+    private func handleDeleteShortcut(_ sender: NSButton) {
+        guard visibleShortcuts.indices.contains(sender.tag) else {
+            return
+        }
+
+        var shortcuts = visibleShortcuts
+        shortcuts.remove(at: sender.tag)
+        shortcutsByActionID[selectedActionID] = shortcuts
+        editedActionIDs.insert(selectedActionID)
+        rebuildShortcutRows()
+        onConfirmationStateChanged?()
+    }
+
+    private func appendShortcut(_ shortcut: KeyboardShortcut) {
+        var shortcuts = visibleShortcuts
+        if shortcuts.contains(shortcut) == false {
+            shortcuts.append(shortcut)
+            shortcutsByActionID[selectedActionID] = shortcuts
+            editedActionIDs.insert(selectedActionID)
+            rebuildShortcutRows()
+            onConfirmationStateChanged?()
+        }
+        recorderView.resetForNextRecording()
     }
 }
 
@@ -229,6 +323,7 @@ final class HotkeyAddSheetContentView: NSView, SettingsPrototypeSheetValidating,
 private final class PrototypeShortcutRecorderView: NSView {
     private let recordButton = NSButton(title: UICopy.settingsRecordShortcutButtonTitle, target: nil, action: nil)
     private var eventMonitor: Any?
+    var onShortcutRecorded: ((KeyboardShortcut) -> Void)?
     var onShortcutChanged: (() -> Void)?
     private var isRecording = false {
         didSet {
@@ -291,11 +386,13 @@ private final class PrototypeShortcutRecorderView: NSView {
                 return nil
             }
 
-            self.recordedShortcut = KeyboardShortcut(
+            let shortcut = KeyboardShortcut(
                 modifiers: ModifierKey.from(event.modifierFlags),
                 key: key
             )
+            self.recordedShortcut = shortcut
             self.stopRecording()
+            self.onShortcutRecorded?(shortcut)
             return nil
         }
     }
@@ -321,6 +418,13 @@ private final class PrototypeShortcutRecorderView: NSView {
         stopRecording()
     }
 
+    func resetForNextRecording() {
+        guard isRecording == false else {
+            return
+        }
+        recordedShortcut = nil
+    }
+
     var buttonTitleForTesting: String {
         recordButton.title
     }
@@ -341,6 +445,10 @@ private final class PrototypeShortcutRecorderView: NSView {
 }
 
 extension HotkeyAddSheetContentView {
+    var visibleShortcutDisplayNamesForTesting: [String] {
+        visibleShortcuts.map(\.prototypeDisplayName)
+    }
+
     var shortcutButtonTitleForTesting: String {
         recorderView.buttonTitleForTesting
     }
@@ -349,11 +457,42 @@ extension HotkeyAddSheetContentView {
         recorderView.buttonControlSizeForTesting
     }
 
+    var editedActionIDsForTesting: Set<String> {
+        editedActionIDs
+    }
+
     func beginShortcutRecordingForTesting() {
         recorderView.beginRecordingForTesting()
     }
 
     func applyRecordedShortcutForTesting(_ shortcut: KeyboardShortcut) {
         recorderView.applyRecordedShortcutForTesting(shortcut)
+        var shortcuts = visibleShortcuts
+        if shortcuts.contains(shortcut) == false {
+            shortcuts.append(shortcut)
+            shortcutsByActionID[selectedActionID] = shortcuts
+            editedActionIDs.insert(selectedActionID)
+            rebuildShortcutRows()
+        }
+        recorderView.resetForNextRecording()
+    }
+
+    func removeVisibleShortcutForTesting(at index: Int) {
+        guard visibleShortcuts.indices.contains(index) else {
+            return
+        }
+        var shortcuts = visibleShortcuts
+        shortcuts.remove(at: index)
+        shortcutsByActionID[selectedActionID] = shortcuts
+        editedActionIDs.insert(selectedActionID)
+        rebuildShortcutRows()
+    }
+
+    func selectActionForTesting(_ actionID: String) {
+        guard let index = actions.firstIndex(where: { $0.id == actionID }) else {
+            return
+        }
+        behaviorPopupButton.selectItem(at: index)
+        rebuildShortcutRows()
     }
 }
