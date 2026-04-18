@@ -12,7 +12,7 @@ enum SettingsLayoutMetrics {
     static let inlineTabSpacing: CGFloat = 14
     static let inlineTabContentWidth: CGFloat = 560
     static let inlineTabPanelCornerRadius: CGFloat = 10
-    static let inlineTabPanelInsets = NSEdgeInsets(top: 34, left: 26, bottom: 4, right: 26)
+    static let inlineTabPanelInsets = NSEdgeInsets(top: 34, left: 26, bottom: 18, right: 26)
     static let inlineTabBridgeHorizontalInset: CGFloat = 8
     static let inlineTabBridgeVerticalInset: CGFloat = 4
 }
