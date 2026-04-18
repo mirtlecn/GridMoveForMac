@@ -13,6 +13,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let menuActionBuilder = MenuActionBuilder()
     private let openURL: (URL) -> Bool
     private let userNotifier: UserNotifier
+    private let launchAtLoginService: any LaunchAtLoginServiceProtocol
     private let injectedAccessibilityStatusProvider: (() -> Bool)?
     private let injectedAccessibilityPromptRequester: (() -> Bool)?
     private let layoutEngine = LayoutEngine()
@@ -35,7 +36,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.requestAccessibilityPrompt() ?? false
         },
         onStateDidUpdate: { [weak self] in
-            self?.synchronizeRuntimeControllers()
+            self?.handleAccessibilityStateDidUpdate()
         }
     )
 
@@ -72,11 +73,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private(set) var configuration = AppConfiguration.defaultValue
     private var menuController: MenuBarController?
     private var pendingDeferredConfigurationSaveTask: Task<Void, Never>?
+    private var isLaunchAtLoginReconciliationPending = false
 
     init(
         configurationStore: ConfigurationStore = ConfigurationStore(),
         openURL: @escaping (URL) -> Bool = { NSWorkspace.shared.open($0) },
         currentMonitorMapProvider: @escaping () -> [String: String] = { MonitorDiscovery.currentMonitorMap() },
+        launchAtLoginService: any LaunchAtLoginServiceProtocol = SMAppLaunchAtLoginService(),
         accessibilityStatusProvider: (() -> Bool)? = nil,
         accessibilityPromptRequester: (() -> Bool)? = nil,
         notifyUser: @escaping (UserNotifier.Kind, String, String) -> Void = { kind, title, body in
@@ -91,6 +94,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             baseDirectoryURL: configurationStore.directoryURL
         )
         self.openURL = openURL
+        self.launchAtLoginService = launchAtLoginService
         self.injectedAccessibilityStatusProvider = accessibilityStatusProvider
         self.injectedAccessibilityPromptRequester = accessibilityPromptRequester
         self.userNotifier = UserNotifier(notifyHandler: notifyUser)
@@ -122,6 +126,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             },
             onTogglePreferLayoutMode: { [weak self] isEnabled in
                 self?.updatePreferLayoutMode(isEnabled) ?? false
+            },
+            onToggleLaunchAtLogin: { [weak self] isEnabled in
+                self?.updateLaunchAtLoginEnabled(isEnabled) ?? false
             },
             onSelectLayoutGroup: { [weak self] groupName in
                 self?.updateActiveLayoutGroup(groupName) ?? false
@@ -156,14 +163,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func reloadConfigurationFromDisk(mode: ConfigurationReloadMode) {
+        var didApplyConfiguration = false
         do {
             let result = try configurationCoordinator.loadConfiguration()
             switch mode {
             case .launch:
                 applyConfiguration(result.configuration)
+                didApplyConfiguration = true
             case .manual:
                 if result.source == .persistedConfiguration {
                     applyConfiguration(result.configuration)
+                    didApplyConfiguration = true
                     if result.skippedLayoutDiagnostics.isEmpty {
                         userNotifier.notify(
                             kind: .configReloadSucceeded,
@@ -193,6 +203,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             switch mode {
             case .launch:
                 applyConfiguration(.defaultValue)
+                didApplyConfiguration = true
             case .manual:
                 userNotifier.notify(
                     kind: .configReloadFailed,
@@ -200,6 +211,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     body: UICopy.configReloadFailedBody(diagnostic: nil)
                 )
             }
+        }
+
+        if didApplyConfiguration {
+            scheduleLaunchAtLoginReconciliation()
         }
     }
 
@@ -245,6 +260,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return updateConfiguration { configuration in
             configuration.dragTriggers.preferLayoutMode = isEnabled
         }
+    }
+
+    @discardableResult
+    func updateLaunchAtLoginEnabled(_ isEnabled: Bool) -> Bool {
+        guard configuration.general.launchAtLogin != isEnabled else {
+            return true
+        }
+
+        if isEnabled, accessibilityCoordinator.evaluate(promptOnMissing: true) == false {
+            return false
+        }
+
+        if isEnabled {
+            return enableLaunchAtLoginFromMenu()
+        }
+
+        return disableLaunchAtLoginFromMenu()
     }
 
     @discardableResult
@@ -302,6 +334,151 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         dragGridController.isEnabled = configuration.general.isEnabled
         shortcutController.isEnabled = configuration.general.isEnabled
         menuController?.setEnabled(configuration.general.isEnabled)
+    }
+
+    private func handleAccessibilityStateDidUpdate() {
+        synchronizeRuntimeControllers()
+        processPendingLaunchAtLoginReconciliationIfNeeded()
+    }
+
+    private func scheduleLaunchAtLoginReconciliation() {
+        isLaunchAtLoginReconciliationPending = true
+        processPendingLaunchAtLoginReconciliationIfNeeded()
+    }
+
+    private func processPendingLaunchAtLoginReconciliationIfNeeded() {
+        guard isLaunchAtLoginReconciliationPending, accessibilityCoordinator.hasAccess else {
+            return
+        }
+
+        isLaunchAtLoginReconciliationPending = false
+        synchronizeLaunchAtLoginWithConfiguration()
+    }
+
+    private func synchronizeLaunchAtLoginWithConfiguration() {
+        if configuration.general.launchAtLogin {
+            synchronizeEnabledLaunchAtLogin()
+        } else {
+            synchronizeDisabledLaunchAtLogin()
+        }
+    }
+
+    private func synchronizeEnabledLaunchAtLogin() {
+        let currentStatus = launchAtLoginService.status()
+        guard currentStatus != .enabled else {
+            return
+        }
+
+        do {
+            let resultingStatus = try launchAtLoginService.register()
+            guard resultingStatus == .enabled else {
+                handleLaunchAtLoginEnableFailure(
+                    details: launchAtLoginFailureDetails(for: resultingStatus, enabling: true),
+                    shouldRollbackConfiguration: true
+                )
+                return
+            }
+        } catch {
+            handleLaunchAtLoginEnableFailure(
+                details: error.localizedDescription,
+                shouldRollbackConfiguration: true
+            )
+        }
+    }
+
+    private func synchronizeDisabledLaunchAtLogin() {
+        let currentStatus = launchAtLoginService.status()
+        guard currentStatus != .disabled else {
+            return
+        }
+
+        do {
+            let resultingStatus = try launchAtLoginService.unregister()
+            guard resultingStatus == .disabled else {
+                handleLaunchAtLoginDisableFailure(
+                    details: launchAtLoginFailureDetails(for: resultingStatus, enabling: false)
+                )
+                return
+            }
+        } catch {
+            handleLaunchAtLoginDisableFailure(details: error.localizedDescription)
+        }
+    }
+
+    private func enableLaunchAtLoginFromMenu() -> Bool {
+        do {
+            let resultingStatus = try launchAtLoginService.register()
+            guard resultingStatus == .enabled else {
+                handleLaunchAtLoginEnableFailure(
+                    details: launchAtLoginFailureDetails(for: resultingStatus, enabling: true),
+                    shouldRollbackConfiguration: false
+                )
+                return false
+            }
+        } catch {
+            handleLaunchAtLoginEnableFailure(details: error.localizedDescription, shouldRollbackConfiguration: false)
+            return false
+        }
+
+        return updateConfiguration { configuration in
+            configuration.general.launchAtLogin = true
+        }
+    }
+
+    private func disableLaunchAtLoginFromMenu() -> Bool {
+        do {
+            let resultingStatus = try launchAtLoginService.unregister()
+            guard resultingStatus == .disabled else {
+                handleLaunchAtLoginDisableFailure(
+                    details: launchAtLoginFailureDetails(for: resultingStatus, enabling: false)
+                )
+                return false
+            }
+        } catch {
+            handleLaunchAtLoginDisableFailure(details: error.localizedDescription)
+            return false
+        }
+
+        return updateConfiguration { configuration in
+            configuration.general.launchAtLogin = false
+        }
+    }
+
+    private func handleLaunchAtLoginEnableFailure(details: String?, shouldRollbackConfiguration: Bool) {
+        if shouldRollbackConfiguration {
+            _ = updateConfiguration { configuration in
+                configuration.general.launchAtLogin = false
+            }
+        }
+
+        userNotifier.notify(
+            kind: .launchAtLoginEnableFailed,
+            title: UICopy.launchAtLoginEnableFailedTitle,
+            body: UICopy.launchAtLoginEnableFailedBody(details: details)
+        )
+    }
+
+    private func handleLaunchAtLoginDisableFailure(details: String?) {
+        userNotifier.notify(
+            kind: .launchAtLoginDisableFailed,
+            title: UICopy.launchAtLoginDisableFailedTitle,
+            body: UICopy.launchAtLoginDisableFailedBody(details: details)
+        )
+    }
+
+    private func launchAtLoginFailureDetails(for status: LaunchAtLoginStatus, enabling: Bool) -> String? {
+        switch (status, enabling) {
+        case (.requiresApproval, true):
+            return "System approval is still required."
+        case (.disabled, true):
+            return "The login item stayed disabled."
+        case (.enabled, false):
+            return "The login item stayed enabled."
+        case (.requiresApproval, false):
+            return "The login item still needs system approval."
+        case (.enabled, true), (.disabled, false):
+            return nil
+        }
     }
 
     private func makeMenuActionItems(configuration: AppConfiguration) -> [MenuBarController.ActionItem] {
@@ -452,7 +629,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             mouseButtonNumber: configuration.general.mouseButtonNumber,
             mouseButtonDragEnabled: configuration.dragTriggers.enableMouseButtonDrag,
             modifierLeftMouseDragEnabled: configuration.dragTriggers.enableModifierLeftMouseDrag,
-            preferLayoutMode: configuration.dragTriggers.preferLayoutMode
+            preferLayoutMode: configuration.dragTriggers.preferLayoutMode,
+            launchAtLogin: configuration.general.launchAtLogin
         )
     }
 

@@ -70,6 +70,7 @@ Important properties:
 - persisted `applyLayoutByIndex` actions point to the 1-based layout index within the active layout group's indexed layouts
 - stroke colors are stored as `#RRGGBBAA`
 - `general.activeLayoutGroup` selects the currently active layout group
+- `general.launchAtLogin` stores the desired login-item state and defaults to `true` when missing
 - `general.mouseButtonNumber` selects the hold-to-drag mouse button using user-facing numbering, where `3` is the standard middle button
 - the menu bar shows `Middle mouse drag` when `general.mouseButtonNumber == 3`, and `Mouse button <n> drag` for other configured button numbers
 - `monitors` stores the last known monitor name by persistent display UUID using the shape `"<monitor-uuid>": "<monitor-name>"`
@@ -96,6 +97,7 @@ The built-in default configuration currently resolves to the following values.
 `general`
 
 - `isEnabled = true`
+- `launchAtLogin = true`
 - `excludedBundleIDs = ["com.apple.Spotlight"]`
 - `excludedWindowTitles = []`
 - `mouseButtonNumber = 3`
@@ -180,6 +182,7 @@ Compatibility behavior:
 - on manual reload, full-load failures are rejected and the current in-memory configuration keeps running
 - on manual reload, full success applies the config and posts a success notification
 - on manual reload, partial success applies valid layout files and warns about skipped files
+- missing `general.launchAtLogin` defaults to `true`
 - missing `preferLayoutMode` defaults to `true`
 - missing `includeInGroupCycle` defaults to `true`
 - missing `triggerRegion` means the layout is menu, shortcut, and CLI only
@@ -211,6 +214,18 @@ When permission is missing, revoked, or the app is disabled:
 - shortcut handling stops
 - if the access state changed to missing, the app directly triggers one system Accessibility permission request for that state transition
 - if access stays missing, the app does not keep re-requesting until the next transition or the next launch
+
+Launch-at-login coordination:
+
+- GridMove uses `SMAppService.mainApp` as the login-item backend
+- the menu item `Launch at login` is bound to `general.launchAtLogin`
+- startup and manual reload schedule a login-item reconciliation pass after config is applied
+- reconciliation only runs once Accessibility access is available; if access is still missing, the app waits for the existing polling path to observe a granted state
+- normal config saves do not touch the login-item backend
+- direct clicks on `Launch at login` trigger immediate register or unregister attempts
+- enabling from the menu first re-checks Accessibility access and prompts if needed; if access is still missing, the config stays unchanged
+- if enabling fails, still requires system approval, or does not end in `enabled`, GridMove writes `general.launchAtLogin = false` and posts a notification that points the user to System Settings > General > Login Items
+- if disabling fails or does not end in `disabled`, GridMove keeps the existing config value and posts a failure notification
 
 Layout cycling state is stored in memory only:
 
@@ -337,6 +352,7 @@ Menu actions:
 - are built from current configuration
 - include a `Layout group` submenu that switches `general.activeLayoutGroup`
 - keep a separator between the drag-preference items and the `Layout group` submenu
+- include `Reload`, `Customize... ↗`, and `Launch at login` in the final settings section, in that order, before `Quit`
 - only include layouts whose `includeInMenu` value is `true`
 - always go through `LayoutActionExecutor`
 - layouts hidden from the menu remain available to trigger and CLI paths, and remain available to layout-index shortcuts only when `includeInLayoutIndex` is `true`

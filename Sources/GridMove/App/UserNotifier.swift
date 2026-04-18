@@ -6,6 +6,8 @@ final class UserNotifier {
         case configReloadSucceeded = "gridmove-config-reload-succeeded"
         case configReloadSkippedLayouts = "gridmove-config-reload-skipped-layouts"
         case configReloadFailed = "gridmove-config-reload-failed"
+        case launchAtLoginEnableFailed = "gridmove-launch-at-login-enable-failed"
+        case launchAtLoginDisableFailed = "gridmove-launch-at-login-disable-failed"
 
         var requestIdentifier: String {
             "\(rawValue)-\(UUID().uuidString)"

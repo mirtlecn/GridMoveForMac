@@ -17,6 +17,59 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     )
 }
 
+private struct TestLaunchAtLoginError: LocalizedError {
+    let message: String
+
+    var errorDescription: String? {
+        message
+    }
+}
+
+private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
+    var currentStatus: LaunchAtLoginStatus
+    var registerResult: LaunchAtLoginStatus
+    var unregisterResult: LaunchAtLoginStatus
+    var registerError: Error?
+    var unregisterError: Error?
+
+    private(set) var statusCallCount = 0
+    private(set) var registerCallCount = 0
+    private(set) var unregisterCallCount = 0
+
+    init(
+        currentStatus: LaunchAtLoginStatus = .disabled,
+        registerResult: LaunchAtLoginStatus = .enabled,
+        unregisterResult: LaunchAtLoginStatus = .disabled
+    ) {
+        self.currentStatus = currentStatus
+        self.registerResult = registerResult
+        self.unregisterResult = unregisterResult
+    }
+
+    func status() -> LaunchAtLoginStatus {
+        statusCallCount += 1
+        return currentStatus
+    }
+
+    func register() throws -> LaunchAtLoginStatus {
+        registerCallCount += 1
+        if let registerError {
+            throw registerError
+        }
+        currentStatus = registerResult
+        return registerResult
+    }
+
+    func unregister() throws -> LaunchAtLoginStatus {
+        unregisterCallCount += 1
+        if let unregisterError {
+            throw unregisterError
+        }
+        currentStatus = unregisterResult
+        return unregisterResult
+    }
+}
+
 @MainActor
 @Test func appDelegateReloadsConfigurationFromDisk() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
@@ -37,6 +90,58 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(delegate.configuration.layouts.map(\.id) == (1...savedConfiguration.layouts.count).map { "layout-\($0)" })
     #expect(delegate.configuration.hotkeys.bindings.map(\.id) == (1...savedConfiguration.hotkeys.bindings.count).map { "binding-\($0)" })
     #expect(delegate.configuration.hotkeys.bindings[2].action == .applyLayoutByIndex(layout: 4))
+}
+
+@MainActor
+@Test func appDelegateDecodesLaunchAtLoginMissingFieldAsTrue() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-launch-at-login-default-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    _ = try store.load()
+
+    try writeMainConfigurationJSON(
+        """
+        {
+          "general": {
+            "isEnabled": true,
+            "excludedBundleIDs": ["com.apple.Spotlight"],
+            "excludedWindowTitles": [],
+            "mouseButtonNumber": 3,
+            "activeLayoutGroup": "built-in"
+          },
+          "appearance": {
+            "renderTriggerAreas": false,
+            "triggerOpacity": 0.2,
+            "triggerGap": 2,
+            "triggerStrokeColor": "#007AFF33",
+            "renderWindowHighlight": true,
+            "highlightFillOpacity": 0.08,
+            "highlightStrokeWidth": 3,
+            "highlightStrokeColor": "#FFFFFFEB"
+          },
+          "dragTriggers": {
+            "enableMouseButtonDrag": true,
+            "enableModifierLeftMouseDrag": true,
+            "preferLayoutMode": true,
+            "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
+            "activationDelaySeconds": 0.3,
+            "activationMoveThreshold": 10
+          },
+          "hotkeys": {
+            "bindings": []
+          },
+          "monitors": {}
+        }
+        """,
+        to: store
+    )
+
+    let delegate = AppDelegate(configurationStore: store, openURL: { _ in true })
+    delegate.reloadConfigurationFromDisk(mode: .launch)
+
+    #expect(delegate.configuration.general.launchAtLogin == true)
 }
 
 @MainActor
@@ -144,6 +249,93 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 }
 
 @MainActor
+@Test func appDelegateRegistersLaunchAtLoginOnLaunchWhenAccessibilityIsAvailable() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-launch-at-login-launch-register-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var savedConfiguration = AppConfiguration.defaultValue
+    savedConfiguration.general.launchAtLogin = true
+    try store.save(savedConfiguration)
+
+    let launchAtLoginService = TestLaunchAtLoginService(currentStatus: .disabled)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        launchAtLoginService: launchAtLoginService,
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+
+    #expect(launchAtLoginService.registerCallCount == 1)
+    #expect(launchAtLoginService.unregisterCallCount == 0)
+    #expect(delegate.configuration.general.launchAtLogin == true)
+
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
+@Test func appDelegateDefersLaunchAtLoginRegistrationUntilAccessibilityBecomesAvailable() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-launch-at-login-deferred-register-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var savedConfiguration = AppConfiguration.defaultValue
+    savedConfiguration.general.launchAtLogin = true
+    try store.save(savedConfiguration)
+
+    var trustState = false
+    let launchAtLoginService = TestLaunchAtLoginService(currentStatus: .disabled)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        launchAtLoginService: launchAtLoginService,
+        accessibilityStatusProvider: { trustState },
+        accessibilityPromptRequester: { false }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    #expect(launchAtLoginService.registerCallCount == 0)
+
+    trustState = true
+    delegate.evaluateAccessibilityState()
+
+    #expect(launchAtLoginService.registerCallCount == 1)
+
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
+@Test func appDelegateUnregistersLaunchAtLoginOnLaunchWhenConfigurationDisablesIt() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-launch-at-login-launch-unregister-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var savedConfiguration = AppConfiguration.defaultValue
+    savedConfiguration.general.launchAtLogin = false
+    try store.save(savedConfiguration)
+
+    let launchAtLoginService = TestLaunchAtLoginService(currentStatus: .enabled)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        launchAtLoginService: launchAtLoginService,
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+
+    #expect(launchAtLoginService.unregisterCallCount == 1)
+    #expect(launchAtLoginService.registerCallCount == 0)
+
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
 @Test func appDelegateSavingRegularSettingsDoesNotRefreshMonitorMetadata() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-monitor-metadata-no-refresh-\(UUID().uuidString)", isDirectory: true)
@@ -170,6 +362,37 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     let persistedConfiguration = try store.load()
     #expect(delegate.configuration.monitors == ["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display"])
     #expect(persistedConfiguration.monitors == ["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display"])
+}
+
+@MainActor
+@Test func appDelegateSavingRegularSettingsDoesNotTouchLaunchAtLoginService() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-launch-at-login-no-regular-sync-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var savedConfiguration = AppConfiguration.defaultValue
+    savedConfiguration.general.launchAtLogin = false
+    try store.save(savedConfiguration)
+
+    let launchAtLoginService = TestLaunchAtLoginService(currentStatus: .disabled)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        launchAtLoginService: launchAtLoginService,
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    #expect(launchAtLoginService.registerCallCount == 0)
+    #expect(launchAtLoginService.unregisterCallCount == 0)
+
+    #expect(delegate.updateMouseButtonDragEnabled(false) == true)
+
+    #expect(launchAtLoginService.registerCallCount == 0)
+    #expect(launchAtLoginService.unregisterCallCount == 0)
+
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
 }
 
 @MainActor
@@ -469,6 +692,38 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 }
 
 @MainActor
+@Test func appDelegateManualReloadReconcilesChangedLaunchAtLoginValue() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-launch-at-login-manual-reload-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var savedConfiguration = AppConfiguration.defaultValue
+    savedConfiguration.general.launchAtLogin = false
+    try store.save(savedConfiguration)
+
+    let launchAtLoginService = TestLaunchAtLoginService(currentStatus: .disabled)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        launchAtLoginService: launchAtLoginService,
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    #expect(launchAtLoginService.registerCallCount == 0)
+
+    savedConfiguration.general.launchAtLogin = true
+    try store.save(savedConfiguration)
+    delegate.reloadConfigurationFromDisk(mode: .manual)
+
+    #expect(delegate.configuration.general.launchAtLogin == true)
+    #expect(launchAtLoginService.registerCallCount == 1)
+
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
 @Test func appDelegateLaunchKeepsInvalidLayoutFilesWhenPartialLoadSucceeds() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-launch-partial-reload-\(UUID().uuidString)", isDirectory: true)
@@ -672,6 +927,147 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(promptCount == 2)
 
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
+@Test func appDelegateMenuEnableLaunchAtLoginPromptsForAccessibilityWithoutSaving() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-launch-at-login-menu-prompt-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var savedConfiguration = AppConfiguration.defaultValue
+    savedConfiguration.general.launchAtLogin = false
+    try store.save(savedConfiguration)
+
+    var promptCount = 0
+    let launchAtLoginService = TestLaunchAtLoginService(currentStatus: .disabled)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        launchAtLoginService: launchAtLoginService,
+        accessibilityStatusProvider: { false },
+        accessibilityPromptRequester: {
+            promptCount += 1
+            return false
+        }
+    )
+
+    delegate.reloadConfigurationFromDisk(mode: .launch)
+
+    #expect(delegate.updateLaunchAtLoginEnabled(true) == false)
+    #expect(promptCount == 1)
+    #expect(launchAtLoginService.registerCallCount == 0)
+    #expect(delegate.configuration.general.launchAtLogin == false)
+    #expect((try store.load()).general.launchAtLogin == false)
+}
+
+@MainActor
+@Test func appDelegateMenuEnableLaunchAtLoginUpdatesConfigurationOnSuccess() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-launch-at-login-menu-enable-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var savedConfiguration = AppConfiguration.defaultValue
+    savedConfiguration.general.launchAtLogin = false
+    try store.save(savedConfiguration)
+
+    let launchAtLoginService = TestLaunchAtLoginService(currentStatus: .disabled)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        launchAtLoginService: launchAtLoginService,
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.reloadConfigurationFromDisk(mode: .launch)
+
+    #expect(delegate.updateLaunchAtLoginEnabled(true) == true)
+    #expect(launchAtLoginService.registerCallCount == 1)
+    #expect(delegate.configuration.general.launchAtLogin == true)
+    #expect((try store.load()).general.launchAtLogin == true)
+}
+
+@MainActor
+@Test func appDelegateLaunchAtLoginEnableFailureRollsConfigurationBackToFalseAndNotifies() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-launch-at-login-enable-failure-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var savedConfiguration = AppConfiguration.defaultValue
+    savedConfiguration.general.launchAtLogin = true
+    try store.save(savedConfiguration)
+
+    var receivedKind: UserNotifier.Kind?
+    var receivedTitle: String?
+    var receivedBody: String?
+    let launchAtLoginService = TestLaunchAtLoginService(
+        currentStatus: .disabled,
+        registerResult: .requiresApproval
+    )
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        launchAtLoginService: launchAtLoginService,
+        accessibilityStatusProvider: { true },
+        notifyUser: { kind, title, body in
+            receivedKind = kind
+            receivedTitle = title
+            receivedBody = body
+        }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+
+    #expect(launchAtLoginService.registerCallCount == 1)
+    #expect(delegate.configuration.general.launchAtLogin == false)
+    #expect((try store.load()).general.launchAtLogin == false)
+    #expect(receivedKind == .launchAtLoginEnableFailed)
+    #expect(receivedTitle == UICopy.launchAtLoginEnableFailedTitle)
+    #expect(receivedBody == UICopy.launchAtLoginEnableFailedBody(details: "System approval is still required."))
+
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
+@Test func appDelegateMenuDisableLaunchAtLoginKeepsConfigurationWhenUnregisterFails() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-launch-at-login-disable-failure-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var savedConfiguration = AppConfiguration.defaultValue
+    savedConfiguration.general.launchAtLogin = true
+    try store.save(savedConfiguration)
+
+    var receivedKind: UserNotifier.Kind?
+    var receivedTitle: String?
+    var receivedBody: String?
+    let launchAtLoginService = TestLaunchAtLoginService(currentStatus: .enabled)
+    launchAtLoginService.unregisterError = TestLaunchAtLoginError(message: "permission denied")
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        launchAtLoginService: launchAtLoginService,
+        accessibilityStatusProvider: { true },
+        notifyUser: { kind, title, body in
+            receivedKind = kind
+            receivedTitle = title
+            receivedBody = body
+        }
+    )
+
+    delegate.reloadConfigurationFromDisk(mode: .launch)
+
+    #expect(delegate.updateLaunchAtLoginEnabled(false) == false)
+    #expect(launchAtLoginService.unregisterCallCount == 1)
+    #expect(delegate.configuration.general.launchAtLogin == true)
+    #expect((try store.load()).general.launchAtLogin == true)
+    #expect(receivedKind == .launchAtLoginDisableFailed)
+    #expect(receivedTitle == UICopy.launchAtLoginDisableFailedTitle)
+    #expect(receivedBody == UICopy.launchAtLoginDisableFailedBody(details: "permission denied"))
 }
 
 @MainActor

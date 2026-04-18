@@ -462,6 +462,7 @@ struct GeneralSettings: Codable, Equatable {
     static let defaultMouseButtonNumber = 3
 
     var isEnabled: Bool
+    var launchAtLogin: Bool
     var excludedBundleIDs: [String]
     var excludedWindowTitles: [String]
     var activeLayoutGroup: String
@@ -469,6 +470,7 @@ struct GeneralSettings: Codable, Equatable {
 
     private enum CodingKeys: String, CodingKey {
         case isEnabled
+        case launchAtLogin
         case excludedBundleIDs
         case excludedWindowTitles
         case activeLayoutGroup
@@ -477,12 +479,14 @@ struct GeneralSettings: Codable, Equatable {
 
     init(
         isEnabled: Bool,
+        launchAtLogin: Bool,
         excludedBundleIDs: [String],
         excludedWindowTitles: [String],
         activeLayoutGroup: String,
         mouseButtonNumber: Int
     ) {
         self.isEnabled = isEnabled
+        self.launchAtLogin = launchAtLogin
         self.excludedBundleIDs = excludedBundleIDs
         self.excludedWindowTitles = excludedWindowTitles
         self.activeLayoutGroup = activeLayoutGroup
@@ -492,6 +496,7 @@ struct GeneralSettings: Codable, Equatable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? true
+        launchAtLogin = try container.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? true
         excludedBundleIDs = try container.decode([String].self, forKey: .excludedBundleIDs)
         excludedWindowTitles = try container.decode([String].self, forKey: .excludedWindowTitles)
         activeLayoutGroup = try container.decode(String.self, forKey: .activeLayoutGroup)

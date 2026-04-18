@@ -50,6 +50,7 @@ The examples below use `jsonc` for annotation only. Real files must be plain JSO
 {
   "general": {
     "isEnabled": true, // Enable or disable the whole app. If this field is missing, GridMove treats it as true.
+    "launchAtLogin": true, // Controls the Launch at login menu item and the desired login-item state. If this field is missing, GridMove treats it as true.
     "excludedBundleIDs": [
       "com.apple.Spotlight" // Exact-match app bundle IDs to ignore. Built-in system exclusions still apply.
     ],

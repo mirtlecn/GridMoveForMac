@@ -126,6 +126,7 @@ extension AppConfiguration {
     static let defaultValue = AppConfiguration(
         general: GeneralSettings(
             isEnabled: true,
+            launchAtLogin: true,
             excludedBundleIDs: ["com.apple.Spotlight"],
             excludedWindowTitles: [],
             activeLayoutGroup: builtInGroupName,

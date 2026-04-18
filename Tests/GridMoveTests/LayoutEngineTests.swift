@@ -392,6 +392,7 @@ import Testing
     let configuration = AppConfiguration(
         general: .init(
             isEnabled: true,
+            launchAtLogin: true,
             excludedBundleIDs: [],
             excludedWindowTitles: [],
             activeLayoutGroup: "mixed",
@@ -438,6 +439,7 @@ import Testing
     let configuration = AppConfiguration(
         general: .init(
             isEnabled: true,
+            launchAtLogin: true,
             excludedBundleIDs: [],
             excludedWindowTitles: [],
             activeLayoutGroup: "uuid-only",
@@ -483,6 +485,7 @@ import Testing
     let configuration = AppConfiguration(
         general: .init(
             isEnabled: true,
+            launchAtLogin: true,
             excludedBundleIDs: [],
             excludedWindowTitles: [],
             activeLayoutGroup: "uuid-only",

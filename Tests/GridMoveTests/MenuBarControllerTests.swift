@@ -10,7 +10,8 @@ import Testing
             mouseButtonNumber: 3,
             mouseButtonDragEnabled: true,
             modifierLeftMouseDragEnabled: true,
-            preferLayoutMode: true
+            preferLayoutMode: true,
+            launchAtLogin: true
         ),
         layoutGroupState: .init(groupNames: ["built-in", "work"], activeGroupName: "built-in"),
         actionItems: [
@@ -21,6 +22,7 @@ import Testing
         onToggleMouseButtonDrag: { _ in true },
         onToggleModifierLeftMouseDrag: { _ in true },
         onTogglePreferLayoutMode: { _ in true },
+        onToggleLaunchAtLogin: { _ in true },
         onSelectLayoutGroup: { _ in true },
         onPerformAction: { _ in },
         onReloadConfiguration: {},
@@ -43,6 +45,7 @@ import Testing
             "|",
             "Reload",
             "Customize... ↗",
+            "Launch at login",
             "|",
             "Quit",
         ]
@@ -57,7 +60,8 @@ import Testing
             mouseButtonNumber: 3,
             mouseButtonDragEnabled: false,
             modifierLeftMouseDragEnabled: true,
-            preferLayoutMode: false
+            preferLayoutMode: false,
+            launchAtLogin: true
         ),
         layoutGroupState: .init(groupNames: ["built-in", "work"], activeGroupName: "work"),
         actionItems: [],
@@ -65,6 +69,7 @@ import Testing
         onToggleMouseButtonDrag: { _ in true },
         onToggleModifierLeftMouseDrag: { _ in true },
         onTogglePreferLayoutMode: { _ in true },
+        onToggleLaunchAtLogin: { _ in true },
         onSelectLayoutGroup: { _ in true },
         onPerformAction: { _ in },
         onReloadConfiguration: {},
@@ -77,6 +82,7 @@ import Testing
             UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 3): false,
             UICopy.modifierLeftMouseDragMenuTitle: true,
             UICopy.preferLayoutModeMenuTitle: false,
+            UICopy.launchAtLoginMenuTitle: true,
         ]
     )
 
@@ -96,7 +102,8 @@ import Testing
             mouseButtonNumber: 5,
             mouseButtonDragEnabled: true,
             modifierLeftMouseDragEnabled: true,
-            preferLayoutMode: true
+            preferLayoutMode: true,
+            launchAtLogin: false
         ),
         layoutGroupState: .init(groupNames: ["built-in"], activeGroupName: "built-in"),
         actionItems: [],
@@ -104,6 +111,7 @@ import Testing
         onToggleMouseButtonDrag: { _ in true },
         onToggleModifierLeftMouseDrag: { _ in true },
         onTogglePreferLayoutMode: { _ in true },
+        onToggleLaunchAtLogin: { _ in true },
         onSelectLayoutGroup: { _ in true },
         onPerformAction: { _ in },
         onReloadConfiguration: {},

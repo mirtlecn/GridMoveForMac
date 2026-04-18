@@ -18,6 +18,7 @@ final class MenuBarController: NSObject {
         let mouseButtonDragEnabled: Bool
         let modifierLeftMouseDragEnabled: Bool
         let preferLayoutMode: Bool
+        let launchAtLogin: Bool
     }
 
     private let statusItem: NSStatusItem
@@ -34,6 +35,7 @@ final class MenuBarController: NSObject {
     private let actionSectionSeparatorItem = NSMenuItem.separator()
     private let reloadConfigMenuItem = NSMenuItem(title: UICopy.reloadConfigMenuTitle, action: nil, keyEquivalent: "")
     private let customizeMenuItem = NSMenuItem(title: UICopy.customizeMenuTitle, action: nil, keyEquivalent: "")
+    private let launchAtLoginMenuItem = NSMenuItem(title: UICopy.launchAtLoginMenuTitle, action: nil, keyEquivalent: "")
     private var actionMenuItems: [NSMenuItem] = []
     private var actionItems: [ActionItem]
     private var layoutGroupState: LayoutGroupState
@@ -42,6 +44,7 @@ final class MenuBarController: NSObject {
     private let onToggleMouseButtonDrag: (Bool) -> Bool
     private let onToggleModifierLeftMouseDrag: (Bool) -> Bool
     private let onTogglePreferLayoutMode: (Bool) -> Bool
+    private let onToggleLaunchAtLogin: (Bool) -> Bool
     private let onSelectLayoutGroup: (String) -> Bool
     private let onPerformAction: (HotkeyAction) -> Void
     private let onReloadConfiguration: () -> Void
@@ -57,6 +60,7 @@ final class MenuBarController: NSObject {
         onToggleMouseButtonDrag: @escaping (Bool) -> Bool,
         onToggleModifierLeftMouseDrag: @escaping (Bool) -> Bool,
         onTogglePreferLayoutMode: @escaping (Bool) -> Bool,
+        onToggleLaunchAtLogin: @escaping (Bool) -> Bool,
         onSelectLayoutGroup: @escaping (String) -> Bool,
         onPerformAction: @escaping (HotkeyAction) -> Void,
         onReloadConfiguration: @escaping () -> Void,
@@ -69,6 +73,7 @@ final class MenuBarController: NSObject {
         self.onToggleMouseButtonDrag = onToggleMouseButtonDrag
         self.onToggleModifierLeftMouseDrag = onToggleModifierLeftMouseDrag
         self.onTogglePreferLayoutMode = onTogglePreferLayoutMode
+        self.onToggleLaunchAtLogin = onToggleLaunchAtLogin
         self.onSelectLayoutGroup = onSelectLayoutGroup
         self.onPerformAction = onPerformAction
         self.onReloadConfiguration = onReloadConfiguration
@@ -107,6 +112,10 @@ final class MenuBarController: NSObject {
         customizeMenuItem.target = self
         customizeMenuItem.action = #selector(customize)
         menu.addItem(customizeMenuItem)
+
+        launchAtLoginMenuItem.target = self
+        launchAtLoginMenuItem.action = #selector(toggleLaunchAtLogin)
+        menu.addItem(launchAtLoginMenuItem)
 
         menu.addItem(.separator())
 
@@ -159,6 +168,7 @@ final class MenuBarController: NSObject {
         mouseButtonDragMenuItem.state = toggleSettings.mouseButtonDragEnabled ? .on : .off
         modifierLeftMouseDragMenuItem.state = toggleSettings.modifierLeftMouseDragEnabled ? .on : .off
         preferLayoutModeMenuItem.state = toggleSettings.preferLayoutMode ? .on : .off
+        launchAtLoginMenuItem.state = toggleSettings.launchAtLogin ? .on : .off
     }
 
     func updateActionItems(_ actionItems: [ActionItem], isEnabled: Bool) {
@@ -243,6 +253,13 @@ final class MenuBarController: NSObject {
         }
     }
 
+    @objc private func toggleLaunchAtLogin() {
+        let nextState: NSControl.StateValue = launchAtLoginMenuItem.state == .on ? .off : .on
+        if onToggleLaunchAtLogin(nextState == .on) {
+            launchAtLoginMenuItem.state = nextState
+        }
+    }
+
     @objc private func performAction(_ sender: NSMenuItem) {
         guard let action = sender.representedObject as? HotkeyAction else {
             return
@@ -276,6 +293,7 @@ final class MenuBarController: NSObject {
             mouseButtonDragMenuItem.title: mouseButtonDragMenuItem.state == .on,
             UICopy.modifierLeftMouseDragMenuTitle: modifierLeftMouseDragMenuItem.state == .on,
             UICopy.preferLayoutModeMenuTitle: preferLayoutModeMenuItem.state == .on,
+            UICopy.launchAtLoginMenuTitle: launchAtLoginMenuItem.state == .on,
         ]
     }
 

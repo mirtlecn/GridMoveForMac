@@ -36,6 +36,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 
     let initialText = try String(contentsOf: store.fileURL, encoding: .utf8)
     #expect(initialText.contains("\"activeLayoutGroup\""))
+    #expect(initialText.contains("\"launchAtLogin\""))
     #expect(initialText.contains("\"mouseButtonNumber\""))
     #expect(initialText.contains("\"applyLayoutByIndex\""))
     #expect(!initialText.contains("\"layoutGroups\""))
@@ -66,6 +67,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(secondLayoutText.contains("\"monitor\""))
 
     var updatedConfiguration = initialConfiguration
+    updatedConfiguration.general.launchAtLogin = false
     updatedConfiguration.general.excludedWindowTitles = ["Test Title"]
     updatedConfiguration.general.activeLayoutGroup = AppConfiguration.builtInGroupName
     updatedConfiguration.appearance.triggerGap = 6
@@ -231,6 +233,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     let configuration = try store.load()
 
     #expect(configuration.general.activeLayoutGroup == "work")
+    #expect(configuration.general.launchAtLogin == true)
     #expect(configuration.general.mouseButtonNumber == 3)
     #expect(configuration.layoutGroups[0].includeInGroupCycle == false)
     #expect(configuration.layouts.map(\.id) == ["layout-1", "layout-2"])

@@ -9,9 +9,12 @@ enum UICopy {
     static let layoutGroupMenuTitle = "Layout group"
     static let reloadConfigMenuTitle = "Reload"
     static let customizeMenuTitle = "Customize... ↗"
+    static let launchAtLoginMenuTitle = "Launch at login"
     static let configReloadSucceededTitle = "GridMove config reloaded"
     static let configReloadFailedTitle = "GridMove config reload failed"
     static let configReloadSkippedLayoutsTitle = "GridMove skipped invalid layout files"
+    static let launchAtLoginEnableFailedTitle = "Unable to enable launch at login"
+    static let launchAtLoginDisableFailedTitle = "Unable to disable launch at login"
     static let quitMenuTitle = "Quit"
     static let quitAppMenuTitle = "Quit GridMove"
     static let applyNextLayout = "Apply next layout"
@@ -113,5 +116,32 @@ enum UICopy {
 
     static func configReloadSucceededBody() -> String {
         "Config was applied successfully."
+    }
+
+    static func launchAtLoginEnableFailedBody(details: String?) -> String {
+        launchAtLoginFailureBody(
+            prefix: "GridMove could not enable launch at login.",
+            details: details
+        )
+    }
+
+    static func launchAtLoginDisableFailedBody(details: String?) -> String {
+        launchAtLoginFailureBody(
+            prefix: "GridMove could not disable launch at login.",
+            details: details
+        )
+    }
+
+    private static func launchAtLoginFailureBody(prefix: String, details: String?) -> String {
+        var segments = [
+            prefix,
+            "Check System Settings > General > Login Items and try again.",
+        ]
+
+        if let details, !details.isEmpty {
+            segments.append(details)
+        }
+
+        return segments.joined(separator: " ")
     }
 }
