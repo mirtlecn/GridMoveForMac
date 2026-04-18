@@ -72,8 +72,11 @@ Important properties:
 - `general.activeLayoutGroup` selects the currently active layout group
 - `general.mouseButtonNumber` selects the hold-to-drag mouse button using user-facing numbering, where `3` is the standard middle button
 - the menu bar shows `Middle mouse drag` when `general.mouseButtonNumber == 3`, and `Mouse button <n> drag` for other configured button numbers
+- `monitors` stores the last known monitor name by persistent display UUID using the shape `"<monitor-uuid>": "<monitor-name>"`
+- monitor metadata refresh only happens on app startup and manual reload; normal setting saves do not rescan displays
+- previously learned monitor UUIDs remain in `monitors` even when those displays are currently disconnected
 - `layoutGroups[*].includeInGroupCycle` controls whether layout-mode Shift cycling can switch to that group
-- `layoutGroups[*].sets[*].monitor` routes layouts to `all`, `main`, one display ID, or multiple display IDs
+- `layoutGroups[*].sets[*].monitor` routes layouts to `all`, `main`, one monitor UUID, or multiple monitor UUIDs
 - `layoutGroups[*].sets[*].layouts` order drives menu order, layout-index numbering, and same-display trigger precedence
 - `layoutGroups[*].sets[*].layouts[*].includeInMenu` controls whether a layout appears in the menu bar
 
@@ -358,14 +361,14 @@ This relay exists so CLI actions share the same runtime window-targeting behavio
 Display set resolution:
 
 - each physical display resolves exactly one set from the active layout group
-- priority is explicit display ID or ID array, then `main`, then `all`
+- priority is explicit monitor UUID or UUID array, then `main`, then `all`
 - drag overlays and trigger hit testing only use the resolved set for the current display
 - `cycleNext` and `cyclePrevious` only use the resolved set for the target window's current display, skip layouts whose `includeInLayoutIndex` is `false`, and never move the window across displays
 - menu, shortcut, and CLI direct layout application first resolve which displays map to the selected layout set inside the active group, then keep the current display only when it belongs to that set
 - `monitor: all` keeps the current display only when that display still resolves to the selected set; if another set owns the current display, it picks the first currently connected display that resolves to the selected set
 - `monitor: main` always targets the current system main display
-- `monitor: "<display-id>"` always targets that display
-- `monitor: ["<display-id>", ...]` keeps the current display when it is included; otherwise it picks the first currently connected display in declaration order
+- `monitor: "<monitor-uuid>"` always targets that display
+- `monitor: ["<monitor-uuid>", ...]` keeps the current display when it is included; otherwise it picks the first currently connected display in declaration order
 - menu actions target layouts by internal layout ID so same-name layouts in different sets still go to the intended display
 
 ## 9. Overlay Behavior
