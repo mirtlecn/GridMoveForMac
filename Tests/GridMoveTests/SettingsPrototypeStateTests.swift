@@ -39,6 +39,28 @@ struct SettingsPrototypeStateTests {
         #expect(recorder.appliedCandidates.last?.general.mouseButtonNumber == 5)
     }
 
+    @Test func immediateApplyPreservesUnsavedLayoutsDraftAndDoesNotSaveIt() async throws {
+        let state = SettingsPrototypeState(configuration: .defaultValue)
+        let recorder = TestSettingsActionRecorder()
+
+        state.applyLayoutsMutation { configuration in
+            configuration.layoutGroups.append(LayoutGroup(name: "Draft", includeInGroupCycle: false, sets: []))
+            configuration.general.activeLayoutGroup = "Draft"
+        }
+
+        let didApply = state.applyImmediateMutation(using: recorder.makeActionHandler()) { configuration in
+            configuration.general.mouseButtonNumber = 5
+        }
+
+        #expect(didApply == true)
+        #expect(state.configuration.general.mouseButtonNumber == 5)
+        #expect(state.configuration.layoutGroups.contains(where: { $0.name == "Draft" }))
+        #expect(state.configuration.general.activeLayoutGroup == "Draft")
+        #expect(state.committedConfiguration.layoutGroups.contains(where: { $0.name == "Draft" }) == false)
+        #expect(state.committedConfiguration.general.activeLayoutGroup == AppConfiguration.builtInGroupName)
+        #expect(recorder.appliedCandidates.last?.layoutGroups.contains(where: { $0.name == "Draft" }) == false)
+    }
+
     @Test func immediateApplyFailureRollsBackToCommittedSnapshot() async throws {
         var committedConfiguration = AppConfiguration.defaultValue
         committedConfiguration.general.mouseButtonNumber = 4

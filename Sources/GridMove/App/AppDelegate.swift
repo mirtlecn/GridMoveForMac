@@ -609,6 +609,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             prototypeState: prototypeState,
             actionHandler: makeSettingsActionHandler(),
             onWindowWillClose: { [weak self] in
+                self?.settingsPrototypeState?.discardLayoutsDraft()
                 self?.settingsWindowController = nil
                 self?.settingsPrototypeState = nil
             }
@@ -860,6 +861,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         generalController.loadViewIfNeeded()
         return generalController.isEnabledForTesting
+    }
+
+    func setGeneralEnabledFromSettingsForTesting(_ isEnabled: Bool) {
+        guard let tabViewController = settingsWindowController?.window?.contentViewController as? NSTabViewController,
+              tabViewController.tabViewItems.indices.contains(0),
+              let generalController = tabViewController.tabViewItems[0].viewController as? GeneralSettingsViewController else {
+            return
+        }
+
+        generalController.loadViewIfNeeded()
+        generalController.setEnabledForTesting(isEnabled)
     }
 
     func reloadSettingsFromAboutTabForTesting() {

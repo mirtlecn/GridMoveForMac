@@ -877,6 +877,75 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
 }
 
 @MainActor
+@Test func settingsImmediateApplyDoesNotPersistLayoutsDraftChanges() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-immediate-apply-layout-boundary-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    delegate.showSettings()
+    delegate.selectSettingsTabForTesting(index: 1)
+    delegate.mutateLayoutsDraftForTesting { configuration in
+        configuration.layoutGroups.append(LayoutGroup(name: "Draft", includeInGroupCycle: false, sets: []))
+        configuration.general.activeLayoutGroup = "Draft"
+    }
+
+    delegate.selectSettingsTabForTesting(index: 0)
+    delegate.setGeneralEnabledFromSettingsForTesting(false)
+
+    let persistedConfiguration = try store.load()
+    let settingsDraft = try #require(delegate.layoutsDraftConfigurationForTesting)
+
+    #expect(delegate.configuration.general.isEnabled == false)
+    #expect(delegate.configuration.layoutGroups.contains(where: { $0.name == "Draft" }) == false)
+    #expect(persistedConfiguration.layoutGroups.contains(where: { $0.name == "Draft" }) == false)
+    #expect(settingsDraft.layoutGroups.contains(where: { $0.name == "Draft" }))
+    #expect(settingsDraft.general.activeLayoutGroup == "Draft")
+
+    delegate.closeSettingsWindowForTesting()
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
+@Test func closingSettingsWindowDiscardsUnsavedLayoutsDraft() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-close-discards-layout-draft-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    delegate.showSettings()
+    delegate.selectSettingsTabForTesting(index: 1)
+    delegate.mutateLayoutsDraftForTesting { configuration in
+        configuration.layoutGroups.append(LayoutGroup(name: "Draft", includeInGroupCycle: false, sets: []))
+    }
+
+    #expect(delegate.layoutsDraftConfigurationForTesting?.layoutGroups.contains(where: { $0.name == "Draft" }) == true)
+
+    delegate.closeSettingsWindowForTesting()
+    delegate.showSettings()
+
+    #expect(delegate.layoutsDraftConfigurationForTesting?.layoutGroups.contains(where: { $0.name == "Draft" }) == false)
+    #expect(delegate.configuration.layoutGroups.contains(where: { $0.name == "Draft" }) == false)
+
+    delegate.closeSettingsWindowForTesting()
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
 @Test func menuBarConfigurationChangesRefreshOpenSettingsImmediately() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-settings-live-sync-\(UUID().uuidString)", isDirectory: true)

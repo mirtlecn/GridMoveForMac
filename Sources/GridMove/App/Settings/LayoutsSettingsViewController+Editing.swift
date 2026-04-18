@@ -626,4 +626,20 @@ extension LayoutsSettingsViewController {
     var draftConfigurationForTesting: AppConfiguration {
         draftConfiguration
     }
+
+    func layoutTreeTitleForTesting(id layoutID: String) -> String? {
+        findNode(withLayoutID: layoutID, in: treeNodes)?.title
+    }
+
+    private func findNode(withLayoutID layoutID: String, in nodes: [LayoutsTreeNode]) -> LayoutsTreeNode? {
+        for node in nodes {
+            if case let .layout(_, _, layout, _) = node.kind, layout.id == layoutID {
+                return node
+            }
+            if let match = findNode(withLayoutID: layoutID, in: node.children) {
+                return match
+            }
+        }
+        return nil
+    }
 }

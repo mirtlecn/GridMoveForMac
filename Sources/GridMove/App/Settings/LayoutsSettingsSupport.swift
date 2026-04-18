@@ -306,7 +306,7 @@ final class TriggerTabContentView: NSView {
                         value: screenSelection.x,
                         unit: "grid",
                         minValue: 0,
-                        maxValue: max(0, gridColumns - 1),
+                        maxValue: max(0, gridColumns - screenSelection.w),
                         onValueChanged: { [weak self] value in
                             guard let self else { return }
                             screenSelection.x = value
@@ -320,7 +320,7 @@ final class TriggerTabContentView: NSView {
                         value: screenSelection.y,
                         unit: "grid",
                         minValue: 0,
-                        maxValue: max(0, gridRows - 1),
+                        maxValue: max(0, gridRows - screenSelection.h),
                         onValueChanged: { [weak self] value in
                             guard let self else { return }
                             screenSelection.y = value
@@ -334,7 +334,7 @@ final class TriggerTabContentView: NSView {
                         value: screenSelection.w,
                         unit: "grid",
                         minValue: 1,
-                        maxValue: gridColumns,
+                        maxValue: max(1, gridColumns - screenSelection.x),
                         onValueChanged: { [weak self] value in
                             guard let self else { return }
                             screenSelection.w = value
@@ -348,7 +348,7 @@ final class TriggerTabContentView: NSView {
                         value: screenSelection.h,
                         unit: "grid",
                         minValue: 1,
-                        maxValue: gridRows,
+                        maxValue: max(1, gridRows - screenSelection.y),
                         onValueChanged: { [weak self] value in
                             guard let self else { return }
                             screenSelection.h = value
@@ -365,7 +365,7 @@ final class TriggerTabContentView: NSView {
                         value: menuBarSelection.x,
                         unit: "grid",
                         minValue: 0,
-                        maxValue: max(0, gridRows - 1),
+                        maxValue: max(0, gridRows - menuBarSelection.w),
                         onValueChanged: { [weak self] value in
                             guard let self else { return }
                             menuBarSelection.x = value
@@ -379,7 +379,7 @@ final class TriggerTabContentView: NSView {
                         value: menuBarSelection.w,
                         unit: "grid",
                         minValue: 1,
-                        maxValue: gridRows,
+                        maxValue: max(1, gridRows - menuBarSelection.x),
                         onValueChanged: { [weak self] value in
                             guard let self else { return }
                             menuBarSelection.w = value
@@ -430,9 +430,13 @@ final class LayoutsTreeNode {
                     .map { ($0.layout.id, $0.menuIndex) }
             )
             let setNodes: [LayoutsTreeNode] = group.sets.enumerated().map { setIndex, set in
-                let layoutNodes: [LayoutsTreeNode] = set.layouts.map { layout in
+                let layoutNodes: [LayoutsTreeNode] = set.layouts.enumerated().map { localIndex, layout in
                     LayoutsTreeNode(
-                        title: layout.name,
+                        title: layoutTitle(
+                            for: layout,
+                            layoutIndex: layoutMenuIndexByID[layout.id],
+                            localIndex: localIndex
+                        ),
                         kind: .layout(
                             groupName: group.name,
                             setIndex: setIndex,
@@ -455,6 +459,21 @@ final class LayoutsTreeNode {
                 children: setNodes
             )
         }
+    }
+
+    private static func layoutTitle(for layout: LayoutPreset, layoutIndex: Int?, localIndex: Int) -> String {
+        let fallbackIndex = layoutIndex ?? parseLayoutIdentifierIndex(layout.id) ?? (localIndex + 1)
+        return UICopy.layoutMenuName(
+            name: layout.name,
+            fallbackIdentifier: UICopy.settingsUntitledLayoutTitle(fallbackIndex)
+        )
+    }
+
+    private static func parseLayoutIdentifierIndex(_ layoutID: String) -> Int? {
+        guard layoutID.hasPrefix("layout-") else {
+            return nil
+        }
+        return Int(layoutID.dropFirst("layout-".count))
     }
 
     static func monitorTitle(for monitor: LayoutSetMonitor, monitorMap: [String: String]) -> String {

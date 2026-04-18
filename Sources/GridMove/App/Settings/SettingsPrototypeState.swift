@@ -44,7 +44,7 @@ final class SettingsPrototypeState {
         using actionHandler: any SettingsActionHandling,
         _ mutate: (inout AppConfiguration) -> Void
     ) -> Bool {
-        var candidate = configuration
+        var candidate = committedConfiguration
         mutate(&candidate)
         return applyImmediateConfiguration(candidate, using: actionHandler)
     }
@@ -55,13 +55,13 @@ final class SettingsPrototypeState {
         using actionHandler: any SettingsActionHandling
     ) -> Bool {
         guard actionHandler.applyImmediateConfiguration(candidate) else {
-            configuration = committedConfiguration
+            configuration = mergedDraftPreservingLayouts(from: committedConfiguration)
             notifyDidChange()
             return false
         }
 
-        configuration = candidate
         committedConfiguration = candidate
+        configuration = mergedDraftPreservingLayouts(from: candidate)
         notifyDidChange()
         return true
     }
@@ -99,5 +99,19 @@ final class SettingsPrototypeState {
 
     private func notifyDidChange() {
         NotificationCenter.default.post(name: .settingsPrototypeStateDidChange, object: self)
+    }
+
+    private func mergedDraftPreservingLayouts(from immediateConfiguration: AppConfiguration) -> AppConfiguration {
+        var updatedDraft = configuration
+        updatedDraft.general.isEnabled = immediateConfiguration.general.isEnabled
+        updatedDraft.general.launchAtLogin = immediateConfiguration.general.launchAtLogin
+        updatedDraft.general.excludedBundleIDs = immediateConfiguration.general.excludedBundleIDs
+        updatedDraft.general.excludedWindowTitles = immediateConfiguration.general.excludedWindowTitles
+        updatedDraft.general.mouseButtonNumber = immediateConfiguration.general.mouseButtonNumber
+        updatedDraft.appearance = immediateConfiguration.appearance
+        updatedDraft.dragTriggers = immediateConfiguration.dragTriggers
+        updatedDraft.hotkeys = immediateConfiguration.hotkeys
+        updatedDraft.monitors = immediateConfiguration.monitors
+        return updatedDraft
     }
 }

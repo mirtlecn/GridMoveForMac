@@ -140,6 +140,10 @@ enum UICopy {
         "Apply layout \(index)"
     }
 
+    static func settingsUntitledLayoutTitle(_ index: Int) -> String {
+        "Layout №\(index)"
+    }
+
     static func mouseButtonDragMenuTitle(mouseButtonNumber: Int) -> String {
         mouseButtonNumber == 3 ? "Middle mouse drag" : "Mouse button \(mouseButtonNumber) drag"
     }

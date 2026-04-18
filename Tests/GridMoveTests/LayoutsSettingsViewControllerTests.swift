@@ -218,4 +218,13 @@ struct LayoutsSettingsViewControllerTests {
         #expect(buttonState.widthCanIncrement == false)
         #expect(buttonState.heightCanIncrement == false)
     }
+
+    @Test func untitledLayoutUsesNumeroFallbackTitleInTree() async throws {
+        var configuration = AppConfiguration.defaultValue
+        let layoutID = configuration.layoutGroups[0].sets[0].layouts[0].id
+        configuration.layoutGroups[0].sets[0].layouts[0].name = ""
+        let (controller, _, _) = makeController(configuration: configuration)
+
+        #expect(controller.layoutTreeTitleForTesting(id: layoutID) == "Layout №1")
+    }
 }

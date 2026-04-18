@@ -158,20 +158,21 @@ Right detail behavior:
   - a small refresh button exists next to `Apply to`
 - selecting `layout` shows:
   - preview
-  - inline tabs: `General`, `Window`, `Trigger`
+  - inline tabs: `Layout`, `Window area`, `Trigger area`
   - `Save` and `Remove` are outside the panel, in the bottom command row
 
 Current save rule:
 
 - this tab is draft-only until `Save`
 - no other tab shares this deferred-save rule
+- switching to another tab keeps the current `Layouts` draft
+- closing the settings window discards any unsaved `Layouts` draft
 
 Important semantic rule:
 
-- `Active group` is a boolean-looking control in UI
-- but the real model is a single active group name
-- the real model keeps this exclusive:
-  - when one group becomes active, others become inactive
+- the real model is a single active group name
+- the UI activates a group by double-clicking a group row in the left tree
+- when one group becomes active, others become inactive
 - protected groups (`protect = true`) cannot be removed in UI
 - empty groups and empty monitor sets are allowed and remain inert at runtime
 
