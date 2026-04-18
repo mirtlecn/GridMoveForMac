@@ -279,13 +279,9 @@ Current content:
 Current behavior:
 
 - `Author` opens the GitHub profile
-- `Config folder` uses the same behavior as menu-bar `Customize`
+- `Config folder` opens the configuration directory from inside Settings
 - `Reload` reuses the current reload path
-- `Restore settings` is UI-only for now
-
-There is already a TODO marker for later reset wiring:
-
-- `AboutSettingsViewController.handleRestoreSettings(_:)`
+- `Restore settings` stays disabled in phase 1
 
 ## Preview Integration Rules
 

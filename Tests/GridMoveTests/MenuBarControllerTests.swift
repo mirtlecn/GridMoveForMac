@@ -3,7 +3,7 @@ import Testing
 @testable import GridMove
 
 @MainActor
-@Test func menuBarControllerShowsReloadAndCustomizeEntries() async throws {
+@Test func menuBarControllerUsesSettingsAsOnlySettingsEntry() async throws {
     let controller = MenuBarController(
         dragGridEnabled: true,
         toggleSettings: .init(
@@ -27,8 +27,6 @@ import Testing
         onSelectLayoutGroup: { _ in true },
         onPerformAction: { _ in },
         onOpenSettings: {},
-        onReloadConfiguration: {},
-        onCustomize: {},
         onQuit: {}
     )
 
@@ -46,8 +44,6 @@ import Testing
             "Apply next layout",
             "|",
             "Settings...",
-            "Reload",
-            "Customize... ↗",
             "Launch at login",
             "|",
             "Quit",
@@ -77,8 +73,6 @@ import Testing
         onSelectLayoutGroup: { _ in true },
         onPerformAction: { _ in },
         onOpenSettings: {},
-        onReloadConfiguration: {},
-        onCustomize: {},
         onQuit: {}
     )
 
@@ -121,8 +115,6 @@ import Testing
         onSelectLayoutGroup: { _ in true },
         onPerformAction: { _ in },
         onOpenSettings: {},
-        onReloadConfiguration: {},
-        onCustomize: {},
         onQuit: {}
     )
 
@@ -154,8 +146,6 @@ import Testing
         onSelectLayoutGroup: { _ in true },
         onPerformAction: { _ in },
         onOpenSettings: {},
-        onReloadConfiguration: {},
-        onCustomize: {},
         onQuit: {}
     )
 

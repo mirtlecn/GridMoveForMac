@@ -3,6 +3,7 @@ import AppKit
 @MainActor
 final class GeneralSettingsViewController: NSViewController {
     private let prototypeState: SettingsPrototypeState
+    private let actionHandler: any SettingsActionHandling
 
     private enum ExclusionSelection {
         case bundleID(Int)
@@ -14,8 +15,16 @@ final class GeneralSettingsViewController: NSViewController {
     private let exclusionAddButton = NSButton(title: UICopy.settingsAddEllipsisButtonTitle, target: nil, action: nil)
     private let exclusionRemoveButton = NSButton(title: UICopy.settingsRemoveButtonTitle, target: nil, action: nil)
 
-    init(prototypeState: SettingsPrototypeState) {
+    private lazy var enableCheckbox = makeCheckboxRow(title: UICopy.enableMenuTitle)
+    private lazy var launchAtLoginCheckbox = makeCheckboxRow(title: UICopy.launchAtLoginMenuTitle)
+    private lazy var mouseButtonDragCheckbox = makeCheckboxRow(title: UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 3))
+    private lazy var mouseButtonPopup = makeMouseButtonPopup()
+    private lazy var modifierLeftMouseDragCheckbox = makeCheckboxRow(title: UICopy.modifierLeftMouseDragMenuTitle)
+    private lazy var preferLayoutModeCheckbox = makeCheckboxRow(title: UICopy.preferLayoutModeMenuTitle)
+
+    init(prototypeState: SettingsPrototypeState, actionHandler: any SettingsActionHandling) {
         self.prototypeState = prototypeState
+        self.actionHandler = actionHandler
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -56,17 +65,19 @@ final class GeneralSettingsViewController: NSViewController {
     }()
 
     override func loadView() {
+        configureControls()
+
         let contentStackView = makeSettingsPageStackView()
         contentStackView.addArrangedSubview(makeRuntimeRows())
         contentStackView.addArrangedSubview(
             makeSettingsSection(
                 title: UICopy.settingsDragBehaviorSectionTitle,
                 rows: [
-                    makeCheckboxRow(title: UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 3)),
-                    makeLabeledControlRow(label: UICopy.settingsMouseButtonNumberLabel, control: makeMouseButtonPopup()),
-                    makeCheckboxRow(title: UICopy.modifierLeftMouseDragMenuTitle),
+                    mouseButtonDragCheckbox,
+                    makeLabeledControlRow(label: UICopy.settingsMouseButtonNumberLabel, control: mouseButtonPopup),
+                    modifierLeftMouseDragCheckbox,
                     makeLabeledControlRow(label: UICopy.settingsModifierGroupsLabel, control: modifierGroupsControl),
-                    makeCheckboxRow(title: UICopy.preferLayoutModeMenuTitle),
+                    preferLayoutModeCheckbox,
                 ]
             )
         )
@@ -83,11 +94,12 @@ final class GeneralSettingsViewController: NSViewController {
 
         view = makeSettingsPageContainerView(contentView: contentStackView)
         title = UICopy.settingsGeneralTabTitle
+        syncFromState()
+        observePrototypeState()
     }
 
     private var modifierGroups: [[ModifierKey]] {
-        get { prototypeState.configuration.dragTriggers.modifierGroups }
-        set { prototypeState.configuration.dragTriggers.modifierGroups = newValue }
+        prototypeState.configuration.dragTriggers.modifierGroups
     }
 
     private var modifierGroupDisplayNames: [String] {
@@ -100,19 +112,81 @@ final class GeneralSettingsViewController: NSViewController {
     }
 
     private var excludedBundleIDs: [String] {
-        get { prototypeState.configuration.general.excludedBundleIDs }
-        set { prototypeState.configuration.general.excludedBundleIDs = newValue }
+        prototypeState.configuration.general.excludedBundleIDs
     }
 
     private var excludedWindowTitles: [String] {
-        get { prototypeState.configuration.general.excludedWindowTitles }
-        set { prototypeState.configuration.general.excludedWindowTitles = newValue }
+        prototypeState.configuration.general.excludedWindowTitles
+    }
+
+    private func configureControls() {
+        enableCheckbox.target = self
+        enableCheckbox.action = #selector(handleEnableToggle(_:))
+
+        launchAtLoginCheckbox.target = self
+        launchAtLoginCheckbox.action = #selector(handleLaunchAtLoginToggle(_:))
+
+        mouseButtonDragCheckbox.target = self
+        mouseButtonDragCheckbox.action = #selector(handleMouseButtonDragToggle(_:))
+
+        mouseButtonPopup.target = self
+        mouseButtonPopup.action = #selector(handleMouseButtonNumberChanged(_:))
+
+        modifierLeftMouseDragCheckbox.target = self
+        modifierLeftMouseDragCheckbox.action = #selector(handleModifierLeftMouseDragToggle(_:))
+
+        preferLayoutModeCheckbox.target = self
+        preferLayoutModeCheckbox.action = #selector(handlePreferLayoutModeToggle(_:))
+    }
+
+    private func observePrototypeState() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handlePrototypeStateDidChange(_:)),
+            name: .settingsPrototypeStateDidChange,
+            object: prototypeState
+        )
+    }
+
+    private func syncFromState() {
+        let configuration = prototypeState.configuration
+        enableCheckbox.state = configuration.general.isEnabled ? .on : .off
+        launchAtLoginCheckbox.state = configuration.general.launchAtLogin ? .on : .off
+        mouseButtonDragCheckbox.state = configuration.dragTriggers.enableMouseButtonDrag ? .on : .off
+        mouseButtonDragCheckbox.title = UICopy.mouseButtonDragMenuTitle(
+            mouseButtonNumber: configuration.general.mouseButtonNumber
+        )
+        mouseButtonPopup.selectItem(withTitle: String(configuration.general.mouseButtonNumber))
+        modifierLeftMouseDragCheckbox.state = configuration.dragTriggers.enableModifierLeftMouseDrag ? .on : .off
+        preferLayoutModeCheckbox.state = configuration.dragTriggers.preferLayoutMode ? .on : .off
+
+        modifierGroupsControl.items = modifierGroupDisplayNames
+        excludedBundleIDsControl.items = excludedBundleIDs
+        excludedWindowTitlesControl.items = excludedWindowTitles
+
+        if let selectedExclusion {
+            switch selectedExclusion {
+            case let .bundleID(index) where !excludedBundleIDs.indices.contains(index):
+                self.selectedExclusion = nil
+            case let .windowTitle(index) where !excludedWindowTitles.indices.contains(index):
+                self.selectedExclusion = nil
+            default:
+                break
+            }
+        }
+
+        updateExclusionButtons()
+    }
+
+    @objc
+    private func handlePrototypeStateDidChange(_ notification: Notification) {
+        syncFromState()
     }
 
     private func makeRuntimeRows() -> NSView {
         let rowsStackView = makeVerticalGroup(spacing: 9)
-        rowsStackView.addArrangedSubview(makeCheckboxRow(title: UICopy.enableMenuTitle, state: prototypeState.configuration.general.isEnabled ? .on : .off))
-        rowsStackView.addArrangedSubview(makeCheckboxRow(title: UICopy.launchAtLoginMenuTitle, state: prototypeState.configuration.general.launchAtLogin ? .on : .off))
+        rowsStackView.addArrangedSubview(enableCheckbox)
+        rowsStackView.addArrangedSubview(launchAtLoginCheckbox)
         return makeIndentedContainer(for: rowsStackView)
     }
 
@@ -127,15 +201,16 @@ final class GeneralSettingsViewController: NSViewController {
             guard let self else {
                 return
             }
+
             let selectedModifiers = sheetContentView.selectedModifiers
             if let existingIndex = self.modifierGroups.firstIndex(of: selectedModifiers) {
-                self.modifierGroupsControl.items = self.modifierGroupDisplayNames
                 self.modifierGroupsControl.selectItem(at: existingIndex)
                 return
             }
 
-            self.modifierGroups.append(selectedModifiers)
-            self.modifierGroupsControl.items = self.modifierGroupDisplayNames
+            _ = self.prototypeState.applyImmediateMutation(using: self.actionHandler) { configuration in
+                configuration.dragTriggers.modifierGroups.append(selectedModifiers)
+            }
             self.modifierGroupsControl.selectItem(at: self.modifierGroups.count - 1)
         }
         presentAsSheet(sheetController)
@@ -155,17 +230,22 @@ final class GeneralSettingsViewController: NSViewController {
     }
 
     private func applyExclusionSheetResult(_ sheetContentView: ExclusionEntrySheetContentView) {
+        let value = sheetContentView.resolvedValue
         switch sheetContentView.selectedKind {
         case .bundleID:
-            excludedBundleIDs.append(sheetContentView.resolvedValue)
-            excludedBundleIDsControl.items = excludedBundleIDs
-            excludedBundleIDsControl.selectItem(at: excludedBundleIDs.indices.last)
-            selectedExclusion = .bundleID(excludedBundleIDs.count - 1)
+            if prototypeState.applyImmediateMutation(using: actionHandler, { configuration in
+                configuration.general.excludedBundleIDs.append(value)
+            }) {
+                selectedExclusion = .bundleID(excludedBundleIDs.count - 1)
+                excludedBundleIDsControl.selectItem(at: excludedBundleIDs.indices.last)
+            }
         case .windowTitle:
-            excludedWindowTitles.append(sheetContentView.resolvedValue)
-            excludedWindowTitlesControl.items = excludedWindowTitles
-            excludedWindowTitlesControl.selectItem(at: excludedWindowTitles.indices.last)
-            selectedExclusion = .windowTitle(excludedWindowTitles.count - 1)
+            if prototypeState.applyImmediateMutation(using: actionHandler, { configuration in
+                configuration.general.excludedWindowTitles.append(value)
+            }) {
+                selectedExclusion = .windowTitle(excludedWindowTitles.count - 1)
+                excludedWindowTitlesControl.selectItem(at: excludedWindowTitles.indices.last)
+            }
         }
         updateExclusionButtons()
     }
@@ -174,24 +254,30 @@ final class GeneralSettingsViewController: NSViewController {
         guard modifierGroups.indices.contains(index) else {
             return
         }
-        modifierGroups.remove(at: index)
-        modifierGroupsControl.items = modifierGroupDisplayNames
+
+        _ = prototypeState.applyImmediateMutation(using: actionHandler) { configuration in
+            configuration.dragTriggers.modifierGroups.remove(at: index)
+        }
     }
 
     private func removeExcludedBundleID(at index: Int) {
         guard excludedBundleIDs.indices.contains(index) else {
             return
         }
-        excludedBundleIDs.remove(at: index)
-        excludedBundleIDsControl.items = excludedBundleIDs
+
+        _ = prototypeState.applyImmediateMutation(using: actionHandler) { configuration in
+            configuration.general.excludedBundleIDs.remove(at: index)
+        }
     }
 
     private func removeExcludedWindowTitle(at index: Int) {
         guard excludedWindowTitles.indices.contains(index) else {
             return
         }
-        excludedWindowTitles.remove(at: index)
-        excludedWindowTitlesControl.items = excludedWindowTitles
+
+        _ = prototypeState.applyImmediateMutation(using: actionHandler) { configuration in
+            configuration.general.excludedWindowTitles.remove(at: index)
+        }
     }
 
     private func makeExclusionButtonsRow() -> NSView {
@@ -236,9 +322,9 @@ final class GeneralSettingsViewController: NSViewController {
         selectedExclusion = selection
 
         switch selection {
-        case .bundleID(_):
+        case .bundleID:
             excludedWindowTitlesControl.selectItem(at: nil)
-        case .windowTitle(_):
+        case .windowTitle:
             excludedBundleIDsControl.selectItem(at: nil)
         case nil:
             break
@@ -252,10 +338,53 @@ final class GeneralSettingsViewController: NSViewController {
     }
 
     @objc
+    private func handleEnableToggle(_ sender: NSButton) {
+        _ = prototypeState.applyImmediateMutation(using: actionHandler) { configuration in
+            configuration.general.isEnabled = sender.state == .on
+        }
+    }
+
+    @objc
+    private func handleLaunchAtLoginToggle(_ sender: NSButton) {
+        _ = prototypeState.applyImmediateMutation(using: actionHandler) { configuration in
+            configuration.general.launchAtLogin = sender.state == .on
+        }
+    }
+
+    @objc
+    private func handleMouseButtonDragToggle(_ sender: NSButton) {
+        _ = prototypeState.applyImmediateMutation(using: actionHandler) { configuration in
+            configuration.dragTriggers.enableMouseButtonDrag = sender.state == .on
+        }
+    }
+
+    @objc
+    private func handleMouseButtonNumberChanged(_ sender: NSPopUpButton) {
+        let mouseButtonNumber = Int(sender.selectedItem?.title ?? "") ?? GeneralSettings.defaultMouseButtonNumber
+        _ = prototypeState.applyImmediateMutation(using: actionHandler) { configuration in
+            configuration.general.mouseButtonNumber = mouseButtonNumber
+        }
+    }
+
+    @objc
+    private func handleModifierLeftMouseDragToggle(_ sender: NSButton) {
+        _ = prototypeState.applyImmediateMutation(using: actionHandler) { configuration in
+            configuration.dragTriggers.enableModifierLeftMouseDrag = sender.state == .on
+        }
+    }
+
+    @objc
+    private func handlePreferLayoutModeToggle(_ sender: NSButton) {
+        _ = prototypeState.applyImmediateMutation(using: actionHandler) { configuration in
+            configuration.dragTriggers.preferLayoutMode = sender.state == .on
+        }
+    }
+
+    @objc
     private func handleAddExclusion(_ sender: NSButton) {
         let initialKind: ExclusionEntrySheetContentView.Kind
         switch selectedExclusion {
-        case .windowTitle(_):
+        case .windowTitle:
             initialKind = .windowTitle
         default:
             initialKind = .bundleID
@@ -279,5 +408,64 @@ final class GeneralSettingsViewController: NSViewController {
         }
 
         updateExclusionButtons()
+    }
+}
+
+extension GeneralSettingsViewController {
+    func setEnabledForTesting(_ isEnabled: Bool) {
+        enableCheckbox.state = isEnabled ? .on : .off
+        handleEnableToggle(enableCheckbox)
+    }
+
+    func setLaunchAtLoginForTesting(_ isEnabled: Bool) {
+        launchAtLoginCheckbox.state = isEnabled ? .on : .off
+        handleLaunchAtLoginToggle(launchAtLoginCheckbox)
+    }
+
+    func setMouseButtonDragForTesting(_ isEnabled: Bool) {
+        mouseButtonDragCheckbox.state = isEnabled ? .on : .off
+        handleMouseButtonDragToggle(mouseButtonDragCheckbox)
+    }
+
+    func setMouseButtonNumberForTesting(_ mouseButtonNumber: Int) {
+        mouseButtonPopup.selectItem(withTitle: String(mouseButtonNumber))
+        handleMouseButtonNumberChanged(mouseButtonPopup)
+    }
+
+    func setModifierLeftMouseDragForTesting(_ isEnabled: Bool) {
+        modifierLeftMouseDragCheckbox.state = isEnabled ? .on : .off
+        handleModifierLeftMouseDragToggle(modifierLeftMouseDragCheckbox)
+    }
+
+    func setPreferLayoutModeForTesting(_ isEnabled: Bool) {
+        preferLayoutModeCheckbox.state = isEnabled ? .on : .off
+        handlePreferLayoutModeToggle(preferLayoutModeCheckbox)
+    }
+
+    func addModifierGroupForTesting(_ modifierKeys: [ModifierKey]) {
+        if let existingIndex = modifierGroups.firstIndex(of: modifierKeys) {
+            modifierGroupsControl.selectItem(at: existingIndex)
+            return
+        }
+
+        _ = prototypeState.applyImmediateMutation(using: actionHandler) { configuration in
+            configuration.dragTriggers.modifierGroups.append(modifierKeys)
+        }
+    }
+
+    func addExcludedBundleIDForTesting(_ value: String) {
+        if prototypeState.applyImmediateMutation(using: actionHandler, { configuration in
+            configuration.general.excludedBundleIDs.append(value)
+        }) {
+            selectedExclusion = .bundleID(excludedBundleIDs.count - 1)
+        }
+    }
+
+    func addExcludedWindowTitleForTesting(_ value: String) {
+        if prototypeState.applyImmediateMutation(using: actionHandler, { configuration in
+            configuration.general.excludedWindowTitles.append(value)
+        }) {
+            selectedExclusion = .windowTitle(excludedWindowTitles.count - 1)
+        }
     }
 }

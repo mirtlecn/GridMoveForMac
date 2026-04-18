@@ -92,3 +92,57 @@ private func makeTestLayout(
     #expect(settings.highlightFillOpacity == 0.08)
     #expect(settings.highlightStrokeWidth == 3)
 }
+
+@MainActor
+@Test func hotkeyAddSheetRequiresRecordedShortcut() async throws {
+    let actions = HotkeyPrototypeSlot.makePrototypeSlots(configuration: .defaultValue).map(\.actionDescriptor)
+    let contentView = HotkeyAddSheetContentView(actions: actions, selectedActionID: actions.first?.id)
+
+    #expect(contentView.recordedShortcut == nil)
+    #expect(contentView.isConfirmationEnabled == false)
+}
+
+@MainActor
+@Test func hotkeysControllerAddsRealShortcutBindingAndClearsSelectedAction() async throws {
+    let state = SettingsPrototypeState(configuration: .defaultValue)
+    state.reload(from: AppConfiguration.defaultValue)
+    let recorder = TestSettingsActionRecorder()
+    let controller = HotkeysSettingsViewController(
+        prototypeState: state,
+        actionHandler: recorder.makeActionHandler()
+    )
+    controller.loadViewIfNeeded()
+
+    let shortcut = KeyboardShortcut(modifiers: [.ctrl, .cmd], key: "k")
+    controller.applyAddedShortcut(actionID: "cycleNext", shortcut: shortcut)
+
+    #expect(state.configuration.hotkeys.bindings.contains {
+        $0.action == .cycleNext && $0.shortcut == shortcut && $0.isEnabled
+    })
+
+    controller.selectSlotForTesting(1)
+    controller.clearSelectedSlotForTesting()
+
+    #expect(state.configuration.hotkeys.bindings.contains { $0.action == .cycleNext } == false)
+    #expect(controller.bindingsForSelectedSlotForTesting.isEmpty)
+}
+
+@MainActor
+@Test func hotkeysControllerRollsBackAddedBindingOnFailure() async throws {
+    let state = SettingsPrototypeState(configuration: .defaultValue)
+    let recorder = TestSettingsActionRecorder()
+    recorder.applySucceeds = false
+    let controller = HotkeysSettingsViewController(
+        prototypeState: state,
+        actionHandler: recorder.makeActionHandler()
+    )
+    controller.loadViewIfNeeded()
+
+    let originalBindings = state.configuration.hotkeys.bindings
+    controller.applyAddedShortcut(
+        actionID: "cycleNext",
+        shortcut: KeyboardShortcut(modifiers: [.cmd], key: "9")
+    )
+
+    #expect(state.configuration.hotkeys.bindings == originalBindings)
+}

@@ -3,13 +3,15 @@ import AppKit
 @MainActor
 final class HotkeysSettingsViewController: NSViewController, NSTableViewDataSource, NSTableViewDelegate {
     private let prototypeState: SettingsPrototypeState
+    private let actionHandler: any SettingsActionHandling
     private let slotTableView = makeSettingsTableView()
     private let addButton = NSButton(title: UICopy.settingsHotkeysAddButtonTitle, target: nil, action: nil)
     private let clearButton = NSButton(title: UICopy.settingsClearButtonTitle, target: nil, action: nil)
     private var selectedSlotIndex = 0
 
-    init(prototypeState: SettingsPrototypeState) {
+    init(prototypeState: SettingsPrototypeState, actionHandler: any SettingsActionHandling) {
         self.prototypeState = prototypeState
+        self.actionHandler = actionHandler
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -30,8 +32,8 @@ final class HotkeysSettingsViewController: NSViewController, NSTableViewDataSour
         view = makeSettingsPageContainerView(contentView: contentStackView)
         title = UICopy.settingsHotkeysTabTitle
 
-        slotTableView.reloadData()
-        selectSlot(at: 0)
+        observePrototypeState()
+        reloadSlots(preservingSelection: 0)
     }
 
     func numberOfRows(in tableView: NSTableView) -> Int {
@@ -119,6 +121,26 @@ final class HotkeysSettingsViewController: NSViewController, NSTableViewDataSour
         return row
     }
 
+    private func observePrototypeState() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handlePrototypeStateDidChange(_:)),
+            name: .settingsPrototypeStateDidChange,
+            object: prototypeState
+        )
+    }
+
+    private func reloadSlots(preservingSelection selectionIndex: Int) {
+        slotTableView.reloadData()
+        let boundedSelection = max(0, min(selectionIndex, max(0, slots.count - 1)))
+        selectSlot(at: boundedSelection)
+    }
+
+    @objc
+    private func handlePrototypeStateDidChange(_ notification: Notification) {
+        reloadSlots(preservingSelection: selectedSlotIndex)
+    }
+
     private func selectSlot(at index: Int) {
         guard slots.indices.contains(index) else {
             return
@@ -162,25 +184,24 @@ final class HotkeysSettingsViewController: NSViewController, NSTableViewDataSour
         }
 
         let selectedAction = slots[selectedSlotIndex].action
-        prototypeState.configuration.hotkeys.bindings.removeAll { $0.action == selectedAction }
-        slotTableView.reloadData()
-        selectSlot(at: selectedSlotIndex)
+        _ = prototypeState.applyImmediateMutation(using: actionHandler) { configuration in
+            configuration.hotkeys.bindings.removeAll { $0.action == selectedAction }
+        }
     }
 
-    private func applyAddedShortcut(actionID: String, shortcut: KeyboardShortcut) {
+    func applyAddedShortcut(actionID: String, shortcut: KeyboardShortcut) {
         guard let slot = slots.first(where: { $0.actionDescriptor.id == actionID }),
               let index = slots.firstIndex(where: { $0.actionDescriptor.id == actionID }) else {
             return
         }
 
-        // TODO: When real model wiring starts, replace this direct append with a
-        // proper binding editor flow that preserves ordering, enabled state, and
-        // conflict diagnostics across the shared settings draft.
-        prototypeState.configuration.hotkeys.bindings.append(
-            ShortcutBinding(shortcut: shortcut, action: slot.action)
-        )
-        slotTableView.reloadData()
-        selectSlot(at: index)
+        if prototypeState.applyImmediateMutation(using: actionHandler, { configuration in
+            configuration.hotkeys.bindings.append(
+                ShortcutBinding(shortcut: shortcut, action: slot.action)
+            )
+        }) {
+            reloadSlots(preservingSelection: index)
+        }
     }
 }
 
@@ -329,5 +350,19 @@ extension ModifierKey {
         if flags.contains(.shift) { result.append(.shift) }
         if flags.contains(.command) { result.append(.cmd) }
         return result
+    }
+}
+
+extension HotkeysSettingsViewController {
+    func selectSlotForTesting(_ index: Int) {
+        selectSlot(at: index)
+    }
+
+    func clearSelectedSlotForTesting() {
+        handleClearShortcuts(clearButton)
+    }
+
+    var bindingsForSelectedSlotForTesting: [String] {
+        selectedSlot.bindings
     }
 }

@@ -2,12 +2,35 @@ import AppKit
 
 @MainActor
 final class AppearanceSettingsViewController: NSViewController {
+    private let prototypeState: SettingsPrototypeState
+    private let actionHandler: any SettingsActionHandling
+
+    private let previewView = AppearancePreviewView()
+    private let showHighlightCheckbox = makeCheckboxRow(title: "")
+    private let fillOpacityControl = AppearanceSliderControl()
+    private let strokeWidthControl = AppearanceStepperControl(minValue: 0, maxValue: 24, unit: "pt")
+    private let strokeColorControl = AppearanceColorControl()
+    private let layoutGapControl = AppearanceStepperControl(minValue: 0, maxValue: 24, unit: "pt")
+    private let showOverlayCheckbox = makeCheckboxRow(title: "")
+    private let triggerOpacityControl = AppearanceSliderControl()
+    private let triggerGapControl = AppearanceStepperControl(minValue: 0, maxValue: 24, unit: "pt")
+    private let triggerStrokeColorControl = AppearanceColorControl()
+
+    init(prototypeState: SettingsPrototypeState, actionHandler: any SettingsActionHandling) {
+        self.prototypeState = prototypeState
+        self.actionHandler = actionHandler
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        nil
+    }
+
     override func loadView() {
-        let configuration = AppConfiguration.defaultValue
+        configureControls()
 
         let contentStackView = makeSettingsPageStackView()
-
-        let previewView = AppearancePreviewView(configuration: configuration)
         previewView.translatesAutoresizingMaskIntoConstraints = false
         previewView.widthAnchor.constraint(equalToConstant: 420).isActive = true
         previewView.heightAnchor.constraint(equalToConstant: 260).isActive = true
@@ -18,72 +41,20 @@ final class AppearanceSettingsViewController: NSViewController {
                 SettingsInlineTab(
                     title: UICopy.settingsWindowHighlightSectionTitle,
                     contentView: makeInlineTabContent(rows: [
-                        makeLabeledControlRow(
-                            label: UICopy.settingsShowHighlightTitle,
-                            control: makeReadonlyCheckboxControl(isOn: configuration.appearance.renderWindowHighlight)
-                        ),
-                        makeLabeledControlRow(
-                            label: UICopy.settingsFillOpacityLabel,
-                            control: makeReadonlySliderControl(
-                                value: configuration.appearance.highlightFillOpacity,
-                                minValue: 0,
-                                maxValue: 1,
-                                displayValue: percentageString(configuration.appearance.highlightFillOpacity)
-                            )
-                        ),
-                        makeLabeledControlRow(
-                            label: UICopy.settingsStrokeWidthLabel,
-                            control: makeNumericStepperControl(
-                                value: configuration.appearance.highlightStrokeWidth,
-                                unit: "pt",
-                                minValue: 0,
-                                maxValue: 24
-                            )
-                        ),
-                        makeLabeledControlRow(
-                            label: UICopy.settingsStrokeColorLabel,
-                            control: makeReadonlyColorControl(color: configuration.appearance.highlightStrokeColor.nsColor)
-                        ),
-                        makeLabeledControlRow(
-                            label: UICopy.settingsLayoutGapLabel,
-                            control: makeNumericStepperControl(
-                                value: configuration.appearance.effectiveLayoutGap,
-                                unit: "pt",
-                                minValue: 0,
-                                maxValue: 24
-                            )
-                        ),
+                        makeLabeledControlRow(label: UICopy.settingsShowHighlightTitle, control: showHighlightCheckbox),
+                        makeLabeledControlRow(label: UICopy.settingsFillOpacityLabel, control: fillOpacityControl),
+                        makeLabeledControlRow(label: UICopy.settingsStrokeWidthLabel, control: strokeWidthControl),
+                        makeLabeledControlRow(label: UICopy.settingsStrokeColorLabel, control: strokeColorControl),
+                        makeLabeledControlRow(label: UICopy.settingsLayoutGapLabel, control: layoutGapControl),
                     ])
                 ),
                 SettingsInlineTab(
                     title: UICopy.settingsTriggerOverlaySectionTitle,
                     contentView: makeInlineTabContent(rows: [
-                        makeLabeledControlRow(
-                            label: UICopy.settingsShowOverlayTitle,
-                            control: makeReadonlyCheckboxControl(isOn: configuration.appearance.renderTriggerAreas)
-                        ),
-                        makeLabeledControlRow(
-                            label: UICopy.settingsFillOpacityLabel,
-                            control: makeReadonlySliderControl(
-                                value: configuration.appearance.triggerOpacity,
-                                minValue: 0,
-                                maxValue: 1,
-                                displayValue: percentageString(configuration.appearance.triggerOpacity)
-                            )
-                        ),
-                        makeLabeledControlRow(
-                            label: UICopy.settingsGapLabel,
-                            control: makeNumericStepperControl(
-                                value: configuration.appearance.triggerGap,
-                                unit: "pt",
-                                minValue: 0,
-                                maxValue: 24
-                            )
-                        ),
-                        makeLabeledControlRow(
-                            label: UICopy.settingsStrokeColorLabel,
-                            control: makeReadonlyColorControl(color: configuration.appearance.triggerStrokeColor.nsColor)
-                        ),
+                        makeLabeledControlRow(label: UICopy.settingsShowOverlayTitle, control: showOverlayCheckbox),
+                        makeLabeledControlRow(label: UICopy.settingsFillOpacityLabel, control: triggerOpacityControl),
+                        makeLabeledControlRow(label: UICopy.settingsGapLabel, control: triggerGapControl),
+                        makeLabeledControlRow(label: UICopy.settingsStrokeColorLabel, control: triggerStrokeColorControl),
                     ])
                 ),
             ]
@@ -91,38 +62,330 @@ final class AppearanceSettingsViewController: NSViewController {
         contentStackView.addArrangedSubview(makeFullWidthContainer(for: inlineTabsView))
         view = makeSettingsPageContainerView(contentView: contentStackView)
         title = UICopy.settingsAppearanceTabTitle
+
+        syncFromState()
+        observePrototypeState()
     }
 
-    private func makeReadonlySliderControl(value: Double, minValue: Double, maxValue: Double, displayValue: String) -> NSView {
-        let slider = NSSlider(value: value, minValue: minValue, maxValue: maxValue, target: nil, action: nil)
+    private func configureControls() {
+        showHighlightCheckbox.target = self
+        showHighlightCheckbox.action = #selector(handleShowHighlightToggle(_:))
+
+        fillOpacityControl.onValueChanged = { [weak self] value in
+            self?.applyMutation { configuration in
+                configuration.appearance.highlightFillOpacity = value
+            }
+        }
+        strokeWidthControl.onValueChanged = { [weak self] value in
+            self?.applyMutation { configuration in
+                configuration.appearance.highlightStrokeWidth = value
+            }
+        }
+        strokeColorControl.onColorChanged = { [weak self] color in
+            guard let rgbaColor = Self.makeRGBAColor(from: color) else {
+                return
+            }
+            self?.applyMutation { configuration in
+                configuration.appearance.highlightStrokeColor = rgbaColor
+            }
+        }
+        layoutGapControl.onValueChanged = { [weak self] value in
+            self?.applyMutation { configuration in
+                configuration.appearance.layoutGap = value
+            }
+        }
+
+        showOverlayCheckbox.target = self
+        showOverlayCheckbox.action = #selector(handleShowOverlayToggle(_:))
+
+        triggerOpacityControl.onValueChanged = { [weak self] value in
+            self?.applyMutation { configuration in
+                configuration.appearance.triggerOpacity = value
+            }
+        }
+        triggerGapControl.onValueChanged = { [weak self] value in
+            self?.applyMutation { configuration in
+                configuration.appearance.triggerGap = value
+            }
+        }
+        triggerStrokeColorControl.onColorChanged = { [weak self] color in
+            guard let rgbaColor = Self.makeRGBAColor(from: color) else {
+                return
+            }
+            self?.applyMutation { configuration in
+                configuration.appearance.triggerStrokeColor = rgbaColor
+            }
+        }
+    }
+
+    private func observePrototypeState() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handlePrototypeStateDidChange(_:)),
+            name: .settingsPrototypeStateDidChange,
+            object: prototypeState
+        )
+    }
+
+    private func syncFromState() {
+        let configuration = prototypeState.configuration
+        let appearance = configuration.appearance
+
+        showHighlightCheckbox.state = appearance.renderWindowHighlight ? .on : .off
+        fillOpacityControl.setValue(appearance.highlightFillOpacity)
+        strokeWidthControl.setValue(appearance.highlightStrokeWidth)
+        strokeColorControl.setColor(appearance.highlightStrokeColor.nsColor)
+        layoutGapControl.setValue(appearance.effectiveLayoutGap)
+
+        showOverlayCheckbox.state = appearance.renderTriggerAreas ? .on : .off
+        triggerOpacityControl.setValue(appearance.triggerOpacity)
+        triggerGapControl.setValue(appearance.triggerGap)
+        triggerStrokeColorControl.setColor(appearance.triggerStrokeColor.nsColor)
+
+        previewView.updateConfiguration(configuration)
+    }
+
+    @objc
+    private func handlePrototypeStateDidChange(_ notification: Notification) {
+        syncFromState()
+    }
+
+    private func applyMutation(_ mutate: (inout AppConfiguration) -> Void) {
+        _ = prototypeState.applyImmediateMutation(using: actionHandler, mutate)
+    }
+
+    @objc
+    private func handleShowHighlightToggle(_ sender: NSButton) {
+        applyMutation { configuration in
+            configuration.appearance.renderWindowHighlight = sender.state == .on
+        }
+    }
+
+    @objc
+    private func handleShowOverlayToggle(_ sender: NSButton) {
+        applyMutation { configuration in
+            configuration.appearance.renderTriggerAreas = sender.state == .on
+        }
+    }
+
+    private static func makeRGBAColor(from color: NSColor) -> RGBAColor? {
+        guard let deviceColor = color.usingColorSpace(.deviceRGB) else {
+            return nil
+        }
+
+        return RGBAColor(
+            red: Double(deviceColor.redComponent),
+            green: Double(deviceColor.greenComponent),
+            blue: Double(deviceColor.blueComponent),
+            alpha: Double(deviceColor.alphaComponent)
+        )
+    }
+}
+
+@MainActor
+private final class AppearanceSliderControl: NSView {
+    var onValueChanged: ((Double) -> Void)?
+
+    private let slider = NSSlider(value: 0, minValue: 0, maxValue: 1, target: nil, action: nil)
+    private let valueLabel = makeValueLabel("0%")
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+
         slider.controlSize = .small
+        slider.target = self
+        slider.action = #selector(handleSliderChanged(_:))
         slider.translatesAutoresizingMaskIntoConstraints = false
         slider.widthAnchor.constraint(equalToConstant: 160).isActive = true
 
-        let valueLabel = makeValueLabel(displayValue)
-
         let stackView = makeHorizontalGroup(spacing: 10)
         stackView.alignment = .centerY
+        stackView.translatesAutoresizingMaskIntoConstraints = false
         stackView.addArrangedSubview(slider)
         stackView.addArrangedSubview(valueLabel)
-        return stackView
+        addSubview(stackView)
+
+        NSLayoutConstraint.activate([
+            stackView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            stackView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            stackView.topAnchor.constraint(equalTo: topAnchor),
+            stackView.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
     }
 
-    private func makeReadonlyCheckboxControl(isOn: Bool) -> NSButton {
-        let checkbox = NSButton(checkboxWithTitle: "", target: nil, action: nil)
-        checkbox.state = isOn ? .on : .off
-        return checkbox
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        nil
     }
 
-    private func makeReadonlyColorControl(color: NSColor) -> NSColorWell {
-        let colorWell = NSColorWell()
-        colorWell.color = color
+    func setValue(_ value: Double) {
+        slider.doubleValue = value
+        valueLabel.stringValue = Self.percentageString(value)
+    }
+
+    @objc
+    private func handleSliderChanged(_ sender: NSSlider) {
+        let value = sender.doubleValue
+        valueLabel.stringValue = Self.percentageString(value)
+        onValueChanged?(value)
+    }
+
+    private static func percentageString(_ value: Double) -> String {
+        "\(Int((value * 100).rounded()))%"
+    }
+}
+
+@MainActor
+private final class AppearanceStepperControl: NSView, NSTextFieldDelegate {
+    var onValueChanged: ((Int) -> Void)?
+
+    private let textField = NSTextField(string: "")
+    private let stepper = NSStepper()
+    private let unitLabel: NSTextField
+    private let minValue: Int
+    private let maxValue: Int
+
+    init(minValue: Int, maxValue: Int, unit: String) {
+        self.minValue = minValue
+        self.maxValue = maxValue
+        unitLabel = makeFieldLabel(unit)
+        super.init(frame: .zero)
+
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .none
+        formatter.minimum = NSNumber(value: minValue)
+        formatter.maximum = NSNumber(value: maxValue)
+
+        textField.controlSize = .small
+        textField.alignment = .right
+        textField.formatter = formatter
+        textField.delegate = self
+        textField.translatesAutoresizingMaskIntoConstraints = false
+        textField.widthAnchor.constraint(equalToConstant: 56).isActive = true
+
+        stepper.controlSize = .small
+        stepper.minValue = Double(minValue)
+        stepper.maxValue = Double(maxValue)
+        stepper.increment = 1
+        stepper.target = self
+        stepper.action = #selector(handleStepperChanged(_:))
+
+        let controls = makeHorizontalGroup(spacing: 6)
+        controls.alignment = .centerY
+        controls.addArrangedSubview(textField)
+        controls.addArrangedSubview(stepper)
+
+        let stackView = makeHorizontalGroup(spacing: 8)
+        stackView.alignment = .centerY
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        stackView.addArrangedSubview(controls)
+        stackView.addArrangedSubview(unitLabel)
+        addSubview(stackView)
+
+        NSLayoutConstraint.activate([
+            stackView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            stackView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            stackView.topAnchor.constraint(equalTo: topAnchor),
+            stackView.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        nil
+    }
+
+    func setValue(_ value: Int) {
+        let boundedValue = max(minValue, min(maxValue, value))
+        textField.stringValue = String(boundedValue)
+        stepper.integerValue = boundedValue
+    }
+
+    @objc
+    private func handleStepperChanged(_ sender: NSStepper) {
+        let value = sender.integerValue
+        textField.stringValue = String(value)
+        onValueChanged?(value)
+    }
+
+    func controlTextDidEndEditing(_ obj: Notification) {
+        let value = max(minValue, min(maxValue, Int(textField.stringValue) ?? minValue))
+        setValue(value)
+        onValueChanged?(value)
+    }
+}
+
+@MainActor
+private final class AppearanceColorControl: NSView {
+    var onColorChanged: ((NSColor) -> Void)?
+
+    private let colorWell = NSColorWell()
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+
+        colorWell.target = self
+        colorWell.action = #selector(handleColorChanged(_:))
+        colorWell.translatesAutoresizingMaskIntoConstraints = false
         colorWell.widthAnchor.constraint(equalToConstant: 44).isActive = true
         colorWell.heightAnchor.constraint(equalToConstant: 22).isActive = true
-        return colorWell
+        addSubview(colorWell)
+
+        NSLayoutConstraint.activate([
+            colorWell.leadingAnchor.constraint(equalTo: leadingAnchor),
+            colorWell.trailingAnchor.constraint(equalTo: trailingAnchor),
+            colorWell.topAnchor.constraint(equalTo: topAnchor),
+            colorWell.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
     }
 
-    private func percentageString(_ value: Double) -> String {
-        "\(Int((value * 100).rounded()))%"
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        nil
+    }
+
+    func setColor(_ color: NSColor) {
+        colorWell.color = color
+    }
+
+    @objc
+    private func handleColorChanged(_ sender: NSColorWell) {
+        onColorChanged?(sender.color)
+    }
+}
+
+extension AppearanceSettingsViewController {
+    func setRenderWindowHighlightForTesting(_ isEnabled: Bool) {
+        showHighlightCheckbox.state = isEnabled ? .on : .off
+        handleShowHighlightToggle(showHighlightCheckbox)
+    }
+
+    func setHighlightFillOpacityForTesting(_ value: Double) {
+        fillOpacityControl.onValueChanged?(value)
+    }
+
+    func setHighlightStrokeWidthForTesting(_ value: Int) {
+        strokeWidthControl.onValueChanged?(value)
+    }
+
+    func setLayoutGapForTesting(_ value: Int) {
+        layoutGapControl.onValueChanged?(value)
+    }
+
+    func setRenderTriggerAreasForTesting(_ isEnabled: Bool) {
+        showOverlayCheckbox.state = isEnabled ? .on : .off
+        handleShowOverlayToggle(showOverlayCheckbox)
+    }
+
+    func setTriggerOpacityForTesting(_ value: Double) {
+        triggerOpacityControl.onValueChanged?(value)
+    }
+
+    func setTriggerGapForTesting(_ value: Int) {
+        triggerGapControl.onValueChanged?(value)
+    }
+
+    var previewConfigurationForTesting: AppConfiguration {
+        previewView.configurationForTesting
     }
 }

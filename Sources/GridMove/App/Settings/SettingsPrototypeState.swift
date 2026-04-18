@@ -2,23 +2,57 @@ import AppKit
 
 @MainActor
 final class SettingsPrototypeState {
-    // This is the shared UI draft for the prototype settings window.
-    // When real model wiring starts, tabs should continue reading and writing
-    // through this object first, then persist from one place.
-    var configuration: AppConfiguration
+    private(set) var configuration: AppConfiguration
+    private(set) var committedConfiguration: AppConfiguration
 
     init(configuration: AppConfiguration = .defaultValue) {
-        var draftConfiguration = configuration
-        if draftConfiguration.general.excludedBundleIDs == ["com.apple.Spotlight"] {
-            draftConfiguration.general.excludedBundleIDs.append("com.example.HiddenApp")
-        }
-        if draftConfiguration.general.excludedWindowTitles.isEmpty {
-            draftConfiguration.general.excludedWindowTitles = ["Picture in Picture", "Quick Look"]
-        }
-        self.configuration = draftConfiguration
+        self.configuration = configuration
+        committedConfiguration = configuration
     }
 
     func currentMonitorNameMap() -> [String: String] {
         configuration.monitors
+    }
+
+    func reload(from configuration: AppConfiguration) {
+        self.configuration = configuration
+        committedConfiguration = configuration
+        notifyDidChange()
+    }
+
+    @discardableResult
+    func applyImmediateMutation(
+        using actionHandler: any SettingsActionHandling,
+        _ mutate: (inout AppConfiguration) -> Void
+    ) -> Bool {
+        var candidate = configuration
+        mutate(&candidate)
+        return applyImmediateConfiguration(candidate, using: actionHandler)
+    }
+
+    @discardableResult
+    func applyImmediateConfiguration(
+        _ candidate: AppConfiguration,
+        using actionHandler: any SettingsActionHandling
+    ) -> Bool {
+        guard actionHandler.applyImmediateConfiguration(candidate) else {
+            configuration = committedConfiguration
+            notifyDidChange()
+            return false
+        }
+
+        configuration = candidate
+        committedConfiguration = candidate
+        notifyDidChange()
+        return true
+    }
+
+    func updateDraftFromLayoutsPrototype(_ configuration: AppConfiguration) {
+        self.configuration = configuration
+        notifyDidChange()
+    }
+
+    private func notifyDidChange() {
+        NotificationCenter.default.post(name: .settingsPrototypeStateDidChange, object: self)
     }
 }

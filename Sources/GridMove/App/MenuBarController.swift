@@ -35,8 +35,6 @@ final class MenuBarController: NSObject {
     private let settingsSectionSeparatorItem = NSMenuItem.separator()
     private let actionSectionSeparatorItem = NSMenuItem.separator()
     private let settingsMenuItem = NSMenuItem(title: UICopy.settingsMenuTitle, action: nil, keyEquivalent: "")
-    private let reloadConfigMenuItem = NSMenuItem(title: UICopy.reloadConfigMenuTitle, action: nil, keyEquivalent: "")
-    private let customizeMenuItem = NSMenuItem(title: UICopy.customizeMenuTitle, action: nil, keyEquivalent: "")
     private let launchAtLoginMenuItem = NSMenuItem(title: UICopy.launchAtLoginMenuTitle, action: nil, keyEquivalent: "")
     private let quitSectionSeparatorItem = NSMenuItem.separator()
     private let quitMenuItem = NSMenuItem(title: UICopy.quitMenuTitle, action: nil, keyEquivalent: "")
@@ -54,8 +52,6 @@ final class MenuBarController: NSObject {
     private let onSelectLayoutGroup: (String) -> Bool
     private let onPerformAction: (HotkeyAction) -> Void
     private let onOpenSettings: () -> Void
-    private let onReloadConfiguration: () -> Void
-    private let onCustomize: () -> Void
     private let onQuit: () -> Void
 
     init(
@@ -72,8 +68,6 @@ final class MenuBarController: NSObject {
         onSelectLayoutGroup: @escaping (String) -> Bool,
         onPerformAction: @escaping (HotkeyAction) -> Void,
         onOpenSettings: @escaping () -> Void,
-        onReloadConfiguration: @escaping () -> Void,
-        onCustomize: @escaping () -> Void,
         onQuit: @escaping () -> Void
     ) {
         self.actionItems = actionItems
@@ -87,8 +81,6 @@ final class MenuBarController: NSObject {
         self.onSelectLayoutGroup = onSelectLayoutGroup
         self.onPerformAction = onPerformAction
         self.onOpenSettings = onOpenSettings
-        self.onReloadConfiguration = onReloadConfiguration
-        self.onCustomize = onCustomize
         self.onQuit = onQuit
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         super.init()
@@ -123,14 +115,6 @@ final class MenuBarController: NSObject {
         settingsMenuItem.target = self
         settingsMenuItem.action = #selector(openSettings)
         menu.addItem(settingsMenuItem)
-
-        reloadConfigMenuItem.target = self
-        reloadConfigMenuItem.action = #selector(reloadConfiguration)
-        menu.addItem(reloadConfigMenuItem)
-
-        customizeMenuItem.target = self
-        customizeMenuItem.action = #selector(customize)
-        menu.addItem(customizeMenuItem)
 
         launchAtLoginMenuItem.target = self
         launchAtLoginMenuItem.action = #selector(toggleLaunchAtLogin)
@@ -195,8 +179,6 @@ final class MenuBarController: NSObject {
         settingsSectionSeparatorItem.isHidden = !hasAccessibilityAccess
         actionSectionSeparatorItem.isHidden = !hasAccessibilityAccess || actionItems.isEmpty
         settingsMenuItem.isHidden = !hasAccessibilityAccess
-        reloadConfigMenuItem.isHidden = !hasAccessibilityAccess
-        customizeMenuItem.isHidden = !hasAccessibilityAccess
         launchAtLoginMenuItem.isHidden = !hasAccessibilityAccess
         quitSectionSeparatorItem.isHidden = !hasAccessibilityAccess
         quitMenuItem.isHidden = !hasAccessibilityAccess
@@ -267,20 +249,12 @@ final class MenuBarController: NSObject {
         }
     }
 
-    @objc private func reloadConfiguration() {
-        onReloadConfiguration()
-    }
-
     @objc private func openSettings() {
         onOpenSettings()
     }
 
     @objc private func requestAccessibilityAccess() {
         onRequestAccessibilityAccess()
-    }
-
-    @objc private func customize() {
-        onCustomize()
     }
 
     @objc private func toggleMouseButtonDrag() {

@@ -143,12 +143,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             onOpenSettings: { [weak self] in
                 self?.showSettings()
             },
-            onReloadConfiguration: { [weak self] in
-                self?.reloadConfigurationFromDisk(mode: .manual)
-            },
-            onCustomize: { [weak self] in
-                _ = self?.openConfigurationDirectory()
-            },
             onQuit: {
                 NSApplication.shared.terminate(nil)
             }
@@ -175,18 +169,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         accessibilityCoordinator.startPollingIfNeeded()
     }
 
-    func reloadConfigurationFromDisk(mode: ConfigurationReloadMode) {
+    @discardableResult
+    func reloadConfigurationFromDisk(mode: ConfigurationReloadMode) -> AppConfiguration? {
         var didApplyConfiguration = false
+        var appliedConfiguration: AppConfiguration?
         do {
             let result = try configurationCoordinator.loadConfiguration()
             switch mode {
             case .launch:
                 applyConfiguration(result.configuration)
                 didApplyConfiguration = true
+                appliedConfiguration = result.configuration
             case .manual:
                 if result.source == .persistedConfiguration {
                     applyConfiguration(result.configuration)
                     didApplyConfiguration = true
+                    appliedConfiguration = result.configuration
                     if result.skippedLayoutDiagnostics.isEmpty {
                         userNotifier.notify(
                             kind: .configReloadSucceeded,
@@ -217,6 +215,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             case .launch:
                 applyConfiguration(.defaultValue)
                 didApplyConfiguration = true
+                appliedConfiguration = .defaultValue
             case .manual:
                 userNotifier.notify(
                     kind: .configReloadFailed,
@@ -229,6 +228,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if didApplyConfiguration {
             scheduleLaunchAtLoginReconciliation()
         }
+
+        return appliedConfiguration
     }
 
     @discardableResult
@@ -419,6 +420,55 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    private func updateLaunchAtLoginServiceState(to isEnabled: Bool) -> Bool {
+        if isEnabled, accessibilityCoordinator.evaluate(promptOnMissing: true) == false {
+            return false
+        }
+
+        if isEnabled {
+            do {
+                let resultingStatus = try launchAtLoginService.register()
+                guard resultingStatus == .enabled else {
+                    handleLaunchAtLoginEnableFailure(
+                        details: launchAtLoginFailureDetails(for: resultingStatus, enabling: true),
+                        shouldRollbackConfiguration: false
+                    )
+                    return false
+                }
+                return true
+            } catch {
+                handleLaunchAtLoginEnableFailure(details: error.localizedDescription, shouldRollbackConfiguration: false)
+                return false
+            }
+        }
+
+        do {
+            let resultingStatus = try launchAtLoginService.unregister()
+            guard resultingStatus == .disabled else {
+                handleLaunchAtLoginDisableFailure(
+                    details: launchAtLoginFailureDetails(for: resultingStatus, enabling: false)
+                )
+                return false
+            }
+            return true
+        } catch {
+            handleLaunchAtLoginDisableFailure(details: error.localizedDescription)
+            return false
+        }
+    }
+
+    private func rollbackLaunchAtLoginServiceState(to isEnabled: Bool) {
+        do {
+            if isEnabled {
+                _ = try launchAtLoginService.register()
+            } else {
+                _ = try launchAtLoginService.unregister()
+            }
+        } catch {
+            AppLogger.shared.error("Failed to roll back launch at login state: \(error.localizedDescription)")
+        }
+    }
+
     private func enableLaunchAtLoginFromMenu() -> Bool {
         do {
             let resultingStatus = try launchAtLoginService.register()
@@ -522,14 +572,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsItem.target = self
         settingsItem.keyEquivalentModifierMask = [.command]
         applicationMenu.addItem(settingsItem)
-
-        let reloadItem = NSMenuItem(title: UICopy.reloadConfigMenuTitle, action: #selector(reloadConfigurationFromMenu), keyEquivalent: "")
-        reloadItem.target = self
-        applicationMenu.addItem(reloadItem)
-
-        let customizeItem = NSMenuItem(title: UICopy.customizeMenuTitle, action: #selector(customizeFromMenu), keyEquivalent: "")
-        customizeItem.target = self
-        applicationMenu.addItem(customizeItem)
         applicationMenu.addItem(.separator())
 
         let quitItem = NSMenuItem(title: UICopy.quitAppMenuTitle, action: #selector(quitApplication), keyEquivalent: "q")
@@ -542,16 +584,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApplication.shared.mainMenu = mainMenu
     }
 
-    @objc private func reloadConfigurationFromMenu() {
-        reloadConfigurationFromDisk(mode: .manual)
-    }
-
     @objc private func showSettingsFromMenu() {
         showSettings()
-    }
-
-    @objc private func customizeFromMenu() {
-        _ = openConfigurationDirectory()
     }
 
     @objc private func quitApplication() {
@@ -569,9 +603,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             return
         }
 
-        let controller = SettingsWindowController(onWindowWillClose: { [weak self] in
-            self?.settingsWindowController = nil
-        })
+        let controller = SettingsWindowController(
+            prototypeState: SettingsPrototypeState(configuration: configuration),
+            actionHandler: makeSettingsActionHandler(),
+            onWindowWillClose: { [weak self] in
+                self?.settingsWindowController = nil
+            }
+        )
         settingsWindowController = controller
         controller.present()
     }
@@ -591,6 +629,46 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             menuController?.setEnabled(configuration.general.isEnabled)
             return false
         }
+    }
+
+    private func makeSettingsActionHandler() -> SettingsActionHandler {
+        SettingsActionHandler(
+            applyImmediateConfigurationHandler: { [weak self] candidate in
+                self?.applySettingsConfiguration(candidate) ?? false
+            },
+            reloadConfigurationHandler: { [weak self] in
+                self?.reloadConfigurationFromDisk(mode: .manual)
+            },
+            openConfigurationDirectoryHandler: { [weak self] in
+                self?.openConfigurationDirectory() ?? false
+            }
+        )
+    }
+
+    @discardableResult
+    private func applySettingsConfiguration(_ candidate: AppConfiguration) -> Bool {
+        let previousConfiguration = configuration
+        let didChangeLaunchAtLogin = previousConfiguration.general.launchAtLogin != candidate.general.launchAtLogin
+
+        if didChangeLaunchAtLogin,
+           updateLaunchAtLoginServiceState(to: candidate.general.launchAtLogin) == false {
+            return false
+        }
+
+        do {
+            try configurationCoordinator.saveConfiguration(candidate)
+        } catch {
+            AppLogger.shared.error("Failed to save configuration from settings window: \(error.localizedDescription)")
+            if didChangeLaunchAtLogin {
+                rollbackLaunchAtLoginServiceState(to: previousConfiguration.general.launchAtLogin)
+            }
+            menuController?.updateToggleStates(makeToggleSettingsState(configuration: configuration))
+            menuController?.setEnabled(configuration.general.isEnabled)
+            return false
+        }
+
+        applyConfiguration(candidate)
+        return true
     }
 
     private func applyConfiguration(_ configuration: AppConfiguration) {
@@ -678,6 +756,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         tabViewController.selectedTabViewItemIndex = index
+    }
+
+    func reloadSettingsFromAboutTabForTesting() {
+        guard let tabViewController = settingsWindowController?.window?.contentViewController as? NSTabViewController,
+              tabViewController.tabViewItems.indices.contains(4),
+              let aboutController = tabViewController.tabViewItems[4].viewController as? AboutSettingsViewController else {
+            return
+        }
+
+        aboutController.reloadForTesting()
     }
 
     var settingsContentSizeForTesting: NSSize? {

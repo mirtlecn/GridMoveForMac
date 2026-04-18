@@ -2,6 +2,20 @@ import AppKit
 
 @MainActor
 final class AboutSettingsViewController: NSViewController {
+    private let prototypeState: SettingsPrototypeState
+    private let actionHandler: any SettingsActionHandling
+
+    init(prototypeState: SettingsPrototypeState, actionHandler: any SettingsActionHandling) {
+        self.prototypeState = prototypeState
+        self.actionHandler = actionHandler
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        nil
+    }
+
     override func loadView() {
         let contentStackView = makeSettingsPageStackView()
         contentStackView.addArrangedSubview(makeSectionTitleLabel(UICopy.appName))
@@ -93,8 +107,9 @@ final class AboutSettingsViewController: NSViewController {
         let reloadButton = NSButton(title: UICopy.reloadConfigMenuTitle, target: self, action: #selector(handleReloadConfiguration(_:)))
         reloadButton.bezelStyle = .rounded
 
-        let restoreButton = NSButton(title: UICopy.settingsRestoreSettingsButtonTitle, target: self, action: #selector(handleRestoreSettings(_:)))
+        let restoreButton = NSButton(title: UICopy.settingsRestoreSettingsButtonTitle, target: self, action: nil)
         restoreButton.bezelStyle = .rounded
+        restoreButton.isEnabled = false
 
         let row = makeHorizontalGroup(spacing: 8)
         row.addArrangedSubview(reloadButton)
@@ -114,17 +129,21 @@ final class AboutSettingsViewController: NSViewController {
 
     @objc
     private func handleOpenConfigFolder(_ sender: NSButton) {
-        _ = (NSApp.delegate as? AppDelegate)?.openConfigurationDirectory()
+        _ = actionHandler.openConfigurationDirectory()
     }
 
     @objc
     private func handleReloadConfiguration(_ sender: NSButton) {
-        (NSApp.delegate as? AppDelegate)?.reloadConfigurationFromDisk(mode: .manual)
-    }
+        guard let reloadedConfiguration = actionHandler.reloadConfiguration() else {
+            return
+        }
 
-    @objc
-    private func handleRestoreSettings(_ sender: NSButton) {
-        // TODO: When settings model wiring starts, present the reset flow here and
-        // apply the confirmed default-settings restore through the shared settings draft.
+        prototypeState.reload(from: reloadedConfiguration)
+    }
+}
+
+extension AboutSettingsViewController {
+    func reloadForTesting() {
+        handleReloadConfiguration(NSButton())
     }
 }

@@ -358,8 +358,7 @@ Menu actions:
 - collapse to a single `Get accessibility access` item while Accessibility permission is missing
 - include a `Layout group` submenu that switches `general.activeLayoutGroup`
 - keep a separator between the drag-preference items and the `Layout group` submenu
-- include `Reload`, `Customize... ↗`, and `Launch at login` in the final settings section, in that order, before `Quit`
-- include `Settings...` before `Reload` in the menu bar menu
+- include `Settings...`, `Launch at login`, and `Quit` in the final settings section, in that order
 - only include layouts whose `includeInMenu` value is `true`
 - always go through `LayoutActionExecutor`
 - layouts hidden from the menu remain available to trigger and CLI paths, and remain available to layout-index shortcuts only when `includeInLayoutIndex` is `true`

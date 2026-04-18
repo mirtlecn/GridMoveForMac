@@ -100,10 +100,31 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
 
         view = containerView
         title = UICopy.settingsLayoutsTabTitle
+        observePrototypeState()
 
         outlineView.reloadData()
         outlineView.expandItem(nil, expandChildren: true)
         selectDefaultLayoutNode()
+    }
+
+    private func observePrototypeState() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handlePrototypeStateDidChangeNotification(_:)),
+            name: .settingsPrototypeStateDidChange,
+            object: prototypeState
+        )
+    }
+
+    private func handlePrototypeStateDidChange() {
+        let preservedSelection = selectedNode.map(selectionKey(for:))
+        draftConfiguration = prototypeState.configuration
+        reloadTree(preserving: preservedSelection)
+    }
+
+    @objc
+    private func handlePrototypeStateDidChangeNotification(_ notification: Notification) {
+        handlePrototypeStateDidChange()
     }
 
     override func viewDidLayout() {
@@ -453,7 +474,7 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
         // TODO: When real configuration persistence is connected, this is the
         // single save boundary for the Layouts page. Persist draftConfiguration
         // here instead of letting individual controls write immediately.
-        prototypeState.configuration = draftConfiguration
+        prototypeState.updateDraftFromLayoutsPrototype(draftConfiguration)
     }
 
     func outlineView(_ outlineView: NSOutlineView, pasteboardWriterForItem item: Any) -> (any NSPasteboardWriting)? {

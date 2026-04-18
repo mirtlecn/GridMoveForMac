@@ -522,13 +522,39 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
 
     #expect(delegate.mainMenuItemDescriptorsForTesting == [
         UICopy.settingsMenuTitle,
-        UICopy.reloadConfigMenuTitle,
-        UICopy.customizeMenuTitle,
         "|",
         UICopy.quitAppMenuTitle,
     ])
     #expect(delegate.visibleMenuItemDescriptorsForTesting.contains(UICopy.settingsMenuTitle))
 
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
+@Test func appDelegateSettingsWindowReadsPersistedConfigurationValues() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-real-config-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var savedConfiguration = AppConfiguration.defaultValue
+    savedConfiguration.general.mouseButtonNumber = 5
+    savedConfiguration.general.excludedWindowTitles = ["Floating Panel"]
+    try store.save(savedConfiguration)
+
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    delegate.showSettings()
+
+    #expect(delegate.settingsVisibleStringsForTesting.contains("Mouse button 5 drag"))
+    #expect(delegate.settingsVisibleStringsForTesting.contains("Floating Panel"))
+
+    delegate.closeSettingsWindowForTesting()
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
 }
 
@@ -632,6 +658,40 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     let aboutMinimumSize = try #require(delegate.settingsMinimumSizeForTesting)
     #expect(aboutMinimumSize.width == 680)
     #expect(aboutMinimumSize.height < generalMinimumSize.height)
+
+    delegate.closeSettingsWindowForTesting()
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
+@Test func aboutReloadRefreshesOpenSettingsDraft() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-about-reload-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var savedConfiguration = AppConfiguration.defaultValue
+    savedConfiguration.general.mouseButtonNumber = 3
+    try store.save(savedConfiguration)
+
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    delegate.showSettings()
+    #expect(delegate.settingsVisibleStringsForTesting.contains("Middle mouse drag"))
+
+    savedConfiguration.general.mouseButtonNumber = 5
+    savedConfiguration.general.excludedWindowTitles = ["Reloaded Panel"]
+    try store.save(savedConfiguration)
+
+    delegate.reloadSettingsFromAboutTabForTesting()
+    delegate.selectSettingsTabForTesting(index: 0)
+
+    #expect(delegate.settingsVisibleStringsForTesting.contains("Mouse button 5 drag"))
 
     delegate.closeSettingsWindowForTesting()
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))

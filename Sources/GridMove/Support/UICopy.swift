@@ -106,7 +106,6 @@ enum UICopy {
     static let preferLayoutModeMenuTitle = "Prefer layout mode"
     static let layoutGroupMenuTitle = "Layout group"
     static let reloadConfigMenuTitle = "Reload"
-    static let customizeMenuTitle = "Customize... ↗"
     static let launchAtLoginMenuTitle = "Launch at login"
     static let configReloadSucceededTitle = "GridMove config reloaded"
     static let configReloadFailedTitle = "GridMove config reload failed"

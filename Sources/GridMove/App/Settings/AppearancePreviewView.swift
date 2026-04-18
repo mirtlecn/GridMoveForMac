@@ -2,31 +2,40 @@ import AppKit
 
 @MainActor
 final class AppearancePreviewView: NSView {
-    private let configuration: AppConfiguration
-    private let resolvedSlots: [ResolvedTriggerSlot]
-    private let highlightFrame: CGRect?
+    private var configuration: AppConfiguration = .defaultValue
+    private var resolvedSlots: [ResolvedTriggerSlot] = []
+    private var highlightFrame: CGRect?
 
     override var isFlipped: Bool { true }
 
     init(configuration: AppConfiguration = .defaultValue) {
+        super.init(frame: .zero)
+        updateConfiguration(configuration)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        nil
+    }
+
+    func updateConfiguration(_ configuration: AppConfiguration) {
         self.configuration = configuration
 
         let engine = LayoutEngine()
-        self.resolvedSlots = engine.resolveTriggerSlots(
+        resolvedSlots = engine.resolveTriggerSlots(
             screenFrame: SettingsPreviewSupport.referenceScreenFrame,
             usableFrame: SettingsPreviewSupport.referenceUsableFrame,
             layouts: configuration.layouts.filter { $0.triggerRegion != nil },
             triggerGap: Double(configuration.appearance.triggerGap),
             layoutGap: configuration.appearance.effectiveLayoutGap
         )
-        self.highlightFrame = resolvedSlots.first(where: { $0.layoutID == "layout-4" })?.targetFrame
+        highlightFrame = resolvedSlots.first(where: { $0.layoutID == "layout-4" })?.targetFrame
             ?? resolvedSlots.first?.targetFrame
-        super.init(frame: .zero)
+        needsDisplay = true
     }
 
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        nil
+    var configurationForTesting: AppConfiguration {
+        configuration
     }
 
     override func draw(_ dirtyRect: NSRect) {

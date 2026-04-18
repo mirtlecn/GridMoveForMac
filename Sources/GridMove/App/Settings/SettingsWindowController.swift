@@ -14,10 +14,17 @@ protocol SettingsWindowSizing {
 final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private let onWindowWillClose: () -> Void
 
-    init(onWindowWillClose: @escaping () -> Void = {}) {
+    init(
+        prototypeState: SettingsPrototypeState,
+        actionHandler: any SettingsActionHandling,
+        onWindowWillClose: @escaping () -> Void = {}
+    ) {
         self.onWindowWillClose = onWindowWillClose
 
-        let tabViewController = SettingsTabViewController(prototypeState: SettingsPrototypeState())
+        let tabViewController = SettingsTabViewController(
+            prototypeState: prototypeState,
+            actionHandler: actionHandler
+        )
         let initialMetrics = tabViewController.currentWindowMetrics
         let window = NSWindow(contentViewController: tabViewController)
         window.title = UICopy.settingsWindowTitle
@@ -86,9 +93,11 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
 final class SettingsTabViewController: NSTabViewController {
     var onSelectedMetricsChanged: ((SettingsWindowMetrics) -> Void)?
     private let prototypeState: SettingsPrototypeState
+    private let actionHandler: any SettingsActionHandling
 
-    init(prototypeState: SettingsPrototypeState) {
+    init(prototypeState: SettingsPrototypeState, actionHandler: any SettingsActionHandling) {
         self.prototypeState = prototypeState
+        self.actionHandler = actionHandler
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -110,7 +119,10 @@ final class SettingsTabViewController: NSTabViewController {
         transitionOptions = []
 
         addSettingsTab(
-            viewController: GeneralSettingsViewController(prototypeState: prototypeState),
+            viewController: GeneralSettingsViewController(
+                prototypeState: prototypeState,
+                actionHandler: actionHandler
+            ),
             title: UICopy.settingsGeneralTabTitle,
             systemImageName: "gearshape"
         )
@@ -120,17 +132,26 @@ final class SettingsTabViewController: NSTabViewController {
             systemImageName: "rectangle.3.group"
         )
         addSettingsTab(
-            viewController: AppearanceSettingsViewController(),
+            viewController: AppearanceSettingsViewController(
+                prototypeState: prototypeState,
+                actionHandler: actionHandler
+            ),
             title: UICopy.settingsAppearanceTabTitle,
             systemImageName: "paintbrush"
         )
         addSettingsTab(
-            viewController: HotkeysSettingsViewController(prototypeState: prototypeState),
+            viewController: HotkeysSettingsViewController(
+                prototypeState: prototypeState,
+                actionHandler: actionHandler
+            ),
             title: UICopy.settingsHotkeysTabTitle,
             systemImageName: "keyboard"
         )
         addSettingsTab(
-            viewController: AboutSettingsViewController(),
+            viewController: AboutSettingsViewController(
+                prototypeState: prototypeState,
+                actionHandler: actionHandler
+            ),
             title: UICopy.settingsAboutTabTitle,
             systemImageName: "info.circle"
         )

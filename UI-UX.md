@@ -62,8 +62,7 @@ GridMove 的 UI 目标是：
 - 分隔线
 - 当前布局组下的布局操作
 - 分隔线
-- `Reload`
-- `Customize... ↗`
+- `Settings...`
 - `Launch at login`
 - 分隔线
 - `Quit`
@@ -74,7 +73,7 @@ GridMove 的 UI 目标是：
 
 - `Middle mouse drag`、`Modifier + left mouse drag`、`Prefer layout mode` 属于同一组，都是“拖动触发行为”的设置
 
-- `Reload`、`Customize... ↗`、`Launch at login`、`Quit` 属于配置与应用行为，不应与布局操作混在一起
+- `Settings...`、`Launch at login`、`Quit` 属于配置与应用行为，不应与布局操作混在一起
 
 ### 4.2 菜单项行为
 
@@ -107,13 +106,9 @@ GridMove 的 UI 目标是：
   - 如存在快捷键，在菜单中显示对应快捷键信息
   - 点击后直接对当前目标窗口执行动作
 
-- `Reload`
-  - 重新从磁盘加载配置
-  - 它属于维护操作，不属于布局或触发控制
-
-- `Customize... ↗`
-  - 打开配置目录
-  - 它是配置入口，不是运行时状态切换
+- `Settings...`
+  - 是唯一的设置入口
+  - 打开设置窗口，不直接改动运行时状态
 
 - `Launch at login`
   - 控制开机自启
