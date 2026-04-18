@@ -72,6 +72,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private(set) var configuration = AppConfiguration.defaultValue
     private var menuController: MenuBarController?
+    private var settingsWindowController: SettingsWindowController?
     private var pendingDeferredConfigurationSaveTask: Task<Void, Never>?
     private var isLaunchAtLoginReconciliationPending = false
 
@@ -138,6 +139,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             },
             onPerformAction: { [weak self] action in
                 self?.performMenuAction(action)
+            },
+            onOpenSettings: { [weak self] in
+                self?.showSettings()
             },
             onReloadConfiguration: { [weak self] in
                 self?.reloadConfigurationFromDisk(mode: .manual)
@@ -514,13 +518,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let applicationMenuItem = NSMenuItem()
         let applicationMenu = NSMenu(title: UICopy.applicationMenuTitle)
 
+        let settingsItem = NSMenuItem(title: UICopy.settingsMenuTitle, action: #selector(showSettingsFromMenu), keyEquivalent: ",")
+        settingsItem.target = self
+        settingsItem.keyEquivalentModifierMask = [.command]
+        applicationMenu.addItem(settingsItem)
+
         let reloadItem = NSMenuItem(title: UICopy.reloadConfigMenuTitle, action: #selector(reloadConfigurationFromMenu), keyEquivalent: "")
         reloadItem.target = self
         applicationMenu.addItem(reloadItem)
 
-        let customizeItem = NSMenuItem(title: UICopy.customizeMenuTitle, action: #selector(customizeFromMenu), keyEquivalent: ",")
+        let customizeItem = NSMenuItem(title: UICopy.customizeMenuTitle, action: #selector(customizeFromMenu), keyEquivalent: "")
         customizeItem.target = self
-        customizeItem.keyEquivalentModifierMask = [.command]
         applicationMenu.addItem(customizeItem)
         applicationMenu.addItem(.separator())
 
@@ -538,6 +546,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         reloadConfigurationFromDisk(mode: .manual)
     }
 
+    @objc private func showSettingsFromMenu() {
+        showSettings()
+    }
+
     @objc private func customizeFromMenu() {
         _ = openConfigurationDirectory()
     }
@@ -549,6 +561,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @discardableResult
     func openConfigurationDirectory() -> Bool {
         openURL(configurationCoordinator.directoryURL)
+    }
+
+    func showSettings() {
+        if let settingsWindowController {
+            settingsWindowController.present()
+            return
+        }
+
+        let controller = SettingsWindowController(onWindowWillClose: { [weak self] in
+            self?.settingsWindowController = nil
+        })
+        settingsWindowController = controller
+        controller.present()
     }
 
     @discardableResult
@@ -614,6 +639,55 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         menuController?.menuItemDescriptorsForTesting ?? []
     }
 
+    var mainMenuItemDescriptorsForTesting: [String] {
+        NSApplication.shared.mainMenu?.items
+            .compactMap(\.submenu)
+            .flatMap(\.items)
+            .map { $0.isSeparatorItem ? "|" : $0.title } ?? []
+    }
+
+    var isSettingsWindowOpenForTesting: Bool {
+        settingsWindowController?.window?.isVisible == true
+    }
+
+    var settingsTabTitlesForTesting: [String] {
+        guard let tabViewController = settingsWindowController?.window?.contentViewController as? NSTabViewController else {
+            return []
+        }
+
+        return tabViewController.tabViewItems.map(\.label)
+    }
+
+    var settingsVisibleStringsForTesting: [String] {
+        guard let rootView = settingsWindowController?.window?.contentViewController?.view else {
+            return []
+        }
+
+        return collectVisibleStrings(in: rootView)
+    }
+
+    func closeSettingsWindowForTesting() {
+        settingsWindowController?.close()
+    }
+
+    func selectSettingsTabForTesting(index: Int) {
+        guard let tabViewController = settingsWindowController?.window?.contentViewController as? NSTabViewController,
+              index >= 0,
+              index < tabViewController.tabViewItems.count else {
+            return
+        }
+
+        tabViewController.selectedTabViewItemIndex = index
+    }
+
+    var settingsContentSizeForTesting: NSSize? {
+        settingsWindowController?.window?.contentLayoutRect.size
+    }
+
+    var settingsMinimumSizeForTesting: NSSize? {
+        settingsWindowController?.window?.minSize
+    }
+
     func recordLayoutIDForTesting(_ layoutID: String, windowIdentity: String) {
         layoutEngine.recordLayoutID(layoutID, for: windowIdentity)
     }
@@ -654,5 +728,48 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func requestAccessibilityPrompt() -> Bool {
         injectedAccessibilityPromptRequester?() ?? windowController.isAccessibilityTrusted(prompt: true)
+    }
+
+    private func collectVisibleStrings(in view: NSView) -> [String] {
+        var strings: [String] = []
+
+        if let textField = view as? NSTextField {
+            let value = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !value.isEmpty {
+                strings.append(value)
+            }
+        }
+
+        if let button = view as? NSButton {
+            let title = button.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !title.isEmpty {
+                strings.append(title)
+            }
+        }
+
+        if let segmentedControl = view as? NSSegmentedControl {
+            for index in 0..<segmentedControl.segmentCount {
+                if let label = segmentedControl.label(forSegment: index) {
+                    let title = label.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !title.isEmpty {
+                        strings.append(title)
+                    }
+                }
+            }
+        }
+
+        if let box = view as? NSBox, let contentView = box.contentView {
+            strings.append(contentsOf: collectVisibleStrings(in: contentView))
+        }
+
+        if let scrollView = view as? NSScrollView, let documentView = scrollView.documentView {
+            strings.append(contentsOf: collectVisibleStrings(in: documentView))
+        }
+
+        for subview in view.subviews {
+            strings.append(contentsOf: collectVisibleStrings(in: subview))
+        }
+
+        return strings
     }
 }

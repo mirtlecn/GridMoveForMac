@@ -506,6 +506,138 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
 }
 
 @MainActor
+@Test func appDelegateMainMenuShowsSettingsWithCommandComma() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-main-menu-settings-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+
+    #expect(delegate.mainMenuItemDescriptorsForTesting == [
+        UICopy.settingsMenuTitle,
+        UICopy.reloadConfigMenuTitle,
+        UICopy.customizeMenuTitle,
+        "|",
+        UICopy.quitAppMenuTitle,
+    ])
+    #expect(delegate.visibleMenuItemDescriptorsForTesting.contains(UICopy.settingsMenuTitle))
+
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
+@Test func appDelegateShowsSettingsPrototypeWithTwoTabs() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-prototype-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    delegate.showSettings()
+
+    #expect(delegate.isSettingsWindowOpenForTesting == true)
+    #expect(delegate.settingsTabTitlesForTesting == [
+        UICopy.settingsGeneralTabTitle,
+        UICopy.settingsLayoutsTabTitle,
+        UICopy.settingsAppearanceTabTitle,
+        UICopy.settingsHotkeysTabTitle,
+        UICopy.settingsAboutTabTitle,
+    ])
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.enableMenuTitle))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.launchAtLoginMenuTitle))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsModifierGroupsLabel))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsRuntimeSectionTitle) == false)
+    delegate.selectSettingsTabForTesting(index: 1)
+    #expect(delegate.settingsVisibleStringsForTesting.contains(AppConfiguration.builtInGroupName))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsAllDisplaysValue))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.defaultLayoutNames[0]))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsNameLabel))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsGeneralInlineTabTitle))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsWindowInlineTabTitle))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsTriggerInlineTabTitle))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsAddLayoutButtonTitle))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsRemoveButtonTitle))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsSaveButtonTitle))
+    delegate.selectSettingsTabForTesting(index: 2)
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsWindowHighlightSectionTitle))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsTriggerOverlaySectionTitle))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsShowHighlightTitle))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsShowOverlayTitle))
+    delegate.selectSettingsTabForTesting(index: 3)
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.applyNextLayout))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsLayoutSlotTitle(1)))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.defaultLayoutNames[0]))
+    #expect(delegate.settingsVisibleStringsForTesting.contains("⌃⌥⇧⌘L"))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsHotkeysAddButtonTitle))
+    delegate.selectSettingsTabForTesting(index: 4)
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsVersionLabel))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsAuthorLabel))
+    #expect(delegate.settingsVisibleStringsForTesting.contains("Mirtle"))
+
+    delegate.closeSettingsWindowForTesting()
+    #expect(delegate.isSettingsWindowOpenForTesting == false)
+
+    delegate.showSettings()
+    #expect(delegate.isSettingsWindowOpenForTesting == true)
+    #expect(delegate.settingsTabTitlesForTesting == [
+        UICopy.settingsGeneralTabTitle,
+        UICopy.settingsLayoutsTabTitle,
+        UICopy.settingsAppearanceTabTitle,
+        UICopy.settingsHotkeysTabTitle,
+        UICopy.settingsAboutTabTitle,
+    ])
+
+    delegate.closeSettingsWindowForTesting()
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
+@Test func settingsWindowUsesPerTabWindowMetrics() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-window-metrics-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    delegate.showSettings()
+
+    let generalMinimumSize = try #require(delegate.settingsMinimumSizeForTesting)
+    #expect(generalMinimumSize.width == 680)
+
+    delegate.selectSettingsTabForTesting(index: 1)
+    let layoutsMinimumSize = try #require(delegate.settingsMinimumSizeForTesting)
+    #expect(layoutsMinimumSize.width == 680)
+    #expect(layoutsMinimumSize.height > generalMinimumSize.height)
+
+    delegate.selectSettingsTabForTesting(index: 4)
+    let aboutMinimumSize = try #require(delegate.settingsMinimumSizeForTesting)
+    #expect(aboutMinimumSize.width == 680)
+    #expect(aboutMinimumSize.height < generalMinimumSize.height)
+
+    delegate.closeSettingsWindowForTesting()
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
 @Test func appDelegateKeepsCurrentConfigurationWhenManualReloadFails() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-notify-\(UUID().uuidString)", isDirectory: true)

@@ -26,6 +26,7 @@ import Testing
         onToggleLaunchAtLogin: { _ in true },
         onSelectLayoutGroup: { _ in true },
         onPerformAction: { _ in },
+        onOpenSettings: {},
         onReloadConfiguration: {},
         onCustomize: {},
         onQuit: {}
@@ -44,6 +45,7 @@ import Testing
             "Apply previous layout",
             "Apply next layout",
             "|",
+            "Settings...",
             "Reload",
             "Customize... ↗",
             "Launch at login",
@@ -74,6 +76,7 @@ import Testing
         onToggleLaunchAtLogin: { _ in true },
         onSelectLayoutGroup: { _ in true },
         onPerformAction: { _ in },
+        onOpenSettings: {},
         onReloadConfiguration: {},
         onCustomize: {},
         onQuit: {}
@@ -117,6 +120,7 @@ import Testing
         onToggleLaunchAtLogin: { _ in true },
         onSelectLayoutGroup: { _ in true },
         onPerformAction: { _ in },
+        onOpenSettings: {},
         onReloadConfiguration: {},
         onCustomize: {},
         onQuit: {}
@@ -149,6 +153,7 @@ import Testing
         onToggleLaunchAtLogin: { _ in true },
         onSelectLayoutGroup: { _ in true },
         onPerformAction: { _ in },
+        onOpenSettings: {},
         onReloadConfiguration: {},
         onCustomize: {},
         onQuit: {}

@@ -16,11 +16,13 @@ This document records the current software behavior and implementation details b
 The current codebase implements these user-visible surfaces:
 
 - menu bar app
+- settings window prototype with `General`, `Layouts`, `Appearance`, `Hotkeys`, and `About` tabs
 - CLI entrypoint for layout actions
 - JSON configuration at `~/.config/GridMove/config.json`
 - layout-group files at `~/.config/GridMove/layout/*.grid.json`
 
-There is no full settings window implementation in the current codebase.
+The settings window is currently a structure-only prototype.
+It does not edit persisted configuration yet.
 `UI-UX.md` records the intended interaction model for future UI work.
 
 ## 3. Runtime Architecture
@@ -357,6 +359,7 @@ Menu actions:
 - include a `Layout group` submenu that switches `general.activeLayoutGroup`
 - keep a separator between the drag-preference items and the `Layout group` submenu
 - include `Reload`, `Customize... ↗`, and `Launch at login` in the final settings section, in that order, before `Quit`
+- include `Settings...` before `Reload` in the menu bar menu
 - only include layouts whose `includeInMenu` value is `true`
 - always go through `LayoutActionExecutor`
 - layouts hidden from the menu remain available to trigger and CLI paths, and remain available to layout-index shortcuts only when `includeInLayoutIndex` is `true`

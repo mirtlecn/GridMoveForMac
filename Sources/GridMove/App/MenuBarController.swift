@@ -34,6 +34,7 @@ final class MenuBarController: NSObject {
     private let layoutGroupSubmenu = NSMenu()
     private let settingsSectionSeparatorItem = NSMenuItem.separator()
     private let actionSectionSeparatorItem = NSMenuItem.separator()
+    private let settingsMenuItem = NSMenuItem(title: UICopy.settingsMenuTitle, action: nil, keyEquivalent: "")
     private let reloadConfigMenuItem = NSMenuItem(title: UICopy.reloadConfigMenuTitle, action: nil, keyEquivalent: "")
     private let customizeMenuItem = NSMenuItem(title: UICopy.customizeMenuTitle, action: nil, keyEquivalent: "")
     private let launchAtLoginMenuItem = NSMenuItem(title: UICopy.launchAtLoginMenuTitle, action: nil, keyEquivalent: "")
@@ -52,6 +53,7 @@ final class MenuBarController: NSObject {
     private let onToggleLaunchAtLogin: (Bool) -> Bool
     private let onSelectLayoutGroup: (String) -> Bool
     private let onPerformAction: (HotkeyAction) -> Void
+    private let onOpenSettings: () -> Void
     private let onReloadConfiguration: () -> Void
     private let onCustomize: () -> Void
     private let onQuit: () -> Void
@@ -69,6 +71,7 @@ final class MenuBarController: NSObject {
         onToggleLaunchAtLogin: @escaping (Bool) -> Bool,
         onSelectLayoutGroup: @escaping (String) -> Bool,
         onPerformAction: @escaping (HotkeyAction) -> Void,
+        onOpenSettings: @escaping () -> Void,
         onReloadConfiguration: @escaping () -> Void,
         onCustomize: @escaping () -> Void,
         onQuit: @escaping () -> Void
@@ -83,6 +86,7 @@ final class MenuBarController: NSObject {
         self.onToggleLaunchAtLogin = onToggleLaunchAtLogin
         self.onSelectLayoutGroup = onSelectLayoutGroup
         self.onPerformAction = onPerformAction
+        self.onOpenSettings = onOpenSettings
         self.onReloadConfiguration = onReloadConfiguration
         self.onCustomize = onCustomize
         self.onQuit = onQuit
@@ -115,6 +119,10 @@ final class MenuBarController: NSObject {
 
         actionSectionSeparatorItem.isHidden = actionItems.isEmpty
         menu.addItem(actionSectionSeparatorItem)
+
+        settingsMenuItem.target = self
+        settingsMenuItem.action = #selector(openSettings)
+        menu.addItem(settingsMenuItem)
 
         reloadConfigMenuItem.target = self
         reloadConfigMenuItem.action = #selector(reloadConfiguration)
@@ -186,6 +194,7 @@ final class MenuBarController: NSObject {
         layoutGroupMenuItem.isHidden = !hasAccessibilityAccess
         settingsSectionSeparatorItem.isHidden = !hasAccessibilityAccess
         actionSectionSeparatorItem.isHidden = !hasAccessibilityAccess || actionItems.isEmpty
+        settingsMenuItem.isHidden = !hasAccessibilityAccess
         reloadConfigMenuItem.isHidden = !hasAccessibilityAccess
         customizeMenuItem.isHidden = !hasAccessibilityAccess
         launchAtLoginMenuItem.isHidden = !hasAccessibilityAccess
@@ -260,6 +269,10 @@ final class MenuBarController: NSObject {
 
     @objc private func reloadConfiguration() {
         onReloadConfiguration()
+    }
+
+    @objc private func openSettings() {
+        onOpenSettings()
     }
 
     @objc private func requestAccessibilityAccess() {
