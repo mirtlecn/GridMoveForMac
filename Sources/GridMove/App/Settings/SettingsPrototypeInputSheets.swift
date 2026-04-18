@@ -70,7 +70,7 @@ final class ModifierGroupSheetContentView: NSView, SettingsPrototypeSheetValidat
 }
 
 @MainActor
-final class ExclusionEntrySheetContentView: NSView {
+final class ExclusionEntrySheetContentView: NSView, SettingsPrototypeSheetValidating, NSTextFieldDelegate {
     enum Kind: Int {
         case bundleID
         case windowTitle
@@ -96,6 +96,7 @@ final class ExclusionEntrySheetContentView: NSView {
 
     private let kindPopupButton = NSPopUpButton()
     private let valueField = NSTextField(string: "")
+    var onConfirmationStateChanged: (() -> Void)?
 
     init(initialKind: Kind) {
         super.init(frame: .zero)
@@ -110,6 +111,7 @@ final class ExclusionEntrySheetContentView: NSView {
 
         valueField.placeholderString = initialKind.placeholderValue
         valueField.controlSize = .small
+        valueField.delegate = self
         valueField.translatesAutoresizingMaskIntoConstraints = false
         valueField.widthAnchor.constraint(equalToConstant: 240).isActive = true
 
@@ -136,14 +138,29 @@ final class ExclusionEntrySheetContentView: NSView {
         Kind(rawValue: kindPopupButton.indexOfSelectedItem) ?? .bundleID
     }
 
+    var isConfirmationEnabled: Bool {
+        resolvedValue.isEmpty == false
+    }
+
     var resolvedValue: String {
-        let trimmedValue = valueField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmedValue.isEmpty ? selectedKind.placeholderValue : trimmedValue
+        valueField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     @objc
     private func handleKindChanged(_ sender: NSPopUpButton) {
         valueField.placeholderString = selectedKind.placeholderValue
+        onConfirmationStateChanged?()
+    }
+
+    func controlTextDidChange(_ notification: Notification) {
+        onConfirmationStateChanged?()
+    }
+}
+
+extension ExclusionEntrySheetContentView {
+    func setValueForTesting(_ value: String) {
+        valueField.stringValue = value
+        onConfirmationStateChanged?()
     }
 }
 

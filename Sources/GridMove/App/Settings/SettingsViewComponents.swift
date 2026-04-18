@@ -85,39 +85,110 @@ func makeLabeledViewGrid(rows: [(String, NSView)]) -> NSView {
 }
 
 @MainActor
-func makeMouseButtonPopup() -> NSPopUpButton {
-    let popupButton = NSPopUpButton()
-    popupButton.addItems(withTitles: ["3", "4", "5"])
-    popupButton.selectItem(withTitle: "3")
-    return popupButton
+func makeMouseButtonControl() -> SettingsIntegerStepperControl {
+    SettingsIntegerStepperControl(
+        value: GeneralSettings.defaultMouseButtonNumber,
+        minValue: GeneralSettings.defaultMouseButtonNumber,
+        maxValue: nil
+    )
 }
 
 @MainActor
-func makeNumericStepperControl(value: Int, minValue: Int = 0, maxValue: Int = 99, textFieldWidth: CGFloat = 56) -> NSView {
-    let formatter = NumberFormatter()
-    formatter.numberStyle = .none
-    formatter.minimum = NSNumber(value: minValue)
-    formatter.maximum = NSNumber(value: maxValue)
+final class SettingsIntegerStepperControl: NSView, NSTextFieldDelegate {
+    var onValueChanged: ((Int) -> Void)?
 
-    let textField = NSTextField(string: String(value))
-    textField.controlSize = .small
-    textField.alignment = .right
-    textField.formatter = formatter
-    textField.translatesAutoresizingMaskIntoConstraints = false
-    textField.widthAnchor.constraint(equalToConstant: textFieldWidth).isActive = true
+    private let textField = NSTextField(string: "")
+    private let stepper = NSStepper()
+    private let minValue: Int
+    private let maxValue: Int?
 
-    let stepper = NSStepper()
-    stepper.controlSize = .small
-    stepper.minValue = Double(minValue)
-    stepper.maxValue = Double(maxValue)
-    stepper.increment = 1
-    stepper.integerValue = value
+    init(value: Int, minValue: Int = 0, maxValue: Int? = 99, textFieldWidth: CGFloat = 56) {
+        self.minValue = minValue
+        self.maxValue = maxValue
+        super.init(frame: .zero)
 
-    let stackView = makeHorizontalGroup(spacing: 6)
-    stackView.alignment = .centerY
-    stackView.addArrangedSubview(textField)
-    stackView.addArrangedSubview(stepper)
-    return stackView
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .none
+        formatter.minimum = NSNumber(value: minValue)
+        if let maxValue {
+            formatter.maximum = NSNumber(value: maxValue)
+        }
+
+        textField.controlSize = .small
+        textField.alignment = .right
+        textField.formatter = formatter
+        textField.delegate = self
+        textField.translatesAutoresizingMaskIntoConstraints = false
+        textField.widthAnchor.constraint(equalToConstant: textFieldWidth).isActive = true
+
+        stepper.controlSize = .small
+        stepper.minValue = Double(minValue)
+        stepper.maxValue = Double(maxValue ?? Int.max)
+        stepper.increment = 1
+        stepper.target = self
+        stepper.action = #selector(handleStepperChanged(_:))
+
+        let stackView = makeHorizontalGroup(spacing: 6)
+        stackView.alignment = .centerY
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        stackView.addArrangedSubview(textField)
+        stackView.addArrangedSubview(stepper)
+        addSubview(stackView)
+
+        NSLayoutConstraint.activate([
+            stackView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            stackView.trailingAnchor.constraint(equalTo: trailingAnchor),
+            stackView.topAnchor.constraint(equalTo: topAnchor),
+            stackView.bottomAnchor.constraint(equalTo: bottomAnchor),
+        ])
+
+        setValue(value)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        nil
+    }
+
+    var value: Int {
+        stepper.integerValue
+    }
+
+    func setValue(_ value: Int) {
+        let boundedValue = boundedValue(for: value)
+        textField.stringValue = String(boundedValue)
+        stepper.integerValue = boundedValue
+    }
+
+    @objc
+    private func handleStepperChanged(_ sender: NSStepper) {
+        let boundedValue = boundedValue(for: sender.integerValue)
+        setValue(boundedValue)
+        onValueChanged?(boundedValue)
+    }
+
+    func controlTextDidEndEditing(_ notification: Notification) {
+        let boundedValue = boundedValue(for: Int(textField.stringValue) ?? minValue)
+        setValue(boundedValue)
+        onValueChanged?(boundedValue)
+    }
+
+    private func boundedValue(for value: Int) -> Int {
+        if let maxValue {
+            return max(minValue, min(maxValue, value))
+        }
+        return max(minValue, value)
+    }
+}
+
+extension SettingsIntegerStepperControl {
+    func setRawValueForTesting(_ value: String) {
+        textField.stringValue = value
+    }
+
+    func commitTextEditingForTesting() {
+        controlTextDidEndEditing(Notification(name: NSControl.textDidEndEditingNotification))
+    }
 }
 
 @MainActor
@@ -125,13 +196,13 @@ func makeNumericStepperControl(
     value: Int,
     unit: String,
     minValue: Int = 0,
-    maxValue: Int = 99,
+    maxValue: Int? = 99,
     textFieldWidth: CGFloat = 56
 ) -> NSView {
     let stackView = makeHorizontalGroup(spacing: 8)
     stackView.alignment = .centerY
     stackView.addArrangedSubview(
-        makeNumericStepperControl(
+        SettingsIntegerStepperControl(
             value: value,
             minValue: minValue,
             maxValue: maxValue,

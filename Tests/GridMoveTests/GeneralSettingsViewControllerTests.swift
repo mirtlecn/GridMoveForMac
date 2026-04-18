@@ -39,6 +39,18 @@ struct GeneralSettingsViewControllerTests {
         #expect(contentView.selectedModifiers.isEmpty)
     }
 
+    @Test func exclusionSheetDisablesConfirmationForEmptyValue() async throws {
+        let contentView = ExclusionEntrySheetContentView(initialKind: .bundleID)
+
+        #expect(contentView.isConfirmationEnabled == false)
+
+        contentView.setValueForTesting("com.example.App")
+        #expect(contentView.isConfirmationEnabled == true)
+
+        contentView.setValueForTesting("   ")
+        #expect(contentView.isConfirmationEnabled == false)
+    }
+
     @Test func generalSettingsDeduplicatesModifierGroups() async throws {
         let state = SettingsPrototypeState(configuration: .defaultValue)
         let recorder = TestSettingsActionRecorder()
@@ -69,5 +81,50 @@ struct GeneralSettingsViewControllerTests {
         controller.setMouseButtonNumberForTesting(5)
 
         #expect(state.configuration.general.mouseButtonNumber == GeneralSettings.defaultMouseButtonNumber)
+    }
+
+    @Test func generalSettingsDoesNotWriteEmptyExclusionValues() async throws {
+        let state = SettingsPrototypeState(configuration: .defaultValue)
+        let recorder = TestSettingsActionRecorder()
+        let controller = GeneralSettingsViewController(
+            prototypeState: state,
+            actionHandler: recorder.makeActionHandler()
+        )
+        controller.loadViewIfNeeded()
+
+        controller.submitExclusionForTesting(kind: .bundleID, value: "   ")
+        controller.submitExclusionForTesting(kind: .windowTitle, value: "")
+
+        #expect(state.configuration.general.excludedBundleIDs == AppConfiguration.defaultValue.general.excludedBundleIDs)
+        #expect(state.configuration.general.excludedWindowTitles == AppConfiguration.defaultValue.general.excludedWindowTitles)
+    }
+
+    @Test func generalSettingsShowsPersistedMouseButtonNumberAboveFive() async throws {
+        var configuration = AppConfiguration.defaultValue
+        configuration.general.mouseButtonNumber = 6
+        let state = SettingsPrototypeState(configuration: configuration)
+        let recorder = TestSettingsActionRecorder()
+        let controller = GeneralSettingsViewController(
+            prototypeState: state,
+            actionHandler: recorder.makeActionHandler()
+        )
+        controller.loadViewIfNeeded()
+
+        #expect(controller.mouseButtonNumberValueForTesting == 6)
+    }
+
+    @Test func generalSettingsNormalizesInvalidMouseButtonNumberInputToThree() async throws {
+        let state = SettingsPrototypeState(configuration: .defaultValue)
+        let recorder = TestSettingsActionRecorder()
+        let controller = GeneralSettingsViewController(
+            prototypeState: state,
+            actionHandler: recorder.makeActionHandler()
+        )
+        controller.loadViewIfNeeded()
+
+        controller.setRawMouseButtonNumberForTesting("invalid")
+
+        #expect(state.configuration.general.mouseButtonNumber == GeneralSettings.defaultMouseButtonNumber)
+        #expect(controller.mouseButtonNumberValueForTesting == GeneralSettings.defaultMouseButtonNumber)
     }
 }

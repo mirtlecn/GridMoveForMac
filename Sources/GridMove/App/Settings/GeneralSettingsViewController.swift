@@ -18,7 +18,7 @@ final class GeneralSettingsViewController: NSViewController {
     private lazy var enableCheckbox = makeCheckboxRow(title: UICopy.enableMenuTitle)
     private lazy var launchAtLoginCheckbox = makeCheckboxRow(title: UICopy.launchAtLoginMenuTitle)
     private lazy var mouseButtonDragCheckbox = makeCheckboxRow(title: UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 3))
-    private lazy var mouseButtonPopup = makeMouseButtonPopup()
+    private lazy var mouseButtonControl = makeMouseButtonControl()
     private lazy var modifierLeftMouseDragCheckbox = makeCheckboxRow(title: UICopy.modifierLeftMouseDragMenuTitle)
     private lazy var preferLayoutModeCheckbox = makeCheckboxRow(title: UICopy.preferLayoutModeMenuTitle)
 
@@ -74,7 +74,7 @@ final class GeneralSettingsViewController: NSViewController {
                 title: UICopy.settingsDragBehaviorSectionTitle,
                 rows: [
                     mouseButtonDragCheckbox,
-                    makeLabeledControlRow(label: UICopy.settingsMouseButtonNumberLabel, control: mouseButtonPopup),
+                    makeLabeledControlRow(label: UICopy.settingsMouseButtonNumberLabel, control: mouseButtonControl),
                     modifierLeftMouseDragCheckbox,
                     makeLabeledControlRow(label: UICopy.settingsModifierGroupsLabel, control: modifierGroupsControl),
                     preferLayoutModeCheckbox,
@@ -129,8 +129,9 @@ final class GeneralSettingsViewController: NSViewController {
         mouseButtonDragCheckbox.target = self
         mouseButtonDragCheckbox.action = #selector(handleMouseButtonDragToggle(_:))
 
-        mouseButtonPopup.target = self
-        mouseButtonPopup.action = #selector(handleMouseButtonNumberChanged(_:))
+        mouseButtonControl.onValueChanged = { [weak self] value in
+            self?.applyMouseButtonNumber(value)
+        }
 
         modifierLeftMouseDragCheckbox.target = self
         modifierLeftMouseDragCheckbox.action = #selector(handleModifierLeftMouseDragToggle(_:))
@@ -156,7 +157,7 @@ final class GeneralSettingsViewController: NSViewController {
         mouseButtonDragCheckbox.title = UICopy.mouseButtonDragMenuTitle(
             mouseButtonNumber: configuration.general.mouseButtonNumber
         )
-        mouseButtonPopup.selectItem(withTitle: String(configuration.general.mouseButtonNumber))
+        mouseButtonControl.setValue(configuration.general.mouseButtonNumber)
         modifierLeftMouseDragCheckbox.state = configuration.dragTriggers.enableModifierLeftMouseDrag ? .on : .off
         preferLayoutModeCheckbox.state = configuration.dragTriggers.preferLayoutMode ? .on : .off
 
@@ -231,6 +232,9 @@ final class GeneralSettingsViewController: NSViewController {
 
     private func applyExclusionSheetResult(_ sheetContentView: ExclusionEntrySheetContentView) {
         let value = sheetContentView.resolvedValue
+        guard value.isEmpty == false else {
+            return
+        }
         switch sheetContentView.selectedKind {
         case .bundleID:
             if prototypeState.applyImmediateMutation(using: actionHandler, { configuration in
@@ -358,9 +362,7 @@ final class GeneralSettingsViewController: NSViewController {
         }
     }
 
-    @objc
-    private func handleMouseButtonNumberChanged(_ sender: NSPopUpButton) {
-        let mouseButtonNumber = Int(sender.selectedItem?.title ?? "") ?? GeneralSettings.defaultMouseButtonNumber
+    private func applyMouseButtonNumber(_ mouseButtonNumber: Int) {
         _ = prototypeState.applyImmediateMutation(using: actionHandler) { configuration in
             configuration.general.mouseButtonNumber = mouseButtonNumber
         }
@@ -428,8 +430,17 @@ extension GeneralSettingsViewController {
     }
 
     func setMouseButtonNumberForTesting(_ mouseButtonNumber: Int) {
-        mouseButtonPopup.selectItem(withTitle: String(mouseButtonNumber))
-        handleMouseButtonNumberChanged(mouseButtonPopup)
+        mouseButtonControl.setValue(mouseButtonNumber)
+        applyMouseButtonNumber(mouseButtonControl.value)
+    }
+
+    func setRawMouseButtonNumberForTesting(_ value: String) {
+        mouseButtonControl.setRawValueForTesting(value)
+        mouseButtonControl.commitTextEditingForTesting()
+    }
+
+    var mouseButtonNumberValueForTesting: Int {
+        mouseButtonControl.value
     }
 
     func setModifierLeftMouseDragForTesting(_ isEnabled: Bool) {
@@ -467,5 +478,11 @@ extension GeneralSettingsViewController {
         }) {
             selectedExclusion = .windowTitle(excludedWindowTitles.count - 1)
         }
+    }
+
+    func submitExclusionForTesting(kind: ExclusionEntrySheetContentView.Kind, value: String) {
+        let sheetContentView = ExclusionEntrySheetContentView(initialKind: kind)
+        sheetContentView.setValueForTesting(value)
+        applyExclusionSheetResult(sheetContentView)
     }
 }
