@@ -56,7 +56,6 @@ struct AppearanceSettingsViewControllerTests {
         controller.setHighlightStrokeWidthForTesting(6)
         controller.setLayoutGapForTesting(4)
         controller.setRenderTriggerAreasForTesting(true)
-        controller.setTriggerOpacityForTesting(0.35)
         controller.setTriggerGapForTesting(3)
 
         #expect(state.configuration.appearance.renderWindowHighlight == false)
@@ -64,9 +63,25 @@ struct AppearanceSettingsViewControllerTests {
         #expect(state.configuration.appearance.highlightStrokeWidth == 6)
         #expect(state.configuration.appearance.layoutGap == 4)
         #expect(state.configuration.appearance.renderTriggerAreas == true)
-        #expect(state.configuration.appearance.triggerOpacity == 0.35)
         #expect(state.configuration.appearance.triggerGap == 3)
-        #expect(controller.previewConfigurationForTesting.appearance.triggerOpacity == 0.35)
+        #expect(controller.previewConfigurationForTesting.appearance.highlightFillOpacity == 0.25)
+    }
+
+    @Test func appearanceFillOpacityPreviewChangesBeforePersisting() async throws {
+        let state = SettingsPrototypeState(configuration: .defaultValue)
+        let recorder = TestSettingsActionRecorder()
+        let controller = AppearanceSettingsViewController(
+            prototypeState: state,
+            actionHandler: recorder.makeActionHandler()
+        )
+        controller.loadViewIfNeeded()
+
+        controller.previewHighlightFillOpacityForTesting(0.42)
+        #expect(controller.previewConfigurationForTesting.appearance.highlightFillOpacity == 0.42)
+        #expect(state.configuration.appearance.highlightFillOpacity == AppConfiguration.defaultValue.appearance.highlightFillOpacity)
+
+        controller.commitHighlightFillOpacityForTesting(0.42)
+        #expect(state.configuration.appearance.highlightFillOpacity == 0.42)
     }
 
     @Test func appearancePreviewUsesBuiltInCenterTriggerSample() async throws {
@@ -110,12 +125,11 @@ struct AppearanceSettingsViewControllerTests {
 
         var reloadedConfiguration = AppConfiguration.defaultValue
         reloadedConfiguration.appearance.renderTriggerAreas = true
-        reloadedConfiguration.appearance.triggerOpacity = 0.4
 
         state.reload(from: reloadedConfiguration)
 
         #expect(controller.previewConfigurationForTesting.appearance.renderTriggerAreas == true)
-        #expect(controller.previewConfigurationForTesting.appearance.triggerOpacity == 0.4)
+        #expect(controller.previewConfigurationForTesting.appearance.highlightFillOpacity == reloadedConfiguration.appearance.highlightFillOpacity)
     }
 
     @Test func appearanceSettingsRollBackAfterFailedApply() async throws {
@@ -128,12 +142,12 @@ struct AppearanceSettingsViewControllerTests {
         )
         controller.loadViewIfNeeded()
 
-        controller.setTriggerOpacityForTesting(0.4)
+        controller.setHighlightFillOpacityForTesting(0.4)
 
-        #expect(state.configuration.appearance.triggerOpacity == AppConfiguration.defaultValue.appearance.triggerOpacity)
+        #expect(state.configuration.appearance.highlightFillOpacity == AppConfiguration.defaultValue.appearance.highlightFillOpacity)
         #expect(
-            controller.previewConfigurationForTesting.appearance.triggerOpacity
-                == AppConfiguration.defaultValue.appearance.triggerOpacity
+            controller.previewConfigurationForTesting.appearance.highlightFillOpacity
+                == AppConfiguration.defaultValue.appearance.highlightFillOpacity
         )
     }
 }

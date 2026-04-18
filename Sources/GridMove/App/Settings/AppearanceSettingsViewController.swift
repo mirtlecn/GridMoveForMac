@@ -12,7 +12,6 @@ final class AppearanceSettingsViewController: NSViewController {
     private let strokeColorControl = AppearanceColorControl()
     private let layoutGapControl = AppearanceStepperControl(minValue: 0, maxValue: 24, unit: "pt")
     private let showOverlayCheckbox = makeCheckboxRow(title: "")
-    private let triggerOpacityControl = AppearanceSliderControl()
     private let triggerGapControl = AppearanceStepperControl(minValue: 0, maxValue: 24, unit: "pt")
     private let triggerStrokeColorControl = AppearanceColorControl()
 
@@ -53,7 +52,6 @@ final class AppearanceSettingsViewController: NSViewController {
                     contentView: makeInlineTabContent(rows: [
                         makeLabeledControlRow(label: UICopy.settingsTriggerGapLabel, control: triggerGapControl),
                         makeLabeledControlRow(label: UICopy.settingsHighlightTriggerAreaTitle, control: showOverlayCheckbox),
-                        makeLabeledControlRow(label: UICopy.settingsFillOpacityLabel, control: triggerOpacityControl),
                         makeLabeledControlRow(label: UICopy.settingsStrokeColorLabel, control: triggerStrokeColorControl),
                     ])
                 ),
@@ -71,7 +69,12 @@ final class AppearanceSettingsViewController: NSViewController {
         showHighlightCheckbox.target = self
         showHighlightCheckbox.action = #selector(handleShowHighlightToggle(_:))
 
-        fillOpacityControl.onValueChanged = { [weak self] value in
+        fillOpacityControl.onPreviewChanged = { [weak self] value in
+            self?.updatePreview { configuration in
+                configuration.appearance.highlightFillOpacity = value
+            }
+        }
+        fillOpacityControl.onValueCommitted = { [weak self] value in
             self?.applyMutation { configuration in
                 configuration.appearance.highlightFillOpacity = value
             }
@@ -98,11 +101,6 @@ final class AppearanceSettingsViewController: NSViewController {
         showOverlayCheckbox.target = self
         showOverlayCheckbox.action = #selector(handleShowOverlayToggle(_:))
 
-        triggerOpacityControl.onValueChanged = { [weak self] value in
-            self?.applyMutation { configuration in
-                configuration.appearance.triggerOpacity = value
-            }
-        }
         triggerGapControl.onValueChanged = { [weak self] value in
             self?.applyMutation { configuration in
                 configuration.appearance.triggerGap = value
@@ -138,7 +136,6 @@ final class AppearanceSettingsViewController: NSViewController {
         layoutGapControl.setValue(appearance.effectiveLayoutGap)
 
         showOverlayCheckbox.state = appearance.renderTriggerAreas ? .on : .off
-        triggerOpacityControl.setValue(appearance.triggerOpacity)
         triggerGapControl.setValue(appearance.triggerGap)
         triggerStrokeColorControl.setColor(appearance.triggerStrokeColor.nsColor)
 
@@ -152,6 +149,12 @@ final class AppearanceSettingsViewController: NSViewController {
 
     private func applyMutation(_ mutate: (inout AppConfiguration) -> Void) {
         _ = prototypeState.applyImmediateMutation(using: actionHandler, mutate)
+    }
+
+    private func updatePreview(_ mutate: (inout AppConfiguration) -> Void) {
+        var previewConfiguration = prototypeState.configuration
+        mutate(&previewConfiguration)
+        previewView.updateConfiguration(previewConfiguration)
     }
 
     @objc
@@ -184,7 +187,8 @@ final class AppearanceSettingsViewController: NSViewController {
 
 @MainActor
 private final class AppearanceSliderControl: NSView {
-    var onValueChanged: ((Double) -> Void)?
+    var onPreviewChanged: ((Double) -> Void)?
+    var onValueCommitted: ((Double) -> Void)?
 
     private let slider = NSSlider(value: 0, minValue: 0, maxValue: 1, target: nil, action: nil)
     private let valueLabel = makeValueLabel("0%")
@@ -227,7 +231,12 @@ private final class AppearanceSliderControl: NSView {
     private func handleSliderChanged(_ sender: NSSlider) {
         let value = sender.doubleValue
         valueLabel.stringValue = Self.percentageString(value)
-        onValueChanged?(value)
+        onPreviewChanged?(value)
+
+        let eventType = NSApp.currentEvent?.type
+        if eventType != .leftMouseDragged {
+            onValueCommitted?(value)
+        }
     }
 
     private static func percentageString(_ value: Double) -> String {
@@ -321,7 +330,16 @@ extension AppearanceSettingsViewController {
     }
 
     func setHighlightFillOpacityForTesting(_ value: Double) {
-        fillOpacityControl.onValueChanged?(value)
+        fillOpacityControl.onPreviewChanged?(value)
+        fillOpacityControl.onValueCommitted?(value)
+    }
+
+    func previewHighlightFillOpacityForTesting(_ value: Double) {
+        fillOpacityControl.onPreviewChanged?(value)
+    }
+
+    func commitHighlightFillOpacityForTesting(_ value: Double) {
+        fillOpacityControl.onValueCommitted?(value)
     }
 
     func setHighlightStrokeWidthForTesting(_ value: Int) {
@@ -335,10 +353,6 @@ extension AppearanceSettingsViewController {
     func setRenderTriggerAreasForTesting(_ isEnabled: Bool) {
         showOverlayCheckbox.state = isEnabled ? .on : .off
         handleShowOverlayToggle(showOverlayCheckbox)
-    }
-
-    func setTriggerOpacityForTesting(_ value: Double) {
-        triggerOpacityControl.onValueChanged?(value)
     }
 
     func setTriggerGapForTesting(_ value: Int) {

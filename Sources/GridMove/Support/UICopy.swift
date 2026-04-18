@@ -90,7 +90,6 @@ enum UICopy {
     static let settingsHotkeySheetTitle = "Hotkey"
     static let settingsHotkeySheetMessage = "Add or remove a hotkey"
     static let settingsBehaviorLabel = "Behavior"
-    static let settingsShortcutLabel = "Shortcut"
     static let settingsShortcutsLabel = "Shortcuts"
     static let settingsRecordShortcutButtonTitle = "Record"
     static let settingsPressShortcutValue = "Press shortcut"

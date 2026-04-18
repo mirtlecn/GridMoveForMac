@@ -513,7 +513,6 @@ struct GeneralSettings: Codable, Equatable {
 
 struct AppearanceSettings: Codable, Equatable {
     var renderTriggerAreas: Bool
-    var triggerOpacity: Double
     var triggerGap: Int
     var triggerStrokeColor: RGBAColor
     var layoutGap: Int
@@ -524,7 +523,6 @@ struct AppearanceSettings: Codable, Equatable {
 
     private enum CodingKeys: String, CodingKey {
         case renderTriggerAreas
-        case triggerOpacity
         case triggerGap
         case triggerStrokeColor
         case layoutGap
@@ -536,7 +534,6 @@ struct AppearanceSettings: Codable, Equatable {
 
     init(
         renderTriggerAreas: Bool,
-        triggerOpacity: Double,
         triggerGap: Int,
         triggerStrokeColor: RGBAColor,
         layoutGap: Int = AppearanceValueNormalizer.defaultLayoutGap,
@@ -546,7 +543,6 @@ struct AppearanceSettings: Codable, Equatable {
         highlightStrokeColor: RGBAColor
     ) {
         self.renderTriggerAreas = renderTriggerAreas
-        self.triggerOpacity = AppearanceValueNormalizer.normalizeOpacity(triggerOpacity)
         self.triggerGap = AppearanceValueNormalizer.normalizeNonNegativeInt(triggerGap, defaultValue: 0)
         self.triggerStrokeColor = triggerStrokeColor
         self.layoutGap = AppearanceValueNormalizer.normalizeLayoutGap(layoutGap)
@@ -559,7 +555,6 @@ struct AppearanceSettings: Codable, Equatable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         renderTriggerAreas = try container.decode(Bool.self, forKey: .renderTriggerAreas)
-        triggerOpacity = AppearanceValueNormalizer.decodeOpacity(from: container, forKey: .triggerOpacity)
         triggerGap = AppearanceValueNormalizer.decodeNonNegativeInt(from: container, forKey: .triggerGap, defaultValue: 0)
         triggerStrokeColor = try container.decodeIfPresent(RGBAColor.self, forKey: .triggerStrokeColor) ?? RGBAColor.defaultTriggerStrokeColor
         layoutGap = AppearanceValueNormalizer.decodeLayoutGap(from: container, forKey: .layoutGap)

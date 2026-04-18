@@ -134,7 +134,6 @@ extension AppConfiguration {
         ),
         appearance: AppearanceSettings(
             renderTriggerAreas: false,
-            triggerOpacity: 0.2,
             triggerGap: 2,
             triggerStrokeColor: .defaultTriggerStrokeColor,
             layoutGap: 1,

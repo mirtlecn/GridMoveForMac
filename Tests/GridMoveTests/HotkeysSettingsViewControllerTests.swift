@@ -89,7 +89,6 @@ private func makeTestLayout(
     let data = try #require(json.data(using: .utf8))
     let settings = try JSONDecoder().decode(AppearanceConfiguration.self, from: data)
 
-    #expect(settings.triggerOpacity == 0.2)
     #expect(settings.triggerGap == 2)
     #expect(settings.highlightFillOpacity == 0.08)
     #expect(settings.highlightStrokeWidth == 3)
@@ -106,7 +105,8 @@ private func makeTestLayout(
         ]
     )
 
-    #expect(contentView.isConfirmationEnabled == true)
+    #expect(contentView.isConfirmationEnabled == false)
+    #expect(contentView.hasChangesForTesting == false)
     #expect(contentView.visibleShortcutDisplayNamesForTesting == ["⌘K"])
     #expect(contentView.shortcutButtonTitleForTesting == UICopy.settingsRecordShortcutButtonTitle)
     #expect(contentView.shortcutButtonControlSizeForTesting == .regular)
@@ -117,6 +117,8 @@ private func makeTestLayout(
     contentView.applyRecordedShortcutForTesting(KeyboardShortcut(modifiers: [.cmd, .shift], key: "k"))
     #expect(contentView.visibleShortcutDisplayNamesForTesting == ["⌘K", "⇧⌘K"])
     #expect(contentView.shortcutButtonTitleForTesting == UICopy.settingsRecordShortcutButtonTitle)
+    #expect(contentView.isConfirmationEnabled == true)
+    #expect(contentView.hasChangesForTesting == true)
 
     contentView.removeVisibleShortcutForTesting(at: 0)
     #expect(contentView.visibleShortcutDisplayNamesForTesting == ["⇧⌘K"])

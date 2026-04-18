@@ -61,7 +61,6 @@ private struct AnyCodingKey: CodingKey {
 
 struct AppearanceConfiguration: Codable {
     let renderTriggerAreas: Bool
-    let triggerOpacity: Double
     let triggerGap: Int
     let triggerStrokeColor: String
     let layoutGap: Int
@@ -72,7 +71,6 @@ struct AppearanceConfiguration: Codable {
 
     private enum CodingKeys: String, CodingKey {
         case renderTriggerAreas
-        case triggerOpacity
         case triggerGap
         case triggerStrokeColor
         case layoutGap
@@ -84,7 +82,6 @@ struct AppearanceConfiguration: Codable {
 
     init(settings: AppearanceSettings) {
         renderTriggerAreas = settings.renderTriggerAreas
-        triggerOpacity = settings.triggerOpacity
         triggerGap = settings.triggerGap
         triggerStrokeColor = settings.triggerStrokeColor.hexString
         layoutGap = settings.layoutGap
@@ -97,7 +94,6 @@ struct AppearanceConfiguration: Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         renderTriggerAreas = try container.decode(Bool.self, forKey: .renderTriggerAreas)
-        triggerOpacity = AppearanceValueNormalizer.decodeOpacity(from: container, forKey: .triggerOpacity)
         triggerGap = AppearanceValueNormalizer.decodeNonNegativeInt(from: container, forKey: .triggerGap, defaultValue: 0)
         triggerStrokeColor = try container.decode(String.self, forKey: .triggerStrokeColor)
         layoutGap = AppearanceValueNormalizer.decodeLayoutGap(from: container, forKey: .layoutGap)
@@ -110,7 +106,6 @@ struct AppearanceConfiguration: Codable {
     func makeSettings() throws -> AppearanceSettings {
         AppearanceSettings(
             renderTriggerAreas: renderTriggerAreas,
-            triggerOpacity: triggerOpacity,
             triggerGap: triggerGap,
             triggerStrokeColor: try RGBAColor(hexString: triggerStrokeColor),
             layoutGap: layoutGap,
