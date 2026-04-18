@@ -1,4 +1,5 @@
 import AppKit
+import CoreGraphics
 import Foundation
 
 enum Geometry {
@@ -51,12 +52,35 @@ enum Geometry {
             && abs(lhs.size.height - rhs.size.height) <= tolerance
     }
 
-    static func screenIdentifier(for screen: NSScreen) -> String {
+    static func cgDisplayID(for screen: NSScreen) -> CGDirectDisplayID? {
         if let screenNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber {
-            return screenNumber.stringValue
+            return CGDirectDisplayID(screenNumber.uint32Value)
         }
 
-        let frame = screen.frame
-        return "\(frame.origin.x),\(frame.origin.y),\(frame.width),\(frame.height)"
+        if let screenNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? UInt32 {
+            return CGDirectDisplayID(screenNumber)
+        }
+
+        return nil
+    }
+
+    static func screenIdentifier(for screen: NSScreen) -> String {
+        guard let displayID = cgDisplayID(for: screen) else {
+            preconditionFailure("Expected NSScreenNumber for every connected display.")
+        }
+
+        guard let uuid = stableDisplayUUID(for: displayID) else {
+            preconditionFailure("Expected persistent display UUID for display \(displayID).")
+        }
+
+        return uuid
+    }
+
+    static func stableDisplayUUID(for displayID: CGDirectDisplayID) -> String? {
+        guard let uuid = CGDisplayCreateUUIDFromDisplayID(displayID)?.takeRetainedValue() else {
+            return nil
+        }
+
+        return (CFUUIDCreateString(nil, uuid) as String?)?.lowercased()
     }
 }

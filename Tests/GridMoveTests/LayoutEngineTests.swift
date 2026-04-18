@@ -425,6 +425,91 @@ import Testing
     )
 }
 
+@Test func layoutGroupResolverTargetsExplicitUUIDDisplay() async throws {
+    let explicitLayout = LayoutPreset(
+        id: "layout-explicit-uuid",
+        name: "Explicit UUID",
+        gridColumns: 12,
+        gridRows: 6,
+        windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
+        triggerRegion: nil,
+        includeInLayoutIndex: true
+    )
+    let configuration = AppConfiguration(
+        general: .init(
+            isEnabled: true,
+            excludedBundleIDs: [],
+            excludedWindowTitles: [],
+            activeLayoutGroup: "uuid-only",
+            mouseButtonNumber: 3
+        ),
+        appearance: AppConfiguration.defaultValue.appearance,
+        dragTriggers: AppConfiguration.defaultValue.dragTriggers,
+        hotkeys: .init(bindings: []),
+        layoutGroups: [
+            LayoutGroup(
+                name: "uuid-only",
+                includeInGroupCycle: true,
+                sets: [
+                    LayoutSet(monitor: .displays(["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"]), layouts: [explicitLayout]),
+                ]
+            ),
+        ],
+        monitors: ["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display"]
+    )
+    let entry = try #require(LayoutGroupResolver.entry(for: "layout-explicit-uuid", configuration: configuration))
+
+    #expect(
+        LayoutGroupResolver.targetDisplayID(
+            for: entry,
+            currentDisplayID: "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4",
+            mainDisplayID: "main",
+            availableDisplayIDs: ["main", "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"],
+            configuration: configuration
+        ) == "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"
+    )
+}
+
+@Test func configurationValidatorAllowsTwoDifferentUUIDDisplays() async throws {
+    let explicitLayout = LayoutPreset(
+        id: "layout-explicit-uuid",
+        name: "Explicit UUID",
+        gridColumns: 12,
+        gridRows: 6,
+        windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
+        triggerRegion: nil,
+        includeInLayoutIndex: true
+    )
+    let configuration = AppConfiguration(
+        general: .init(
+            isEnabled: true,
+            excludedBundleIDs: [],
+            excludedWindowTitles: [],
+            activeLayoutGroup: "uuid-only",
+            mouseButtonNumber: 3
+        ),
+        appearance: AppConfiguration.defaultValue.appearance,
+        dragTriggers: AppConfiguration.defaultValue.dragTriggers,
+        hotkeys: .init(bindings: []),
+        layoutGroups: [
+            LayoutGroup(
+                name: "uuid-only",
+                includeInGroupCycle: true,
+                sets: [
+                    LayoutSet(monitor: .displays(["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4"]), layouts: [explicitLayout]),
+                    LayoutSet(monitor: .displays(["9b249d3c-1111-2222-3333-444455556666"]), layouts: [explicitLayout]),
+                ]
+            ),
+        ],
+        monitors: [
+            "f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display",
+            "9b249d3c-1111-2222-3333-444455556666": "DELL U2720Q",
+        ]
+    )
+
+    try ConfigurationValidator.validate(configuration)
+}
+
 @Test func layoutEngineKeepsOnlyTenRecentWindowLayoutRecords() async throws {
     let engine = LayoutEngine()
     let layouts = AppConfiguration.defaultValue.layouts

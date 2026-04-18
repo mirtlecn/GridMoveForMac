@@ -26,7 +26,7 @@ final class ConfigurationRuntimeCoordinator {
     func loadConfiguration() throws -> LoadResult {
         let result = try configurationStore.loadWithStatus()
         var configuration = result.configuration
-        let didUpdateMonitorMetadata = synchronizeMonitorMetadata(configuration: &configuration)
+        let didUpdateMonitorMetadata = refreshMonitorMetadata(configuration: &configuration)
         if didUpdateMonitorMetadata,
            result.source == .persistedConfiguration,
            result.skippedLayoutDiagnostics.isEmpty {
@@ -51,7 +51,6 @@ final class ConfigurationRuntimeCoordinator {
     ) throws -> AppConfiguration {
         var candidateConfiguration = currentConfiguration
         mutate(&candidateConfiguration)
-        _ = synchronizeMonitorMetadata(configuration: &candidateConfiguration)
         try configurationStore.save(candidateConfiguration)
         return candidateConfiguration
     }
@@ -60,12 +59,22 @@ final class ConfigurationRuntimeCoordinator {
         try configurationStore.save(configuration)
     }
 
-    private func synchronizeMonitorMetadata(configuration: inout AppConfiguration) -> Bool {
-        let monitorMap = currentMonitorMapProvider()
-        guard configuration.monitors != monitorMap else {
+    private func refreshMonitorMetadata(configuration: inout AppConfiguration) -> Bool {
+        let connectedMonitorMap = currentMonitorMapProvider()
+        guard !connectedMonitorMap.isEmpty else {
             return false
         }
-        configuration.monitors = monitorMap
+
+        var mergedMonitorMap = configuration.monitors
+        for (monitorUUID, monitorName) in connectedMonitorMap {
+            mergedMonitorMap[monitorUUID] = monitorName
+        }
+
+        guard mergedMonitorMap != configuration.monitors else {
+            return false
+        }
+
+        configuration.monitors = mergedMonitorMap
         return true
     }
 }

@@ -7,22 +7,16 @@ enum MonitorDiscovery {
     }
 
     static func isMainScreen(_ screen: NSScreen) -> Bool {
-        guard let screenNumber = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber else {
+        guard let displayID = Geometry.cgDisplayID(for: screen) else {
             return false
         }
-        return screenNumber.uint32Value == CGMainDisplayID()
+        return displayID == CGMainDisplayID()
     }
 
     static func currentMonitorMap() -> [String: String] {
         var result: [String: String] = [:]
-        let screens = NSScreen.screens
-        let nameCounts = Dictionary(grouping: screens.map(displayName(for:)), by: { $0 }).mapValues(\.count)
-
-        for screen in screens {
-            let displayID = displayID(for: screen)
-            let displayName = displayName(for: screen)
-            let key = (nameCounts[displayName] ?? 0) > 1 ? "\(displayName) (\(displayID))" : displayName
-            result[key] = displayID
+        for screen in NSScreen.screens {
+            result[displayID(for: screen)] = displayName(for: screen)
         }
 
         return result
@@ -54,6 +48,6 @@ enum MonitorDiscovery {
             return screen.localizedName
         }
 
-        return "Display \(displayID(for: screen))"
+        return "Display"
     }
 }

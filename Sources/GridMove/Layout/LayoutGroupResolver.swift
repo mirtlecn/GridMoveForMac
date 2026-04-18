@@ -40,22 +40,15 @@ enum LayoutGroupResolver {
         }
 
         let displayID = MonitorDiscovery.displayID(for: screen)
+        let mainDisplayID = NSScreen.screens
+            .first(where: MonitorDiscovery.isMainScreen(_:))
+            .map(MonitorDiscovery.displayID(for:))
 
-        if let explicitSet = group.sets.first(where: {
-            if case let .displays(displayIDs) = $0.monitor {
-                return displayIDs.contains(displayID)
-            }
-            return false
-        }) {
-            return explicitSet
-        }
-
-        if MonitorDiscovery.isMainScreen(screen),
-           let mainSet = group.sets.first(where: { $0.monitor == .main }) {
-            return mainSet
-        }
-
-        return group.sets.first(where: { $0.monitor == .all })
+        return resolvedSet(
+            in: group,
+            forDisplayID: displayID,
+            mainDisplayID: mainDisplayID
+        )
     }
 
     static func resolvedLayouts(for screen: NSScreen, configuration: AppConfiguration) -> [LayoutPreset] {

@@ -1,6 +1,6 @@
 import Foundation
 
-enum ConfigurationFileError: Error {
+enum ConfigurationFileError: Error, Equatable {
     case invalidLayoutReference(Int)
     case missingActiveLayoutGroup(String)
     case duplicateLayoutGroupName
