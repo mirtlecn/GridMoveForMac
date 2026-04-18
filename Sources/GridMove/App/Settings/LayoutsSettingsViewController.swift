@@ -337,7 +337,7 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
         let detailTabsView = SettingsInlineTabsView(
             tabs: [
                 SettingsInlineTab(
-                        title: UICopy.settingsGeneralInlineTabTitle,
+                        title: UICopy.settingsLayoutInlineTabTitle,
                         contentView: makeInlineTabContent(rows: [
                             makeLabeledControlRow(label: UICopy.settingsNameLabel, control: makeEditableTextControl(value: layout.name, width: 220)),
                             makeLabeledControlRow(label: UICopy.settingsIncludeInMenuLabel, control: makeEditableCheckboxControl(isOn: layout.includeInMenu)),
@@ -347,7 +347,7 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
                         ], width: 460)
                 ),
                 SettingsInlineTab(
-                    title: UICopy.settingsWindowInlineTabTitle,
+                    title: UICopy.settingsWindowAreaInlineTabTitle,
                     contentView: makeInlineTabContent(rows: [
                         makeLabeledControlRow(label: UICopy.settingsXPositionLabel, control: makeNumericStepperControl(value: windowSelection.x, unit: "grid", minValue: 0, maxValue: max(0, layout.gridColumns - 1))),
                         makeLabeledControlRow(label: UICopy.settingsYPositionLabel, control: makeNumericStepperControl(value: windowSelection.y, unit: "grid", minValue: 0, maxValue: max(0, layout.gridRows - 1))),
@@ -356,7 +356,7 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
                     ], width: 460)
                 ),
                 SettingsInlineTab(
-                    title: UICopy.settingsTriggerInlineTabTitle,
+                    title: UICopy.settingsTriggerAreaInlineTabTitle,
                     contentView: triggerContentView
                 ),
             ]

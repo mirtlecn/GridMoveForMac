@@ -39,21 +39,21 @@ final class AppearanceSettingsViewController: NSViewController {
         let inlineTabsView = SettingsInlineTabsView(
             tabs: [
                 SettingsInlineTab(
-                    title: UICopy.settingsWindowHighlightSectionTitle,
+                    title: UICopy.settingsWindowAreaSectionTitle,
                     contentView: makeInlineTabContent(rows: [
-                        makeLabeledControlRow(label: UICopy.settingsShowHighlightTitle, control: showHighlightCheckbox),
+                        makeLabeledControlRow(label: UICopy.settingsWindowGapLabel, control: layoutGapControl),
+                        makeLabeledControlRow(label: UICopy.settingsHighlightWindowAreaTitle, control: showHighlightCheckbox),
                         makeLabeledControlRow(label: UICopy.settingsFillOpacityLabel, control: fillOpacityControl),
                         makeLabeledControlRow(label: UICopy.settingsStrokeWidthLabel, control: strokeWidthControl),
                         makeLabeledControlRow(label: UICopy.settingsStrokeColorLabel, control: strokeColorControl),
-                        makeLabeledControlRow(label: UICopy.settingsLayoutGapLabel, control: layoutGapControl),
                     ])
                 ),
                 SettingsInlineTab(
-                    title: UICopy.settingsTriggerOverlaySectionTitle,
+                    title: UICopy.settingsTriggerAreaSectionTitle,
                     contentView: makeInlineTabContent(rows: [
-                        makeLabeledControlRow(label: UICopy.settingsShowOverlayTitle, control: showOverlayCheckbox),
+                        makeLabeledControlRow(label: UICopy.settingsTriggerGapLabel, control: triggerGapControl),
+                        makeLabeledControlRow(label: UICopy.settingsHighlightTriggerAreaTitle, control: showOverlayCheckbox),
                         makeLabeledControlRow(label: UICopy.settingsFillOpacityLabel, control: triggerOpacityControl),
-                        makeLabeledControlRow(label: UICopy.settingsGapLabel, control: triggerGapControl),
                         makeLabeledControlRow(label: UICopy.settingsStrokeColorLabel, control: triggerStrokeColorControl),
                     ])
                 ),
