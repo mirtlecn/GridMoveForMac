@@ -273,6 +273,10 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     #expect(launchAtLoginService.unregisterCallCount == 0)
     #expect(delegate.configuration.general.launchAtLogin == true)
 
+    #expect(delegate.updateLaunchAtLoginEnabled(false) == true)
+    #expect(launchAtLoginService.unregisterCallCount == 1)
+    #expect(launchAtLoginService.currentStatus == .disabled)
+
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
 }
 
@@ -304,6 +308,10 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     delegate.evaluateAccessibilityState()
 
     #expect(launchAtLoginService.registerCallCount == 1)
+
+    #expect(delegate.updateLaunchAtLoginEnabled(false) == true)
+    #expect(launchAtLoginService.unregisterCallCount == 1)
+    #expect(launchAtLoginService.currentStatus == .disabled)
 
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
 }
@@ -720,6 +728,10 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     #expect(delegate.configuration.general.launchAtLogin == true)
     #expect(launchAtLoginService.registerCallCount == 1)
 
+    #expect(delegate.updateLaunchAtLoginEnabled(false) == true)
+    #expect(launchAtLoginService.unregisterCallCount == 1)
+    #expect(launchAtLoginService.currentStatus == .disabled)
+
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
 }
 
@@ -987,6 +999,10 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     #expect(launchAtLoginService.registerCallCount == 1)
     #expect(delegate.configuration.general.launchAtLogin == true)
     #expect((try store.load()).general.launchAtLogin == true)
+
+    #expect(delegate.updateLaunchAtLoginEnabled(false) == true)
+    #expect(launchAtLoginService.unregisterCallCount == 1)
+    #expect(launchAtLoginService.currentStatus == .disabled)
 }
 
 @MainActor
@@ -1077,9 +1093,11 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
 
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let launchAtLoginService = TestLaunchAtLoginService(currentStatus: .disabled)
     let delegate = AppDelegate(
         configurationStore: store,
         openURL: { _ in true },
+        launchAtLoginService: launchAtLoginService,
         accessibilityStatusProvider: { true }
     )
 
@@ -1105,9 +1123,11 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
 
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let launchAtLoginService = TestLaunchAtLoginService(currentStatus: .disabled)
     let delegate = AppDelegate(
         configurationStore: store,
         openURL: { _ in true },
+        launchAtLoginService: launchAtLoginService,
         accessibilityStatusProvider: { true }
     )
 
