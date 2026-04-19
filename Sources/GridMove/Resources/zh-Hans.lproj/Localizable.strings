@@ -15,7 +15,7 @@
 "settingsTriggerAreaSectionTitle" = "触发区域";
 "settingsModifierGroupsLabel" = "修饰键组";
 "settingsMouseButtonNumberLabel" = "鼠标按键编号";
-"settingsMouseDragTitle" = "Mouse drag";
+"settingsMouseDragTitle" = "鼠标拖动";
 "settingsActivationDelayLabel" = "激活延迟";
 "settingsMillisecondsUnit" = "毫秒 (0 ~ 1,000)";
 "settingsExcludedBundleIDsLabel" = "排除的 Bundle ID";
