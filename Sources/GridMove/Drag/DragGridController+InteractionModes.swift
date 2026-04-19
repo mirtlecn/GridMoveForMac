@@ -84,7 +84,7 @@ extension DragGridController {
             state.hasDraggedPastThreshold = true
         }
 
-        applyLayoutSelection(at: point, configuration: configuration)
+        updateLayoutSelection(at: point, configuration: configuration)
     }
 
     func updateMoveOnlyDrag(at point: CGPoint) {
@@ -161,7 +161,7 @@ extension DragGridController {
 
         if shouldApplyImmediately {
             state.hasDraggedPastThreshold = true
-            applyLayoutSelection(at: point, configuration: configuration)
+            updateLayoutSelection(at: point, configuration: configuration)
             return
         }
 
@@ -222,7 +222,41 @@ extension DragGridController {
         }
     }
 
-    func applyLayoutSelection(at point: CGPoint, configuration: AppConfiguration) {
+    func updateLayoutSelection(at point: CGPoint, configuration: AppConfiguration) {
+        let hoveredSlot = layoutEngine.triggerSlot(containing: point, slots: state.resolvedSlots)
+        state.hoveredLayoutID = hoveredSlot?.layoutID
+
+        if configuration.dragTriggers.applyLayoutImmediatelyWhileDragging,
+           let hoveredSlot
+        {
+            applyLayoutSelection(slot: hoveredSlot, configuration: configuration)
+        }
+
+        refreshOverlay(configuration: configuration)
+    }
+
+    func finalizeLayoutSelection(at point: CGPoint, configuration: AppConfiguration) {
+        guard state.interactionMode == .layoutSelection else {
+            return
+        }
+
+        guard state.hasDraggedPastThreshold else {
+            return
+        }
+
+        let hoveredSlot = layoutEngine.triggerSlot(containing: point, slots: state.resolvedSlots)
+        state.hoveredLayoutID = hoveredSlot?.layoutID
+
+        guard !configuration.dragTriggers.applyLayoutImmediatelyWhileDragging,
+              let hoveredSlot
+        else {
+            return
+        }
+
+        applyLayoutSelection(slot: hoveredSlot, configuration: configuration)
+    }
+
+    private func applyLayoutSelection(slot: ResolvedTriggerSlot, configuration: AppConfiguration) {
         guard let targetWindow = state.targetWindow else {
             return
         }
@@ -231,19 +265,18 @@ extension DragGridController {
             return
         }
 
-        let hoveredSlot = layoutEngine.triggerSlot(containing: point, slots: state.resolvedSlots)
-        state.hoveredLayoutID = hoveredSlot?.layoutID
-        if let hoveredSlot, hoveredSlot.layoutID != state.lastAppliedLayoutID {
-            windowController.applyLayout(
-                layoutID: hoveredSlot.layoutID,
-                to: targetWindow,
-                preferredScreen: state.activeScreen,
-                configuration: configuration
-            )
-            state.currentWindowFrame = hoveredSlot.targetFrame
-            state.lastAppliedLayoutID = hoveredSlot.layoutID
+        guard slot.layoutID != state.lastAppliedLayoutID else {
+            return
         }
-        refreshOverlay(configuration: configuration)
+
+        windowController.applyLayout(
+            layoutID: slot.layoutID,
+            to: targetWindow,
+            preferredScreen: state.activeScreen,
+            configuration: configuration
+        )
+        state.currentWindowFrame = slot.targetFrame
+        state.lastAppliedLayoutID = slot.layoutID
     }
 
     func refreshOverlay(configuration: AppConfiguration) {

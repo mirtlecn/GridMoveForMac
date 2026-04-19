@@ -114,6 +114,10 @@ Confirmed interactions:
   - user chooses one or more modifiers from Control / Shift / Option / Command
   - empty selection is not allowed
   - duplicate groups are not added twice
+- `Drag behavior`
+  - `Apply layout immediately while dragging` is an immediate-save checkbox
+  - when enabled, hovering a trigger region applies the layout immediately
+  - when disabled, drag only previews the hovered layout and applies it when the trigger button is released
 - `Excluded bundle IDs` and `Excluded window titles`
   - list items are selectable
   - one shared `Add...` / `Remove` row

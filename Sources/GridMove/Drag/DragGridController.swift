@@ -137,7 +137,7 @@ final class DragGridController {
         case .leftMouseDragged:
             return handleMouseDragged(event: event, expectedButton: .left, configuration: configuration)
         case .leftMouseUp:
-            return handleMouseUp(event: event, button: .left)
+            return handleMouseUp(event: event, button: .left, configuration: configuration)
         case .rightMouseDown:
             return handleRightMouseDown(event: event)
         case .rightMouseDragged:
@@ -149,7 +149,7 @@ final class DragGridController {
         case .otherMouseDragged:
             return handleMouseDragged(event: event, expectedButton: .mouseButton, configuration: configuration)
         case .otherMouseUp:
-            return handleOtherMouseUp(event: event)
+            return handleOtherMouseUp(event: event, configuration: configuration)
         case .scrollWheel:
             return handleScrollWheel(event: event)
         case .flagsChanged:

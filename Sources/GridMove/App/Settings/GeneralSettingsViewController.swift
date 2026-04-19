@@ -21,6 +21,9 @@ final class GeneralSettingsViewController: NSViewController {
     private lazy var mouseButtonControl = makeMouseButtonControl()
     private lazy var modifierLeftMouseDragCheckbox = makeCheckboxRow(title: UICopy.modifierLeftMouseDragMenuTitle)
     private lazy var preferLayoutModeCheckbox = makeCheckboxRow(title: UICopy.preferLayoutModeMenuTitle)
+    private lazy var applyLayoutImmediatelyWhileDraggingCheckbox = makeCheckboxRow(
+        title: UICopy.applyLayoutImmediatelyWhileDraggingTitle
+    )
     private let enableDescriptionLabel = makeSecondaryLabel(UICopy.enableMenuDescription)
     private let preferLayoutModeDescriptionLabel = makeSecondaryLabel("")
 
@@ -83,6 +86,7 @@ final class GeneralSettingsViewController: NSViewController {
                         checkbox: preferLayoutModeCheckbox,
                         descriptionLabel: preferLayoutModeDescriptionLabel
                     ),
+                    applyLayoutImmediatelyWhileDraggingCheckbox,
                 ]
             )
         )
@@ -143,6 +147,9 @@ final class GeneralSettingsViewController: NSViewController {
 
         preferLayoutModeCheckbox.target = self
         preferLayoutModeCheckbox.action = #selector(handlePreferLayoutModeToggle(_:))
+
+        applyLayoutImmediatelyWhileDraggingCheckbox.target = self
+        applyLayoutImmediatelyWhileDraggingCheckbox.action = #selector(handleApplyLayoutImmediatelyWhileDraggingToggle(_:))
     }
 
     private func observePrototypeState() {
@@ -165,6 +172,7 @@ final class GeneralSettingsViewController: NSViewController {
         mouseButtonControl.setValue(configuration.general.mouseButtonNumber)
         modifierLeftMouseDragCheckbox.state = configuration.dragTriggers.enableModifierLeftMouseDrag ? .on : .off
         preferLayoutModeCheckbox.state = configuration.dragTriggers.preferLayoutMode ? .on : .off
+        applyLayoutImmediatelyWhileDraggingCheckbox.state = configuration.dragTriggers.applyLayoutImmediatelyWhileDragging ? .on : .off
         preferLayoutModeDescriptionLabel.stringValue = configuration.dragTriggers.preferLayoutMode
             ? UICopy.preferLayoutModeEnabledDescription
             : UICopy.preferLayoutModeDisabledDescription
@@ -396,6 +404,13 @@ final class GeneralSettingsViewController: NSViewController {
     }
 
     @objc
+    private func handleApplyLayoutImmediatelyWhileDraggingToggle(_ sender: NSButton) {
+        _ = prototypeState.applyImmediateMutation(using: actionHandler) { configuration in
+            configuration.dragTriggers.applyLayoutImmediatelyWhileDragging = sender.state == .on
+        }
+    }
+
+    @objc
     private func handleAddExclusion(_ sender: NSButton) {
         let initialKind: ExclusionEntrySheetContentView.Kind
         switch selectedExclusion {
@@ -472,6 +487,11 @@ extension GeneralSettingsViewController {
     func setPreferLayoutModeForTesting(_ isEnabled: Bool) {
         preferLayoutModeCheckbox.state = isEnabled ? .on : .off
         handlePreferLayoutModeToggle(preferLayoutModeCheckbox)
+    }
+
+    func setApplyLayoutImmediatelyWhileDraggingForTesting(_ isEnabled: Bool) {
+        applyLayoutImmediatelyWhileDraggingCheckbox.state = isEnabled ? .on : .off
+        handleApplyLayoutImmediatelyWhileDraggingToggle(applyLayoutImmediatelyWhileDraggingCheckbox)
     }
 
     var preferLayoutModeDescriptionForTesting: String {

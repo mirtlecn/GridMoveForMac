@@ -150,6 +150,7 @@ extension AppConfiguration {
             enableMouseButtonDrag: true,
             enableModifierLeftMouseDrag: true,
             preferLayoutMode: true,
+            applyLayoutImmediatelyWhileDragging: true,
             modifierGroups: [
                 [.ctrl, .cmd, .shift, .alt],
                 [.ctrl, .shift, .alt],

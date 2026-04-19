@@ -106,6 +106,7 @@
 "requestAccessibilityAccessMenuTitle" = "Get accessibility access";
 "modifierLeftMouseDragMenuTitle" = "Modifier + left mouse drag";
 "preferLayoutModeMenuTitle" = "Prefer layout mode";
+"applyLayoutImmediatelyWhileDraggingTitle" = "Apply layout immediately while dragging";
 "preferLayoutModeEnabledDescription" = "Start in layout mode by default. Right-click or press Option to switch to free move.";
 "preferLayoutModeDisabledDescription" = "Start in free move by default. Right-click or press Option to switch to layout mode.";
 "layoutGroupMenuTitle" = "Layout group";

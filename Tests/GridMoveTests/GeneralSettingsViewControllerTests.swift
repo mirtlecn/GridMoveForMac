@@ -19,6 +19,7 @@ struct GeneralSettingsViewControllerTests {
         controller.setMouseButtonNumberForTesting(5)
         controller.setModifierLeftMouseDragForTesting(false)
         controller.setPreferLayoutModeForTesting(false)
+        controller.setApplyLayoutImmediatelyWhileDraggingForTesting(false)
         controller.addExcludedBundleIDForTesting("com.example.Hidden")
         controller.addExcludedWindowTitleForTesting("Floating Panel")
 
@@ -28,6 +29,7 @@ struct GeneralSettingsViewControllerTests {
         #expect(state.configuration.general.mouseButtonNumber == 5)
         #expect(state.configuration.dragTriggers.enableModifierLeftMouseDrag == false)
         #expect(state.configuration.dragTriggers.preferLayoutMode == false)
+        #expect(state.configuration.dragTriggers.applyLayoutImmediatelyWhileDragging == false)
         #expect(state.configuration.general.excludedBundleIDs.contains("com.example.Hidden"))
         #expect(state.configuration.general.excludedWindowTitles.contains("Floating Panel"))
     }

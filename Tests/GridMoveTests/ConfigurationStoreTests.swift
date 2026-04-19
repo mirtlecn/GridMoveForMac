@@ -87,6 +87,10 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(reloadedConfiguration.appearance.triggerGap == updatedConfiguration.appearance.triggerGap)
     #expect(reloadedConfiguration.appearance.layoutGap == updatedConfiguration.appearance.layoutGap)
     #expect(reloadedConfiguration.dragTriggers.preferLayoutMode == updatedConfiguration.dragTriggers.preferLayoutMode)
+    #expect(
+        reloadedConfiguration.dragTriggers.applyLayoutImmediatelyWhileDragging
+            == updatedConfiguration.dragTriggers.applyLayoutImmediatelyWhileDragging
+    )
     #expect(reloadedConfiguration.dragTriggers.modifierGroups == updatedConfiguration.dragTriggers.modifierGroups)
     #expect(reloadedConfiguration.monitors == updatedConfiguration.monitors)
     #expect(reloadedConfiguration.layouts.map(\.id) == (1...updatedConfiguration.layouts.count).map { "layout-\($0)" })
@@ -482,6 +486,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(configuration.hotkeys.bindings.map(\.id) == ["binding-1"])
     #expect(configuration.hotkeys.bindings[0].action == .applyLayoutByIndex(layout: 2))
     #expect(configuration.dragTriggers.preferLayoutMode == true)
+    #expect(configuration.dragTriggers.applyLayoutImmediatelyWhileDragging == true)
     #expect(configuration.layouts[1].triggerRegion == nil)
     #expect(configuration.layouts[1].includeInLayoutIndex == false)
     #expect(configuration.layouts[0].includeInMenu == true)
@@ -565,6 +570,37 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(result.configuration.general.activeLayoutGroup == "work")
     #expect(result.configuration.layoutGroups[0].includeInGroupCycle == true)
     #expect(result.configuration.layoutGroups[0].sets[0].layouts.map(\.name) == ["Center", "Center"])
+}
+
+@Test func dragTriggerSettingsDecodeMissingAndInvalidImmediateApplyDefaultsToTrue() async throws {
+    let missingFieldJSON = """
+    {
+      "enableMouseButtonDrag": true,
+      "enableModifierLeftMouseDrag": true,
+      "preferLayoutMode": true,
+      "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
+      "activationDelaySeconds": 0.3,
+      "activationMoveThreshold": 10
+    }
+    """
+    let invalidFieldJSON = """
+    {
+      "enableMouseButtonDrag": true,
+      "enableModifierLeftMouseDrag": true,
+      "preferLayoutMode": true,
+      "applyLayoutImmediatelyWhileDragging": "invalid",
+      "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
+      "activationDelaySeconds": 0.3,
+      "activationMoveThreshold": 10
+    }
+    """
+
+    let decoder = JSONDecoder()
+    let missingFieldSettings = try decoder.decode(DragTriggerSettings.self, from: Data(missingFieldJSON.utf8))
+    let invalidFieldSettings = try decoder.decode(DragTriggerSettings.self, from: Data(invalidFieldJSON.utf8))
+
+    #expect(missingFieldSettings.applyLayoutImmediatelyWhileDragging == true)
+    #expect(invalidFieldSettings.applyLayoutImmediatelyWhileDragging == true)
 }
 
 @Test func configurationStoreRejectsCommentedJSON() async throws {

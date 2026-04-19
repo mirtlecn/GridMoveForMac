@@ -30,6 +30,13 @@ struct UICopyTests {
         )
         #expect(
             UICopy.localizedStringForTesting(
+                key: "applyLayoutImmediatelyWhileDraggingTitle",
+                defaultValue: "Apply layout immediately while dragging",
+                preferredLanguages: ["zh-Hans"]
+            ) == "拖动时立刻应用布局"
+        )
+        #expect(
+            UICopy.localizedStringForTesting(
                 key: "settingsRemoveDraftConfirmationMessage",
                 defaultValue: "This change stays in draft mode until you click Save.",
                 preferredLanguages: ["en"]

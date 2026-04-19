@@ -138,7 +138,11 @@ extension DragGridController {
         return nil
     }
 
-    func handleMouseUp(event: CGEvent, button: DragTriggerButton) -> Unmanaged<CGEvent>? {
+    func handleMouseUp(
+        event: CGEvent,
+        button: DragTriggerButton,
+        configuration: AppConfiguration
+    ) -> Unmanaged<CGEvent>? {
         if state.suppressedMouseUpButton == button {
             state.suppressedMouseUpButton = nil
             return nil
@@ -165,6 +169,7 @@ extension DragGridController {
         }
 
         if state.active {
+            finalizeLayoutSelection(at: appKitPoint(from: event), configuration: configuration)
             resetState()
             return nil
         }
@@ -173,15 +178,15 @@ extension DragGridController {
         return button == .left ? nil : Unmanaged.passUnretained(event)
     }
 
-    func handleOtherMouseUp(event: CGEvent) -> Unmanaged<CGEvent>? {
+    func handleOtherMouseUp(event: CGEvent, configuration: AppConfiguration) -> Unmanaged<CGEvent>? {
         let buttonNumber = event.getIntegerValueField(.mouseEventButtonNumber)
-        let configuredButtonNumber = configuredOtherMouseButtonNumber(for: configurationProvider())
+        let configuredButtonNumber = configuredOtherMouseButtonNumber(for: configuration)
         let expectedButtonNumber = state.activeOtherMouseButtonNumber ?? configuredButtonNumber
         guard buttonNumber == expectedButtonNumber else {
             return Unmanaged.passUnretained(event)
         }
 
-        return handleMouseUp(event: event, button: .mouseButton)
+        return handleMouseUp(event: event, button: .mouseButton, configuration: configuration)
     }
 
     func handleScrollWheel(event: CGEvent) -> Unmanaged<CGEvent>? {

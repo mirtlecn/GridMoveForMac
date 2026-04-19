@@ -106,6 +106,7 @@
 "requestAccessibilityAccessMenuTitle" = "获取辅助功能权限";
 "modifierLeftMouseDragMenuTitle" = "修饰键 + 左键拖动";
 "preferLayoutModeMenuTitle" = "布局模式优先";
+"applyLayoutImmediatelyWhileDraggingTitle" = "拖动时立刻应用布局";
 "preferLayoutModeEnabledDescription" = "默认进入布局模式。右键点击或按住 Option 键可自由移动。";
 "preferLayoutModeDisabledDescription" = "默认自由移动。右键点击或按住 Option 键可切换到布局模式。";
 "layoutGroupMenuTitle" = "布局组";

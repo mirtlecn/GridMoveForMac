@@ -1,4 +1,5 @@
 import AppKit
+import ApplicationServices
 import CoreGraphics
 import Foundation
 import Testing
@@ -31,6 +32,33 @@ private func makeOtherMouseEvent(type: CGEventType, buttonNumber: Int64) throws 
     )
     event.setIntegerValueField(CGEventField.mouseEventButtonNumber, value: buttonNumber)
     return event
+}
+
+private func makeLeftMouseEvent(type: CGEventType, point: CGPoint) throws -> CGEvent {
+    let source = try #require(CGEventSource(stateID: .hidSystemState))
+    return try #require(
+        CGEvent(
+            mouseEventSource: source,
+            mouseType: type,
+            mouseCursorPosition: point,
+            mouseButton: .left
+        )
+    )
+}
+
+private func makeManagedWindow(frame: CGRect, identity: String = "drag-grid-window") -> ManagedWindow {
+    ManagedWindow(
+        element: AXUIElementCreateSystemWide(),
+        pid: getpid(),
+        bundleIdentifier: "com.example.demo",
+        appName: "Demo App",
+        title: "Test Window",
+        role: kAXWindowRole as String,
+        subrole: kAXStandardWindowSubrole as String,
+        frame: frame,
+        identity: identity,
+        cgWindowID: nil
+    )
 }
 
 @MainActor
@@ -221,6 +249,72 @@ private func makeOtherMouseEvent(type: CGEventType, buttonNumber: Int64) throws 
 }
 
 @MainActor
+@Test func deferredLayoutApplyWaitsForMouseUp() async throws {
+    let screen = try #require(NSScreen.screens.first)
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController()
+    var configuration = AppConfiguration.defaultValue
+    configuration.dragTriggers.applyLayoutImmediatelyWhileDragging = false
+
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { configuration },
+        cycleActiveLayoutGroup: { _ in configuration },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {}
+    )
+
+    let currentWindowFrame = CGRect(
+        x: screen.frame.minX + 40,
+        y: screen.frame.minY + 40,
+        width: 320,
+        height: 240
+    )
+    let targetWindow = makeManagedWindow(frame: currentWindowFrame)
+    let resolvedSlots = layoutEngine.resolveTriggerSlots(
+        on: screen,
+        layouts: LayoutGroupResolver.triggerableLayouts(for: screen, configuration: configuration),
+        triggerGap: Double(configuration.appearance.triggerGap),
+        layoutGap: configuration.appearance.effectiveLayoutGap
+    )
+    let hoveredSlot = try #require(resolvedSlots.first)
+    let hoverPoint = CGPoint(x: hoveredSlot.triggerFrame.midX, y: hoveredSlot.triggerFrame.midY)
+
+    controller.state.active = true
+    controller.state.activeButton = .left
+    controller.state.interactionMode = .layoutSelection
+    controller.state.activeScreen = screen
+    controller.state.targetWindow = targetWindow
+    controller.state.currentWindowFrame = currentWindowFrame
+    controller.state.resolvedSlots = resolvedSlots
+    controller.state.hasDraggedPastThreshold = true
+
+    controller.updateLayoutSelection(at: hoverPoint, configuration: configuration)
+
+    #expect(controller.state.hoveredLayoutID == hoveredSlot.layoutID)
+    #expect(controller.state.lastAppliedLayoutID == nil)
+    #expect(controller.state.currentWindowFrame == currentWindowFrame)
+    #expect(controller.overlayHighlightFrame() == hoveredSlot.targetFrame)
+
+    controller.finalizeLayoutSelection(at: hoverPoint, configuration: configuration)
+
+    #expect(controller.state.lastAppliedLayoutID == hoveredSlot.layoutID)
+    #expect(controller.state.currentWindowFrame == hoveredSlot.targetFrame)
+
+    _ = controller.handleMouseUp(
+        event: try makeLeftMouseEvent(type: .leftMouseUp, point: controller.windowController.quartzPoint(fromAppKitPoint: hoverPoint)),
+        button: .left,
+        configuration: configuration
+    )
+
+    #expect(controller.state.active == false)
+}
+
+@MainActor
 @Test func scrollGroupCycleTrackerTriggersOncePerGestureAfterThreshold() async throws {
     var tracker = ScrollGroupCycleTracker(threshold: 6)
 
@@ -332,7 +426,7 @@ private func makeOtherMouseEvent(type: CGEventType, buttonNumber: Int64) throws 
     let matchingUp = try makeOtherMouseEvent(type: .otherMouseUp, buttonNumber: 4)
     let otherUp = try makeOtherMouseEvent(type: .otherMouseUp, buttonNumber: 2)
 
-    let matchingResult = controller.handleOtherMouseUp(event: matchingUp)
+    let matchingResult = controller.handleOtherMouseUp(event: matchingUp, configuration: configuration)
 
     #expect(matchingResult == nil)
     #expect(controller.state.active == false)
@@ -341,7 +435,7 @@ private func makeOtherMouseEvent(type: CGEventType, buttonNumber: Int64) throws 
     controller.state.activeOtherMouseButtonNumber = 4
     controller.state.active = true
 
-    let passthroughResult = controller.handleOtherMouseUp(event: otherUp)
+    let passthroughResult = controller.handleOtherMouseUp(event: otherUp, configuration: configuration)
 
     #expect(passthroughResult?.takeUnretainedValue() === otherUp)
 

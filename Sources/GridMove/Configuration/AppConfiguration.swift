@@ -705,6 +705,7 @@ struct DragTriggerSettings: Codable, Equatable {
     var enableMouseButtonDrag: Bool
     var enableModifierLeftMouseDrag: Bool
     var preferLayoutMode: Bool
+    var applyLayoutImmediatelyWhileDragging: Bool
     var modifierGroups: [[ModifierKey]]
     var activationDelaySeconds: Double
     var activationMoveThreshold: Double
@@ -713,6 +714,7 @@ struct DragTriggerSettings: Codable, Equatable {
         case enableMouseButtonDrag
         case enableModifierLeftMouseDrag
         case preferLayoutMode
+        case applyLayoutImmediatelyWhileDragging
         case modifierGroups
         case activationDelaySeconds
         case activationMoveThreshold
@@ -722,6 +724,7 @@ struct DragTriggerSettings: Codable, Equatable {
         enableMouseButtonDrag: Bool,
         enableModifierLeftMouseDrag: Bool,
         preferLayoutMode: Bool,
+        applyLayoutImmediatelyWhileDragging: Bool,
         modifierGroups: [[ModifierKey]],
         activationDelaySeconds: Double,
         activationMoveThreshold: Double
@@ -729,6 +732,7 @@ struct DragTriggerSettings: Codable, Equatable {
         self.enableMouseButtonDrag = enableMouseButtonDrag
         self.enableModifierLeftMouseDrag = enableModifierLeftMouseDrag
         self.preferLayoutMode = preferLayoutMode
+        self.applyLayoutImmediatelyWhileDragging = applyLayoutImmediatelyWhileDragging
         self.modifierGroups = modifierGroups
         self.activationDelaySeconds = activationDelaySeconds
         self.activationMoveThreshold = activationMoveThreshold
@@ -739,6 +743,7 @@ struct DragTriggerSettings: Codable, Equatable {
         enableMouseButtonDrag = try container.decode(Bool.self, forKey: .enableMouseButtonDrag)
         enableModifierLeftMouseDrag = try container.decode(Bool.self, forKey: .enableModifierLeftMouseDrag)
         preferLayoutMode = try container.decodeIfPresent(Bool.self, forKey: .preferLayoutMode) ?? true
+        applyLayoutImmediatelyWhileDragging = (try? container.decode(Bool.self, forKey: .applyLayoutImmediatelyWhileDragging)) ?? true
         modifierGroups = try container.decode([[ModifierKey]].self, forKey: .modifierGroups)
         activationDelaySeconds = try container.decode(Double.self, forKey: .activationDelaySeconds)
         activationMoveThreshold = try container.decode(Double.self, forKey: .activationMoveThreshold)

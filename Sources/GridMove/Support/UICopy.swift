@@ -148,6 +148,9 @@ enum UICopy {
         localized("modifierLeftMouseDragMenuTitle", default: "Modifier + left mouse drag")
     }
     static var preferLayoutModeMenuTitle: String { localized("preferLayoutModeMenuTitle", default: "Prefer layout mode") }
+    static var applyLayoutImmediatelyWhileDraggingTitle: String {
+        localized("applyLayoutImmediatelyWhileDraggingTitle", default: "Apply layout immediately while dragging")
+    }
     static var preferLayoutModeEnabledDescription: String {
         localized(
             "preferLayoutModeEnabledDescription",

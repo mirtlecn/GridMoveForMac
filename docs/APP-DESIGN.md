@@ -98,6 +98,7 @@ Current drag-trigger configuration fields:
 - `enableMouseButtonDrag`
 - `enableModifierLeftMouseDrag`
 - `preferLayoutMode`
+- `applyLayoutImmediatelyWhileDragging`
 - `modifierGroups`
 - `activationDelaySeconds`
 - `activationMoveThreshold`
@@ -132,6 +133,7 @@ The built-in default configuration currently resolves to the following values.
 - `enableMouseButtonDrag = true`
 - `enableModifierLeftMouseDrag = true`
 - `preferLayoutMode = true`
+- `applyLayoutImmediatelyWhileDragging = true`
 - `modifierGroups = [[ctrl, cmd, shift, alt], [ctrl, shift, alt]]`
 - `activationDelaySeconds = 0.3`
 - `activationMoveThreshold = 10`
@@ -197,6 +199,7 @@ Compatibility behavior:
 - on manual reload, partial success applies valid layout files and warns about skipped files
 - missing or invalid `general.launchAtLogin` defaults to `false`
 - missing `preferLayoutMode` defaults to `true`
+- missing or invalid `applyLayoutImmediatelyWhileDragging` defaults to `true`
 - missing `includeInGroupCycle` defaults to `true`
 - missing `triggerRegion` means the layout is menu, shortcut, and CLI only
 - missing `triggerHighlightMode` defaults to `none`
