@@ -60,7 +60,7 @@ final class OverlayController {
         cancelPendingFlash()
 
         guard configuration.appearance.renderWindowHighlight else {
-            if keepsOverlayVisibleAfterFlash {
+            if keepsOverlayVisibleAfterFlash && shouldRenderOverlay(configuration: configuration, badgeText: nil) {
                 showOverlay(
                     screen: screen,
                     slots: slots,
@@ -104,15 +104,22 @@ final class OverlayController {
                 guard let self else { return }
                 if self.flashGeneration == expectedGeneration {
                     if let pendingPostFlashOverlayState = self.pendingPostFlashOverlayState {
-                        self.panel?.alphaValue = 1.0
-                        self.showOverlay(
-                            screen: pendingPostFlashOverlayState.screen,
-                            slots: pendingPostFlashOverlayState.slots,
-                            highlightFrame: pendingPostFlashOverlayState.highlightFrame,
-                            hoveredLayoutID: pendingPostFlashOverlayState.hoveredLayoutID,
+                        if self.shouldRenderOverlay(
                             configuration: pendingPostFlashOverlayState.configuration,
-                            badge: pendingPostFlashOverlayState.badge
-                        )
+                            badgeText: pendingPostFlashOverlayState.badge?.text
+                        ) {
+                            self.panel?.alphaValue = 1.0
+                            self.showOverlay(
+                                screen: pendingPostFlashOverlayState.screen,
+                                slots: pendingPostFlashOverlayState.slots,
+                                highlightFrame: pendingPostFlashOverlayState.highlightFrame,
+                                hoveredLayoutID: pendingPostFlashOverlayState.hoveredLayoutID,
+                                configuration: pendingPostFlashOverlayState.configuration,
+                                badge: pendingPostFlashOverlayState.badge
+                            )
+                        } else {
+                            self.dismissPanel()
+                        }
                         self.pendingPostFlashOverlayState = nil
                     } else {
                         self.dismissPanel()
@@ -147,7 +154,7 @@ final class OverlayController {
                 guard let self else { return }
                 guard self.badgeGeneration == expectedGeneration else { return }
 
-                if keepsOverlayVisibleAfterFlash {
+                if keepsOverlayVisibleAfterFlash && self.shouldRenderOverlay(configuration: configuration, badgeText: nil) {
                     self.showOverlay(
                         screen: screen,
                         slots: slots,
