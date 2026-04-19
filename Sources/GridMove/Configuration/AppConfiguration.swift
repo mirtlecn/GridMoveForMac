@@ -743,7 +743,7 @@ struct DragTriggerSettings: Codable, Equatable {
         enableMouseButtonDrag = try container.decode(Bool.self, forKey: .enableMouseButtonDrag)
         enableModifierLeftMouseDrag = try container.decode(Bool.self, forKey: .enableModifierLeftMouseDrag)
         preferLayoutMode = try container.decodeIfPresent(Bool.self, forKey: .preferLayoutMode) ?? true
-        applyLayoutImmediatelyWhileDragging = (try? container.decode(Bool.self, forKey: .applyLayoutImmediatelyWhileDragging)) ?? true
+        applyLayoutImmediatelyWhileDragging = (try? container.decode(Bool.self, forKey: .applyLayoutImmediatelyWhileDragging)) ?? false
         modifierGroups = try container.decode([[ModifierKey]].self, forKey: .modifierGroups)
         activationDelaySeconds = try container.decode(Double.self, forKey: .activationDelaySeconds)
         activationMoveThreshold = try container.decode(Double.self, forKey: .activationMoveThreshold)
