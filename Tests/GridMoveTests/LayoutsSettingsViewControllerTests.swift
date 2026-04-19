@@ -75,6 +75,7 @@ struct LayoutsSettingsViewControllerTests {
         controller.selectGroupForTesting(named: AppConfiguration.defaultGroupName)
 
         #expect(controller.removeButtonEnabledForTesting == false)
+        #expect(controller.removeButtonTitleForTesting == "-")
         #expect(controller.removeButtonToolTipForTesting == UICopy.settingsProtectedGroupTooltip)
     }
 

@@ -442,10 +442,10 @@ extension LayoutsSettingsViewController {
         row.translatesAutoresizingMaskIntoConstraints = false
         row.alignment = .centerY
         row.addArrangedSubview(addButton)
+        row.addArrangedSubview(removeButton)
         row.addArrangedSubview(NSView())
         row.addArrangedSubview(restoreButton)
         row.addArrangedSubview(saveButton)
-        row.addArrangedSubview(removeButton)
         containerView.addSubview(row)
 
         NSLayoutConstraint.activate([
@@ -473,7 +473,7 @@ extension LayoutsSettingsViewController {
 
         saveButton.title = UICopy.settingsSaveButtonTitle
         restoreButton.title = UICopy.settingsRestoreButtonTitle
-        removeButton.title = UICopy.settingsRemoveButtonTitle
+        removeButton.title = "-"
         saveButton.isEnabled = prototypeState.hasLayoutsDraftChanges
         restoreButton.isHidden = !prototypeState.hasLayoutsDraftChanges
         restoreButton.isEnabled = prototypeState.hasLayoutsDraftChanges

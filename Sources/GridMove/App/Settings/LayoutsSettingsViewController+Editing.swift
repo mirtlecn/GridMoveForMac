@@ -547,6 +547,10 @@ extension LayoutsSettingsViewController {
         removeButton.toolTip
     }
 
+    var removeButtonTitleForTesting: String {
+        removeButton.title
+    }
+
     var selectedGroupNameForTesting: String? {
         selectedNode.flatMap {
             switch $0.kind {

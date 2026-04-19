@@ -624,7 +624,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsWindowAreaInlineTabTitle))
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsTriggerAreaInlineTabTitle))
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsAddLayoutButtonTitle))
-    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsRemoveButtonTitle))
+    #expect(delegate.settingsVisibleStringsForTesting.contains("-"))
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsSaveButtonTitle))
     delegate.selectSettingsTabForTesting(index: 2)
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsWindowAreaSectionTitle))
