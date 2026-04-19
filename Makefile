@@ -43,7 +43,8 @@ update-version:
 release:
 	@if [[ -n "$(RELEASE_VERSION)" ]]; then $(MAKE) update-version VERSION="$(RELEASE_VERSION)"; fi
 	@if [[ -n "$(RELEASE_VERSION)" ]]; then $(MAKE) release-vcs RELEASE_TAG="$(RELEASE_TAG)"; fi
-	$(MAKE) build APP_VERSION="$(shell tr -d '\n' < $(VERSION_FILE))" BUILD_NUMBER="$(shell tr -d '\n' < $(VERSION_FILE))" PACKAGE_VERSION_INFO="$(shell tr -d '\n' < $(VERSION_FILE))"
+	@release_version="$$(tr -d '\n' < $(VERSION_FILE))"; \
+	$(MAKE) build APP_VERSION="$$release_version" BUILD_NUMBER="$$release_version" PACKAGE_VERSION_INFO="$$release_version"
 
 release-vcs:
 	@if [[ -z "$(RELEASE_TAG)" ]]; then echo 'usage: make release v0.1.1'; exit 1; fi

@@ -41,7 +41,7 @@ extension LayoutsSettingsViewController {
     func presentRemoveConfirmation(for node: LayoutsTreeNode) {
         let alert = NSAlert()
         alert.messageText = UICopy.settingsRemoveButtonTitle
-        alert.informativeText = "This change stays in draft mode until you click Save."
+        alert.informativeText = UICopy.settingsRemoveDraftConfirmationMessage
         alert.alertStyle = .warning
         alert.addButton(withTitle: UICopy.settingsRemoveButtonTitle)
         alert.addButton(withTitle: UICopy.settingsCancelButtonTitle)

@@ -2,125 +2,187 @@ import Foundation
 
 enum UICopy {
     static let appName = "GridMove"
-    static let applicationMenuTitle = "Application"
-    static let settingsMenuTitle = "Settings..."
-    static let settingsWindowTitle = "Settings"
-    static let settingsGeneralTabTitle = "General"
-    static let settingsLayoutsTabTitle = "Layouts"
-    static let settingsAppearanceTabTitle = "Appearance"
-    static let settingsHotkeysTabTitle = "Hotkeys"
-    static let settingsAboutTabTitle = "About"
-    static let settingsLayoutInlineTabTitle = "Layout"
-    static let settingsWindowAreaInlineTabTitle = "Window area"
-    static let settingsTriggerAreaInlineTabTitle = "Trigger area"
-    static let settingsDragBehaviorSectionTitle = "Drag behavior"
-    static let settingsExclusionsSectionTitle = "Exclusions"
-    static let settingsWindowAreaSectionTitle = "Window area"
-    static let settingsTriggerAreaSectionTitle = "Trigger area"
-    static let settingsModifierGroupsLabel = "Modifier groups"
-    static let settingsMouseButtonNumberLabel = "Mouse button number"
-    static let settingsExcludedBundleIDsLabel = "Excluded bundle IDs"
-    static let settingsExcludedWindowTitlesLabel = "Excluded window titles"
-    static let settingsHighlightWindowAreaTitle = "Highlight window area"
-    static let settingsHighlightTriggerAreaTitle = "Highlight trigger area"
-    static let settingsFillOpacityLabel = "Fill opacity"
-    static let settingsStrokeWidthLabel = "Stroke width"
-    static let settingsStrokeColorLabel = "Stroke color"
-    static let settingsWindowGapLabel = "Window gap"
-    static let settingsTriggerGapLabel = "Trigger gap"
-    static let settingsNameLabel = "Name"
-    static let settingsGridSizeLabel = "Grid size"
-    static let settingsGridColumnsLabel = "Grid columns"
-    static let settingsGridRowsLabel = "Grid rows"
-    static let settingsTriggerAreaLabel = "Trigger area"
-    static let settingsApplyToLabel = "Apply to"
-    static let settingsIncludeInMenuLabel = "Include in menu"
-    static let settingsIncludeInLayoutIndexLabel = "Include in layout index"
-    static let settingsIncludeInGroupCycleLabel = "Include in group cycle"
-    static let settingsIncludeInGroupCycleDescription = "Enabled groups can be cycled in layout mode with the mouse wheel or the Shift key."
-    static let settingsActiveGroupLabel = "Active group"
-    static let settingsMonitorLabel = "Monitor"
-    static let settingsLayoutsCountLabel = "Layouts"
-    static let settingsLayoutIndexLabel = "Layout index"
-    static let settingsWindowLayoutTabTitle = "Window layout"
-    static let settingsTriggerRegionsTabTitle = "Trigger regions"
-    static let settingsAllDisplaysValue = "All displays"
-    static let settingsMainDisplayValue = "Main display"
-    static let settingsNoTriggerRegionValue = "No trigger region"
-    static let settingsNotIncludedValue = "Not included"
-    static let settingsScreenGridValue = "Screen"
-    static let settingsMenuBarTriggerValue = "Menu bar"
-    static let settingsNoneValue = "None"
-    static let settingsAllMonitorsValue = "All monitor"
-    static let settingsMainMonitorValue = "Main monitor"
-    static let settingsCustomMonitorsValue = "Custom monitors"
-    static let settingsStartLabel = "Start"
-    static let settingsXPositionLabel = "X position"
-    static let settingsYPositionLabel = "Y position"
-    static let settingsWidthLabel = "Width"
-    static let settingsHeightLabel = "Height"
-    static let settingsAddButtonTitle = "Add"
-    static let settingsAddEllipsisButtonTitle = "Add..."
-    static let settingsAddGroupButtonTitle = "Add group"
-    static let settingsAddDisplaySetButtonTitle = "Add monitor set"
-    static let settingsAddLayoutButtonTitle = "Add layout"
-    static let settingsHotkeysAddButtonTitle = "Add..."
-    static let settingsClearButtonTitle = "Clear"
-    static let settingsRemoveButtonTitle = "Remove"
-    static let settingsDeleteButtonTitle = "Delete"
-    static let settingsSaveButtonTitle = "Save"
-    static let settingsCancelButtonTitle = "Cancel"
-    static let settingsSlotLabel = "Slot"
-    static let settingsCurrentTargetLabel = "Current target"
-    static let settingsBindingsLabel = "Bindings"
-    static let settingsNoShortcutsValue = "No shortcuts"
-    static let settingsHotkeysPreviousTargetValue = "Previous item in current cycle"
-    static let settingsHotkeysNextTargetValue = "Next item in current cycle"
-    static let settingsVersionLabel = "Version"
-    static let settingsAuthorLabel = "Author"
-    static let settingsConfigFolderLabel = "Config folder"
-    static let settingsOpenButtonTitle = "Open"
-    static let settingsAdvancedSectionTitle = "Advanced"
-    static let settingsRestoreSettingsButtonTitle = "Restore settings"
-    static let settingsProtectedGroupTooltip = "Can not remove a protected group"
-    static let settingsTypeLabel = "Type"
-    static let settingsValueLabel = "Value"
-    static let settingsAddModifierGroupSheetTitle = "Add modifier group"
-    static let settingsAddModifierGroupSheetMessage = "Choose one or more modifier keys for this trigger group."
-    static let settingsAddExclusionSheetTitle = "Add exclusion"
-    static let settingsAddExclusionSheetMessage = "Choose what to exclude, then enter the value."
-    static let settingsHotkeySheetTitle = "Hotkey"
-    static let settingsHotkeySheetMessage = "Add or remove a hotkey"
-    static let settingsBehaviorLabel = "Behavior"
-    static let settingsShortcutsLabel = "Shortcuts"
-    static let settingsRecordShortcutButtonTitle = "Record"
-    static let settingsPressShortcutValue = "Press shortcut"
-    static let settingsStatusLabel = "Status"
-    static let settingsStatusValue = "Prototype only"
-    static let settingsSurfaceLabel = "Current surface"
-    static let settingsSurfaceValue = "Menu bar app with Settings preview"
-    static let settingsPrototypePlaceholderTitle = "No controls in this prototype yet."
-    static let enableMenuTitle = "Enable"
-    static let enableMenuDescription = "Global switch for mouse, hotkey, and CLI actions."
-    static let requestAccessibilityAccessMenuTitle = "Get accessibility access"
-    static let modifierLeftMouseDragMenuTitle = "Modifier + left mouse drag"
-    static let preferLayoutModeMenuTitle = "Prefer layout mode"
-    static let preferLayoutModeEnabledDescription = "Start in layout mode by default. Right-click or press Option to switch to free move."
-    static let preferLayoutModeDisabledDescription = "Start in free move by default. Right-click or press Option to switch to layout mode."
-    static let layoutGroupMenuTitle = "Layout group"
-    static let reloadConfigMenuTitle = "Reload"
-    static let launchAtLoginMenuTitle = "Launch at login"
-    static let configReloadSucceededTitle = "GridMove config reloaded"
-    static let configReloadFailedTitle = "GridMove config reload failed"
-    static let configReloadSkippedLayoutsTitle = "GridMove skipped invalid layout files"
-    static let layoutsSaveFailedTitle = "GridMove could not save layouts"
-    static let launchAtLoginEnableFailedTitle = "Unable to enable launch at login"
-    static let launchAtLoginDisableFailedTitle = "Unable to disable launch at login"
-    static let quitMenuTitle = "Quit"
-    static let quitAppMenuTitle = "Quit GridMove"
-    static let applyNextLayout = "Apply next layout"
-    static let applyPreviousLayout = "Apply previous layout"
-    static let unknownLayout = "Unknown layout"
+
+    static var applicationMenuTitle: String { localized("applicationMenuTitle", default: "Application") }
+    static var settingsMenuTitle: String { localized("settingsMenuTitle", default: "Settings...") }
+    static var settingsWindowTitle: String { localized("settingsWindowTitle", default: "Settings") }
+    static var settingsGeneralTabTitle: String { localized("settingsGeneralTabTitle", default: "General") }
+    static var settingsLayoutsTabTitle: String { localized("settingsLayoutsTabTitle", default: "Layouts") }
+    static var settingsAppearanceTabTitle: String { localized("settingsAppearanceTabTitle", default: "Appearance") }
+    static var settingsHotkeysTabTitle: String { localized("settingsHotkeysTabTitle", default: "Hotkeys") }
+    static var settingsAboutTabTitle: String { localized("settingsAboutTabTitle", default: "About") }
+    static var settingsLayoutInlineTabTitle: String { localized("settingsLayoutInlineTabTitle", default: "Layout") }
+    static var settingsWindowAreaInlineTabTitle: String { localized("settingsWindowAreaInlineTabTitle", default: "Window area") }
+    static var settingsTriggerAreaInlineTabTitle: String { localized("settingsTriggerAreaInlineTabTitle", default: "Trigger area") }
+    static var settingsDragBehaviorSectionTitle: String { localized("settingsDragBehaviorSectionTitle", default: "Drag behavior") }
+    static var settingsExclusionsSectionTitle: String { localized("settingsExclusionsSectionTitle", default: "Exclusions") }
+    static var settingsWindowAreaSectionTitle: String { localized("settingsWindowAreaSectionTitle", default: "Window area") }
+    static var settingsTriggerAreaSectionTitle: String { localized("settingsTriggerAreaSectionTitle", default: "Trigger area") }
+    static var settingsModifierGroupsLabel: String { localized("settingsModifierGroupsLabel", default: "Modifier groups") }
+    static var settingsMouseButtonNumberLabel: String { localized("settingsMouseButtonNumberLabel", default: "Mouse button number") }
+    static var settingsExcludedBundleIDsLabel: String { localized("settingsExcludedBundleIDsLabel", default: "Excluded bundle IDs") }
+    static var settingsExcludedWindowTitlesLabel: String { localized("settingsExcludedWindowTitlesLabel", default: "Excluded window titles") }
+    static var settingsHighlightWindowAreaTitle: String { localized("settingsHighlightWindowAreaTitle", default: "Highlight window area") }
+    static var settingsHighlightTriggerAreaTitle: String { localized("settingsHighlightTriggerAreaTitle", default: "Highlight trigger area") }
+    static var settingsFillOpacityLabel: String { localized("settingsFillOpacityLabel", default: "Fill opacity") }
+    static var settingsStrokeWidthLabel: String { localized("settingsStrokeWidthLabel", default: "Stroke width") }
+    static var settingsStrokeColorLabel: String { localized("settingsStrokeColorLabel", default: "Stroke color") }
+    static var settingsWindowGapLabel: String { localized("settingsWindowGapLabel", default: "Window gap") }
+    static var settingsTriggerGapLabel: String { localized("settingsTriggerGapLabel", default: "Trigger gap") }
+    static var settingsNameLabel: String { localized("settingsNameLabel", default: "Name") }
+    static var settingsGridSizeLabel: String { localized("settingsGridSizeLabel", default: "Grid size") }
+    static var settingsGridColumnsLabel: String { localized("settingsGridColumnsLabel", default: "Grid columns") }
+    static var settingsGridRowsLabel: String { localized("settingsGridRowsLabel", default: "Grid rows") }
+    static var settingsTriggerAreaLabel: String { localized("settingsTriggerAreaLabel", default: "Trigger area") }
+    static var settingsApplyToLabel: String { localized("settingsApplyToLabel", default: "Apply to") }
+    static var settingsIncludeInMenuLabel: String { localized("settingsIncludeInMenuLabel", default: "Include in menu") }
+    static var settingsIncludeInLayoutIndexLabel: String { localized("settingsIncludeInLayoutIndexLabel", default: "Include in layout index") }
+    static var settingsIncludeInGroupCycleLabel: String { localized("settingsIncludeInGroupCycleLabel", default: "Include in group cycle") }
+    static var settingsIncludeInGroupCycleDescription: String {
+        localized(
+            "settingsIncludeInGroupCycleDescription",
+            default: "Enabled groups can be cycled in layout mode with the mouse wheel or the Shift key."
+        )
+    }
+    static var settingsActiveGroupLabel: String { localized("settingsActiveGroupLabel", default: "Active group") }
+    static var settingsMonitorLabel: String { localized("settingsMonitorLabel", default: "Monitor") }
+    static var settingsLayoutsCountLabel: String { localized("settingsLayoutsCountLabel", default: "Layouts") }
+    static var settingsLayoutIndexLabel: String { localized("settingsLayoutIndexLabel", default: "Layout index") }
+    static var settingsWindowLayoutTabTitle: String { localized("settingsWindowLayoutTabTitle", default: "Window layout") }
+    static var settingsTriggerRegionsTabTitle: String { localized("settingsTriggerRegionsTabTitle", default: "Trigger regions") }
+    static var settingsAllDisplaysValue: String { localized("settingsAllDisplaysValue", default: "All displays") }
+    static var settingsMainDisplayValue: String { localized("settingsMainDisplayValue", default: "Main display") }
+    static var settingsNoTriggerRegionValue: String { localized("settingsNoTriggerRegionValue", default: "No trigger region") }
+    static var settingsNotIncludedValue: String { localized("settingsNotIncludedValue", default: "Not included") }
+    static var settingsScreenGridValue: String { localized("settingsScreenGridValue", default: "Screen") }
+    static var settingsMenuBarTriggerValue: String { localized("settingsMenuBarTriggerValue", default: "Menu bar") }
+    static var settingsNoneValue: String { localized("settingsNoneValue", default: "None") }
+    static var settingsAllMonitorsValue: String { localized("settingsAllMonitorsValue", default: "All monitor") }
+    static var settingsMainMonitorValue: String { localized("settingsMainMonitorValue", default: "Main monitor") }
+    static var settingsCustomMonitorsValue: String { localized("settingsCustomMonitorsValue", default: "Custom monitors") }
+    static var settingsStartLabel: String { localized("settingsStartLabel", default: "Start") }
+    static var settingsXPositionLabel: String { localized("settingsXPositionLabel", default: "X position") }
+    static var settingsYPositionLabel: String { localized("settingsYPositionLabel", default: "Y position") }
+    static var settingsWidthLabel: String { localized("settingsWidthLabel", default: "Width") }
+    static var settingsHeightLabel: String { localized("settingsHeightLabel", default: "Height") }
+    static var settingsAddButtonTitle: String { localized("settingsAddButtonTitle", default: "Add") }
+    static var settingsAddEllipsisButtonTitle: String { localized("settingsAddEllipsisButtonTitle", default: "Add...") }
+    static var settingsAddGroupButtonTitle: String { localized("settingsAddGroupButtonTitle", default: "Add group") }
+    static var settingsAddDisplaySetButtonTitle: String { localized("settingsAddDisplaySetButtonTitle", default: "Add monitor set") }
+    static var settingsAddLayoutButtonTitle: String { localized("settingsAddLayoutButtonTitle", default: "Add layout") }
+    static var settingsHotkeysAddButtonTitle: String { localized("settingsHotkeysAddButtonTitle", default: "Add...") }
+    static var settingsClearButtonTitle: String { localized("settingsClearButtonTitle", default: "Clear") }
+    static var settingsRemoveButtonTitle: String { localized("settingsRemoveButtonTitle", default: "Remove") }
+    static var settingsDeleteButtonTitle: String { localized("settingsDeleteButtonTitle", default: "Delete") }
+    static var settingsSaveButtonTitle: String { localized("settingsSaveButtonTitle", default: "Save") }
+    static var settingsCancelButtonTitle: String { localized("settingsCancelButtonTitle", default: "Cancel") }
+    static var settingsSlotLabel: String { localized("settingsSlotLabel", default: "Slot") }
+    static var settingsCurrentTargetLabel: String { localized("settingsCurrentTargetLabel", default: "Current target") }
+    static var settingsBindingsLabel: String { localized("settingsBindingsLabel", default: "Bindings") }
+    static var settingsNoShortcutsValue: String { localized("settingsNoShortcutsValue", default: "No shortcuts") }
+    static var settingsHotkeysPreviousTargetValue: String {
+        localized("settingsHotkeysPreviousTargetValue", default: "Previous item in current cycle")
+    }
+    static var settingsHotkeysNextTargetValue: String {
+        localized("settingsHotkeysNextTargetValue", default: "Next item in current cycle")
+    }
+    static var settingsVersionLabel: String { localized("settingsVersionLabel", default: "Version") }
+    static var settingsAuthorLabel: String { localized("settingsAuthorLabel", default: "Author") }
+    static var settingsConfigFolderLabel: String { localized("settingsConfigFolderLabel", default: "Config folder") }
+    static var settingsOpenButtonTitle: String { localized("settingsOpenButtonTitle", default: "Open") }
+    static var settingsAdvancedSectionTitle: String { localized("settingsAdvancedSectionTitle", default: "Advanced") }
+    static var settingsRestoreSettingsButtonTitle: String { localized("settingsRestoreSettingsButtonTitle", default: "Restore settings") }
+    static var settingsRemoveDraftConfirmationMessage: String {
+        localized(
+            "settingsRemoveDraftConfirmationMessage",
+            default: "This change stays in draft mode until you click Save."
+        )
+    }
+    static var settingsRestoreSettingsConfirmationMessage: String {
+        localized(
+            "settingsRestoreSettingsConfirmationMessage",
+            default: "This restores all settings to the built-in defaults."
+        )
+    }
+    static var settingsProtectedGroupTooltip: String {
+        localized("settingsProtectedGroupTooltip", default: "Can not remove a protected group")
+    }
+    static var settingsTypeLabel: String { localized("settingsTypeLabel", default: "Type") }
+    static var settingsValueLabel: String { localized("settingsValueLabel", default: "Value") }
+    static var settingsAddModifierGroupSheetTitle: String {
+        localized("settingsAddModifierGroupSheetTitle", default: "Add modifier group")
+    }
+    static var settingsAddModifierGroupSheetMessage: String {
+        localized("settingsAddModifierGroupSheetMessage", default: "Choose one or more modifier keys for this trigger group.")
+    }
+    static var settingsAddExclusionSheetTitle: String {
+        localized("settingsAddExclusionSheetTitle", default: "Add exclusion")
+    }
+    static var settingsAddExclusionSheetMessage: String {
+        localized("settingsAddExclusionSheetMessage", default: "Choose what to exclude, then enter the value.")
+    }
+    static var settingsHotkeySheetTitle: String { localized("settingsHotkeySheetTitle", default: "Hotkey") }
+    static var settingsHotkeySheetMessage: String { localized("settingsHotkeySheetMessage", default: "Add or remove a hotkey") }
+    static var settingsBehaviorLabel: String { localized("settingsBehaviorLabel", default: "Behavior") }
+    static var settingsShortcutsLabel: String { localized("settingsShortcutsLabel", default: "Shortcuts") }
+    static var settingsRecordShortcutButtonTitle: String { localized("settingsRecordShortcutButtonTitle", default: "Record") }
+    static var settingsPressShortcutValue: String { localized("settingsPressShortcutValue", default: "Press shortcut") }
+    static var settingsStatusLabel: String { localized("settingsStatusLabel", default: "Status") }
+    static var settingsStatusValue: String { localized("settingsStatusValue", default: "Prototype only") }
+    static var settingsSurfaceLabel: String { localized("settingsSurfaceLabel", default: "Current surface") }
+    static var settingsSurfaceValue: String { localized("settingsSurfaceValue", default: "Menu bar app with Settings preview") }
+    static var settingsPrototypePlaceholderTitle: String {
+        localized("settingsPrototypePlaceholderTitle", default: "No controls in this prototype yet.")
+    }
+    static var enableMenuTitle: String { localized("enableMenuTitle", default: "Enable") }
+    static var enableMenuDescription: String {
+        localized("enableMenuDescription", default: "Global switch for mouse, hotkey, and CLI actions.")
+    }
+    static var requestAccessibilityAccessMenuTitle: String {
+        localized("requestAccessibilityAccessMenuTitle", default: "Get accessibility access")
+    }
+    static var modifierLeftMouseDragMenuTitle: String {
+        localized("modifierLeftMouseDragMenuTitle", default: "Modifier + left mouse drag")
+    }
+    static var preferLayoutModeMenuTitle: String { localized("preferLayoutModeMenuTitle", default: "Prefer layout mode") }
+    static var preferLayoutModeEnabledDescription: String {
+        localized(
+            "preferLayoutModeEnabledDescription",
+            default: "Start in layout mode by default. Right-click or press Option to switch to free move."
+        )
+    }
+    static var preferLayoutModeDisabledDescription: String {
+        localized(
+            "preferLayoutModeDisabledDescription",
+            default: "Start in free move by default. Right-click or press Option to switch to layout mode."
+        )
+    }
+    static var layoutGroupMenuTitle: String { localized("layoutGroupMenuTitle", default: "Layout group") }
+    static var reloadConfigMenuTitle: String { localized("reloadConfigMenuTitle", default: "Reload") }
+    static var launchAtLoginMenuTitle: String { localized("launchAtLoginMenuTitle", default: "Launch at login") }
+    static var configReloadSucceededTitle: String {
+        localized("configReloadSucceededTitle", default: "GridMove config reloaded")
+    }
+    static var configReloadFailedTitle: String {
+        localized("configReloadFailedTitle", default: "GridMove config reload failed")
+    }
+    static var configReloadSkippedLayoutsTitle: String {
+        localized("configReloadSkippedLayoutsTitle", default: "GridMove skipped invalid layout files")
+    }
+    static var layoutsSaveFailedTitle: String {
+        localized("layoutsSaveFailedTitle", default: "GridMove could not save layouts")
+    }
+    static var launchAtLoginEnableFailedTitle: String {
+        localized("launchAtLoginEnableFailedTitle", default: "Unable to enable launch at login")
+    }
+    static var launchAtLoginDisableFailedTitle: String {
+        localized("launchAtLoginDisableFailedTitle", default: "Unable to disable launch at login")
+    }
+    static var quitMenuTitle: String { localized("quitMenuTitle", default: "Quit") }
+    static var quitAppMenuTitle: String { localized("quitAppMenuTitle", default: "Quit GridMove") }
+    static var applyNextLayout: String { localized("applyNextLayout", default: "Apply next layout") }
+    static var applyPreviousLayout: String { localized("applyPreviousLayout", default: "Apply previous layout") }
+    static var unknownLayout: String { localized("unknownLayout", default: "Unknown layout") }
 
     static let defaultLayoutNames = [
         "Left 1/3",
@@ -137,19 +199,22 @@ enum UICopy {
     ]
 
     static func applyLayout(_ name: String) -> String {
-        "Apply \(name)"
+        formatted("applyLayoutFormat", default: "Apply %@", name)
     }
 
     static func settingsApplyLayoutSlotTitle(_ index: Int) -> String {
-        "Apply layout \(index)"
+        formatted("settingsApplyLayoutSlotTitleFormat", default: "Apply layout %@", String(index))
     }
 
     static func settingsUntitledLayoutTitle(_ index: Int) -> String {
-        "Layout №\(index)"
+        formatted("settingsUntitledLayoutTitleFormat", default: "Layout №%@", String(index))
     }
 
     static func mouseButtonDragMenuTitle(mouseButtonNumber: Int) -> String {
-        mouseButtonNumber == 3 ? "Middle mouse drag" : "Mouse button \(mouseButtonNumber) drag"
+        if mouseButtonNumber == 3 {
+            return localized("mouseButtonDragMiddleTitle", default: "Middle mouse drag")
+        }
+        return formatted("mouseButtonDragButtonTitleFormat", default: "Mouse button %@ drag", String(mouseButtonNumber))
     }
 
     static func layoutMenuName(name: String, fallbackIdentifier: String) -> String {
@@ -161,48 +226,71 @@ enum UICopy {
         diagnostic: ConfigurationLoadDiagnostic?,
         skippedLayoutDiagnostics: [LayoutFileDiagnostic] = []
     ) -> String {
-        let prefix = "Config was not applied. GridMove kept running with the current configuration."
+        let prefix = localized(
+            "configReloadFailedPrefix",
+            default: "Config was not applied. GridMove kept running with the current configuration."
+        )
         let skippedDetails = skippedLayoutDiagnosticsText(diagnostics: skippedLayoutDiagnostics)
 
         guard let diagnostic else {
             guard let skippedDetails else {
                 return prefix
             }
-            return "\(prefix) Skipped layout files: \(skippedDetails)"
+            return formatted("configReloadFailedSkippedFormat", default: "%@ Skipped layout files: %@", prefix, skippedDetails)
         }
 
         if let line = diagnostic.line, let column = diagnostic.column {
-            let body = "\(prefix) The error is at line \(line), column \(column): \(diagnostic.message)"
+            let body = formatted(
+                "configReloadFailedLineColumnFormat",
+                default: "%@ The error is at line %@, column %@: %@",
+                prefix,
+                String(line),
+                String(column),
+                diagnostic.message
+            )
             guard let skippedDetails else {
                 return body
             }
-            return "\(body) Skipped layout files: \(skippedDetails)"
+            return formatted("configReloadFailedSkippedFormat", default: "%@ Skipped layout files: %@", body, skippedDetails)
         }
 
         if let codingPath = diagnostic.codingPathDescription {
-            let body = "\(prefix) The error is in \(codingPath): \(diagnostic.message)"
+            let body = formatted(
+                "configReloadFailedCodingPathFormat",
+                default: "%@ The error is in %@: %@",
+                prefix,
+                codingPath,
+                diagnostic.message
+            )
             guard let skippedDetails else {
                 return body
             }
-            return "\(body) Skipped layout files: \(skippedDetails)"
+            return formatted("configReloadFailedSkippedFormat", default: "%@ Skipped layout files: %@", body, skippedDetails)
         }
 
-        let body = "\(prefix) \(diagnostic.message)"
+        let body = formatted(
+            "configReloadFailedMessageFormat",
+            default: "%@ %@",
+            prefix,
+            diagnostic.message
+        )
         guard let skippedDetails else {
             return body
         }
-        return "\(body) Skipped layout files: \(skippedDetails)"
+        return formatted("configReloadFailedSkippedFormat", default: "%@ Skipped layout files: %@", body, skippedDetails)
     }
 
     static func configReloadSkippedLayoutsBody(diagnostics: [LayoutFileDiagnostic]) -> String {
-        let prefix = "Config was applied, but some layout files were skipped."
+        let prefix = localized(
+            "configReloadSkippedLayoutsPrefix",
+            default: "Config was applied, but some layout files were skipped."
+        )
         guard !diagnostics.isEmpty else {
             return prefix
         }
 
         let details = skippedLayoutDiagnosticsText(diagnostics: diagnostics) ?? ""
-
-        return "\(prefix) \(details)"
+        return formatted("configReloadSkippedLayoutsFormat", default: "%@ %@", prefix, details)
     }
 
     private static func skippedLayoutDiagnosticsText(diagnostics: [LayoutFileDiagnostic]) -> String? {
@@ -213,24 +301,42 @@ enum UICopy {
         return diagnostics.map { diagnostic in
             let fileName = diagnostic.fileURL.lastPathComponent
             if let line = diagnostic.line, let column = diagnostic.column {
-                return "\(fileName) (line \(line), column \(column)): \(diagnostic.message)"
+                return formatted(
+                    "skippedLayoutDiagnosticsLineColumnFormat",
+                    default: "%@ (line %@, column %@): %@",
+                    fileName,
+                    String(line),
+                    String(column),
+                    diagnostic.message
+                )
             }
             if let codingPath = diagnostic.codingPathDescription {
-                return "\(fileName) (\(codingPath)): \(diagnostic.message)"
+                return formatted(
+                    "skippedLayoutDiagnosticsCodingPathFormat",
+                    default: "%@ (%@): %@",
+                    fileName,
+                    codingPath,
+                    diagnostic.message
+                )
             }
-            return "\(fileName): \(diagnostic.message)"
+            return formatted(
+                "skippedLayoutDiagnosticsMessageFormat",
+                default: "%@: %@",
+                fileName,
+                diagnostic.message
+            )
         }
         .joined(separator: " ")
     }
 
     static func configReloadSucceededBody() -> String {
-        "Config was applied successfully."
+        localized("configReloadSucceededBody", default: "Config was applied successfully.")
     }
 
     static func layoutsSaveFailedBody(details: String?) -> String {
         var segments = [
-            "Layout changes were not applied.",
-            "GridMove kept running with the current configuration.",
+            localized("layoutsSaveFailedBodyLineOne", default: "Layout changes were not applied."),
+            localized("layoutsSaveFailedBodyLineTwo", default: "GridMove kept running with the current configuration."),
         ]
 
         if let details, !details.isEmpty {
@@ -242,14 +348,20 @@ enum UICopy {
 
     static func launchAtLoginEnableFailedBody(details: String?) -> String {
         launchAtLoginFailureBody(
-            prefix: "GridMove could not enable launch at login.",
+            prefix: localized(
+                "launchAtLoginEnableFailedPrefix",
+                default: "GridMove could not enable launch at login."
+            ),
             details: details
         )
     }
 
     static func launchAtLoginDisableFailedBody(details: String?) -> String {
         launchAtLoginFailureBody(
-            prefix: "GridMove could not disable launch at login.",
+            prefix: localized(
+                "launchAtLoginDisableFailedPrefix",
+                default: "GridMove could not disable launch at login."
+            ),
             details: details
         )
     }
@@ -257,7 +369,10 @@ enum UICopy {
     private static func launchAtLoginFailureBody(prefix: String, details: String?) -> String {
         var segments = [
             prefix,
-            "Check System Settings > General > Login Items and try again.",
+            localized(
+                "launchAtLoginFailureCheckSettings",
+                default: "Check System Settings > General > Login Items and try again."
+            ),
         ]
 
         if let details, !details.isEmpty {
@@ -265,5 +380,65 @@ enum UICopy {
         }
 
         return segments.joined(separator: " ")
+    }
+
+    static func localizedStringForTesting(key: String, defaultValue: String, preferredLanguages: [String]) -> String {
+        localized(key, default: defaultValue, preferredLanguages: preferredLanguages)
+    }
+
+    static var supportedLocalizationsForTesting: [String] {
+        Array(Set(Bundle.main.localizations + Bundle.module.localizations)).sorted()
+    }
+
+    private static let tableName = "Localizable"
+
+    private static func localized(_ key: String, default defaultValue: String, preferredLanguages: [String]? = nil) -> String {
+        let bundles = [Bundle.main, Bundle.module]
+
+        for bundle in bundles {
+            if let preferredLanguages {
+                if let localizedValue = localizedInBundle(
+                    bundle,
+                    key: key,
+                    preferredLanguages: preferredLanguages
+                ) {
+                    return localizedValue
+                }
+                continue
+            }
+
+            let localizedValue = bundle.localizedString(forKey: key, value: nil, table: tableName)
+            if localizedValue != key {
+                return localizedValue
+            }
+        }
+
+        return defaultValue
+    }
+
+    private static func localizedInBundle(_ bundle: Bundle, key: String, preferredLanguages: [String]) -> String? {
+        let preferredLocalizations = Bundle.preferredLocalizations(
+            from: bundle.localizations.filter { $0 != "Base" },
+            forPreferences: preferredLanguages
+        )
+
+        for localization in preferredLocalizations {
+            guard let path = bundle.path(forResource: localization, ofType: "lproj"),
+                  let localizedBundle = Bundle(path: path) else {
+                continue
+            }
+
+            let localizedValue = localizedBundle.localizedString(forKey: key, value: nil, table: tableName)
+            if localizedValue != key {
+                return localizedValue
+            }
+        }
+
+        return nil
+    }
+
+    private static func formatted(_ key: String, default defaultValue: String, _ arguments: CVarArg...) -> String {
+        let format = localized(key, default: defaultValue)
+        return String(format: format, locale: Locale.current, arguments: arguments)
     }
 }

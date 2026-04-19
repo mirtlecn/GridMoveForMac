@@ -32,21 +32,21 @@ import Testing
 
     #expect(
         controller.menuItemDescriptorsForTesting == [
-            "Enable",
+            UICopy.enableMenuTitle,
             "|",
-            "Middle mouse drag",
-            "Modifier + left mouse drag",
-            "Prefer layout mode",
+            UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 3),
+            UICopy.modifierLeftMouseDragMenuTitle,
+            UICopy.preferLayoutModeMenuTitle,
             "|",
-            "Layout group",
+            UICopy.layoutGroupMenuTitle,
             "|",
-            "Apply previous layout",
-            "Apply next layout",
+            UICopy.applyPreviousLayout,
+            UICopy.applyNextLayout,
             "|",
-            "Settings...",
-            "Launch at login",
+            UICopy.settingsMenuTitle,
+            UICopy.launchAtLoginMenuTitle,
             "|",
-            "Quit",
+            UICopy.quitMenuTitle,
         ]
     )
 }
@@ -118,7 +118,7 @@ import Testing
         onQuit: {}
     )
 
-    #expect(controller.menuItemDescriptorsForTesting.contains("Mouse button 5 drag"))
+    #expect(controller.menuItemDescriptorsForTesting.contains(UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 5)))
     #expect(
         controller.toggleStateDescriptorsForTesting[UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 5)] == true
     )

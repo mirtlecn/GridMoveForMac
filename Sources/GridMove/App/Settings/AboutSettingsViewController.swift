@@ -148,7 +148,7 @@ final class AboutSettingsViewController: NSViewController {
     private func presentRestoreConfirmation() {
         let alert = NSAlert()
         alert.messageText = UICopy.settingsRestoreSettingsButtonTitle
-        alert.informativeText = "This restores all settings to the built-in defaults."
+        alert.informativeText = UICopy.settingsRestoreSettingsConfirmationMessage
         alert.alertStyle = .warning
         alert.addButton(withTitle: UICopy.settingsRestoreSettingsButtonTitle)
         alert.addButton(withTitle: UICopy.settingsCancelButtonTitle)

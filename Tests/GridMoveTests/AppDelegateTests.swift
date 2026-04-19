@@ -442,10 +442,10 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     let layoutActions = actionItems.dropFirst(2).map(\.action)
 
     #expect(layoutActionTitles == [
-        "Apply Fullscreen main",
-        "Apply Main left 1/2",
-        "Apply Main right 1/2",
-        "Apply Fullscreen other",
+        UICopy.applyLayout("Fullscreen main"),
+        UICopy.applyLayout("Main left 1/2"),
+        UICopy.applyLayout("Main right 1/2"),
+        UICopy.applyLayout("Fullscreen other"),
     ])
     #expect(layoutActions == [
         .applyLayoutByID(layoutID: "layout-12"),
@@ -482,7 +482,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     #expect(layoutActionItems[5].shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "]"))
     #expect(layoutActionItems[6].shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "'"))
     #expect(layoutActionItems[7].shortcut == nil)
-    #expect(layoutActionItems.map(\.title).contains("Apply Fill all screen (Menu bar)") == false)
+    #expect(layoutActionItems.map(\.title).contains(UICopy.applyLayout("Fill all screen (Menu bar)")) == false)
 }
 
 @MainActor
@@ -553,7 +553,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
     delegate.showSettings()
 
-    #expect(delegate.settingsVisibleStringsForTesting.contains("Mouse button 5 drag"))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 5)))
     #expect(delegate.generalExcludedWindowTitlesForTesting == ["Floating Panel"])
 
     delegate.closeSettingsWindowForTesting()
@@ -710,7 +710,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
 
     delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
     delegate.showSettings()
-    #expect(delegate.settingsVisibleStringsForTesting.contains("Middle mouse drag"))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 3)))
 
     savedConfiguration.general.mouseButtonNumber = 5
     savedConfiguration.general.excludedWindowTitles = ["Reloaded Panel"]
@@ -719,7 +719,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     delegate.reloadSettingsFromAboutTabForTesting()
     delegate.selectSettingsTabForTesting(index: 0)
 
-    #expect(delegate.settingsVisibleStringsForTesting.contains("Mouse button 5 drag"))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 5)))
 
     delegate.closeSettingsWindowForTesting()
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))

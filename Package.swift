@@ -4,6 +4,7 @@ import PackageDescription
 
 let package = Package(
     name: "GridMove",
+    defaultLocalization: "en",
     platforms: [
         .macOS(.v14),
     ],
@@ -15,7 +16,10 @@ let package = Package(
     ],
     targets: [
         .executableTarget(
-            name: "GridMove"
+            name: "GridMove",
+            resources: [
+                .process("Resources"),
+            ]
         ),
         .testTarget(
             name: "GridMoveTests",

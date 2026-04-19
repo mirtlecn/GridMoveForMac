@@ -26,6 +26,8 @@ dmg_path="${app_bundle_path:r}.dmg"
 staging_root="${app_bundle_path:h}/.dmg-staging"
 staging_path="${staging_root}/${app_name}"
 icon_path="${resources_path}/AppIcon.icns"
+source_resources_path="Sources/GridMove/Resources"
+release_resources_root=".build/release"
 
 if [[ ! -x "${release_binary}" ]]; then
   echo "missing release binary: ${release_binary}" >&2
@@ -38,6 +40,20 @@ mkdir -p "${macos_path}" "${resources_path}"
 cp "${release_binary}" "${macos_path}/${app_name}"
 zsh "$(dirname "$0")/generate_app_icon.sh" "${app_name}" "${icon_path}"
 
+if [[ -d "${source_resources_path}" ]]; then
+  for localization_path in "${source_resources_path}"/*.lproj; do
+    [[ -d "${localization_path}" ]] || continue
+    cp -R "${localization_path}" "${resources_path}/$(basename "${localization_path}")"
+  done
+fi
+
+if [[ -d "${release_resources_root}" ]]; then
+  for resource_bundle in "${release_resources_root}"/*.bundle; do
+    [[ -d "${resource_bundle}" ]] || continue
+    cp -R "${resource_bundle}" "${resources_path}/$(basename "${resource_bundle}")"
+  done
+fi
+
 cat > "${plist_path}" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -45,6 +61,11 @@ cat > "${plist_path}" <<EOF
 <dict>
   <key>CFBundleDevelopmentRegion</key>
   <string>en</string>
+  <key>CFBundleLocalizations</key>
+  <array>
+    <string>en</string>
+    <string>zh-Hans</string>
+  </array>
   <key>CFBundleDisplayName</key>
   <string>${app_name}</string>
   <key>CFBundleExecutable</key>
