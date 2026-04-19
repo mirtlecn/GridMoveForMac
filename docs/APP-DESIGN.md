@@ -153,7 +153,7 @@ The built-in default configuration currently resolves to the following values.
 
 `layoutGroups`
 
-- the default `built-in` group contains one `all` set with 11 layouts
+- the default `default` group contains one `all` set with 11 layouts
 - the default `fullscreen` group contains one `main` set and one fallback `all` set
 - both default groups participate in layout-mode group cycling
 - all layouts use a `12 x 6` grid

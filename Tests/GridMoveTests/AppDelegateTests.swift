@@ -109,7 +109,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
             "excludedBundleIDs": ["com.apple.Spotlight"],
             "excludedWindowTitles": [],
             "mouseButtonNumber": 3,
-            "activeLayoutGroup": "built-in"
+            "activeLayoutGroup": "default"
           },
           "appearance": {
             "renderTriggerAreas": false,
@@ -217,7 +217,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     ]
     savedConfiguration.layoutGroups = [
         LayoutGroup(
-            name: "built-in",
+            name: "default",
             includeInGroupCycle: true,
             sets: [
                 LayoutSet(
@@ -522,12 +522,42 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
 
     #expect(delegate.mainMenuItemDescriptorsForTesting == [
         UICopy.settingsMenuTitle,
+        UICopy.closeSettingsPanelMenuTitle,
         "|",
         UICopy.quitAppMenuTitle,
     ])
     #expect(delegate.mainMenuShortcutDescriptorsForTesting[UICopy.settingsMenuTitle] == "⌘,")
+    #expect(delegate.mainMenuShortcutDescriptorsForTesting[UICopy.closeSettingsPanelMenuTitle] == "⌘W")
     #expect(delegate.mainMenuShortcutDescriptorsForTesting[UICopy.quitAppMenuTitle] == "⌘Q")
+    #expect(delegate.mainMenuEnabledDescriptorsForTesting[UICopy.closeSettingsPanelMenuTitle] == false)
     #expect(delegate.visibleMenuItemDescriptorsForTesting.contains(UICopy.settingsMenuTitle))
+
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
+@Test func appDelegateCloseSettingsPanelMenuEnablesOnlyWhenSettingsWindowIsVisible() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-main-menu-close-settings-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    #expect(delegate.mainMenuEnabledDescriptorsForTesting[UICopy.closeSettingsPanelMenuTitle] == false)
+
+    delegate.showSettings()
+    NSApplication.shared.mainMenu?.update()
+    #expect(delegate.mainMenuEnabledDescriptorsForTesting[UICopy.closeSettingsPanelMenuTitle] == true)
+
+    delegate.closeSettingsWindowForTesting()
+    NSApplication.shared.mainMenu?.update()
+    #expect(delegate.mainMenuEnabledDescriptorsForTesting[UICopy.closeSettingsPanelMenuTitle] == false)
 
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
 }
@@ -589,7 +619,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsModifierGroupsLabel))
     #expect(delegate.settingsVisibleStringsForTesting.contains("Runtime") == false)
     delegate.selectSettingsTabForTesting(index: 1)
-    #expect(delegate.settingsVisibleStringsForTesting.contains(AppConfiguration.builtInGroupName))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(AppConfiguration.defaultGroupName))
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsAllMonitorsValue))
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.defaultLayoutNames[0]))
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsNameLabel))
@@ -791,7 +821,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
     delegate.showSettings()
     delegate.selectSettingsTabForTesting(index: 1)
-    delegate.selectLayoutsGroupForTesting(named: AppConfiguration.builtInGroupName)
+    delegate.selectLayoutsGroupForTesting(named: AppConfiguration.defaultGroupName)
     delegate.triggerLayoutsAddActionForTesting()
 
     let draftConfiguration = try #require(delegate.layoutsDraftConfigurationForTesting)
@@ -810,6 +840,34 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     #expect(persistedConfiguration.layoutGroups.count == 3)
     #expect(persistedConfiguration.layoutGroups.last?.sets == [LayoutSet(monitor: .all, layouts: [])])
     #expect(layoutFiles == ["1.grid.json", "2.grid.json", "3.grid.json"])
+
+    delegate.closeSettingsWindowForTesting()
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
+@Test func protectedGroupInfoAppearsOnlyForProtectedLayoutGroups() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-protected-group-info-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    delegate.showSettings()
+    delegate.selectSettingsTabForTesting(index: 1)
+
+    delegate.selectLayoutsGroupForTesting(named: AppConfiguration.defaultGroupName)
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsProtectedGroupInfo))
+
+    delegate.triggerLayoutsAddActionForTesting()
+    delegate.selectLayoutsGroupForTesting(named: "Group 1")
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsProtectedGroupInfo) == false)
 
     delegate.closeSettingsWindowForTesting()
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
@@ -847,7 +905,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     #expect(receivedKind == .layoutsSaveFailed)
     #expect(receivedTitle == UICopy.layoutsSaveFailedTitle)
     #expect(receivedBody?.contains("missing-group") == true)
-    #expect(delegate.configuration.general.activeLayoutGroup == AppConfiguration.builtInGroupName)
+    #expect(delegate.configuration.general.activeLayoutGroup == AppConfiguration.defaultGroupName)
     #expect(delegate.layoutsDraftConfigurationForTesting?.general.activeLayoutGroup == "missing-group")
 
     delegate.closeSettingsWindowForTesting()
@@ -871,7 +929,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     delegate.showSettings()
     delegate.selectSettingsTabForTesting(index: 1)
 
-    #expect(delegate.layoutsSettingsActiveGroupNameForTesting == AppConfiguration.builtInGroupName)
+    #expect(delegate.layoutsSettingsActiveGroupNameForTesting == AppConfiguration.defaultGroupName)
     _ = try #require(delegate.cycleToNextLayoutGroupForTesting())
     #expect(delegate.layoutsSettingsActiveGroupNameForTesting == AppConfiguration.fullscreenGroupName)
 
@@ -1030,13 +1088,13 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
 
     try """
     {
-      "name": "built-in",
+      "name": "default",
       "sets": [
         {
           "monitor": "all",
           "layouts": [
             {
-              "name": "Modified built-in",
+              "name": "Modified default",
               "gridColumns": 12,
               "gridRows": 6,
               "windowSelection": { "x": 0, "y": 0, "w": 12, "h": 6 }
@@ -1080,8 +1138,8 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
 
     #expect(expectedResult.source == .persistedConfiguration)
     #expect(expectedResult.skippedLayoutDiagnostics.count == 1)
-    #expect(delegate.configuration.layoutGroupNames() == ["built-in"])
-    #expect(delegate.configuration.layouts.map(\.name) == ["Modified built-in"])
+    #expect(delegate.configuration.layoutGroupNames() == ["default"])
+    #expect(delegate.configuration.layouts.map(\.name) == ["Modified default"])
     #expect(delegate.configuration.monitors == ["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display"])
     #expect(receivedKind == .configReloadSkippedLayouts)
     #expect(receivedTitle == UICopy.configReloadSkippedLayoutsTitle)
@@ -1101,13 +1159,13 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
 
     try """
     {
-      "name": "built-in",
+      "name": "default",
       "sets": [
         {
           "monitor": "all",
           "layouts": [
             {
-              "name": "Modified built-in",
+              "name": "Modified default",
               "gridColumns": 12,
               "gridRows": 6,
               "windowSelection": { "x": 0, "y": 0, "w": 12, "h": 6 }
@@ -1161,7 +1219,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     delegate.reloadConfigurationFromDisk(mode: .manual)
 
     #expect(delegate.configuration.layoutGroups.count == 2)
-    #expect(delegate.configuration.layouts.map(\.name).contains("Modified built-in"))
+    #expect(delegate.configuration.layouts.map(\.name).contains("Modified default"))
     #expect(receivedKind == .configReloadSucceeded)
     #expect(receivedTitle == UICopy.configReloadSucceededTitle)
     #expect(receivedBody == UICopy.configReloadSucceededBody())
@@ -1214,13 +1272,13 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
 
     try """
     {
-      "name": "built-in",
+      "name": "default",
       "sets": [
         {
           "monitor": "all",
           "layouts": [
             {
-              "name": "Modified built-in",
+              "name": "Modified default",
               "gridColumns": 12,
               "gridRows": 6,
               "windowSelection": { "x": 0, "y": 0, "w": 12, "h": 6 }
@@ -1253,8 +1311,8 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
 
     delegate.reloadConfigurationFromDisk(mode: .launch)
 
-    #expect(delegate.configuration.layoutGroupNames() == ["built-in"])
-    #expect(delegate.configuration.layouts.map(\.name) == ["Modified built-in"])
+    #expect(delegate.configuration.layoutGroupNames() == ["default"])
+    #expect(delegate.configuration.layouts.map(\.name) == ["Modified default"])
     #expect(delegate.configuration.monitors == ["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display"])
     #expect(FileManager.default.fileExists(atPath: invalidLayoutURL.path))
     #expect(try String(contentsOf: invalidLayoutURL, encoding: .utf8) == invalidLayoutTextBeforeLaunch)

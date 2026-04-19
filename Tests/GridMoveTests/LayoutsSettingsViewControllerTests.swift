@@ -72,7 +72,7 @@ struct LayoutsSettingsViewControllerTests {
     @Test func protectedGroupCannotBeRemovedAndShowsTooltip() async throws {
         let (controller, _, _) = makeController()
 
-        controller.selectGroupForTesting(named: AppConfiguration.builtInGroupName)
+        controller.selectGroupForTesting(named: AppConfiguration.defaultGroupName)
 
         #expect(controller.removeButtonEnabledForTesting == false)
         #expect(controller.removeButtonToolTipForTesting == UICopy.settingsProtectedGroupTooltip)
@@ -111,7 +111,7 @@ struct LayoutsSettingsViewControllerTests {
     @Test func addGroupAppendsProtectedFalseGroupWithEmptyAllMonitorSet() async throws {
         let (controller, _, _) = makeController()
 
-        controller.selectGroupForTesting(named: AppConfiguration.builtInGroupName)
+        controller.selectGroupForTesting(named: AppConfiguration.defaultGroupName)
         controller.addActionForTesting()
 
         let groups = controller.draftConfigurationForTesting.layoutGroups
@@ -128,11 +128,11 @@ struct LayoutsSettingsViewControllerTests {
     @Test func addMonitorSetUsesNextLegalMonitorBinding() async throws {
         let (controller, _, _) = makeController()
 
-        controller.selectSetForTesting(groupName: AppConfiguration.builtInGroupName, setIndex: 0)
+        controller.selectSetForTesting(groupName: AppConfiguration.defaultGroupName, setIndex: 0)
         controller.addActionForTesting()
 
         let group = try #require(
-            controller.draftConfigurationForTesting.layoutGroups.first(where: { $0.name == AppConfiguration.builtInGroupName })
+            controller.draftConfigurationForTesting.layoutGroups.first(where: { $0.name == AppConfiguration.defaultGroupName })
         )
         #expect(group.sets.count == 2)
         #expect(group.sets[1].monitor == .main)
@@ -143,13 +143,13 @@ struct LayoutsSettingsViewControllerTests {
         let (controller, _, _) = makeController()
         let templateLayout = AppConfiguration.defaultLayouts[3]
 
-        controller.selectSetForTesting(groupName: AppConfiguration.builtInGroupName, setIndex: 0)
+        controller.selectSetForTesting(groupName: AppConfiguration.defaultGroupName, setIndex: 0)
         controller.addActionForTesting()
-        controller.selectSetForTesting(groupName: AppConfiguration.builtInGroupName, setIndex: 1)
+        controller.selectSetForTesting(groupName: AppConfiguration.defaultGroupName, setIndex: 1)
         controller.addActionForTesting()
 
         let group = try #require(
-            controller.draftConfigurationForTesting.layoutGroups.first(where: { $0.name == AppConfiguration.builtInGroupName })
+            controller.draftConfigurationForTesting.layoutGroups.first(where: { $0.name == AppConfiguration.defaultGroupName })
         )
         let layouts = group.sets[1].layouts
         let addedLayout = try #require(layouts.first)
@@ -166,16 +166,16 @@ struct LayoutsSettingsViewControllerTests {
     @Test func duplicateMonitorBindingsAreRejectedAndDraftStaysValid() async throws {
         let (controller, _, _) = makeController()
 
-        controller.selectSetForTesting(groupName: AppConfiguration.builtInGroupName, setIndex: 0)
+        controller.selectSetForTesting(groupName: AppConfiguration.defaultGroupName, setIndex: 0)
         controller.addActionForTesting()
         controller.updateSetMonitorForTesting(
-            groupName: AppConfiguration.builtInGroupName,
+            groupName: AppConfiguration.defaultGroupName,
             setIndex: 1,
             monitor: .all
         )
 
         let group = try #require(
-            controller.draftConfigurationForTesting.layoutGroups.first(where: { $0.name == AppConfiguration.builtInGroupName })
+            controller.draftConfigurationForTesting.layoutGroups.first(where: { $0.name == AppConfiguration.defaultGroupName })
         )
         #expect(group.sets[0].monitor == .all)
         #expect(group.sets[1].monitor == .main)

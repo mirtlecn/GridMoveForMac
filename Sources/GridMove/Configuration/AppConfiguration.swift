@@ -861,7 +861,7 @@ struct HotkeySettings: Codable, Equatable {
 }
 
 struct AppConfiguration: Codable, Equatable {
-    static let builtInGroupName = "built-in"
+    static let defaultGroupName = "default"
     static let fullscreenGroupName = "fullscreen"
 
     var general: GeneralSettings

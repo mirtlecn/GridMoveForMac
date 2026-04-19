@@ -13,7 +13,7 @@ import Testing
             preferLayoutMode: true,
             launchAtLogin: true
         ),
-        layoutGroupState: .init(groupNames: ["built-in", "work"], activeGroupName: "built-in"),
+        layoutGroupState: .init(groupNames: ["default", "work"], activeGroupName: "default"),
         actionItems: [
             .init(title: UICopy.applyPreviousLayout, action: .cyclePrevious, shortcut: nil),
             .init(title: UICopy.applyNextLayout, action: .cycleNext, shortcut: nil),
@@ -62,7 +62,7 @@ import Testing
             preferLayoutMode: false,
             launchAtLogin: true
         ),
-        layoutGroupState: .init(groupNames: ["built-in", "work"], activeGroupName: "work"),
+        layoutGroupState: .init(groupNames: ["default", "work"], activeGroupName: "work"),
         actionItems: [],
         onRequestAccessibilityAccess: {},
         onToggleDragGrid: { _ in true },
@@ -87,7 +87,7 @@ import Testing
 
     #expect(
         controller.layoutGroupDescriptorsForTesting == [
-            "built-in": false,
+            "default": false,
             "work": true,
         ]
     )
@@ -104,7 +104,7 @@ import Testing
             preferLayoutMode: true,
             launchAtLogin: false
         ),
-        layoutGroupState: .init(groupNames: ["built-in"], activeGroupName: "built-in"),
+        layoutGroupState: .init(groupNames: ["default"], activeGroupName: "default"),
         actionItems: [],
         onRequestAccessibilityAccess: {},
         onToggleDragGrid: { _ in true },
@@ -135,7 +135,7 @@ import Testing
             preferLayoutMode: true,
             launchAtLogin: true
         ),
-        layoutGroupState: .init(groupNames: ["built-in"], activeGroupName: "built-in"),
+        layoutGroupState: .init(groupNames: ["default"], activeGroupName: "default"),
         actionItems: [.init(title: UICopy.applyNextLayout, action: .cycleNext, shortcut: nil)],
         onRequestAccessibilityAccess: {},
         onToggleDragGrid: { _ in true },
@@ -165,7 +165,7 @@ import Testing
             preferLayoutMode: true,
             launchAtLogin: true
         ),
-        layoutGroupState: .init(groupNames: ["built-in"], activeGroupName: "built-in"),
+        layoutGroupState: .init(groupNames: ["default"], activeGroupName: "default"),
         actionItems: [],
         onRequestAccessibilityAccess: {},
         onToggleDragGrid: { _ in true },
@@ -194,7 +194,7 @@ import Testing
             preferLayoutMode: false,
             launchAtLogin: false
         ),
-        layoutGroupState: .init(groupNames: ["built-in"], activeGroupName: "built-in"),
+        layoutGroupState: .init(groupNames: ["default"], activeGroupName: "default"),
         actionItems: [
             .init(title: UICopy.applyPreviousLayout, action: .cyclePrevious, shortcut: nil),
             .init(title: UICopy.applyNextLayout, action: .cycleNext, shortcut: nil),

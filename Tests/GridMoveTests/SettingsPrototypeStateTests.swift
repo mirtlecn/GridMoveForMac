@@ -57,7 +57,7 @@ struct SettingsPrototypeStateTests {
         #expect(state.configuration.layoutGroups.contains(where: { $0.name == "Draft" }))
         #expect(state.configuration.general.activeLayoutGroup == "Draft")
         #expect(state.committedConfiguration.layoutGroups.contains(where: { $0.name == "Draft" }) == false)
-        #expect(state.committedConfiguration.general.activeLayoutGroup == AppConfiguration.builtInGroupName)
+        #expect(state.committedConfiguration.general.activeLayoutGroup == AppConfiguration.defaultGroupName)
         #expect(recorder.appliedCandidates.last?.layoutGroups.contains(where: { $0.name == "Draft" }) == false)
     }
 
@@ -127,7 +127,7 @@ struct SettingsPrototypeStateTests {
 
         #expect(didCommit == false)
         #expect(state.configuration.general.activeLayoutGroup == AppConfiguration.fullscreenGroupName)
-        #expect(state.committedConfiguration.general.activeLayoutGroup == AppConfiguration.builtInGroupName)
+        #expect(state.committedConfiguration.general.activeLayoutGroup == AppConfiguration.defaultGroupName)
         #expect(state.hasLayoutsDraftChanges == true)
     }
 
@@ -154,7 +154,7 @@ struct SettingsPrototypeStateTests {
         let state = SettingsPrototypeState(configuration: .defaultValue)
         state.applyLayoutsMutation { configuration in
             configuration.layoutGroups.removeAll { $0.name == AppConfiguration.fullscreenGroupName }
-            configuration.general.activeLayoutGroup = AppConfiguration.builtInGroupName
+            configuration.general.activeLayoutGroup = AppConfiguration.defaultGroupName
         }
 
         var externalConfiguration = AppConfiguration.defaultValue
@@ -162,6 +162,6 @@ struct SettingsPrototypeStateTests {
 
         state.syncExternalConfiguration(externalConfiguration)
 
-        #expect(state.configuration.general.activeLayoutGroup == AppConfiguration.builtInGroupName)
+        #expect(state.configuration.general.activeLayoutGroup == AppConfiguration.defaultGroupName)
     }
 }

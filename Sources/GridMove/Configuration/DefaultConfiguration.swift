@@ -27,7 +27,7 @@ extension AppConfiguration {
     static var defaultLayoutGroups: [LayoutGroup] {
         [
             LayoutGroup(
-                name: builtInGroupName,
+                name: defaultGroupName,
                 includeInGroupCycle: true,
                 protect: true,
                 sets: [
@@ -131,7 +131,7 @@ extension AppConfiguration {
             launchAtLogin: false,
             excludedBundleIDs: ["com.apple.Spotlight"],
             excludedWindowTitles: [],
-            activeLayoutGroup: builtInGroupName,
+            activeLayoutGroup: defaultGroupName,
             mouseButtonNumber: 3
         ),
         appearance: AppearanceSettings(

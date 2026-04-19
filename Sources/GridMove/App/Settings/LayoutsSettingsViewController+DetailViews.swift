@@ -69,10 +69,14 @@ extension LayoutsSettingsViewController {
             control: includeInCycleControl,
             descriptionLabel: includeInCycleDescriptionLabel
         )
-        let formView = makeInlineTabContent(rows: [
+        var rows = [
             makeLabeledControlRow(label: UICopy.settingsNameLabel, control: nameControl),
             makeLabeledControlRow(label: UICopy.settingsIncludeInGroupCycleLabel, control: includeInCycleContent),
-        ], width: 460)
+        ]
+        if group.protect {
+            rows.append(makeInfoMessageRow(text: UICopy.settingsProtectedGroupInfo))
+        }
+        let formView = makeInlineTabContent(rows: rows, width: 460)
         contentStackView.addArrangedSubview(makeCenteredContainer(for: formView))
         return makeDetailPanelContainer(contentView: contentStackView)
     }
@@ -327,6 +331,26 @@ extension LayoutsSettingsViewController {
         ])
 
         return containerView
+    }
+
+    private func makeInfoMessageRow(text: String) -> NSView {
+        let label = makeSecondaryLabel(text)
+        label.lineBreakMode = .byWordWrapping
+        label.maximumNumberOfLines = 0
+
+        let container = NSView()
+        container.translatesAutoresizingMaskIntoConstraints = false
+        label.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(label)
+
+        NSLayoutConstraint.activate([
+            label.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+            label.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+            label.topAnchor.constraint(equalTo: container.topAnchor),
+            label.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+        ])
+
+        return container
     }
 
     func makeCommandBarView() -> NSView {
