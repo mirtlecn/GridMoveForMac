@@ -88,6 +88,7 @@ enum UICopy {
     }
     static var settingsVersionLabel: String { localized("settingsVersionLabel", default: "Version") }
     static var settingsAuthorLabel: String { localized("settingsAuthorLabel", default: "Author") }
+    static var settingsLinkLabel: String { localized("settingsLinkLabel", default: "Link") }
     static var settingsConfigFolderLabel: String { localized("settingsConfigFolderLabel", default: "Config folder") }
     static var settingsOpenButtonTitle: String { localized("settingsOpenButtonTitle", default: "Open") }
     static var settingsAdvancedSectionTitle: String { localized("settingsAdvancedSectionTitle", default: "Advanced") }

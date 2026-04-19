@@ -74,6 +74,7 @@
 "settingsHotkeysNextTargetValue" = "Next item in current cycle";
 "settingsVersionLabel" = "Version";
 "settingsAuthorLabel" = "Author";
+"settingsLinkLabel" = "Link";
 "settingsConfigFolderLabel" = "Config folder";
 "settingsOpenButtonTitle" = "Open";
 "settingsAdvancedSectionTitle" = "Advanced";

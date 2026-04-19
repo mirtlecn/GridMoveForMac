@@ -74,6 +74,7 @@
 "settingsHotkeysNextTargetValue" = "索引内的下一个布局";
 "settingsVersionLabel" = "版本";
 "settingsAuthorLabel" = "作者";
+"settingsLinkLabel" = "链接";
 "settingsConfigFolderLabel" = "配置目录";
 "settingsOpenButtonTitle" = "打开";
 "settingsAdvancedSectionTitle" = "高级";

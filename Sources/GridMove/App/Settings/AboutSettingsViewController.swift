@@ -2,6 +2,11 @@ import AppKit
 
 @MainActor
 final class AboutSettingsViewController: NSViewController {
+    private enum AboutLink {
+        static let authorURLString = "https://github.com/mirtlecn"
+        static let projectURLString = "https://github.com/mirtlecn/GridMoveForMac"
+    }
+
     private let prototypeState: SettingsPrototypeState
     private let actionHandler: any SettingsActionHandling
 
@@ -23,6 +28,7 @@ final class AboutSettingsViewController: NSViewController {
             makeLabeledViewGrid(rows: [
                 (UICopy.settingsVersionLabel, makeValueLabel(currentVersionString())),
                 (UICopy.settingsAuthorLabel, makeAuthorLinkButton()),
+                (UICopy.settingsLinkLabel, makeProjectLinkButton()),
                 (UICopy.settingsConfigFolderLabel, makeConfigFolderButton()),
             ])
         )
@@ -78,16 +84,19 @@ final class AboutSettingsViewController: NSViewController {
     }
 
     private func makeAuthorLinkButton() -> NSButton {
-        let button = NSButton(title: currentAuthorString(), target: self, action: #selector(handleAuthorLink(_:)))
-        button.isBordered = false
-        button.image = NSImage(
-            systemSymbolName: "arrow.up.right.square",
-            accessibilityDescription: UICopy.settingsAuthorLabel
+        makeLinkButton(
+            title: currentAuthorString(),
+            accessibilityDescription: UICopy.settingsAuthorLabel,
+            action: #selector(handleAuthorLink(_:))
         )
-        button.imagePosition = .imageTrailing
-        button.contentTintColor = .linkColor
-        button.setButtonType(.momentaryPushIn)
-        return button
+    }
+
+    private func makeProjectLinkButton() -> NSButton {
+        makeLinkButton(
+            title: AboutLink.projectURLString,
+            accessibilityDescription: UICopy.settingsLinkLabel,
+            action: #selector(handleProjectLink(_:))
+        )
     }
 
     private func makeConfigFolderButton() -> NSButton {
@@ -117,9 +126,31 @@ final class AboutSettingsViewController: NSViewController {
         return row
     }
 
+    private func makeLinkButton(title: String, accessibilityDescription: String, action: Selector) -> NSButton {
+        let button = NSButton(title: title, target: self, action: action)
+        button.isBordered = false
+        button.image = NSImage(
+            systemSymbolName: "arrow.up.right.square",
+            accessibilityDescription: accessibilityDescription
+        )
+        button.imagePosition = .imageTrailing
+        button.contentTintColor = .linkColor
+        button.setButtonType(.momentaryPushIn)
+        return button
+    }
+
     @objc
     private func handleAuthorLink(_ sender: NSButton) {
-        guard let url = URL(string: "https://github.com/mirtlecn") else {
+        guard let url = URL(string: AboutLink.authorURLString) else {
+            return
+        }
+
+        NSWorkspace.shared.open(url)
+    }
+
+    @objc
+    private func handleProjectLink(_ sender: NSButton) {
+        guard let url = URL(string: AboutLink.projectURLString) else {
             return
         }
 
