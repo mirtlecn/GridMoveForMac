@@ -38,11 +38,12 @@ https://github.com/user-attachments/assets/0373bb1d-1de4-4542-a67e-b6598859bfd1
 
 设置页
 
-<img width="1070" height="860" alt="image" src="https://github.com/user-attachments/assets/322b6636-9bac-4d9b-8690-427fda6f2f1d" />
+<img width="1070" height="860" alt="image" src="https://github.com/user-attachments/assets/166aa636-9722-4b8a-ba0f-1bf90b28252b" />
 
 自定义布局
 
-<img width="1070" height="811" alt="image" src="https://github.com/user-attachments/assets/18528949-58d3-40ec-a126-3e13a6d6beaf" />
+<img width="1070" height="811" alt="image" src="https://github.com/user-attachments/assets/13fe6dc6-1103-4d9d-a9a5-0fa10faf70bd" />
+
 
 ### CLI
 
