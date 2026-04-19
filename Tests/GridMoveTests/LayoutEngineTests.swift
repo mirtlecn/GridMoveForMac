@@ -332,7 +332,7 @@ import Testing
         ) == "other"
     )
 
-    configuration.general.activeLayoutGroup = AppConfiguration.builtInGroupName
+    configuration.general.activeLayoutGroup = AppConfiguration.defaultGroupName
     let builtInEntry = try #require(LayoutGroupResolver.entry(at: 1, configuration: configuration))
     #expect(
         LayoutGroupResolver.targetDisplayID(

@@ -24,11 +24,11 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
 
     let initialConfiguration = try store.load()
-    #expect(initialConfiguration.general.activeLayoutGroup == AppConfiguration.builtInGroupName)
+    #expect(initialConfiguration.general.activeLayoutGroup == AppConfiguration.defaultGroupName)
     #expect(initialConfiguration.layoutGroups.count == 2)
     #expect(initialConfiguration.layoutGroups[0].sets.count == 1)
     #expect(initialConfiguration.layouts.count == 11)
-    #expect(initialConfiguration.layoutGroupNames() == [AppConfiguration.builtInGroupName, AppConfiguration.fullscreenGroupName])
+    #expect(initialConfiguration.layoutGroupNames() == [AppConfiguration.defaultGroupName, AppConfiguration.fullscreenGroupName])
     #expect(FileManager.default.fileExists(atPath: store.fileURL.path))
     #expect(FileManager.default.fileExists(atPath: store.layoutDirectoryURL.path))
     #expect(FileManager.default.fileExists(atPath: store.lastKnownGoodFileURL.path))
@@ -64,7 +64,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         encoding: .utf8
     )
     #expect(firstLayoutText.contains("\"name\""))
-    #expect(firstLayoutText.contains(AppConfiguration.builtInGroupName))
+    #expect(firstLayoutText.contains(AppConfiguration.defaultGroupName))
     #expect(firstLayoutText.contains("\"includeInGroupCycle\""))
     #expect(secondLayoutText.contains(AppConfiguration.fullscreenGroupName))
     #expect(secondLayoutText.contains("\"monitor\""))
@@ -72,7 +72,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     var updatedConfiguration = initialConfiguration
     updatedConfiguration.general.launchAtLogin = false
     updatedConfiguration.general.excludedWindowTitles = ["Test Title"]
-    updatedConfiguration.general.activeLayoutGroup = AppConfiguration.builtInGroupName
+    updatedConfiguration.general.activeLayoutGroup = AppConfiguration.defaultGroupName
     updatedConfiguration.appearance.triggerGap = 6
     updatedConfiguration.appearance.layoutGap = 4
     updatedConfiguration.dragTriggers.preferLayoutMode = false
@@ -166,7 +166,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 @Test func defaultConfigurationMarksBuiltInGroupsAsProtected() async throws {
     let defaultConfiguration = AppConfiguration.defaultValue
 
-    #expect(defaultConfiguration.layoutGroups.first(where: { $0.name == AppConfiguration.builtInGroupName })?.protect == true)
+    #expect(defaultConfiguration.layoutGroups.first(where: { $0.name == AppConfiguration.defaultGroupName })?.protect == true)
     #expect(defaultConfiguration.layoutGroups.first(where: { $0.name == AppConfiguration.fullscreenGroupName })?.protect == true)
 }
 
@@ -315,7 +315,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     configuration.layoutGroups.append(
         LayoutGroup(name: "empty-set-group", includeInGroupCycle: false, sets: [LayoutSet(monitor: .all, layouts: [])])
     )
-    configuration.general.activeLayoutGroup = AppConfiguration.builtInGroupName
+    configuration.general.activeLayoutGroup = AppConfiguration.defaultGroupName
 
     try store.save(configuration)
 
@@ -326,7 +326,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     ).map(\.lastPathComponent).sorted()
 
     #expect(reloadedConfiguration.layoutGroups.map(\.name) == [
-        AppConfiguration.builtInGroupName,
+        AppConfiguration.defaultGroupName,
         AppConfiguration.fullscreenGroupName,
         "empty-group",
         "empty-set-group",
@@ -617,7 +617,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         "isEnabled": true,
         "excludedBundleIDs": ["com.apple.Spotlight"],
         "excludedWindowTitles": [],
-        "activeLayoutGroup": "built-in"
+        "activeLayoutGroup": "default"
       }
     }
     """
@@ -888,7 +888,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "excludedBundleIDs": ["com.apple.Spotlight"],
             "excludedWindowTitles": [],
             "mouseButtonNumber": 3,
-            "activeLayoutGroup": "built-in"
+            "activeLayoutGroup": "default"
           },
           "appearance": {
             "renderTriggerAreas": false,
@@ -936,7 +936,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 
     var configuration = AppConfiguration.defaultValue
     configuration.layoutGroups = [configuration.layoutGroups[0]]
-    configuration.general.activeLayoutGroup = AppConfiguration.builtInGroupName
+    configuration.general.activeLayoutGroup = AppConfiguration.defaultGroupName
 
     try store.save(configuration)
 
@@ -1059,7 +1059,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 
     var configuration = AppConfiguration.defaultValue
     configuration.layoutGroups = [configuration.layoutGroups[0]]
-    configuration.general.activeLayoutGroup = AppConfiguration.builtInGroupName
+    configuration.general.activeLayoutGroup = AppConfiguration.defaultGroupName
 
     do {
         try store.save(configuration)
@@ -1101,7 +1101,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 
     #expect(cycleBindings.count == 2)
     #expect(configuration.general.isEnabled)
-    #expect(configuration.general.activeLayoutGroup == AppConfiguration.builtInGroupName)
+    #expect(configuration.general.activeLayoutGroup == AppConfiguration.defaultGroupName)
     #expect(configuration.layoutGroups.count == 2)
     #expect(configuration.layoutGroups[0].includeInGroupCycle == true)
     #expect(configuration.layoutGroups[0].sets.count == 1)
@@ -1211,7 +1211,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     {
       "excludedBundleIDs": ["com.apple.Spotlight"],
       "excludedWindowTitles": [],
-      "activeLayoutGroup": "built-in"
+      "activeLayoutGroup": "default"
     }
     """
 
@@ -1220,7 +1220,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 
     #expect(settings.isEnabled)
     #expect(settings.mouseButtonNumber == 3)
-    #expect(settings.activeLayoutGroup == "built-in")
+    #expect(settings.activeLayoutGroup == "default")
     #expect(settings.excludedBundleIDs == ["com.apple.Spotlight"])
     #expect(settings.excludedWindowTitles.isEmpty)
 }
@@ -1232,7 +1232,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
       "excludedBundleIDs": [],
       "excludedWindowTitles": [],
       "mouseButtonNumber": 2,
-      "activeLayoutGroup": "built-in"
+      "activeLayoutGroup": "default"
     }
     """
     let invalidTypeJSON = """
@@ -1241,7 +1241,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
       "excludedBundleIDs": [],
       "excludedWindowTitles": [],
       "mouseButtonNumber": "side",
-      "activeLayoutGroup": "built-in"
+      "activeLayoutGroup": "default"
     }
     """
 

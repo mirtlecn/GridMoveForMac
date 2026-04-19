@@ -5,6 +5,7 @@ enum UICopy {
 
     static var applicationMenuTitle: String { localized("applicationMenuTitle", default: "Application") }
     static var settingsMenuTitle: String { localized("settingsMenuTitle", default: "Settings...") }
+    static var closeSettingsPanelMenuTitle: String { localized("closeSettingsPanelMenuTitle", default: "Close Settings") }
     static var settingsWindowTitle: String { localized("settingsWindowTitle", default: "Settings") }
     static var settingsGeneralTabTitle: String { localized("settingsGeneralTabTitle", default: "General") }
     static var settingsLayoutsTabTitle: String { localized("settingsLayoutsTabTitle", default: "Layouts") }
@@ -42,6 +43,12 @@ enum UICopy {
         localized(
             "settingsIncludeInGroupCycleDescription",
             default: "Enabled groups can be cycled in layout mode with the mouse wheel or the Shift key."
+        )
+    }
+    static var settingsProtectedGroupInfo: String {
+        localized(
+            "settingsProtectedGroupInfo",
+            default: "Protected layout group: you cannot delete this group or change its name."
         )
     }
     static var settingsActiveGroupLabel: String { localized("settingsActiveGroupLabel", default: "Active group") }

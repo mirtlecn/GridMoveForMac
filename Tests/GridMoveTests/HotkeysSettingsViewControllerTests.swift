@@ -22,7 +22,7 @@ private func makeTestLayout(
     var configuration = AppConfiguration.defaultValue
     configuration.layoutGroups = [
         LayoutGroup(
-            name: "built-in",
+            name: "default",
             includeInGroupCycle: true,
             sets: [
                 LayoutSet(
@@ -50,7 +50,7 @@ private func makeTestLayout(
             ]
         ),
     ]
-    configuration.general.activeLayoutGroup = "built-in"
+    configuration.general.activeLayoutGroup = "default"
 
     let slots = HotkeyPrototypeSlot.makePrototypeSlots(configuration: configuration)
     let layoutSlots = slots.filter {
