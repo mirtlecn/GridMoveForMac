@@ -642,6 +642,10 @@ extension LayoutsSettingsViewController {
         currentLayoutPreviewView?.interactionModeForTesting
     }
 
+    var currentLayoutPreviewInteractiveCursorRegionForTesting: LayoutPreviewView.InteractiveCursorRegion? {
+        currentLayoutPreviewView?.interactiveCursorRegionForTesting
+    }
+
     func setSelectedGroupNameRawWithoutCommitForTesting(_ value: String) {
         currentGroupNameControl?.setRawValueForTesting(value)
     }

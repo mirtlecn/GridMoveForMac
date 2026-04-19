@@ -330,4 +330,24 @@ struct LayoutsSettingsViewControllerTests {
         )
         #expect(updatedLayout.triggerRegion == noneTriggerLayout.triggerRegion)
     }
+
+    @Test func previewCursorRegionMatchesInteractiveMode() async throws {
+        let (controller, _, _) = makeController()
+
+        controller.selectLayoutForTesting(id: "layout-1")
+        #expect(controller.currentLayoutPreviewInteractiveCursorRegionForTesting == LayoutPreviewView.InteractiveCursorRegion.none)
+
+        controller.selectLayoutDetailTabForTesting(1)
+        #expect(controller.currentLayoutPreviewInteractiveCursorRegionForTesting == .usableRect)
+
+        controller.selectLayoutDetailTabForTesting(2)
+        controller.setCurrentLayoutTriggerAreaKindForTesting(.screen)
+        #expect(controller.currentLayoutPreviewInteractiveCursorRegionForTesting == .usableRect)
+
+        controller.setCurrentLayoutTriggerAreaKindForTesting(.menuBar)
+        #expect(controller.currentLayoutPreviewInteractiveCursorRegionForTesting == .menuBarRect)
+
+        controller.setCurrentLayoutTriggerAreaKindForTesting(.none)
+        #expect(controller.currentLayoutPreviewInteractiveCursorRegionForTesting == LayoutPreviewView.InteractiveCursorRegion.none)
+    }
 }

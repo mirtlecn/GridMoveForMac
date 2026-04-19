@@ -15,6 +15,12 @@ final class LayoutPreviewView: NSView {
         case triggerMenuBarSelection
     }
 
+    enum InteractiveCursorRegion: Equatable {
+        case none
+        case usableRect
+        case menuBarRect
+    }
+
     private enum DragAnchor {
         case gridCell(SettingsPreviewGridCell)
         case menuBarSegment(Int)
@@ -40,12 +46,14 @@ final class LayoutPreviewView: NSView {
                 return
             }
             cancelInteraction()
+            window?.invalidateCursorRects(for: self)
         }
     }
 
     private var draftWindowSelection: GridSelection?
     private var draftTriggerRegion: TriggerRegion?
     private var dragAnchor: DragAnchor?
+    private var didPushDragCursor = false
 
     private var interactionBounds: CGRect {
         guard bounds.width > 0, bounds.height > 0 else {
@@ -88,6 +96,16 @@ final class LayoutPreviewView: NSView {
         case .triggerRegion:
             drawTriggerRegion(in: geometry)
         }
+    }
+
+    override func resetCursorRects() {
+        discardCursorRects()
+
+        guard let interactiveCursorRect else {
+            return
+        }
+
+        addCursorRect(interactiveCursorRect, cursor: .openHand)
     }
 
     private func drawWindowLayout(in geometry: SettingsPreviewGeometry) {
@@ -154,6 +172,29 @@ final class LayoutPreviewView: NSView {
         draftTriggerRegion ?? triggerRegionOverride
     }
 
+    private var interactiveCursorRegion: InteractiveCursorRegion {
+        switch interactionMode {
+        case .none:
+            return .none
+        case .windowSelection, .triggerScreenSelection:
+            return .usableRect
+        case .triggerMenuBarSelection:
+            return .menuBarRect
+        }
+    }
+
+    private var interactiveCursorRect: CGRect? {
+        let geometry = SettingsPreviewSupport.makeGeometry(in: interactionBounds)
+        return switch interactiveCursorRegion {
+        case .none:
+            nil
+        case .usableRect:
+            geometry.usableRect
+        case .menuBarRect:
+            geometry.menuBarRect
+        }
+    }
+
     private func beginInteraction(at point: CGPoint) {
         let geometry = SettingsPreviewSupport.makeGeometry(in: interactionBounds)
 
@@ -177,6 +218,7 @@ final class LayoutPreviewView: NSView {
                 columns: layout.gridColumns,
                 rows: layout.gridRows
             )
+            beginDragCursor()
             needsDisplay = true
         case .triggerScreenSelection:
             guard let gridCell = SettingsPreviewSupport.gridCell(
@@ -197,6 +239,7 @@ final class LayoutPreviewView: NSView {
                     rows: layout.gridRows
                 )
             )
+            beginDragCursor()
             needsDisplay = true
         case .triggerMenuBarSelection:
             guard let segment = SettingsPreviewSupport.menuBarSegment(
@@ -215,6 +258,7 @@ final class LayoutPreviewView: NSView {
                     segments: layout.gridRows
                 )
             )
+            beginDragCursor()
             needsDisplay = true
         }
     }
@@ -304,10 +348,28 @@ final class LayoutPreviewView: NSView {
     }
 
     private func cancelInteraction() {
+        endDragCursor()
         dragAnchor = nil
         draftWindowSelection = nil
         draftTriggerRegion = nil
+        window?.invalidateCursorRects(for: self)
         needsDisplay = true
+    }
+
+    private func beginDragCursor() {
+        guard !didPushDragCursor else {
+            return
+        }
+        NSCursor.closedHand.push()
+        didPushDragCursor = true
+    }
+
+    private func endDragCursor() {
+        guard didPushDragCursor else {
+            return
+        }
+        NSCursor.pop()
+        didPushDragCursor = false
     }
 }
 
@@ -322,6 +384,10 @@ extension LayoutPreviewView {
 
     var displayedTriggerRegionForTesting: TriggerRegion? {
         displayedTriggerRegion
+    }
+
+    var interactiveCursorRegionForTesting: InteractiveCursorRegion {
+        interactiveCursorRegion
     }
 
     func simulateGridDragForTesting(from start: SettingsPreviewGridCell, to end: SettingsPreviewGridCell) {
