@@ -77,7 +77,7 @@ private func makeTestLayout(
       "renderTriggerAreas": false,
       "triggerOpacity": 20,
       "triggerGap": 2,
-      "triggerStrokeColor": "#007AFF33",
+      "triggerStrokeColor": "#00FDFFFF",
       "layoutGap": 1,
       "renderWindowHighlight": true,
       "highlightFillOpacity": 8,

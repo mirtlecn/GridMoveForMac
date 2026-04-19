@@ -19,6 +19,13 @@ final class GeneralSettingsViewController: NSViewController {
     private lazy var launchAtLoginCheckbox = makeCheckboxRow(title: UICopy.launchAtLoginMenuTitle)
     private lazy var mouseButtonDragCheckbox = makeCheckboxRow(title: UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 3))
     private lazy var mouseButtonControl = makeMouseButtonControl()
+    private lazy var activationDelayControl = SettingsIntegerStepperControl(
+        value: DragTriggerSettings.defaultActivationDelayMilliseconds,
+        minValue: DragTriggerSettings.activationDelayMillisecondsRange.lowerBound,
+        maxValue: DragTriggerSettings.activationDelayMillisecondsRange.upperBound,
+        textFieldWidth: 68,
+        fallbackValueOnInvalidInput: DragTriggerSettings.defaultActivationDelayMilliseconds
+    )
     private lazy var modifierLeftMouseDragCheckbox = makeCheckboxRow(title: UICopy.modifierLeftMouseDragMenuTitle)
     private lazy var preferLayoutModeCheckbox = makeCheckboxRow(title: UICopy.preferLayoutModeMenuTitle)
     private lazy var applyLayoutImmediatelyWhileDraggingCheckbox = makeCheckboxRow(
@@ -80,6 +87,7 @@ final class GeneralSettingsViewController: NSViewController {
                 rows: [
                     mouseButtonDragCheckbox,
                     makeLabeledControlRow(label: UICopy.settingsMouseButtonNumberLabel, control: mouseButtonControl),
+                    makeLabeledControlRow(label: UICopy.settingsActivationDelayLabel, control: makeActivationDelayControl()),
                     modifierLeftMouseDragCheckbox,
                     makeLabeledControlRow(label: UICopy.settingsModifierGroupsLabel, control: modifierGroupsControl),
                     makeCheckboxWithDescription(
@@ -141,6 +149,9 @@ final class GeneralSettingsViewController: NSViewController {
         mouseButtonControl.onValueChanged = { [weak self] value in
             self?.applyMouseButtonNumber(value)
         }
+        activationDelayControl.onValueChanged = { [weak self] value in
+            self?.applyActivationDelayMilliseconds(value)
+        }
 
         modifierLeftMouseDragCheckbox.target = self
         modifierLeftMouseDragCheckbox.action = #selector(handleModifierLeftMouseDragToggle(_:))
@@ -170,6 +181,7 @@ final class GeneralSettingsViewController: NSViewController {
             mouseButtonNumber: configuration.general.mouseButtonNumber
         )
         mouseButtonControl.setValue(configuration.general.mouseButtonNumber)
+        activationDelayControl.setValue(configuration.dragTriggers.activationDelayMilliseconds)
         modifierLeftMouseDragCheckbox.state = configuration.dragTriggers.enableModifierLeftMouseDrag ? .on : .off
         preferLayoutModeCheckbox.state = configuration.dragTriggers.preferLayoutMode ? .on : .off
         applyLayoutImmediatelyWhileDraggingCheckbox.state = configuration.dragTriggers.applyLayoutImmediatelyWhileDragging ? .on : .off
@@ -389,6 +401,22 @@ final class GeneralSettingsViewController: NSViewController {
         }
     }
 
+    private func applyActivationDelayMilliseconds(_ activationDelayMilliseconds: Int) {
+        _ = prototypeState.applyImmediateMutation(using: actionHandler) { configuration in
+            configuration.dragTriggers.activationDelayMilliseconds = activationDelayMilliseconds
+        }
+    }
+
+    private func makeActivationDelayControl() -> NSView {
+        let unitLabel = makeSecondaryLabel(UICopy.settingsMillisecondsUnit)
+        let row = makeHorizontalGroup(spacing: 8)
+        row.alignment = .centerY
+        row.addArrangedSubview(activationDelayControl)
+        row.addArrangedSubview(unitLabel)
+        row.addArrangedSubview(NSView())
+        return row
+    }
+
     @objc
     private func handleModifierLeftMouseDragToggle(_ sender: NSButton) {
         _ = prototypeState.applyImmediateMutation(using: actionHandler) { configuration in
@@ -466,6 +494,16 @@ extension GeneralSettingsViewController {
         applyMouseButtonNumber(mouseButtonControl.value)
     }
 
+    func setActivationDelayMillisecondsForTesting(_ activationDelayMilliseconds: Int) {
+        activationDelayControl.setValue(activationDelayMilliseconds)
+        applyActivationDelayMilliseconds(activationDelayControl.value)
+    }
+
+    func setRawActivationDelayMillisecondsForTesting(_ value: String) {
+        activationDelayControl.setRawValueForTesting(value)
+        activationDelayControl.commitTextEditingForTesting()
+    }
+
     func setRawMouseButtonNumberForTesting(_ value: String) {
         mouseButtonControl.setRawValueForTesting(value)
         mouseButtonControl.commitTextEditingForTesting()
@@ -477,6 +515,10 @@ extension GeneralSettingsViewController {
 
     var mouseButtonNumberValueForTesting: Int {
         mouseButtonControl.value
+    }
+
+    var activationDelayMillisecondsValueForTesting: Int {
+        activationDelayControl.value
     }
 
     func setModifierLeftMouseDragForTesting(_ isEnabled: Bool) {

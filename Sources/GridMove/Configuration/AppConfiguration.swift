@@ -799,15 +799,59 @@ enum AppearanceValueNormalizer {
 
         return defaultValue
     }
+
+    static func decodeBoundedInt<Key: CodingKey>(
+        from container: KeyedDecodingContainer<Key>,
+        forKey key: Key,
+        defaultValue: Int,
+        range: ClosedRange<Int>
+    ) -> Int {
+        if let value = try? container.decode(Int.self, forKey: key) {
+            return normalizeBoundedInt(value, defaultValue: defaultValue, range: range)
+        }
+
+        if let value = try? container.decode(Double.self, forKey: key) {
+            return normalizeBoundedInt(value, defaultValue: defaultValue, range: range)
+        }
+
+        return defaultValue
+    }
+
+    static func normalizeBoundedInt(
+        _ value: Int,
+        defaultValue: Int,
+        range: ClosedRange<Int>
+    ) -> Int {
+        guard range.contains(value) else {
+            return defaultValue
+        }
+
+        return value
+    }
+
+    static func normalizeBoundedInt(
+        _ value: Double,
+        defaultValue: Int,
+        range: ClosedRange<Int>
+    ) -> Int {
+        guard value.isFinite else {
+            return defaultValue
+        }
+
+        return normalizeBoundedInt(Int(value.rounded()), defaultValue: defaultValue, range: range)
+    }
 }
 
 struct DragTriggerSettings: Codable, Equatable {
+    static let defaultActivationDelayMilliseconds = 300
+    static let activationDelayMillisecondsRange = 0 ... 1_000
+
     var enableMouseButtonDrag: Bool
     var enableModifierLeftMouseDrag: Bool
     var preferLayoutMode: Bool
     var applyLayoutImmediatelyWhileDragging: Bool
     var modifierGroups: [[ModifierKey]]
-    var activationDelaySeconds: Double
+    var activationDelayMilliseconds: Int
     var activationMoveThreshold: Double
 
     enum CodingKeys: String, CodingKey {
@@ -816,7 +860,7 @@ struct DragTriggerSettings: Codable, Equatable {
         case preferLayoutMode
         case applyLayoutImmediatelyWhileDragging
         case modifierGroups
-        case activationDelaySeconds
+        case activationDelayMilliseconds
         case activationMoveThreshold
     }
 
@@ -826,7 +870,7 @@ struct DragTriggerSettings: Codable, Equatable {
         preferLayoutMode: Bool,
         applyLayoutImmediatelyWhileDragging: Bool,
         modifierGroups: [[ModifierKey]],
-        activationDelaySeconds: Double,
+        activationDelayMilliseconds: Int,
         activationMoveThreshold: Double
     ) {
         self.enableMouseButtonDrag = enableMouseButtonDrag
@@ -834,7 +878,11 @@ struct DragTriggerSettings: Codable, Equatable {
         self.preferLayoutMode = preferLayoutMode
         self.applyLayoutImmediatelyWhileDragging = applyLayoutImmediatelyWhileDragging
         self.modifierGroups = modifierGroups
-        self.activationDelaySeconds = activationDelaySeconds
+        self.activationDelayMilliseconds = AppearanceValueNormalizer.normalizeBoundedInt(
+            activationDelayMilliseconds,
+            defaultValue: Self.defaultActivationDelayMilliseconds,
+            range: Self.activationDelayMillisecondsRange
+        )
         self.activationMoveThreshold = activationMoveThreshold
     }
 
@@ -845,7 +893,12 @@ struct DragTriggerSettings: Codable, Equatable {
         preferLayoutMode = try container.decodeIfPresent(Bool.self, forKey: .preferLayoutMode) ?? true
         applyLayoutImmediatelyWhileDragging = (try? container.decode(Bool.self, forKey: .applyLayoutImmediatelyWhileDragging)) ?? false
         modifierGroups = try container.decode([[ModifierKey]].self, forKey: .modifierGroups)
-        activationDelaySeconds = try container.decode(Double.self, forKey: .activationDelaySeconds)
+        activationDelayMilliseconds = AppearanceValueNormalizer.decodeBoundedInt(
+            from: container,
+            forKey: .activationDelayMilliseconds,
+            defaultValue: Self.defaultActivationDelayMilliseconds,
+            range: Self.activationDelayMillisecondsRange
+        )
         activationMoveThreshold = try container.decode(Double.self, forKey: .activationMoveThreshold)
     }
 }

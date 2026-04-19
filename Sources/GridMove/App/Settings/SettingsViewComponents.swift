@@ -156,10 +156,18 @@ final class SettingsIntegerStepperControl: NSView, NSTextFieldDelegate {
     private let decrementButton = NSButton()
     private let minValue: Int
     private let maxValue: Int?
+    private let fallbackValueOnInvalidInput: Int?
 
-    init(value: Int, minValue: Int = 0, maxValue: Int? = 99, textFieldWidth: CGFloat = 56) {
+    init(
+        value: Int,
+        minValue: Int = 0,
+        maxValue: Int? = 99,
+        textFieldWidth: CGFloat = 56,
+        fallbackValueOnInvalidInput: Int? = nil
+    ) {
         self.minValue = minValue
         self.maxValue = maxValue
+        self.fallbackValueOnInvalidInput = fallbackValueOnInvalidInput
         super.init(frame: .zero)
 
         let formatter = SettingsIntegerFormatter()
@@ -263,7 +271,9 @@ final class SettingsIntegerStepperControl: NSView, NSTextFieldDelegate {
     }
 
     func controlTextDidEndEditing(_ notification: Notification) {
-        let boundedValue = boundedValue(for: Int(textField.stringValue) ?? minValue)
+        let parsedValue = Int(textField.stringValue)
+        let fallbackValue = fallbackValueOnInvalidInput ?? minValue
+        let boundedValue = boundedValue(for: parsedValue ?? fallbackValue)
         setValue(boundedValue)
         onValueChanged?(boundedValue)
     }

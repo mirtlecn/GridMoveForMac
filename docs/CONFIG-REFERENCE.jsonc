@@ -24,10 +24,10 @@
       "triggerFillOpacity": 0.08, // Fill opacity for trigger regions. Uses a 0...1 range.
       "triggerGap": 0, // Gap between trigger-region cells, in points.
       "triggerStrokeWidth": 2, // Border width for trigger regions, in points.
-      "triggerStrokeColor": "#007AFF33", // Border color for trigger regions. Accepts #RRGGBB or #RRGGBBAA.
+      "triggerStrokeColor": "#00FDFFFF", // Border color for trigger regions. Accepts #RRGGBB or #RRGGBBAA.
       "layoutGap": 1, // Integer gap between applied window layout frames and the highlight overlay, in points.
       "renderWindowHighlight": true, // Show the current window highlight overlay.
-      "highlightFillOpacity": 0.08, // Fill opacity for the window highlight. Uses a 0...1 range.
+      "highlightFillOpacity": 0.20, // Fill opacity for the window highlight. Uses a 0...1 range.
       "highlightStrokeWidth": 3, // Border width for the window highlight, in points.
       "highlightStrokeColor": "#FFFFFFEB" // Border color for the window highlight. Accepts #RRGGBB or #RRGGBBAA.
       },
@@ -40,7 +40,7 @@
         ["ctrl", "cmd", "shift", "alt"], // Allowed modifier names are ctrl, cmd, shift, alt. Matching is exact by group.
         ["ctrl", "shift", "alt"]
       ],
-      "activationDelaySeconds": 0.3, // Hold time before drag interaction becomes active.
+      "activationDelayMilliseconds": 300, // Hold time before drag interaction becomes active, in milliseconds. Uses 0...1000. Missing or invalid values fall back to 300.
       "activationMoveThreshold": 10 // Pointer movement threshold, in points, before the interaction counts as a drag.
     },
     "hotkeys": {

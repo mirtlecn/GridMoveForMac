@@ -17,6 +17,7 @@ struct GeneralSettingsViewControllerTests {
         controller.setLaunchAtLoginForTesting(false)
         controller.setMouseButtonDragForTesting(false)
         controller.setMouseButtonNumberForTesting(5)
+        controller.setActivationDelayMillisecondsForTesting(120)
         controller.setModifierLeftMouseDragForTesting(false)
         controller.setPreferLayoutModeForTesting(false)
         controller.setApplyLayoutImmediatelyWhileDraggingForTesting(false)
@@ -27,6 +28,7 @@ struct GeneralSettingsViewControllerTests {
         #expect(state.configuration.general.launchAtLogin == false)
         #expect(state.configuration.dragTriggers.enableMouseButtonDrag == false)
         #expect(state.configuration.general.mouseButtonNumber == 5)
+        #expect(state.configuration.dragTriggers.activationDelayMilliseconds == 120)
         #expect(state.configuration.dragTriggers.enableModifierLeftMouseDrag == false)
         #expect(state.configuration.dragTriggers.preferLayoutMode == false)
         #expect(state.configuration.dragTriggers.applyLayoutImmediatelyWhileDragging == false)
@@ -115,6 +117,35 @@ struct GeneralSettingsViewControllerTests {
         controller.setMouseButtonNumberForTesting(5)
 
         #expect(state.configuration.general.mouseButtonNumber == GeneralSettings.defaultMouseButtonNumber)
+    }
+
+    @Test func generalSettingsShowsPersistedActivationDelayMilliseconds() async throws {
+        var configuration = AppConfiguration.defaultValue
+        configuration.dragTriggers.activationDelayMilliseconds = 640
+        let state = SettingsPrototypeState(configuration: configuration)
+        let recorder = TestSettingsActionRecorder()
+        let controller = GeneralSettingsViewController(
+            prototypeState: state,
+            actionHandler: recorder.makeActionHandler()
+        )
+        controller.loadViewIfNeeded()
+
+        #expect(controller.activationDelayMillisecondsValueForTesting == 640)
+    }
+
+    @Test func generalSettingsNormalizesInvalidActivationDelayInputToDefault() async throws {
+        let state = SettingsPrototypeState(configuration: .defaultValue)
+        let recorder = TestSettingsActionRecorder()
+        let controller = GeneralSettingsViewController(
+            prototypeState: state,
+            actionHandler: recorder.makeActionHandler()
+        )
+        controller.loadViewIfNeeded()
+
+        controller.setRawActivationDelayMillisecondsForTesting("invalid")
+
+        #expect(state.configuration.dragTriggers.activationDelayMilliseconds == DragTriggerSettings.defaultActivationDelayMilliseconds)
+        #expect(controller.activationDelayMillisecondsValueForTesting == DragTriggerSettings.defaultActivationDelayMilliseconds)
     }
 
     @Test func generalSettingsDoesNotWriteEmptyExclusionValues() async throws {

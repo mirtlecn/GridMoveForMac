@@ -120,10 +120,10 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "triggerFillOpacity": 0.08,
             "triggerGap": 2,
             "triggerStrokeWidth": 2,
-            "triggerStrokeColor": "#007AFF33",
+            "triggerStrokeColor": "#00FDFFFF",
             "layoutGap": 1,
             "renderWindowHighlight": true,
-            "highlightFillOpacity": 0.08,
+            "highlightFillOpacity": 0.20,
             "highlightStrokeWidth": 3,
             "highlightStrokeColor": "#FFFFFFEB"
           },
@@ -132,7 +132,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "enableModifierLeftMouseDrag": true,
             "preferLayoutMode": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
-            "activationDelaySeconds": 0.3,
+            "activationDelayMilliseconds": 300,
             "activationMoveThreshold": 10
           },
           "hotkeys": {
@@ -191,9 +191,9 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         "renderTriggerAreas": false,
         "triggerOpacity": 0.2,
         "triggerGap": 2,
-        "triggerStrokeColor": "#007AFF33",
+        "triggerStrokeColor": "#00FDFFFF",
         "renderWindowHighlight": true,
-        "highlightFillOpacity": 0.08,
+        "highlightFillOpacity": 0.20,
         "highlightStrokeWidth": 3,
         "highlightStrokeColor": "#FFFFFFEB"
       },
@@ -202,7 +202,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         "enableModifierLeftMouseDrag": true,
         "preferLayoutMode": true,
         "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
-        "activationDelaySeconds": 0.3,
+        "activationDelayMilliseconds": 300,
         "activationMoveThreshold": 10
       },
       "hotkeys": {
@@ -258,9 +258,9 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
       "appearance": {
         "renderTriggerAreas": false,
         "triggerGap": 2,
-        "triggerStrokeColor": "#007AFF33",
+        "triggerStrokeColor": "#00FDFFFF",
         "renderWindowHighlight": true,
-        "highlightFillOpacity": 0.08,
+        "highlightFillOpacity": 0.20,
         "highlightStrokeWidth": 3,
         "highlightStrokeColor": "#FFFFFFEB"
       },
@@ -269,7 +269,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         "enableModifierLeftMouseDrag": true,
         "preferLayoutMode": true,
         "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
-        "activationDelaySeconds": 0.3,
+        "activationDelayMilliseconds": 300,
         "activationMoveThreshold": 10
       },
       "hotkeys": {
@@ -408,9 +408,9 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         "renderTriggerAreas": false,
         "triggerOpacity": 0.2,
         "triggerGap": 2,
-        "triggerStrokeColor": "#007AFF33",
+        "triggerStrokeColor": "#00FDFFFF",
         "renderWindowHighlight": true,
-        "highlightFillOpacity": 0.08,
+        "highlightFillOpacity": 0.20,
         "highlightStrokeWidth": 3,
         "highlightStrokeColor": "#FFFFFFEB"
       },
@@ -418,7 +418,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         "enableMouseButtonDrag": true,
         "enableModifierLeftMouseDrag": true,
         "modifierGroups": [["ctrl", "cmd", "shift", "alt"], ["ctrl", "shift", "alt"]],
-        "activationDelaySeconds": 0.3,
+        "activationDelayMilliseconds": 300,
         "activationMoveThreshold": 10
       },
       "hotkeys": {
@@ -492,7 +492,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(configuration.layouts[0].includeInMenu == true)
     #expect(configuration.layouts[1].includeInMenu == true)
     #expect(configuration.monitors == ["f8a3198a-7f52-4f69-9f4e-9840d7ee3da4": "Built-in Retina Display"])
-    #expect(configuration.appearance.triggerStrokeColor.hexString == "#007AFF33")
+    #expect(configuration.appearance.triggerStrokeColor.hexString == "#00FDFFFF")
     #expect(configuration.appearance.highlightStrokeColor.hexString == "#FFFFFFEB")
 }
 
@@ -516,9 +516,9 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         "renderTriggerAreas": false,
         "triggerOpacity": 0.2,
         "triggerGap": 2,
-        "triggerStrokeColor": "#007AFF33",
+        "triggerStrokeColor": "#00FDFFFF",
         "renderWindowHighlight": true,
-        "highlightFillOpacity": 0.08,
+        "highlightFillOpacity": 0.20,
         "highlightStrokeWidth": 3,
         "highlightStrokeColor": "#FFFFFFEB"
       },
@@ -526,7 +526,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         "enableMouseButtonDrag": true,
         "enableModifierLeftMouseDrag": true,
         "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
-        "activationDelaySeconds": 0.3,
+        "activationDelayMilliseconds": 300,
         "activationMoveThreshold": 10
       },
       "hotkeys": {
@@ -579,7 +579,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
       "enableModifierLeftMouseDrag": true,
       "preferLayoutMode": true,
       "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
-      "activationDelaySeconds": 0.3,
+      "activationDelayMilliseconds": 300,
       "activationMoveThreshold": 10
     }
     """
@@ -590,7 +590,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
       "preferLayoutMode": true,
       "applyLayoutImmediatelyWhileDragging": "invalid",
       "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
-      "activationDelaySeconds": 0.3,
+      "activationDelayMilliseconds": 300,
       "activationMoveThreshold": 10
     }
     """
@@ -653,9 +653,9 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "renderTriggerAreas": false,
             "triggerOpacity": 0.2,
             "triggerGap": 2,
-            "triggerStrokeColor": "#007AFF33",
+            "triggerStrokeColor": "#00FDFFFF",
             "renderWindowHighlight": true,
-            "highlightFillOpacity": 0.08,
+            "highlightFillOpacity": 0.20,
             "highlightStrokeWidth": 3,
             "highlightStrokeColor": "#FFFFFFEB"
           },
@@ -663,7 +663,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "enableMouseButtonDrag": true,
             "enableModifierLeftMouseDrag": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
-            "activationDelaySeconds": 0.3,
+            "activationDelayMilliseconds": 300,
             "activationMoveThreshold": 10
           },
           "hotkeys": {
@@ -752,9 +752,9 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "renderTriggerAreas": false,
             "triggerOpacity": 0.2,
             "triggerGap": 2,
-            "triggerStrokeColor": "#007AFF33",
+            "triggerStrokeColor": "#00FDFFFF",
             "renderWindowHighlight": true,
-            "highlightFillOpacity": 0.08,
+            "highlightFillOpacity": 0.20,
             "highlightStrokeWidth": 3,
             "highlightStrokeColor": "#FFFFFFEB"
           },
@@ -762,7 +762,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "enableMouseButtonDrag": true,
             "enableModifierLeftMouseDrag": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
-            "activationDelaySeconds": 0.3,
+            "activationDelayMilliseconds": 300,
             "activationMoveThreshold": 10
           },
           "hotkeys": {
@@ -834,9 +834,9 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "renderTriggerAreas": false,
             "triggerOpacity": 0.2,
             "triggerGap": 2,
-            "triggerStrokeColor": "#007AFF33",
+            "triggerStrokeColor": "#00FDFFFF",
             "renderWindowHighlight": true,
-            "highlightFillOpacity": 0.08,
+            "highlightFillOpacity": 0.20,
             "highlightStrokeWidth": 3,
             "highlightStrokeColor": "#FFFFFFEB"
           },
@@ -844,7 +844,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "enableMouseButtonDrag": true,
             "enableModifierLeftMouseDrag": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
-            "activationDelaySeconds": 0.3,
+            "activationDelayMilliseconds": 300,
             "activationMoveThreshold": 10
           },
           "hotkeys": {
@@ -894,9 +894,9 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "renderTriggerAreas": false,
             "triggerOpacity": 0.2,
             "triggerGap": 2,
-            "triggerStrokeColor": "#007AFF33",
+            "triggerStrokeColor": "#00FDFFFF",
             "renderWindowHighlight": true,
-            "highlightFillOpacity": 0.08,
+            "highlightFillOpacity": 0.20,
             "highlightStrokeWidth": 3,
             "highlightStrokeColor": "#FFFFFFEB"
           },
@@ -904,7 +904,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "enableMouseButtonDrag": true,
             "enableModifierLeftMouseDrag": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
-            "activationDelaySeconds": 0.3,
+            "activationDelayMilliseconds": 300,
             "activationMoveThreshold": 10
           },
           "hotkeys": {
@@ -971,9 +971,9 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "renderTriggerAreas": false,
             "triggerOpacity": 0.2,
             "triggerGap": 2,
-            "triggerStrokeColor": "#007AFF33",
+            "triggerStrokeColor": "#00FDFFFF",
             "renderWindowHighlight": true,
-            "highlightFillOpacity": 0.08,
+            "highlightFillOpacity": 0.20,
             "highlightStrokeWidth": 3,
             "highlightStrokeColor": "#FFFFFFEB"
           },
@@ -981,7 +981,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
             "enableMouseButtonDrag": true,
             "enableModifierLeftMouseDrag": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
-            "activationDelaySeconds": 0.3,
+            "activationDelayMilliseconds": 300,
             "activationMoveThreshold": 10
           },
           "hotkeys": {
@@ -1132,7 +1132,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(configuration.dragTriggers.modifierGroups == [[.ctrl, .cmd, .shift, .alt], [.ctrl, .shift, .alt]])
     #expect(configuration.appearance.renderTriggerAreas == false)
     #expect(configuration.appearance.triggerGap == 0)
-    #expect(configuration.appearance.triggerStrokeColor.alpha == 0.2)
+    #expect(configuration.appearance.triggerStrokeColor.hexString == "#00FDFFFF")
 }
 
 @MainActor
@@ -1323,7 +1323,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
       "triggerFillOpacity": 0.08,
       "triggerGap": 2,
       "renderWindowHighlight": true,
-      "highlightFillOpacity": 0.08,
+      "highlightFillOpacity": 0.20,
       "highlightStrokeWidth": 3,
       "highlightStrokeColor": {
         "red": 1,
@@ -1337,7 +1337,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     let data = try #require(json.data(using: .utf8))
     let settings = try JSONDecoder().decode(AppearanceSettings.self, from: data)
 
-    #expect(settings.triggerStrokeColor.alpha == 0.2)
+    #expect(settings.triggerStrokeColor.hexString == "#00FDFFFF")
     #expect(settings.triggerFillOpacity == 0.08)
     #expect(settings.layoutGap == 1)
 }
@@ -1357,7 +1357,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
       },
       "layoutGap": "invalid",
       "renderWindowHighlight": true,
-      "highlightFillOpacity": 0.08,
+      "highlightFillOpacity": 0.20,
       "highlightStrokeWidth": 3,
       "highlightStrokeColor": {
         "red": 1,
@@ -1384,10 +1384,10 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
       "triggerFillOpacity": 0.25,
       "triggerGap": 2,
       "triggerStrokeWidth": 4,
-      "triggerStrokeColor": "#007AFF33",
+      "triggerStrokeColor": "#00FDFFFF",
       "layoutGap": "invalid",
       "renderWindowHighlight": true,
-      "highlightFillOpacity": 0.08,
+      "highlightFillOpacity": 0.20,
       "highlightStrokeWidth": 3,
       "highlightStrokeColor": "#FFFFFFEB"
     }

@@ -81,7 +81,7 @@ extension DragGridController {
         state.mouseDownPoint = point
 
         let timer = DispatchSource.makeTimerSource(queue: .main)
-        timer.schedule(deadline: .now() + configuration.dragTriggers.activationDelaySeconds)
+        timer.schedule(deadline: .now() + .milliseconds(configuration.dragTriggers.activationDelayMilliseconds))
         timer.setEventHandler { [weak self] in
             guard let self else {
                 return

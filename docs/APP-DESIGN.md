@@ -100,7 +100,7 @@ Current drag-trigger configuration fields:
 - `preferLayoutMode`
 - `applyLayoutImmediatelyWhileDragging`
 - `modifierGroups`
-- `activationDelaySeconds`
+- `activationDelayMilliseconds`
 - `activationMoveThreshold`
 
 ### 4.1 Current Default Configuration
@@ -121,10 +121,10 @@ The built-in default configuration currently resolves to the following values.
 - `triggerFillOpacity = 0.08`
 - `triggerGap = 0`
 - `triggerStrokeWidth = 2`
-- `triggerStrokeColor = system accent color with alpha 0.2`
+- `triggerStrokeColor = #00FDFFFF`
 - `layoutGap = 1` (integer, points)
 - `renderWindowHighlight = true`
-- `highlightFillOpacity = 0.08`
+- `highlightFillOpacity = 0.20`
 - `highlightStrokeWidth = 3`
 - `highlightStrokeColor = #FFFFFFEB`
 
@@ -135,7 +135,7 @@ The built-in default configuration currently resolves to the following values.
 - `preferLayoutMode = true`
 - `applyLayoutImmediatelyWhileDragging = false`
 - `modifierGroups = [[ctrl, cmd, shift, alt], [ctrl, shift, alt]]`
-- `activationDelaySeconds = 0.3`
+- `activationDelayMilliseconds = 300`
 - `activationMoveThreshold = 10`
 
 `hotkeys`
@@ -181,8 +181,8 @@ Default layout names in order:
 - `layout-7`: `Right 1/3`
 - `layout-8`: `Right 1/3 top`
 - `layout-9`: `Right 1/3 bottom`
-- `layout-10`: `Fill all screen`
-- `layout-11`: `Fill all screen (Menu bar)`
+- `layout-10`: `Full`
+- `layout-11`: `Full (menu bar)`
 
 Compatibility behavior:
 

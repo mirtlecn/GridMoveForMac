@@ -17,17 +17,17 @@ import Testing
         "Right 1/3",
         "Right 1/3 top",
         "Right 1/3 bottom",
-        "Fill all screen",
-        "Fill all screen (Menu bar)",
+        "Full",
+        "Full (menu bar)",
     ])
     #expect(layouts[0].windowSelection == GridSelection(x: 0, y: 0, w: 4, h: 6))
-    #expect(layouts[0].triggerRegion == .screen(GridSelection(x: 0, y: 0, w: 2, h: 6)))
+    #expect(layouts[0].triggerRegion == .screen(GridSelection(x: 0, y: 0, w: 1, h: 6)))
     #expect(layouts[3].windowSelection == GridSelection(x: 3, y: 1, w: 6, h: 4))
-    #expect(layouts[3].triggerRegion == .screen(GridSelection(x: 5, y: 2, w: 2, h: 2)))
+    #expect(layouts[3].triggerRegion == .screen(GridSelection(x: 5, y: 1, w: 2, h: 5)))
     #expect(layouts[7].windowSelection == GridSelection(x: 8, y: 0, w: 4, h: 3))
-    #expect(layouts[7].triggerRegion == .screen(GridSelection(x: 10, y: 0, w: 2, h: 2)))
+    #expect(layouts[7].triggerRegion == .screen(GridSelection(x: 11, y: 0, w: 1, h: 2)))
     #expect(layouts[9].windowSelection == GridSelection(x: 0, y: 0, w: 12, h: 6))
-    #expect(layouts[9].triggerRegion == .screen(GridSelection(x: 5, y: 0, w: 2, h: 2)))
+    #expect(layouts[9].triggerRegion == .screen(GridSelection(x: 5, y: 0, w: 2, h: 1)))
     #expect(layouts[10].windowSelection == GridSelection(x: 0, y: 0, w: 12, h: 6))
     #expect(layouts[10].triggerRegion == .menuBar(MenuBarSelection(x: 0, w: 6)))
     #expect(layouts[10].includeInLayoutIndex == false)
@@ -90,21 +90,21 @@ import Testing
     let menuBarSlot = try #require(slots.first(where: { $0.layoutID == "layout-11" }))
 
     #expect(firstSlot.layoutID == "layout-1")
-    #expect(firstSlot.triggerFrame.origin.x == 2)
-    #expect(firstSlot.triggerFrame.origin.y == 2)
-    #expect(firstSlot.triggerFrame.size.width == 296)
-    #expect(firstSlot.triggerFrame.size.height == 896)
+    #expect(firstSlot.triggerFrame.origin.x == 0)
+    #expect(firstSlot.triggerFrame.origin.y == 0)
+    #expect(firstSlot.triggerFrame.size.width == 150)
+    #expect(firstSlot.triggerFrame.size.height == 900)
 
     #expect(fullscreenSlot.layoutID == "layout-10")
-    #expect(fullscreenSlot.triggerFrame.origin.x == 752)
-    #expect(fullscreenSlot.triggerFrame.origin.y == 602)
-    #expect(fullscreenSlot.triggerFrame.size.width == 296)
-    #expect(fullscreenSlot.triggerFrame.size.height == 296)
+    #expect(fullscreenSlot.triggerFrame.origin.x == 750)
+    #expect(fullscreenSlot.triggerFrame.origin.y == 750)
+    #expect(fullscreenSlot.triggerFrame.size.width == 300)
+    #expect(fullscreenSlot.triggerFrame.size.height == 150)
 
-    #expect(menuBarSlot.triggerFrame.origin.x == 2)
-    #expect(menuBarSlot.triggerFrame.origin.y == 902)
-    #expect(menuBarSlot.triggerFrame.size.width == 1796)
-    #expect(menuBarSlot.triggerFrame.size.height == 26)
+    #expect(menuBarSlot.triggerFrame.origin.x == 0)
+    #expect(menuBarSlot.triggerFrame.origin.y == 900)
+    #expect(menuBarSlot.triggerFrame.size.width == 1800)
+    #expect(menuBarSlot.triggerFrame.size.height == 30)
 }
 
 @Test func layoutCyclingFollowsCurrentUiOrder() async throws {

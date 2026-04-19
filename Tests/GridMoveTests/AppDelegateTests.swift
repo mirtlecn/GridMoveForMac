@@ -115,9 +115,9 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
             "renderTriggerAreas": false,
             "triggerOpacity": 0.2,
             "triggerGap": 2,
-            "triggerStrokeColor": "#007AFF33",
+            "triggerStrokeColor": "#00FDFFFF",
             "renderWindowHighlight": true,
-            "highlightFillOpacity": 0.08,
+            "highlightFillOpacity": 0.20,
             "highlightStrokeWidth": 3,
             "highlightStrokeColor": "#FFFFFFEB"
           },
@@ -126,7 +126,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
             "enableModifierLeftMouseDrag": true,
             "preferLayoutMode": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
-            "activationDelaySeconds": 0.3,
+            "activationDelayMilliseconds": 300,
             "activationMoveThreshold": 10
           },
           "hotkeys": {
@@ -482,7 +482,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     #expect(layoutActionItems[5].shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "]"))
     #expect(layoutActionItems[6].shortcut == KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "'"))
     #expect(layoutActionItems[7].shortcut == nil)
-    #expect(layoutActionItems.map(\.title).contains(UICopy.applyLayout("Fill all screen (Menu bar)")) == false)
+    #expect(layoutActionItems.map(\.title).contains(UICopy.applyLayout("Full (menu bar)")) == false)
 }
 
 @MainActor
@@ -1341,9 +1341,9 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
             "renderTriggerAreas": false,
             "triggerOpacity": 0.2,
             "triggerGap": 2,
-            "triggerStrokeColor": "#007AFF33",
+            "triggerStrokeColor": "#00FDFFFF",
             "renderWindowHighlight": true,
-            "highlightFillOpacity": 0.08,
+            "highlightFillOpacity": 0.20,
             "highlightStrokeWidth": 3,
             "highlightStrokeColor": "#FFFFFFEB"
           },
@@ -1351,7 +1351,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
             "enableMouseButtonDrag": true,
             "enableModifierLeftMouseDrag": true,
             "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
-            "activationDelaySeconds": 0.3,
+            "activationDelayMilliseconds": 300,
             "activationMoveThreshold": 10
           },
           "hotkeys": {

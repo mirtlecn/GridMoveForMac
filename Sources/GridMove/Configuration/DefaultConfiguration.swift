@@ -10,16 +10,16 @@ extension AppConfiguration {
 
     static var defaultLayouts: [LayoutPreset] {
         [
-            LayoutPreset(id: "layout-1", name: UICopy.defaultLayoutNames[0], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 4, h: 6), triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 2, h: 6)), includeInLayoutIndex: true),
-            LayoutPreset(id: "layout-2", name: UICopy.defaultLayoutNames[1], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6), triggerRegion: .screen(GridSelection(x: 2, y: 2, w: 3, h: 2)), includeInLayoutIndex: true),
-            LayoutPreset(id: "layout-3", name: UICopy.defaultLayoutNames[2], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 8, h: 6), triggerRegion: .screen(GridSelection(x: 2, y: 0, w: 3, h: 2)), includeInLayoutIndex: true),
-            LayoutPreset(id: "layout-4", name: UICopy.defaultLayoutNames[3], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4), triggerRegion: .screen(GridSelection(x: 5, y: 2, w: 2, h: 2)), includeInLayoutIndex: true),
-            LayoutPreset(id: "layout-5", name: UICopy.defaultLayoutNames[4], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 4, y: 0, w: 8, h: 6), triggerRegion: .screen(GridSelection(x: 7, y: 0, w: 3, h: 2)), includeInLayoutIndex: true),
-            LayoutPreset(id: "layout-6", name: UICopy.defaultLayoutNames[5], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 6, y: 0, w: 6, h: 6), triggerRegion: .screen(GridSelection(x: 7, y: 2, w: 3, h: 2)), includeInLayoutIndex: true),
-            LayoutPreset(id: "layout-7", name: UICopy.defaultLayoutNames[6], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 6), triggerRegion: .screen(GridSelection(x: 10, y: 2, w: 2, h: 2)), includeInLayoutIndex: true),
-            LayoutPreset(id: "layout-8", name: UICopy.defaultLayoutNames[7], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 3), triggerRegion: .screen(GridSelection(x: 10, y: 0, w: 2, h: 2)), includeInLayoutIndex: true),
-            LayoutPreset(id: "layout-9", name: UICopy.defaultLayoutNames[8], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 3, w: 4, h: 3), triggerRegion: .screen(GridSelection(x: 10, y: 4, w: 2, h: 2)), includeInLayoutIndex: true),
-            LayoutPreset(id: "layout-10", name: UICopy.defaultLayoutNames[9], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .screen(GridSelection(x: 5, y: 0, w: 2, h: 2)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-1", name: UICopy.defaultLayoutNames[0], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 4, h: 6), triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 1, h: 6)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-2", name: UICopy.defaultLayoutNames[1], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6), triggerRegion: .screen(GridSelection(x: 1, y: 0, w: 2, h: 6)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-3", name: UICopy.defaultLayoutNames[2], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 8, h: 6), triggerRegion: .screen(GridSelection(x: 3, y: 0, w: 2, h: 6)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-4", name: UICopy.defaultLayoutNames[3], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4), triggerRegion: .screen(GridSelection(x: 5, y: 1, w: 2, h: 5)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-5", name: UICopy.defaultLayoutNames[4], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 4, y: 0, w: 8, h: 6), triggerRegion: .screen(GridSelection(x: 7, y: 0, w: 2, h: 6)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-6", name: UICopy.defaultLayoutNames[5], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 6, y: 0, w: 6, h: 6), triggerRegion: .screen(GridSelection(x: 9, y: 0, w: 2, h: 6)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-7", name: UICopy.defaultLayoutNames[6], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 6), triggerRegion: .screen(GridSelection(x: 11, y: 2, w: 1, h: 2)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-8", name: UICopy.defaultLayoutNames[7], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 3), triggerRegion: .screen(GridSelection(x: 11, y: 0, w: 1, h: 2)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-9", name: UICopy.defaultLayoutNames[8], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 3, w: 4, h: 3), triggerRegion: .screen(GridSelection(x: 11, y: 4, w: 1, h: 2)), includeInLayoutIndex: true),
+            LayoutPreset(id: "layout-10", name: UICopy.defaultLayoutNames[9], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .screen(GridSelection(x: 5, y: 0, w: 2, h: 1)), includeInLayoutIndex: true),
             LayoutPreset(id: "layout-11", name: UICopy.defaultLayoutNames[10], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegion: .menuBar(MenuBarSelection(x: 0, w: 6)), includeInLayoutIndex: false, includeInMenu: false),
         ]
     }
@@ -142,7 +142,7 @@ extension AppConfiguration {
             triggerStrokeColor: .defaultTriggerStrokeColor,
             layoutGap: 1,
             renderWindowHighlight: true,
-            highlightFillOpacity: 0.08,
+            highlightFillOpacity: 0.20,
             highlightStrokeWidth: 3,
             highlightStrokeColor: RGBAColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.92)
         ),
@@ -155,7 +155,7 @@ extension AppConfiguration {
                 [.ctrl, .cmd, .shift, .alt],
                 [.ctrl, .shift, .alt],
             ],
-            activationDelaySeconds: 0.3,
+            activationDelayMilliseconds: DragTriggerSettings.defaultActivationDelayMilliseconds,
             activationMoveThreshold: 10
         ),
         hotkeys: HotkeySettings(bindings: defaultBindings),
@@ -166,12 +166,6 @@ extension AppConfiguration {
 
 extension RGBAColor {
     static var defaultTriggerStrokeColor: RGBAColor {
-        let resolvedColor = NSColor.controlAccentColor.usingColorSpace(.deviceRGB) ?? .systemBlue
-        return RGBAColor(
-            red: resolvedColor.redComponent,
-            green: resolvedColor.greenComponent,
-            blue: resolvedColor.blueComponent,
-            alpha: 0.2
-        )
+        (try? RGBAColor(hexString: "#00FDFFFF")) ?? RGBAColor(red: 0.0, green: 0.992, blue: 1.0, alpha: 1.0)
     }
 }
