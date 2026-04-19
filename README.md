@@ -1,6 +1,10 @@
-# GridMove
+English | [中文](./README.zh-CN.md)
+
+# GridMove for macOS
 
 GridMove is a native macOS app for moving windows across monitors and snapping them into preset layouts.
+
+Get [arm64 installer↓](https://github.com/mirtlecn/GridMoveForMac/releases/latest/download/GridMove.arm64.dmg)
 
 ## Demo 
 
@@ -17,7 +21,7 @@ https://github.com/user-attachments/assets/0373bb1d-1de4-4542-a67e-b6598859bfd1
 - Super fast and lightweight
 - Trigger actions with mouse, keyboard, or CLI
 - Move and resize windows across monitors
-- Snap windows into any layout you what
+- Snap windows into any layout you want
 - Use different layout sets for each monitor
 - Switch layout group on the fly
 
