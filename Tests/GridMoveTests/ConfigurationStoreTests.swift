@@ -1131,6 +1131,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(configuration.dragTriggers.preferLayoutMode == true)
     #expect(configuration.dragTriggers.modifierGroups == [[.ctrl, .cmd, .shift, .alt], [.ctrl, .shift, .alt]])
     #expect(configuration.appearance.renderTriggerAreas == false)
+    #expect(configuration.appearance.triggerGap == 0)
     #expect(configuration.appearance.triggerStrokeColor.alpha == 0.2)
 }
 

@@ -137,7 +137,7 @@ extension AppConfiguration {
         appearance: AppearanceSettings(
             triggerHighlightMode: .none,
             triggerFillOpacity: 0.08,
-            triggerGap: 2,
+            triggerGap: 0,
             triggerStrokeWidth: 2,
             triggerStrokeColor: .defaultTriggerStrokeColor,
             layoutGap: 1,

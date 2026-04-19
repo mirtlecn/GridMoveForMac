@@ -22,7 +22,7 @@
     "appearance": {
       "triggerHighlightMode": "none", // Allowed values: "all", "current", "none". Missing defaults to "none". Invalid values fall back to "all".
       "triggerFillOpacity": 0.08, // Fill opacity for trigger regions. Uses a 0...1 range.
-      "triggerGap": 2, // Gap between trigger-region cells, in points.
+      "triggerGap": 0, // Gap between trigger-region cells, in points.
       "triggerStrokeWidth": 2, // Border width for trigger regions, in points.
       "triggerStrokeColor": "#007AFF33", // Border color for trigger regions. Accepts #RRGGBB or #RRGGBBAA.
       "layoutGap": 1, // Integer gap between applied window layout frames and the highlight overlay, in points.

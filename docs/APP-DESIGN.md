@@ -119,7 +119,7 @@ The built-in default configuration currently resolves to the following values.
 
 - `triggerHighlightMode = none`
 - `triggerFillOpacity = 0.08`
-- `triggerGap = 2`
+- `triggerGap = 0`
 - `triggerStrokeWidth = 2`
 - `triggerStrokeColor = system accent color with alpha 0.2`
 - `layoutGap = 1` (integer, points)

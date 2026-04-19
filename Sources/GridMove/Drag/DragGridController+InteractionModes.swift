@@ -405,7 +405,7 @@ extension DragGridController {
         }
 
         guard let hoveredLayoutID = state.hoveredLayoutID else {
-            return currentWindowFrame()
+            return nil
         }
 
         return state.resolvedSlots.first(where: { $0.layoutID == hoveredLayoutID })?.targetFrame
