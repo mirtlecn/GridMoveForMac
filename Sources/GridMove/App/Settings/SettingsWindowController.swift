@@ -344,8 +344,8 @@ final class SettingsTabViewController: NSTabViewController {
 extension GeneralSettingsViewController: SettingsWindowSizing {
     var settingsWindowMetrics: SettingsWindowMetrics {
         SettingsWindowMetrics(
-            preferredContentSize: NSSize(width: 700, height: 540),
-            minimumContentSize: NSSize(width: 680, height: 540)
+            preferredContentSize: NSSize(width: 700, height: 640),
+            minimumContentSize: NSSize(width: 680, height: 640)
         )
     }
 }
@@ -353,7 +353,7 @@ extension GeneralSettingsViewController: SettingsWindowSizing {
 extension LayoutsSettingsViewController: SettingsWindowSizing {
     var settingsWindowMetrics: SettingsWindowMetrics {
         SettingsWindowMetrics(
-            preferredContentSize: NSSize(width: 780, height: 640),
+            preferredContentSize: NSSize(width: 700, height: 640),
             minimumContentSize: NSSize(width: 680, height: 640)
         )
     }
