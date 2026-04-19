@@ -21,6 +21,10 @@ enum SettingsPreviewSupport {
     private static let menuBarFillColor = NSColor(calibratedRed: 0.24, green: 0.28, blue: 0.34, alpha: 1)
     private static let menuBarStrokeColor = NSColor.white.withAlphaComponent(0.18)
     private static let menuBarPlaceholderColor = NSColor.white.withAlphaComponent(0.42)
+    private static let previewContainerFillColor = NSColor.unemphasizedSelectedContentBackgroundColor
+    private static let previewContainerStrokeColor = NSColor.separatorColor.withAlphaComponent(0.28)
+    private static let previewContainerShadowColor = NSColor.shadowColor.withAlphaComponent(0.12)
+    private static let previewContainerPadding = CGSize(width: 6, height: 6)
 
     static func makeGeometry(in bounds: CGRect) -> SettingsPreviewGeometry {
         let previewRect = bounds.insetBy(dx: 8, dy: 8)
@@ -60,6 +64,21 @@ enum SettingsPreviewSupport {
     }
 
     static func drawDisplayChrome(in geometry: SettingsPreviewGeometry) {
+        let containerRect = previewContainerRect(for: geometry)
+        let containerPath = NSBezierPath(roundedRect: containerRect, xRadius: 18, yRadius: 18)
+        NSGraphicsContext.saveGraphicsState()
+        let shadow = NSShadow()
+        shadow.shadowColor = previewContainerShadowColor
+        shadow.shadowBlurRadius = 6
+        shadow.shadowOffset = CGSize(width: 0, height: -1)
+        shadow.set()
+        previewContainerFillColor.setFill()
+        containerPath.fill()
+        NSGraphicsContext.restoreGraphicsState()
+        previewContainerStrokeColor.setStroke()
+        containerPath.lineWidth = 1
+        containerPath.stroke()
+
         let outerPath = NSBezierPath(roundedRect: geometry.screenRect, xRadius: 14, yRadius: 14)
         displayFillColor.setFill()
         outerPath.fill()
@@ -79,6 +98,13 @@ enum SettingsPreviewSupport {
         menuBarPath.stroke()
 
         drawMenuBarPlaceholders(in: geometry.menuBarRect)
+    }
+
+    static func previewContainerRect(for geometry: SettingsPreviewGeometry) -> CGRect {
+        geometry.screenRect
+            .union(geometry.menuBarRect)
+            .insetBy(dx: -previewContainerPadding.width, dy: -previewContainerPadding.height)
+            .integral
     }
 
     static func drawGrid(columns: Int, rows: Int, in rect: CGRect) {
