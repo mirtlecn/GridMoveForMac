@@ -78,6 +78,8 @@ cat > "${plist_path}" <<EOF
   <string>6.0</string>
   <key>CFBundleGetInfoString</key>
   <string>${app_name} ${version_info}</string>
+  <key>GridMoveDisplayVersion</key>
+  <string>${version_info}</string>
   <key>CFBundleName</key>
   <string>${app_name}</string>
   <key>CFBundlePackageType</key>
