@@ -9,6 +9,11 @@ struct SettingsPreviewGeometry {
     let usableRect: CGRect
 }
 
+struct SettingsPreviewGridCell: Equatable {
+    let column: Int
+    let row: Int
+}
+
 enum SettingsPreviewSupport {
     static let referenceScreenFrame = CGRect(x: 0, y: 0, width: 1440, height: 900)
     static let referenceUsableFrame = CGRect(x: 0, y: 0, width: 1440, height: 872)
@@ -227,6 +232,112 @@ enum SettingsPreviewSupport {
             y: rect.minY,
             width: CGFloat(selection.w) * cellWidth,
             height: rect.height
+        )
+    }
+
+    static func clampedPoint(_ point: CGPoint, to rect: CGRect) -> CGPoint {
+        CGPoint(
+            x: min(max(point.x, rect.minX), rect.maxX - 0.0001),
+            y: min(max(point.y, rect.minY), rect.maxY - 0.0001)
+        )
+    }
+
+    static func gridCell(
+        containing point: CGPoint,
+        in rect: CGRect,
+        columns: Int,
+        rows: Int,
+        clampingToBounds shouldClampToBounds: Bool = false
+    ) -> SettingsPreviewGridCell? {
+        guard columns > 0, rows > 0 else {
+            return nil
+        }
+
+        let resolvedPoint: CGPoint
+        if shouldClampToBounds {
+            resolvedPoint = clampedPoint(point, to: rect)
+        } else {
+            guard rect.contains(point) else {
+                return nil
+            }
+            resolvedPoint = point
+        }
+
+        let normalizedX = (resolvedPoint.x - rect.minX) / max(rect.width, 1)
+        let normalizedY = (resolvedPoint.y - rect.minY) / max(rect.height, 1)
+        let column = min(columns - 1, max(0, Int(normalizedX * CGFloat(columns))))
+        let row = min(rows - 1, max(0, Int(normalizedY * CGFloat(rows))))
+        return SettingsPreviewGridCell(column: column, row: row)
+    }
+
+    static func menuBarSegment(
+        containing point: CGPoint,
+        in rect: CGRect,
+        segments: Int,
+        clampingToBounds shouldClampToBounds: Bool = false
+    ) -> Int? {
+        guard segments > 0 else {
+            return nil
+        }
+
+        let resolvedPoint: CGPoint
+        if shouldClampToBounds {
+            resolvedPoint = clampedPoint(point, to: rect)
+        } else {
+            guard rect.contains(point) else {
+                return nil
+            }
+            resolvedPoint = point
+        }
+
+        let normalizedX = (resolvedPoint.x - rect.minX) / max(rect.width, 1)
+        return min(segments - 1, max(0, Int(normalizedX * CGFloat(segments))))
+    }
+
+    static func normalizedGridSelection(
+        from start: SettingsPreviewGridCell,
+        to end: SettingsPreviewGridCell,
+        columns: Int,
+        rows: Int
+    ) -> GridSelection {
+        clamp(
+            GridSelection(
+                x: min(start.column, end.column),
+                y: min(start.row, end.row),
+                w: abs(start.column - end.column) + 1,
+                h: abs(start.row - end.row) + 1
+            ),
+            columns: columns,
+            rows: rows
+        )
+    }
+
+    static func normalizedMenuBarSelection(from startSegment: Int, to endSegment: Int, segments: Int) -> MenuBarSelection {
+        clamp(
+            MenuBarSelection(
+                x: min(startSegment, endSegment),
+                w: abs(startSegment - endSegment) + 1
+            ),
+            segments: segments
+        )
+    }
+
+    static func clamp(_ selection: GridSelection, columns: Int, rows: Int) -> GridSelection {
+        let clampedWidth = max(1, min(columns, selection.w))
+        let clampedHeight = max(1, min(rows, selection.h))
+        return GridSelection(
+            x: max(0, min(selection.x, columns - clampedWidth)),
+            y: max(0, min(selection.y, rows - clampedHeight)),
+            w: clampedWidth,
+            h: clampedHeight
+        )
+    }
+
+    static func clamp(_ selection: MenuBarSelection, segments: Int) -> MenuBarSelection {
+        let clampedWidth = max(1, min(segments, selection.w))
+        return MenuBarSelection(
+            x: max(0, min(selection.x, segments - clampedWidth)),
+            w: clampedWidth
         )
     }
 

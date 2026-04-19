@@ -618,6 +618,30 @@ extension LayoutsSettingsViewController {
         )
     }
 
+    func selectLayoutDetailTabForTesting(_ index: Int) {
+        selectedLayoutDetailTabIndex = index
+        updateDetailView()
+    }
+
+    func setCurrentLayoutTriggerAreaKindForTesting(_ kind: TriggerTabContentView.TriggerAreaKind) {
+        currentLayoutTriggerContentView?.setTriggerAreaKindForTesting(kind)
+    }
+
+    func simulateCurrentLayoutPreviewGridDragForTesting(
+        from start: SettingsPreviewGridCell,
+        to end: SettingsPreviewGridCell
+    ) {
+        currentLayoutPreviewView?.simulateGridDragForTesting(from: start, to: end)
+    }
+
+    func simulateCurrentLayoutPreviewMenuBarDragForTesting(from startSegment: Int, to endSegment: Int) {
+        currentLayoutPreviewView?.simulateMenuBarDragForTesting(from: startSegment, to: endSegment)
+    }
+
+    var currentLayoutPreviewInteractionModeForTesting: LayoutPreviewView.InteractionMode? {
+        currentLayoutPreviewView?.interactionModeForTesting
+    }
+
     func setSelectedGroupNameRawWithoutCommitForTesting(_ value: String) {
         currentGroupNameControl?.setRawValueForTesting(value)
     }

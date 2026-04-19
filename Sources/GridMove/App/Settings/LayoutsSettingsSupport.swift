@@ -208,6 +208,7 @@ final class TriggerTabContentView: NSView {
     private var screenSelection: GridSelection
     private var menuBarSelection: MenuBarSelection
     var onTriggerRegionChanged: ((TriggerRegion?) -> Void)?
+    var onTriggerAreaKindChanged: ((TriggerAreaKind) -> Void)?
 
     var currentTriggerRegion: TriggerRegion? {
         switch selectedTriggerArea {
@@ -218,6 +219,10 @@ final class TriggerTabContentView: NSView {
         case .menuBar:
             .menuBar(menuBarSelection)
         }
+    }
+
+    var currentTriggerAreaKind: TriggerAreaKind {
+        selectedTriggerArea
     }
 
     private var selectedTriggerArea: TriggerAreaKind {
@@ -285,7 +290,23 @@ final class TriggerTabContentView: NSView {
     @objc
     private func handleTriggerAreaChange(_ sender: NSPopUpButton) {
         rebuildRows()
+        onTriggerAreaKindChanged?(selectedTriggerArea)
         onTriggerRegionChanged?(currentTriggerRegion)
+    }
+
+    func syncFromTriggerRegion(_ triggerRegion: TriggerRegion?) {
+        switch triggerRegion {
+        case let .screen(selection):
+            screenSelection = SettingsPreviewSupport.clamp(selection, columns: gridColumns, rows: gridRows)
+        case let .menuBar(selection):
+            menuBarSelection = SettingsPreviewSupport.clamp(selection, segments: gridRows)
+        case nil:
+            break
+        }
+
+        popupButton.selectItem(withTitle: selectedTitle(for: triggerRegion))
+        rebuildRows()
+        onTriggerAreaKindChanged?(selectedTriggerArea)
     }
 
     private func rebuildRows() {
@@ -402,6 +423,24 @@ final class TriggerTabContentView: NSView {
         case nil:
             UICopy.settingsNoneValue
         }
+    }
+}
+
+extension TriggerTabContentView {
+    var currentTriggerAreaKindForTesting: TriggerAreaKind {
+        currentTriggerAreaKind
+    }
+
+    func setTriggerAreaKindForTesting(_ kind: TriggerAreaKind) {
+        switch kind {
+        case .none:
+            popupButton.selectItem(withTitle: UICopy.settingsNoneValue)
+        case .screen:
+            popupButton.selectItem(withTitle: UICopy.settingsScreenGridValue)
+        case .menuBar:
+            popupButton.selectItem(withTitle: UICopy.settingsMenuBarTriggerValue)
+        }
+        handleTriggerAreaChange(popupButton)
     }
 }
 

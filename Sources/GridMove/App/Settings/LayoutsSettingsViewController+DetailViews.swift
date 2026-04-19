@@ -12,6 +12,8 @@ extension LayoutsSettingsViewController {
         currentLayoutWindowWidthControl = nil
         currentLayoutWindowHeightControl = nil
         detailContainerView.subviews.forEach { $0.removeFromSuperview() }
+        currentLayoutPreviewView = nil
+        currentLayoutTriggerContentView = nil
 
         guard let node = selectedNode else {
             updateCommandBar()
@@ -114,10 +116,36 @@ extension LayoutsSettingsViewController {
         let contentStackView = makeSettingsPageStackView()
 
         let previewView = makeLayoutPreviewView(layout: layout, mode: previewMode(for: selectedLayoutDetailTabIndex))
+        currentLayoutPreviewView = previewView
         contentStackView.addArrangedSubview(makeCenteredContainer(for: previewView))
 
         let triggerContentView = TriggerTabContentView(layout: layout)
+        currentLayoutTriggerContentView = triggerContentView
         previewView.triggerRegionOverride = triggerContentView.currentTriggerRegion
+        previewView.interactionMode = previewInteractionMode(
+            for: selectedLayoutDetailTabIndex,
+            triggerAreaKind: triggerContentView.currentTriggerAreaKind
+        )
+        previewView.onWindowSelectionCommitted = { [weak self] selection in
+            self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
+                draftLayout.windowSelection = selection
+            }
+        }
+        previewView.onTriggerRegionCommitted = { [weak self, weak previewView, weak triggerContentView] triggerRegion in
+            triggerContentView?.syncFromTriggerRegion(triggerRegion)
+            previewView?.triggerRegionOverride = triggerRegion
+            previewView?.interactionMode = self?.previewInteractionMode(
+                for: self?.selectedLayoutDetailTabIndex ?? 0,
+                triggerAreaKind: triggerContentView?.currentTriggerAreaKind ?? .none
+            ) ?? .none
+            self?.updateLayoutTriggerRegion(groupName: groupName, setIndex: setIndex, layoutID: layout.id, triggerRegion: triggerRegion)
+        }
+        triggerContentView.onTriggerAreaKindChanged = { [weak self, weak previewView, weak triggerContentView] _ in
+            previewView?.interactionMode = self?.previewInteractionMode(
+                for: self?.selectedLayoutDetailTabIndex ?? 0,
+                triggerAreaKind: triggerContentView?.currentTriggerAreaKind ?? .none
+            ) ?? .none
+        }
         triggerContentView.onTriggerRegionChanged = { [weak self, weak previewView] triggerRegion in
             previewView?.triggerRegionOverride = triggerRegion
             self?.updateLayoutTriggerRegion(groupName: groupName, setIndex: setIndex, layoutID: layout.id, triggerRegion: triggerRegion)
@@ -255,6 +283,10 @@ extension LayoutsSettingsViewController {
         detailTabsView.onSelectionChanged = { [weak self, weak previewView] (selectedIndex: Int) in
             self?.selectedLayoutDetailTabIndex = selectedIndex
             previewView?.mode = self?.previewMode(for: selectedIndex) ?? .combined
+            previewView?.interactionMode = self?.previewInteractionMode(
+                for: selectedIndex,
+                triggerAreaKind: triggerContentView.currentTriggerAreaKind
+            ) ?? .none
         }
 
         contentStackView.addArrangedSubview(makeFullWidthContainer(for: detailTabsView))
@@ -285,6 +317,27 @@ extension LayoutsSettingsViewController {
             return .triggerRegion
         default:
             return .combined
+        }
+    }
+
+    func previewInteractionMode(
+        for selectedIndex: Int,
+        triggerAreaKind: TriggerTabContentView.TriggerAreaKind
+    ) -> LayoutPreviewView.InteractionMode {
+        switch selectedIndex {
+        case 1:
+            return .windowSelection
+        case 2:
+            switch triggerAreaKind {
+            case .none:
+                return .none
+            case .screen:
+                return .triggerScreenSelection
+            case .menuBar:
+                return .triggerMenuBarSelection
+            }
+        default:
+            return .none
         }
     }
 

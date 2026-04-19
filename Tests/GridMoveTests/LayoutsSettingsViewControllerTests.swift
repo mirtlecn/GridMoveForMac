@@ -237,4 +237,97 @@ struct LayoutsSettingsViewControllerTests {
 
         #expect(controller.layoutTreeTitleForTesting(id: layoutID) == "Layout №1")
     }
+
+    @Test func previewDragInWindowAreaCommitsWindowSelection() async throws {
+        let (controller, _, _) = makeController()
+
+        controller.selectLayoutForTesting(id: "layout-1")
+        controller.selectLayoutDetailTabForTesting(1)
+
+        #expect(controller.currentLayoutPreviewInteractionModeForTesting == .windowSelection)
+
+        controller.simulateCurrentLayoutPreviewGridDragForTesting(
+            from: SettingsPreviewGridCell(column: 1, row: 1),
+            to: SettingsPreviewGridCell(column: 3, row: 2)
+        )
+
+        let updatedLayout = try #require(
+            controller.draftConfigurationForTesting.layoutGroups[0].sets[0].layouts.first(where: { $0.id == "layout-1" })
+        )
+        #expect(updatedLayout.windowSelection == GridSelection(x: 1, y: 1, w: 3, h: 2))
+    }
+
+    @Test func previewDragInTriggerScreenAreaCommitsScreenTriggerRegion() async throws {
+        let (controller, _, _) = makeController()
+
+        controller.selectLayoutForTesting(id: "layout-1")
+        controller.selectLayoutDetailTabForTesting(2)
+        controller.setCurrentLayoutTriggerAreaKindForTesting(.screen)
+
+        #expect(controller.currentLayoutPreviewInteractionModeForTesting == .triggerScreenSelection)
+
+        controller.simulateCurrentLayoutPreviewGridDragForTesting(
+            from: SettingsPreviewGridCell(column: 2, row: 0),
+            to: SettingsPreviewGridCell(column: 4, row: 3)
+        )
+
+        let updatedLayout = try #require(
+            controller.draftConfigurationForTesting.layoutGroups[0].sets[0].layouts.first(where: { $0.id == "layout-1" })
+        )
+        #expect(updatedLayout.triggerRegion == .screen(GridSelection(x: 2, y: 0, w: 3, h: 4)))
+    }
+
+    @Test func previewDragInTriggerMenuBarAreaCommitsMenuBarTriggerRegion() async throws {
+        let (controller, _, _) = makeController()
+
+        controller.selectLayoutForTesting(id: "layout-1")
+        controller.selectLayoutDetailTabForTesting(2)
+        controller.setCurrentLayoutTriggerAreaKindForTesting(.menuBar)
+
+        #expect(controller.currentLayoutPreviewInteractionModeForTesting == .triggerMenuBarSelection)
+
+        controller.simulateCurrentLayoutPreviewMenuBarDragForTesting(from: 1, to: 4)
+
+        let updatedLayout = try #require(
+            controller.draftConfigurationForTesting.layoutGroups[0].sets[0].layouts.first(where: { $0.id == "layout-1" })
+        )
+        #expect(updatedLayout.triggerRegion == .menuBar(MenuBarSelection(x: 1, w: 4)))
+    }
+
+    @Test func previewIsNotInteractiveOutsideWindowAreaAndEnabledTriggerKinds() async throws {
+        let (controller, _, _) = makeController()
+        let originalLayout = try #require(
+            controller.draftConfigurationForTesting.layoutGroups[0].sets[0].layouts.first(where: { $0.id == "layout-1" })
+        )
+
+        controller.selectLayoutForTesting(id: "layout-1")
+        #expect(controller.currentLayoutPreviewInteractionModeForTesting == LayoutPreviewView.InteractionMode.none)
+
+        controller.simulateCurrentLayoutPreviewGridDragForTesting(
+            from: SettingsPreviewGridCell(column: 0, row: 0),
+            to: SettingsPreviewGridCell(column: 2, row: 2)
+        )
+
+        var updatedLayout = try #require(
+            controller.draftConfigurationForTesting.layoutGroups[0].sets[0].layouts.first(where: { $0.id == "layout-1" })
+        )
+        #expect(updatedLayout.windowSelection == originalLayout.windowSelection)
+        #expect(updatedLayout.triggerRegion == originalLayout.triggerRegion)
+
+        controller.selectLayoutDetailTabForTesting(2)
+        controller.setCurrentLayoutTriggerAreaKindForTesting(.none)
+        #expect(controller.currentLayoutPreviewInteractionModeForTesting == LayoutPreviewView.InteractionMode.none)
+
+        let noneTriggerLayout = try #require(
+            controller.draftConfigurationForTesting.layoutGroups[0].sets[0].layouts.first(where: { $0.id == "layout-1" })
+        )
+        #expect(noneTriggerLayout.triggerRegion == nil)
+
+        controller.simulateCurrentLayoutPreviewMenuBarDragForTesting(from: 0, to: 3)
+
+        updatedLayout = try #require(
+            controller.draftConfigurationForTesting.layoutGroups[0].sets[0].layouts.first(where: { $0.id == "layout-1" })
+        )
+        #expect(updatedLayout.triggerRegion == noneTriggerLayout.triggerRegion)
+    }
 }

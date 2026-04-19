@@ -8,8 +8,22 @@ final class LayoutPreviewView: NSView {
         case triggerRegion
     }
 
+    enum InteractionMode: Equatable {
+        case none
+        case windowSelection
+        case triggerScreenSelection
+        case triggerMenuBarSelection
+    }
+
+    private enum DragAnchor {
+        case gridCell(SettingsPreviewGridCell)
+        case menuBarSegment(Int)
+    }
+
     private let layout: LayoutPreset
     private let appearanceSettings: AppearanceSettings
+    var onWindowSelectionCommitted: ((GridSelection) -> Void)?
+    var onTriggerRegionCommitted: ((TriggerRegion) -> Void)?
     var triggerRegionOverride: TriggerRegion? {
         didSet {
             needsDisplay = true
@@ -19,6 +33,25 @@ final class LayoutPreviewView: NSView {
         didSet {
             needsDisplay = true
         }
+    }
+    var interactionMode: InteractionMode = .none {
+        didSet {
+            guard interactionMode != oldValue else {
+                return
+            }
+            cancelInteraction()
+        }
+    }
+
+    private var draftWindowSelection: GridSelection?
+    private var draftTriggerRegion: TriggerRegion?
+    private var dragAnchor: DragAnchor?
+
+    private var interactionBounds: CGRect {
+        guard bounds.width > 0, bounds.height > 0 else {
+            return CGRect(x: 0, y: 0, width: 420, height: 260)
+        }
+        return bounds
     }
 
     override var isFlipped: Bool {
@@ -59,7 +92,7 @@ final class LayoutPreviewView: NSView {
 
     private func drawWindowLayout(in geometry: SettingsPreviewGeometry) {
         var frame = SettingsPreviewSupport.frame(
-            for: layout.windowSelection,
+            for: displayedWindowSelection,
             columns: layout.gridColumns,
             rows: layout.gridRows,
             in: geometry.usableRect
@@ -73,7 +106,7 @@ final class LayoutPreviewView: NSView {
     }
 
     private func drawTriggerRegion(in geometry: SettingsPreviewGeometry) {
-        guard let triggerRegion = triggerRegionOverride else {
+        guard let triggerRegion = displayedTriggerRegion else {
             return
         }
 
@@ -99,5 +132,239 @@ final class LayoutPreviewView: NSView {
             appearance: appearanceSettings,
             cornerRadius: 10
         )
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        beginInteraction(at: convert(event.locationInWindow, from: nil))
+    }
+
+    override func mouseDragged(with event: NSEvent) {
+        updateInteraction(at: convert(event.locationInWindow, from: nil))
+    }
+
+    override func mouseUp(with event: NSEvent) {
+        endInteraction(at: convert(event.locationInWindow, from: nil))
+    }
+
+    private var displayedWindowSelection: GridSelection {
+        draftWindowSelection ?? layout.windowSelection
+    }
+
+    private var displayedTriggerRegion: TriggerRegion? {
+        draftTriggerRegion ?? triggerRegionOverride
+    }
+
+    private func beginInteraction(at point: CGPoint) {
+        let geometry = SettingsPreviewSupport.makeGeometry(in: interactionBounds)
+
+        switch interactionMode {
+        case .none:
+            cancelInteraction()
+        case .windowSelection:
+            guard let gridCell = SettingsPreviewSupport.gridCell(
+                containing: point,
+                in: geometry.usableRect,
+                columns: layout.gridColumns,
+                rows: layout.gridRows
+            ) else {
+                cancelInteraction()
+                return
+            }
+            dragAnchor = .gridCell(gridCell)
+            draftWindowSelection = SettingsPreviewSupport.normalizedGridSelection(
+                from: gridCell,
+                to: gridCell,
+                columns: layout.gridColumns,
+                rows: layout.gridRows
+            )
+            needsDisplay = true
+        case .triggerScreenSelection:
+            guard let gridCell = SettingsPreviewSupport.gridCell(
+                containing: point,
+                in: geometry.usableRect,
+                columns: layout.gridColumns,
+                rows: layout.gridRows
+            ) else {
+                cancelInteraction()
+                return
+            }
+            dragAnchor = .gridCell(gridCell)
+            draftTriggerRegion = .screen(
+                SettingsPreviewSupport.normalizedGridSelection(
+                    from: gridCell,
+                    to: gridCell,
+                    columns: layout.gridColumns,
+                    rows: layout.gridRows
+                )
+            )
+            needsDisplay = true
+        case .triggerMenuBarSelection:
+            guard let segment = SettingsPreviewSupport.menuBarSegment(
+                containing: point,
+                in: geometry.menuBarRect,
+                segments: layout.gridRows
+            ) else {
+                cancelInteraction()
+                return
+            }
+            dragAnchor = .menuBarSegment(segment)
+            draftTriggerRegion = .menuBar(
+                SettingsPreviewSupport.normalizedMenuBarSelection(
+                    from: segment,
+                    to: segment,
+                    segments: layout.gridRows
+                )
+            )
+            needsDisplay = true
+        }
+    }
+
+    private func updateInteraction(at point: CGPoint) {
+        guard let dragAnchor else {
+            return
+        }
+
+        let geometry = SettingsPreviewSupport.makeGeometry(in: interactionBounds)
+        switch (interactionMode, dragAnchor) {
+        case let (.windowSelection, .gridCell(anchorCell)):
+            guard let gridCell = SettingsPreviewSupport.gridCell(
+                containing: point,
+                in: geometry.usableRect,
+                columns: layout.gridColumns,
+                rows: layout.gridRows,
+                clampingToBounds: true
+            ) else {
+                return
+            }
+            draftWindowSelection = SettingsPreviewSupport.normalizedGridSelection(
+                from: anchorCell,
+                to: gridCell,
+                columns: layout.gridColumns,
+                rows: layout.gridRows
+            )
+            needsDisplay = true
+        case let (.triggerScreenSelection, .gridCell(anchorCell)):
+            guard let gridCell = SettingsPreviewSupport.gridCell(
+                containing: point,
+                in: geometry.usableRect,
+                columns: layout.gridColumns,
+                rows: layout.gridRows,
+                clampingToBounds: true
+            ) else {
+                return
+            }
+            draftTriggerRegion = .screen(
+                SettingsPreviewSupport.normalizedGridSelection(
+                    from: anchorCell,
+                    to: gridCell,
+                    columns: layout.gridColumns,
+                    rows: layout.gridRows
+                )
+            )
+            needsDisplay = true
+        case let (.triggerMenuBarSelection, .menuBarSegment(anchorSegment)):
+            guard let segment = SettingsPreviewSupport.menuBarSegment(
+                containing: point,
+                in: geometry.menuBarRect,
+                segments: layout.gridRows,
+                clampingToBounds: true
+            ) else {
+                return
+            }
+            draftTriggerRegion = .menuBar(
+                SettingsPreviewSupport.normalizedMenuBarSelection(
+                    from: anchorSegment,
+                    to: segment,
+                    segments: layout.gridRows
+                )
+            )
+            needsDisplay = true
+        default:
+            cancelInteraction()
+        }
+    }
+
+    private func endInteraction(at point: CGPoint) {
+        updateInteraction(at: point)
+
+        switch interactionMode {
+        case .windowSelection:
+            if let draftWindowSelection {
+                onWindowSelectionCommitted?(draftWindowSelection)
+            }
+        case .triggerScreenSelection, .triggerMenuBarSelection:
+            if let draftTriggerRegion {
+                onTriggerRegionCommitted?(draftTriggerRegion)
+            }
+        case .none:
+            break
+        }
+
+        cancelInteraction()
+    }
+
+    private func cancelInteraction() {
+        dragAnchor = nil
+        draftWindowSelection = nil
+        draftTriggerRegion = nil
+        needsDisplay = true
+    }
+}
+
+extension LayoutPreviewView {
+    var interactionModeForTesting: InteractionMode {
+        interactionMode
+    }
+
+    var displayedWindowSelectionForTesting: GridSelection {
+        displayedWindowSelection
+    }
+
+    var displayedTriggerRegionForTesting: TriggerRegion? {
+        displayedTriggerRegion
+    }
+
+    func simulateGridDragForTesting(from start: SettingsPreviewGridCell, to end: SettingsPreviewGridCell) {
+        let geometry = SettingsPreviewSupport.makeGeometry(in: interactionBounds)
+        beginInteraction(
+            at: SettingsPreviewSupport.frame(
+                for: GridSelection(x: start.column, y: start.row, w: 1, h: 1),
+                columns: layout.gridColumns,
+                rows: layout.gridRows,
+                in: geometry.usableRect
+            ).center
+        )
+        endInteraction(
+            at: SettingsPreviewSupport.frame(
+                for: GridSelection(x: end.column, y: end.row, w: 1, h: 1),
+                columns: layout.gridColumns,
+                rows: layout.gridRows,
+                in: geometry.usableRect
+            ).center
+        )
+    }
+
+    func simulateMenuBarDragForTesting(from startSegment: Int, to endSegment: Int) {
+        let geometry = SettingsPreviewSupport.makeGeometry(in: interactionBounds)
+        beginInteraction(
+            at: SettingsPreviewSupport.frame(
+                for: MenuBarSelection(x: startSegment, w: 1),
+                segments: layout.gridRows,
+                in: geometry.menuBarRect
+            ).center
+        )
+        endInteraction(
+            at: SettingsPreviewSupport.frame(
+                for: MenuBarSelection(x: endSegment, w: 1),
+                segments: layout.gridRows,
+                in: geometry.menuBarRect
+            ).center
+        )
+    }
+}
+
+private extension CGRect {
+    var center: CGPoint {
+        CGPoint(x: midX, y: midY)
     }
 }
