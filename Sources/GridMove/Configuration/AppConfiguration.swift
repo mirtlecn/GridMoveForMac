@@ -641,7 +641,6 @@ struct AppearanceSettings: Codable, Equatable {
     var highlightFillOpacity: Double
     var highlightStrokeWidth: Int
     var highlightStrokeColor: RGBAColor
-    var overlayRenderer: OverlayRendererKind
 
     private enum CodingKeys: String, CodingKey {
         case triggerHighlightMode
@@ -654,7 +653,6 @@ struct AppearanceSettings: Codable, Equatable {
         case highlightFillOpacity
         case highlightStrokeWidth
         case highlightStrokeColor
-        case overlayRenderer
     }
 
     init(
@@ -667,8 +665,7 @@ struct AppearanceSettings: Codable, Equatable {
         renderWindowHighlight: Bool,
         highlightFillOpacity: Double,
         highlightStrokeWidth: Int,
-        highlightStrokeColor: RGBAColor,
-        overlayRenderer: OverlayRendererKind = .calayer
+        highlightStrokeColor: RGBAColor
     ) {
         self.triggerHighlightMode = triggerHighlightMode
         self.triggerFillOpacity = AppearanceValueNormalizer.normalizeOpacity(triggerFillOpacity)
@@ -680,7 +677,6 @@ struct AppearanceSettings: Codable, Equatable {
         self.highlightFillOpacity = AppearanceValueNormalizer.normalizeOpacity(highlightFillOpacity)
         self.highlightStrokeWidth = AppearanceValueNormalizer.normalizeNonNegativeInt(highlightStrokeWidth, defaultValue: 0)
         self.highlightStrokeColor = highlightStrokeColor
-        self.overlayRenderer = overlayRenderer
     }
 
     init(from decoder: Decoder) throws {
@@ -699,7 +695,6 @@ struct AppearanceSettings: Codable, Equatable {
         highlightFillOpacity = AppearanceValueNormalizer.decodeOpacity(from: container, forKey: .highlightFillOpacity)
         highlightStrokeWidth = AppearanceValueNormalizer.decodeNonNegativeInt(from: container, forKey: .highlightStrokeWidth, defaultValue: 0)
         highlightStrokeColor = try container.decode(RGBAColor.self, forKey: .highlightStrokeColor)
-        overlayRenderer = (try? container.decode(OverlayRendererKind.self, forKey: .overlayRenderer)) ?? .calayer
     }
 
     var renderTriggerAreas: Bool {

@@ -42,6 +42,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(initialText.contains("\"triggerFillOpacity\""))
     #expect(initialText.contains("\"triggerStrokeWidth\""))
     #expect(initialText.contains("\"applyLayoutByIndex\""))
+    #expect(!initialText.contains("\"overlayRenderer\""))
     #expect(!initialText.contains("\"layoutGroups\""))
     #expect(!initialText.contains("\"includeInCycle\""))
     #expect(!initialText.contains("\"id\":"))
@@ -1400,6 +1401,32 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(configuration.triggerFillOpacity == 0.25)
     #expect(configuration.triggerStrokeWidth == 4)
     #expect(configuration.layoutGap == 1)
+}
+
+@Test func appearanceConfigurationIgnoresDeprecatedOverlayRendererField() async throws {
+    let json = """
+    {
+      "triggerHighlightMode": "all",
+      "triggerFillOpacity": 0.25,
+      "triggerGap": 2,
+      "triggerStrokeWidth": 4,
+      "triggerStrokeColor": "#00FDFFFF",
+      "layoutGap": 1,
+      "renderWindowHighlight": true,
+      "highlightFillOpacity": 0.20,
+      "highlightStrokeWidth": 3,
+      "highlightStrokeColor": "#FFFFFFEB",
+      "overlayRenderer": "metal"
+    }
+    """
+
+    let data = try #require(json.data(using: .utf8))
+    let configuration = try JSONDecoder().decode(AppearanceConfiguration.self, from: data)
+    let settings = try configuration.makeSettings()
+
+    #expect(configuration.triggerHighlightMode == "all")
+    #expect(settings.renderWindowHighlight)
+    #expect(settings.highlightStrokeColor.hexString == "#FFFFFFEB")
 }
 
 @Test func triggerRegionRoundTripsThroughJSON() async throws {

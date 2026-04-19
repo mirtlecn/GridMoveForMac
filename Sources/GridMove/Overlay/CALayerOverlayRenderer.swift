@@ -3,7 +3,7 @@ import Foundation
 import QuartzCore
 
 @MainActor
-final class CALayerOverlayRenderer: OverlayRenderer {
+final class CALayerOverlayRenderer {
     private var panel: CALayerOverlayPanel?
     private var screenIdentifier: String?
 
@@ -236,7 +236,7 @@ private final class CALayerOverlayPanel: NSPanel {
         super.init(
             contentRect: contentRect,
             styleMask: [.borderless, .nonactivatingPanel],
-            backing: .nonretained,
+            backing: .buffered,
             defer: false
         )
 

@@ -1,6 +1,10 @@
 import AppKit
 import Foundation
 
+struct OverlayBadgeState {
+    let text: String
+}
+
 @MainActor
 final class OverlayController {
     private enum FlashDuration {
@@ -16,8 +20,7 @@ final class OverlayController {
         let configuration: AppConfiguration
     }
 
-    private var renderer: OverlayRenderer?
-    private var activeRendererKind: OverlayRendererKind?
+    private var renderer: CALayerOverlayRenderer?
     private var flashGeneration: UInt64 = 0
     private var badgeGeneration: UInt64 = 0
     private var pendingPostFlashOverlayState: OverlayContentState?
@@ -188,11 +191,8 @@ final class OverlayController {
         configuration: AppConfiguration,
         badge: OverlayBadgeState? = nil
     ) {
-        let desiredKind = configuration.appearance.overlayRenderer
-        if renderer == nil || activeRendererKind != desiredKind {
-            dismissRenderer()
-            renderer = Self.makeRenderer(kind: desiredKind)
-            activeRendererKind = desiredKind
+        if renderer == nil {
+            renderer = CALayerOverlayRenderer()
         }
 
         renderer?.show(
@@ -208,19 +208,7 @@ final class OverlayController {
     private func dismissRenderer() {
         renderer?.dismiss()
         renderer = nil
-        activeRendererKind = nil
         pendingPostFlashOverlayState = nil
         badgeGeneration &+= 1
-    }
-
-    private static func makeRenderer(kind: OverlayRendererKind) -> OverlayRenderer {
-        switch kind {
-        case .legacy:
-            LegacyOverlayRenderer()
-        case .calayer:
-            CALayerOverlayRenderer()
-        case .metal:
-            MetalOverlayRenderer()
-        }
     }
 }
