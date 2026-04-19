@@ -1,16 +1,25 @@
 # GridMove
 
-GridMove is a native macOS app for applying window layouts and moving windows across monitors.
+GridMove is a native macOS app for moving windows across monitors and snapping them into preset layouts:
 
-A rewrite of my AHK GridMove for Windows.
+## Demo 
 
-GridMove requires accessibility permissions.
+Move windows by dragging from anywhere inside them.
+
+https://github.com/user-attachments/assets/9f1a4fec-e022-4667-96c6-9ee199e15887
+
+Drag windows into preset spots to instantly resize and position them.
+
+https://github.com/user-attachments/assets/0373bb1d-1de4-4542-a67e-b6598859bfd1
 
 ## Features
 
-- Fast, lightweight, and customizable window management via mouse, keyboard, and CLI triggers
-- Move and resize windows across monitors using different layouts
-- Per-monitor layout sets, switchable on the fly
+- Super fast and lightweight
+- Trigger actions with mouse, keyboard, or CLI
+- Move and resize windows across monitors
+- Snap windows into any layout you what
+- Use different layout sets for each monitor
+- Switch layout group on the fly
 
 ## Hotkeys and Behaviors
 
@@ -46,8 +55,9 @@ make build
 make release
 ```
 
-## Additional Docs
+## Additional notes
 
+- GridMove takes its name from a [Windows AHK app](https://github.com/mirtlecn/GridMove) I previously maintained. This project is essentially its macOS counterpart.
 - [docs/UI.md](docs/UI.md) — UI structure, editing patterns, and interface rules
 - [docs/SETTINGS-UI.md](docs/SETTINGS-UI.md) — accepted settings-window baseline, entry points, and model-integration rules
 - [docs/APP-DESIGN.md](docs/APP-DESIGN.md) — runtime behavior, architecture, configuration details, and implementation notes
