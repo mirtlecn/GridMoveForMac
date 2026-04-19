@@ -391,7 +391,7 @@ extension LayoutsSettingsViewController {
             panelView.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
             contentView.leadingAnchor.constraint(equalTo: panelContentView.leadingAnchor, constant: 18),
             contentView.trailingAnchor.constraint(equalTo: panelContentView.trailingAnchor, constant: -18),
-            contentView.topAnchor.constraint(equalTo: panelContentView.topAnchor, constant: 18),
+            contentView.topAnchor.constraint(equalTo: panelContentView.topAnchor),
             contentView.bottomAnchor.constraint(lessThanOrEqualTo: panelContentView.bottomAnchor),
         ])
 
