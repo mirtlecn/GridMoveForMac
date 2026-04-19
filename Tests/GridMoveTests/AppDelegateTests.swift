@@ -681,7 +681,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     delegate.selectSettingsTabForTesting(index: 1)
     let layoutsMinimumSize = try #require(delegate.settingsMinimumSizeForTesting)
     #expect(layoutsMinimumSize.width == 680)
-    #expect(layoutsMinimumSize.height > generalMinimumSize.height)
+    #expect(layoutsMinimumSize.height == generalMinimumSize.height)
 
     delegate.selectSettingsTabForTesting(index: 4)
     let aboutMinimumSize = try #require(delegate.settingsMinimumSizeForTesting)

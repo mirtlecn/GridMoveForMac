@@ -66,7 +66,7 @@ private final class Locked<Value: Sendable>: @unchecked Sendable {
 
     #expect(try LayoutIdentifierResolver.resolveLayout(identifier: "4", in: layouts).id == "layout-4")
     #expect(try LayoutIdentifierResolver.resolveLayout(identifier: "Center", in: layouts).id == "layout-4")
-    #expect(try LayoutIdentifierResolver.resolveLayout(identifier: "fill all screen", in: layouts).id == "layout-10")
+    #expect(try LayoutIdentifierResolver.resolveLayout(identifier: "Full", in: layouts).id == "layout-10")
     #expect(throws: CommandLineLayoutResolutionError.unknownLayout("unknown")) {
         try LayoutIdentifierResolver.resolveLayout(identifier: "unknown", in: layouts)
     }
