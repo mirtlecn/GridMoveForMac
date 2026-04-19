@@ -128,8 +128,9 @@ final class MetalOverlayRenderer: OverlayRenderer {
 
     private func renderRects(_ rects: [OverlayRectDescriptor], into mtkView: MTKView, viewSize: CGSize) {
         guard let resources = metalResources,
+              let commandQueue = resources.commandQueue,
               let drawable = (mtkView.layer as? CAMetalLayer)?.nextDrawable(),
-              let commandBuffer = resources.commandQueue.makeCommandBuffer()
+              let commandBuffer = commandQueue.makeCommandBuffer()
         else { return }
 
         let renderPassDescriptor = MTLRenderPassDescriptor()
@@ -381,12 +382,12 @@ private struct MetalRectParams {
 @MainActor
 private final class MetalResources {
     let device: MTLDevice
-    let commandQueue: MTLCommandQueue
+    let commandQueue: MTLCommandQueue?
     let pipelineState: MTLRenderPipelineState?
 
     init(device: MTLDevice) {
         self.device = device
-        commandQueue = device.makeCommandQueue()!
+        commandQueue = device.makeCommandQueue()
 
         var state: MTLRenderPipelineState?
         if let library = try? device.makeDefaultLibrary(bundle: Bundle.main) {
@@ -412,7 +413,11 @@ private final class MetalResources {
             vertexDescriptor.layouts[0].stride = MemoryLayout<Float>.stride * 4
             descriptor.vertexDescriptor = vertexDescriptor
 
-            state = try? device.makeRenderPipelineState(descriptor: descriptor)
+            do {
+                state = try device.makeRenderPipelineState(descriptor: descriptor)
+            } catch {
+                AppLogger.shared.error("Metal overlay pipeline state creation failed: \(error)")
+            }
         }
         pipelineState = state
     }

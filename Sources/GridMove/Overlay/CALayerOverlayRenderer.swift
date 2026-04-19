@@ -38,10 +38,13 @@ final class CALayerOverlayRenderer: OverlayRenderer {
         CATransaction.begin()
         CATransaction.setDisableActions(true)
 
-        let rootLayer = contentView.layer ?? {
+        if !contentView.wantsLayer {
             contentView.wantsLayer = true
-            return contentView.layer!
-        }()
+        }
+        guard let rootLayer = contentView.layer else {
+            CATransaction.commit()
+            return
+        }
 
         removeAllSublayers(from: rootLayer)
 
