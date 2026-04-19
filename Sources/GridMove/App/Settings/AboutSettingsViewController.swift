@@ -44,12 +44,25 @@ final class AboutSettingsViewController: NSViewController {
     }
 
     private func currentVersionString() -> String {
+        let displayVersion = Bundle.main.object(forInfoDictionaryKey: "GridMoveDisplayVersion") as? String
         let shortVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
         let buildVersion = Bundle.main.object(forInfoDictionaryKey: kCFBundleVersionKey as String) as? String
-        return Self.formattedVersionString(shortVersion: shortVersion, buildVersion: buildVersion)
+        return Self.formattedVersionString(
+            displayVersion: displayVersion,
+            shortVersion: shortVersion,
+            buildVersion: buildVersion
+        )
     }
 
-    nonisolated static func formattedVersionString(shortVersion: String?, buildVersion: String?) -> String {
+    nonisolated static func formattedVersionString(
+        displayVersion: String?,
+        shortVersion: String?,
+        buildVersion: String?
+    ) -> String {
+        if let displayVersion, !displayVersion.isEmpty {
+            return displayVersion
+        }
+
         switch (shortVersion, buildVersion) {
         case let (shortVersion?, buildVersion?) where !shortVersion.isEmpty && !buildVersion.isEmpty:
             return "\(shortVersion)(\(buildVersion))"
