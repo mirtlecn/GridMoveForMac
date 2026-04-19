@@ -392,11 +392,63 @@ extension KeyboardShortcut {
             return "⎋"
         case "delete":
             return "⌫"
+        case "forwarddelete":
+            return "⌦"
         case "tab":
             return "⇥"
         case "space":
             return "Space"
+        case "left":
+            return "←"
+        case "right":
+            return "→"
+        case "up":
+            return "↑"
+        case "down":
+            return "↓"
+        case "pageup":
+            return "PgUp"
+        case "pagedown":
+            return "PgDn"
+        case "home":
+            return "Home"
+        case "end":
+            return "End"
+        case "insert", "help":
+            return "Ins"
+        case let functionKey where functionKey.hasPrefix("f"):
+            return functionKey.uppercased()
+        case let keypadKey where keypadKey.hasPrefix("keypad"):
+            return keypadDisplayName(for: keypadKey)
         default:
+            return key.uppercased()
+        }
+    }
+
+    private func keypadDisplayName(for key: String) -> String {
+        switch key.lowercased() {
+        case "keypaddecimal":
+            return "Num ."
+        case "keypadmultiply":
+            return "Num *"
+        case "keypadplus":
+            return "Num +"
+        case "keypadclear":
+            return "Num Clear"
+        case "keypaddivide":
+            return "Num /"
+        case "keypadenter":
+            return "Num ↩"
+        case "keypadminus":
+            return "Num -"
+        case "keypadequals":
+            return "Num ="
+        default:
+            if key.lowercased().hasPrefix("keypad"),
+               let suffix = key.dropFirst("keypad".count).first,
+               suffix.isNumber {
+                return "Num \(suffix)"
+            }
             return key.uppercased()
         }
     }

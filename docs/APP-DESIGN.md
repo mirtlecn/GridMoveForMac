@@ -388,6 +388,13 @@ Keyboard shortcuts:
 - interpret `applyLayoutByIndex` as a global index within the active layout group's indexed layouts
 - only require the configured index to be a positive integer; missing indexes fail when invoked instead of at load time
 - operate on the currently resolved target window
+- use physical-key names shared by recording, JSON config, and runtime matching
+- support the standard number row (`1` ... `0`)
+- support function keys (`f1` ... `f20`)
+- support navigation keys (`left`, `right`, `up`, `down`, `home`, `end`, `pageUp`, `pageDown`, `insert`)
+- support common special keys (`return`, `tab`, `space`, `delete`, `forwardDelete`, `escape`)
+- support keypad keys (`keypad0` ... `keypad9`, `keypadDecimal`, `keypadPlus`, `keypadMinus`, `keypadMultiply`, `keypadDivide`, `keypadEnter`, `keypadEquals`, `keypadClear`)
+- support common aliases (`enter`, `backspace`, `esc`, `del`, `ins`, `help`, `pgup`, `pgdn`, and `kp*`)
 
 CLI:
 

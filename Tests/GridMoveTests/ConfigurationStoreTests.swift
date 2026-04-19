@@ -1172,10 +1172,38 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 @Test func keyboardShortcutProvidesMenuShortcutComponents() async throws {
     let standardShortcut = KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "\\")
     let returnShortcut = KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "return")
+    let functionShortcut = KeyboardShortcut(modifiers: [.cmd], key: "f1")
+    let keypadShortcut = KeyboardShortcut(modifiers: [.cmd], key: "keypad1")
+    let insertShortcut = KeyboardShortcut(modifiers: [.cmd], key: "insert")
 
     #expect(standardShortcut.menuKeyEquivalent == "\\")
     #expect(standardShortcut.menuModifierMask == [.control, .option, .shift, .command])
     #expect(returnShortcut.menuKeyEquivalent == "\r")
+    #expect(functionShortcut.menuKeyEquivalent.count == 1)
+    #expect(keypadShortcut.menuKeyEquivalent == "1")
+    #expect(insertShortcut.menuKeyEquivalent.count == 1)
+}
+
+@Test func shortcutKeyMapSupportsNumberRowFunctionKeysAndKeypad() async throws {
+    let numberKeyCode = try #require(ShortcutKeyMap.keyCode(for: "1"))
+    let functionKeyCode = try #require(ShortcutKeyMap.keyCode(for: "f1"))
+    let keypadKeyCode = try #require(ShortcutKeyMap.keyCode(for: "keypad1"))
+    let insertKeyCode = try #require(ShortcutKeyMap.keyCode(for: "insert"))
+
+    #expect(ShortcutKeyMap.keyCode(for: "kp1") == keypadKeyCode)
+    #expect(ShortcutKeyMap.keyCode(for: "enter") == ShortcutKeyMap.keyCode(for: "return"))
+    #expect(ShortcutKeyMap.keyCode(for: "backspace") == ShortcutKeyMap.keyCode(for: "delete"))
+    #expect(ShortcutKeyMap.keyCode(for: "pageup") == ShortcutKeyMap.keyCode(for: "pageUp"))
+    #expect(ShortcutKeyMap.keyCode(for: "pgup") == ShortcutKeyMap.keyCode(for: "pageUp"))
+    #expect(ShortcutKeyMap.keyCode(for: "pgdn") == ShortcutKeyMap.keyCode(for: "pageDown"))
+    #expect(ShortcutKeyMap.keyCode(for: "help") == insertKeyCode)
+    #expect(ShortcutKeyMap.keyCode(for: "ins") == insertKeyCode)
+
+    #expect(ShortcutKeyMap.keyName(for: numberKeyCode) == "1")
+    #expect(ShortcutKeyMap.keyName(for: functionKeyCode) == "f1")
+    #expect(ShortcutKeyMap.keyName(for: keypadKeyCode) == "keypad1")
+    #expect(ShortcutKeyMap.keyName(for: try #require(ShortcutKeyMap.keyCode(for: "pageUp"))) == "pageUp")
+    #expect(ShortcutKeyMap.keyName(for: insertKeyCode) == "insert")
 }
 
 @Test func generalSettingsDecodeMissingEnableFlagWithDefaultValue() async throws {

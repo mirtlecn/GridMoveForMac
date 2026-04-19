@@ -126,6 +126,34 @@ private func makeTestLayout(
 }
 
 @MainActor
+@Test func hotkeySheetDisplaysFunctionAndKeypadShortcutNames() async throws {
+    let actions = HotkeyPrototypeSlot.makePrototypeSlots(configuration: .defaultValue).map(\.actionDescriptor)
+    let contentView = HotkeyAddSheetContentView(
+        actions: actions,
+        selectedActionID: "cycleNext",
+        initialShortcutsByActionID: [
+            "cycleNext": [
+                KeyboardShortcut(modifiers: [.cmd], key: "f1"),
+                KeyboardShortcut(modifiers: [.cmd], key: "keypad1"),
+            ]
+        ]
+    )
+
+    #expect(contentView.visibleShortcutDisplayNamesForTesting == ["⌘F1", "⌘Num 1"])
+}
+
+@Test func keyboardShortcutPrototypeDisplayUsesCompactNavigationNames() async throws {
+    #expect(KeyboardShortcut(modifiers: [.cmd], key: "pageUp").prototypeDisplayName == "⌘PgUp")
+    #expect(KeyboardShortcut(modifiers: [.cmd], key: "pageDown").prototypeDisplayName == "⌘PgDn")
+    #expect(KeyboardShortcut(modifiers: [.cmd], key: "insert").prototypeDisplayName == "⌘Ins")
+    #expect(KeyboardShortcut(modifiers: [.cmd], key: "delete").prototypeDisplayName == "⌘⌫")
+    #expect(KeyboardShortcut(modifiers: [.cmd], key: "forwardDelete").prototypeDisplayName == "⌘⌦")
+    #expect(KeyboardShortcut(modifiers: [.cmd], key: "escape").prototypeDisplayName == "⌘⎋")
+    #expect(KeyboardShortcut(modifiers: [.cmd], key: "home").prototypeDisplayName == "⌘Home")
+    #expect(KeyboardShortcut(modifiers: [.cmd], key: "end").prototypeDisplayName == "⌘End")
+}
+
+@MainActor
 @Test func hotkeysControllerAddsRealShortcutBindingAndClearsSelectedAction() async throws {
     let state = SettingsPrototypeState(configuration: .defaultValue)
     state.reload(from: AppConfiguration.defaultValue)

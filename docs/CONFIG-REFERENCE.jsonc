@@ -44,12 +44,22 @@
       "activationMoveThreshold": 10 // Pointer movement threshold, in points, before the interaction counts as a drag.
     },
     "hotkeys": {
+      // Physical-key shortcut names support most keys on the standard macOS keyboard and keypad.
+      // Examples:
+      // - Number row: "1", "2", ..., "0"
+      // - Function keys: "f1" ... "f20"
+      // - Navigation keys: "left", "right", "up", "down", "home", "end", "pageUp", "pageDown", "insert"
+      // - Special keys: "return", "tab", "space", "delete", "forwardDelete", "escape"
+      // - Common aliases: "enter" -> "return", "backspace" -> "delete", "esc" -> "escape",
+      //   "del" -> "forwardDelete", "ins" / "help" -> "insert", "pgup" -> "pageUp", "pgdn" -> "pageDown"
+      // - Keypad keys: "keypad0" ... "keypad9", "keypadDecimal", "keypadPlus",
+      //   "keypadMinus", "keypadMultiply", "keypadDivide", "keypadEnter", "keypadEquals", "keypadClear"
       "bindings": [
         {
           "isEnabled": true, // Enable or disable this shortcut binding.
           "shortcut": {
             "modifiers": ["ctrl", "cmd", "shift", "alt"], // Allowed values are ctrl, cmd, shift, alt.
-            "key": "\\" // Supported keys: a-z, -, =, [, ], \, ;, ', ,, ., /, return, enter, escape, esc.
+            "key": "\\" // Supported keys include letters, number row, punctuation, function keys, navigation keys, and keypad keys.
           },
           "action": {
             "kind": "applyLayoutByIndex", // Allowed values are applyLayoutByIndex, cycleNext, cyclePrevious.
