@@ -70,6 +70,7 @@ struct AppearanceConfiguration: Codable {
     let highlightFillOpacity: Double
     let highlightStrokeWidth: Int
     let highlightStrokeColor: String
+    let overlayRenderer: String?
 
     private enum CodingKeys: String, CodingKey {
         case triggerHighlightMode
@@ -82,6 +83,7 @@ struct AppearanceConfiguration: Codable {
         case highlightFillOpacity
         case highlightStrokeWidth
         case highlightStrokeColor
+        case overlayRenderer
     }
 
     init(settings: AppearanceSettings) {
@@ -95,6 +97,7 @@ struct AppearanceConfiguration: Codable {
         highlightFillOpacity = settings.highlightFillOpacity
         highlightStrokeWidth = settings.highlightStrokeWidth
         highlightStrokeColor = settings.highlightStrokeColor.hexString
+        overlayRenderer = settings.overlayRenderer.rawValue
     }
 
     init(from decoder: Decoder) throws {
@@ -110,6 +113,7 @@ struct AppearanceConfiguration: Codable {
         highlightFillOpacity = AppearanceValueNormalizer.decodeOpacity(from: container, forKey: .highlightFillOpacity)
         highlightStrokeWidth = AppearanceValueNormalizer.decodeNonNegativeInt(from: container, forKey: .highlightStrokeWidth, defaultValue: 0)
         highlightStrokeColor = try container.decode(String.self, forKey: .highlightStrokeColor)
+        overlayRenderer = try container.decodeIfPresent(String.self, forKey: .overlayRenderer)
     }
 
     func makeSettings() throws -> AppearanceSettings {
@@ -123,7 +127,8 @@ struct AppearanceConfiguration: Codable {
             renderWindowHighlight: renderWindowHighlight,
             highlightFillOpacity: highlightFillOpacity,
             highlightStrokeWidth: highlightStrokeWidth,
-            highlightStrokeColor: try RGBAColor(hexString: highlightStrokeColor)
+            highlightStrokeColor: try RGBAColor(hexString: highlightStrokeColor),
+            overlayRenderer: overlayRenderer.flatMap(OverlayRendererKind.init(rawValue:)) ?? .calayer
         )
     }
 }
