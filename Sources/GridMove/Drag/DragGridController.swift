@@ -4,6 +4,12 @@ import Foundation
 
 @MainActor
 final class DragGridController {
+    struct TestHooks {
+        var currentTimeProvider: (() -> TimeInterval)?
+        var moveWindow: ((CGPoint, CGRect, ManagedWindow) -> Bool)?
+        var refreshOverlay: ((AppConfiguration) -> Void)?
+    }
+
     let layoutEngine: LayoutEngine
     let windowController: WindowController
     let overlayController: OverlayController
@@ -12,6 +18,7 @@ final class DragGridController {
     let accessibilityTrustedProvider: () -> Bool
     let accessibilityAccessValidator: () -> Bool
     let onAccessibilityRevoked: () -> Void
+    let testHooks: TestHooks?
 
     var state = DragInteractionState()
     var eventTap: CFMachPort?
@@ -28,7 +35,8 @@ final class DragGridController {
         cycleActiveLayoutGroup: @escaping (LayoutGroupCycleDirection) -> AppConfiguration?,
         accessibilityTrustedProvider: @escaping () -> Bool,
         accessibilityAccessValidator: @escaping () -> Bool,
-        onAccessibilityRevoked: @escaping () -> Void
+        onAccessibilityRevoked: @escaping () -> Void,
+        testHooks: TestHooks? = nil
     ) {
         self.layoutEngine = layoutEngine
         self.windowController = windowController
@@ -38,6 +46,7 @@ final class DragGridController {
         self.accessibilityTrustedProvider = accessibilityTrustedProvider
         self.accessibilityAccessValidator = accessibilityAccessValidator
         self.onAccessibilityRevoked = onAccessibilityRevoked
+        self.testHooks = testHooks
     }
 
     func start() {

@@ -169,6 +169,10 @@ extension DragGridController {
         }
 
         if state.active {
+            if state.interactionMode == .moveOnly {
+                let timestamp = testHooks?.currentTimeProvider?() ?? ProcessInfo.processInfo.systemUptime
+                applyPendingMoveOnlyDragIfNeeded(at: timestamp, force: true)
+            }
             finalizeLayoutSelection(at: appKitPoint(from: event), configuration: configuration)
             resetState()
             return nil
