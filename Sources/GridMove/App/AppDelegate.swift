@@ -2,7 +2,7 @@ import AppKit
 import Foundation
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
+final class AppDelegate: NSObject, NSApplicationDelegate {
     enum ConfigurationReloadMode {
         case launch
         case manual
@@ -573,15 +573,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         settingsItem.target = self
         settingsItem.keyEquivalentModifierMask = [.command]
         applicationMenu.addItem(settingsItem)
-
-        let closeSettingsPanelItem = NSMenuItem(
-            title: UICopy.closeSettingsPanelMenuTitle,
-            action: #selector(closeSettingsPanelFromMenu),
-            keyEquivalent: "w"
-        )
-        closeSettingsPanelItem.target = self
-        closeSettingsPanelItem.keyEquivalentModifierMask = [.command]
-        applicationMenu.addItem(closeSettingsPanelItem)
         applicationMenu.addItem(.separator())
 
         let quitItem = NSMenuItem(title: UICopy.quitAppMenuTitle, action: #selector(quitApplication), keyEquivalent: "q")
@@ -598,20 +589,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
         showSettings()
     }
 
-    @objc private func closeSettingsPanelFromMenu() {
-        settingsWindowController?.window?.performClose(nil)
-    }
-
     @objc private func quitApplication() {
         NSApp.terminate(nil)
-    }
-
-    func validateMenuItem(_ menuItem: NSMenuItem) -> Bool {
-        if menuItem.action == #selector(closeSettingsPanelFromMenu) {
-            return settingsWindowController?.window?.isVisible == true
-        }
-
-        return true
     }
 
     @discardableResult
@@ -845,10 +824,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
                 .compactMap(\.submenu)
                 .flatMap(\.items)
                 .filter { !$0.isSeparatorItem }
-                .map { item in
-                    let isEnabled = (item.target as? NSMenuItemValidation)?.validateMenuItem(item) ?? item.isEnabled
-                    return (item.title, isEnabled)
-                } ?? []
+                .map { ($0.title, $0.isEnabled) } ?? []
         )
     }
 
@@ -874,6 +850,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuItemValidation {
 
     func closeSettingsWindowForTesting() {
         settingsWindowController?.close()
+    }
+
+    @discardableResult
+    func performSettingsCloseShortcutForTesting(isKeyWindow: Bool = true) -> Bool {
+        settingsWindowController?.handleCommandWForTesting(isKeyWindow: isKeyWindow) ?? false
     }
 
     func selectSettingsTabForTesting(index: Int) {

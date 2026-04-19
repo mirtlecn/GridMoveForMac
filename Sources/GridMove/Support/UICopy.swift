@@ -5,7 +5,6 @@ enum UICopy {
 
     static var applicationMenuTitle: String { localized("applicationMenuTitle", default: "Application") }
     static var settingsMenuTitle: String { localized("settingsMenuTitle", default: "Settings...") }
-    static var closeSettingsPanelMenuTitle: String { localized("closeSettingsPanelMenuTitle", default: "Close Settings") }
     static var settingsWindowTitle: String { localized("settingsWindowTitle", default: "Settings") }
     static var settingsGeneralTabTitle: String { localized("settingsGeneralTabTitle", default: "General") }
     static var settingsLayoutsTabTitle: String { localized("settingsLayoutsTabTitle", default: "Layouts") }
@@ -48,7 +47,7 @@ enum UICopy {
     static var settingsProtectedGroupInfo: String {
         localized(
             "settingsProtectedGroupInfo",
-            default: "Protected layout group: you cannot delete this group or change its name."
+            default: "This group cannot be renamed or deleted."
         )
     }
     static var settingsActiveGroupLabel: String { localized("settingsActiveGroupLabel", default: "Active group") }
@@ -74,6 +73,7 @@ enum UICopy {
     static var settingsYPositionLabel: String { localized("settingsYPositionLabel", default: "Y position") }
     static var settingsWidthLabel: String { localized("settingsWidthLabel", default: "Width") }
     static var settingsHeightLabel: String { localized("settingsHeightLabel", default: "Height") }
+    static var settingsNoteLabel: String { localized("settingsNoteLabel", default: "Note") }
     static var settingsAddButtonTitle: String { localized("settingsAddButtonTitle", default: "Add") }
     static var settingsAddEllipsisButtonTitle: String { localized("settingsAddEllipsisButtonTitle", default: "Add...") }
     static var settingsAddGroupButtonTitle: String { localized("settingsAddGroupButtonTitle", default: "Add group") }
