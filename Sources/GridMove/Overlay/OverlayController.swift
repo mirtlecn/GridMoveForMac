@@ -1,7 +1,7 @@
 import AppKit
 import Foundation
 
-private struct OverlayBadgeState {
+struct OverlayBadgeState {
     let text: String
 }
 
@@ -20,8 +20,7 @@ final class OverlayController {
         let configuration: AppConfiguration
     }
 
-    private var panel: OverlayPanel?
-    private var screenIdentifier: String?
+    private var renderer: CALayerOverlayRenderer?
     private var flashGeneration: UInt64 = 0
     private var badgeGeneration: UInt64 = 0
     private var pendingPostFlashOverlayState: OverlayContentState?
@@ -46,7 +45,7 @@ final class OverlayController {
                 badge: badgeText.map { OverlayBadgeState(text: $0) }
             )
         } else {
-            dismissPanel()
+            dismissRenderer()
         }
     }
 
@@ -60,7 +59,7 @@ final class OverlayController {
         cancelPendingFlash()
 
         guard configuration.appearance.renderWindowHighlight else {
-            if keepsOverlayVisibleAfterFlash {
+            if keepsOverlayVisibleAfterFlash && shouldRenderOverlay(configuration: configuration, badgeText: nil) {
                 showOverlay(
                     screen: screen,
                     slots: slots,
@@ -69,7 +68,7 @@ final class OverlayController {
                     configuration: configuration
                 )
             } else {
-                dismissPanel()
+                dismissRenderer()
             }
             return
         }
@@ -91,31 +90,38 @@ final class OverlayController {
             configuration: steadyState.configuration,
             badge: steadyState.badge
         )
-        panel?.alphaValue = 1.0
+        renderer?.overlayPanel?.alphaValue = 1.0
 
         flashGeneration &+= 1
         let expectedGeneration = flashGeneration
 
         NSAnimationContext.runAnimationGroup { context in
             context.duration = FlashDuration.seconds
-            self.panel?.animator().alphaValue = 0.0
+            self.renderer?.overlayPanel?.animator().alphaValue = 0.0
         } completionHandler: { [weak self] in
             Task { @MainActor in
                 guard let self else { return }
                 if self.flashGeneration == expectedGeneration {
                     if let pendingPostFlashOverlayState = self.pendingPostFlashOverlayState {
-                        self.panel?.alphaValue = 1.0
-                        self.showOverlay(
-                            screen: pendingPostFlashOverlayState.screen,
-                            slots: pendingPostFlashOverlayState.slots,
-                            highlightFrame: pendingPostFlashOverlayState.highlightFrame,
-                            hoveredLayoutID: pendingPostFlashOverlayState.hoveredLayoutID,
+                        if self.shouldRenderOverlay(
                             configuration: pendingPostFlashOverlayState.configuration,
-                            badge: pendingPostFlashOverlayState.badge
-                        )
+                            badgeText: pendingPostFlashOverlayState.badge?.text
+                        ) {
+                            self.renderer?.overlayPanel?.alphaValue = 1.0
+                            self.showOverlay(
+                                screen: pendingPostFlashOverlayState.screen,
+                                slots: pendingPostFlashOverlayState.slots,
+                                highlightFrame: pendingPostFlashOverlayState.highlightFrame,
+                                hoveredLayoutID: pendingPostFlashOverlayState.hoveredLayoutID,
+                                configuration: pendingPostFlashOverlayState.configuration,
+                                badge: pendingPostFlashOverlayState.badge
+                            )
+                        } else {
+                            self.dismissRenderer()
+                        }
                         self.pendingPostFlashOverlayState = nil
                     } else {
-                        self.dismissPanel()
+                        self.dismissRenderer()
                     }
                 }
             }
@@ -147,7 +153,7 @@ final class OverlayController {
                 guard let self else { return }
                 guard self.badgeGeneration == expectedGeneration else { return }
 
-                if keepsOverlayVisibleAfterFlash {
+                if keepsOverlayVisibleAfterFlash && self.shouldRenderOverlay(configuration: configuration, badgeText: nil) {
                     self.showOverlay(
                         screen: screen,
                         slots: slots,
@@ -157,7 +163,7 @@ final class OverlayController {
                         badge: nil
                     )
                 } else {
-                    self.dismissPanel()
+                    self.dismissRenderer()
                 }
             }
         }
@@ -165,14 +171,14 @@ final class OverlayController {
 
     func dismiss() {
         cancelPendingFlash()
-        dismissPanel()
+        dismissRenderer()
     }
 
     private func cancelPendingFlash() {
         flashGeneration &+= 1
         badgeGeneration &+= 1
         pendingPostFlashOverlayState = nil
-        panel?.alphaValue = 1.0
+        renderer?.overlayPanel?.alphaValue = 1.0
     }
 
     private func shouldRenderOverlay(
@@ -192,163 +198,24 @@ final class OverlayController {
         configuration: AppConfiguration,
         badge: OverlayBadgeState? = nil
     ) {
-        let identifier = Geometry.screenIdentifier(for: screen)
-        if panel == nil || screenIdentifier != identifier {
-            dismissPanel()
-            let panel = OverlayPanel(contentRect: screen.frame)
-            panel.setFrame(screen.frame, display: true)
-            panel.orderFrontRegardless()
-            self.panel = panel
-            screenIdentifier = identifier
-        } else {
-            panel?.setFrame(screen.frame, display: true)
+        if renderer == nil {
+            renderer = CALayerOverlayRenderer()
         }
 
-        let overlayView: OverlayView
-        if let currentView = panel?.contentView as? OverlayView {
-            overlayView = currentView
-        } else {
-            overlayView = OverlayView(frame: NSRect(origin: .zero, size: screen.frame.size))
-            panel?.contentView = overlayView
-        }
-
-        overlayView.frame = NSRect(origin: .zero, size: screen.frame.size)
-        overlayView.screenOrigin = screen.frame.origin
-        overlayView.resolvedSlots = slots
-        overlayView.highlightFrame = highlightFrame
-        overlayView.hoveredLayoutID = hoveredLayoutID
-        overlayView.configuration = configuration
-        overlayView.badge = badge
-        overlayView.needsDisplay = true
+        renderer?.show(
+            on: screen,
+            slots: slots,
+            highlightFrame: highlightFrame,
+            hoveredLayoutID: hoveredLayoutID,
+            configuration: configuration,
+            badge: badge
+        )
     }
 
-    private func dismissPanel() {
-        panel?.orderOut(nil)
-        panel = nil
-        screenIdentifier = nil
+    private func dismissRenderer() {
+        renderer?.dismiss()
+        renderer = nil
         pendingPostFlashOverlayState = nil
         badgeGeneration &+= 1
-    }
-}
-
-@MainActor
-private final class OverlayPanel: NSPanel {
-    init(contentRect: CGRect) {
-        super.init(
-            contentRect: contentRect,
-            styleMask: [.borderless, .nonactivatingPanel],
-            backing: .buffered,
-            defer: false
-        )
-
-        isFloatingPanel = true
-        level = .statusBar
-        hasShadow = false
-        backgroundColor = .clear
-        isOpaque = false
-        ignoresMouseEvents = true
-        collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .ignoresCycle]
-    }
-
-    override var canBecomeKey: Bool { false }
-    override var canBecomeMain: Bool { false }
-}
-
-@MainActor
-private final class OverlayView: NSView {
-    var screenOrigin: CGPoint = .zero
-    var resolvedSlots: [ResolvedTriggerSlot] = []
-    var highlightFrame: CGRect?
-    var hoveredLayoutID: String?
-    var configuration: AppConfiguration = .defaultValue
-    var badge: OverlayBadgeState?
-
-    override var isOpaque: Bool { false }
-
-    override func draw(_ dirtyRect: NSRect) {
-        super.draw(dirtyRect)
-
-        NSColor.clear.setFill()
-        dirtyRect.fill()
-
-        if configuration.appearance.renderTriggerAreas {
-            drawTriggerSlots()
-        }
-
-        if configuration.appearance.renderWindowHighlight, let highlightFrame {
-            drawHighlight(frame: highlightFrame)
-        }
-
-        if let badge {
-            drawBadge(text: badge.text, highlightedFrame: highlightFrame)
-        }
-    }
-
-    private func drawTriggerSlots() {
-        let visibleSlots: [ResolvedTriggerSlot] = switch configuration.appearance.triggerHighlightMode {
-        case .all:
-            resolvedSlots
-        case .current:
-            resolvedSlots.filter { $0.layoutID == hoveredLayoutID }
-        case .none:
-            []
-        }
-
-        for slot in visibleSlots {
-            for hitTestFrame in slot.hitTestFrames {
-                SettingsPreviewSupport.drawTriggerRegion(
-                    rect: localRect(from: hitTestFrame),
-                    appearance: configuration.appearance,
-                    cornerRadius: 10
-                )
-            }
-        }
-    }
-
-    private func drawHighlight(frame: CGRect) {
-        SettingsPreviewSupport.drawWindowHighlight(
-            rect: localRect(from: frame),
-            appearance: configuration.appearance,
-            cornerRadius: 10
-        )
-    }
-
-    private func drawBadge(text: String, highlightedFrame: CGRect?) {
-        let targetRect = highlightedFrame.map(localRect(from:)) ?? bounds.insetBy(dx: 48, dy: 48)
-        let textAttributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 18, weight: .semibold),
-            .foregroundColor: NSColor.white,
-        ]
-        let attributedText = NSAttributedString(string: text, attributes: textAttributes)
-        let textSize = attributedText.size()
-        let horizontalPadding: CGFloat = 16
-        let verticalPadding: CGFloat = 10
-        let badgeRect = CGRect(
-            x: targetRect.midX - ((textSize.width + horizontalPadding * 2) / 2),
-            y: targetRect.midY - ((textSize.height + verticalPadding * 2) / 2),
-            width: textSize.width + horizontalPadding * 2,
-            height: textSize.height + verticalPadding * 2
-        )
-
-        let backgroundPath = NSBezierPath(roundedRect: badgeRect, xRadius: 12, yRadius: 12)
-        NSColor.black.withAlphaComponent(0.72).setFill()
-        backgroundPath.fill()
-
-        let textRect = CGRect(
-            x: badgeRect.minX + horizontalPadding,
-            y: badgeRect.minY + verticalPadding,
-            width: textSize.width,
-            height: textSize.height
-        )
-        attributedText.draw(in: textRect)
-    }
-
-    private func localRect(from globalRect: CGRect) -> CGRect {
-        CGRect(
-            x: globalRect.origin.x - screenOrigin.x,
-            y: globalRect.origin.y - screenOrigin.y,
-            width: globalRect.width,
-            height: globalRect.height
-        )
     }
 }
