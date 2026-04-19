@@ -3,7 +3,8 @@ import AppKit
 @MainActor
 final class AppearancePreviewView: NSView {
     private enum PreviewSampleLayout {
-        static let targetLayoutID = "layout-4"
+        static let windowLayoutID = "preview-window-layout"
+        static let triggerLayoutID = "preview-trigger-layout"
     }
 
     private var configuration: AppConfiguration = .defaultValue
@@ -26,16 +27,20 @@ final class AppearancePreviewView: NSView {
         self.configuration = configuration
 
         let engine = LayoutEngine()
-        let previewLayout = Self.sampleLayout()
+        let previewWindowLayout = Self.sampleWindowLayout()
+        let previewTriggerLayout = Self.sampleTriggerLayout()
         resolvedSlots = engine.resolveTriggerSlots(
             screenFrame: SettingsPreviewSupport.referenceScreenFrame,
             usableFrame: SettingsPreviewSupport.referenceUsableFrame,
-            layouts: [previewLayout],
+            layouts: [previewTriggerLayout],
             triggerGap: Double(configuration.appearance.triggerGap),
             layoutGap: configuration.appearance.effectiveLayoutGap
         )
-        highlightFrame = resolvedSlots.first(where: { $0.layoutID == PreviewSampleLayout.targetLayoutID })?.targetFrame
-            ?? resolvedSlots.first?.targetFrame
+        highlightFrame = engine.frame(
+            for: previewWindowLayout,
+            in: SettingsPreviewSupport.referenceUsableFrame,
+            layoutGap: configuration.appearance.effectiveLayoutGap
+        )
         needsDisplay = true
     }
 
@@ -95,17 +100,29 @@ final class AppearancePreviewView: NSView {
         )
     }
 
-    private static func sampleLayout() -> LayoutPreset {
-        AppConfiguration.defaultLayouts.first(where: { $0.id == PreviewSampleLayout.targetLayoutID })
-            ?? AppConfiguration.defaultLayouts.first
-            ?? LayoutPreset(
-                id: PreviewSampleLayout.targetLayoutID,
-                name: "Center",
-                gridColumns: SettingsPreviewSupport.defaultPreviewColumns,
-                gridRows: SettingsPreviewSupport.defaultPreviewRows,
-                windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4),
-                triggerRegion: .screen(GridSelection(x: 5, y: 2, w: 2, h: 2)),
-                includeInLayoutIndex: true
-            )
+    private static func sampleWindowLayout() -> LayoutPreset {
+        LayoutPreset(
+            id: PreviewSampleLayout.windowLayoutID,
+            name: "Preview window",
+            gridColumns: SettingsPreviewSupport.defaultPreviewColumns,
+            gridRows: SettingsPreviewSupport.defaultPreviewRows,
+            windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4),
+            triggerRegion: nil,
+            includeInLayoutIndex: false,
+            includeInMenu: false
+        )
+    }
+
+    private static func sampleTriggerLayout() -> LayoutPreset {
+        LayoutPreset(
+            id: PreviewSampleLayout.triggerLayoutID,
+            name: "Preview trigger",
+            gridColumns: SettingsPreviewSupport.defaultPreviewColumns,
+            gridRows: SettingsPreviewSupport.defaultPreviewRows,
+            windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4),
+            triggerRegion: .screen(GridSelection(x: 5, y: 0, w: 2, h: 6)),
+            includeInLayoutIndex: false,
+            includeInMenu: false
+        )
     }
 }

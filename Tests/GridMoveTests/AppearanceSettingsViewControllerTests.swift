@@ -116,7 +116,7 @@ struct AppearanceSettingsViewControllerTests {
         )
     }
 
-    @Test func appearancePreviewUsesBuiltInCenterTriggerSample() async throws {
+    @Test func appearancePreviewUsesIndependentWindowAndTriggerSamples() async throws {
         var configuration = AppConfiguration.defaultValue
         configuration.appearance.triggerHighlightMode = .all
         let state = SettingsPrototypeState(configuration: configuration)
@@ -129,21 +129,47 @@ struct AppearanceSettingsViewControllerTests {
 
         let previewSlots = controller.previewResolvedSlotsForTesting
         let previewSlot = try #require(previewSlots.first)
-        let sampleLayout = try #require(AppConfiguration.defaultLayouts.first(where: { $0.id == "layout-4" }))
+        let triggerSampleLayout = LayoutPreset(
+            id: "preview-trigger-layout",
+            name: "Preview trigger",
+            gridColumns: SettingsPreviewSupport.defaultPreviewColumns,
+            gridRows: SettingsPreviewSupport.defaultPreviewRows,
+            windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4),
+            triggerRegion: .screen(GridSelection(x: 5, y: 0, w: 2, h: 6)),
+            includeInLayoutIndex: false,
+            includeInMenu: false
+        )
+        let windowSampleLayout = LayoutPreset(
+            id: "preview-window-layout",
+            name: "Preview window",
+            gridColumns: SettingsPreviewSupport.defaultPreviewColumns,
+            gridRows: SettingsPreviewSupport.defaultPreviewRows,
+            windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4),
+            triggerRegion: nil,
+            includeInLayoutIndex: false,
+            includeInMenu: false
+        )
         let expectedSlot = try #require(
             LayoutEngine().resolveTriggerSlots(
                 screenFrame: SettingsPreviewSupport.referenceScreenFrame,
                 usableFrame: SettingsPreviewSupport.referenceUsableFrame,
-                layouts: [sampleLayout],
+                layouts: [triggerSampleLayout],
                 triggerGap: Double(configuration.appearance.triggerGap),
                 layoutGap: configuration.appearance.effectiveLayoutGap
             ).first
         )
+        let expectedHighlightFrame = try #require(
+            LayoutEngine().frame(
+                for: windowSampleLayout,
+                in: SettingsPreviewSupport.referenceUsableFrame,
+                layoutGap: configuration.appearance.effectiveLayoutGap
+            )
+        )
 
         #expect(previewSlots.count == 1)
-        #expect(previewSlot.layoutID == "layout-4")
+        #expect(previewSlot.layoutID == "preview-trigger-layout")
         #expect(previewSlot.triggerFrame == expectedSlot.triggerFrame)
-        #expect(controller.previewHighlightFrameForTesting == expectedSlot.targetFrame)
+        #expect(controller.previewHighlightFrameForTesting == expectedHighlightFrame)
     }
 
     @Test func appearancePreviewRefreshesAfterReload() async throws {
