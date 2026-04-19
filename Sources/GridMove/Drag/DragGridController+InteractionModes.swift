@@ -25,6 +25,7 @@ extension DragGridController {
         state.activeButton = button
         state.targetWindow = targetWindow
         state.currentWindowFrame = targetWindow.frame
+        state.cursorPoint = point
         state.optionToggleTracker = OptionToggleTracker(baselineModifiers: currentModifierKeys)
         state.shiftGroupCycleTracker = ShiftGroupCycleTracker(baselineModifiers: currentModifierKeys)
         state.pendingRightClickToggle = false
@@ -44,6 +45,7 @@ extension DragGridController {
     }
 
     func updateDrag(at point: CGPoint, configuration: AppConfiguration) {
+        state.cursorPoint = point
         switch state.interactionMode {
         case .layoutSelection:
             updateLayoutSelectionDrag(at: point, configuration: configuration)
@@ -136,6 +138,7 @@ extension DragGridController {
         shouldFlashHighlight: Bool
     ) {
         state.interactionMode = .layoutSelection
+        state.cursorPoint = point
         state.moveAnchor = nil
         state.overlayActivationPoint = point
         state.hoveredLayoutID = nil
@@ -190,6 +193,7 @@ extension DragGridController {
         shouldFlashHighlight: Bool
     ) {
         state.interactionMode = .moveOnly
+        state.cursorPoint = point
         state.overlayActivationPoint = point
         state.hoveredLayoutID = nil
         state.lastAppliedLayoutID = nil
@@ -210,16 +214,14 @@ extension DragGridController {
             windowController.screenContaining(point: CGPoint(x: frame.midX, y: frame.midY))
         }
         let pointerScreen = windowController.resolvedScreen(for: point, fallback: fallbackScreen)
-        let screen = Self.preferredMoveOnlyFlashScreen(
+        _ = Self.preferredMoveOnlyFlashScreen(
             windowScreen: fallbackScreen,
             activeScreen: state.activeScreen,
             pointerScreen: pointerScreen
         )
-        if shouldFlashHighlight, let screen, let windowFrame {
-            overlayController.flashHighlight(frame: windowFrame, screen: screen, configuration: configuration)
-        } else {
-            overlayController.dismiss()
-        }
+        _ = shouldFlashHighlight
+
+        refreshOverlay(configuration: configuration)
     }
 
     func updateLayoutSelection(at point: CGPoint, configuration: AppConfiguration) {
@@ -280,29 +282,65 @@ extension DragGridController {
     }
 
     func refreshOverlay(configuration: AppConfiguration) {
-        guard state.interactionMode == .layoutSelection else {
+        guard state.active, let cursor = overlayCursorState() else {
             overlayController.dismiss()
             return
         }
 
-        guard let screen = state.activeScreen else {
-            overlayController.dismiss()
-            return
+        switch state.interactionMode {
+        case .layoutSelection:
+            guard let screen = state.activeScreen else {
+                overlayController.dismiss()
+                return
+            }
+
+            overlayController.update(
+                screen: screen,
+                slots: state.resolvedSlots,
+                highlightFrame: overlayHighlightFrame(),
+                hoveredLayoutID: state.hoveredLayoutID,
+                configuration: configuration,
+                cursor: cursor
+            )
+        case .moveOnly:
+            let fallbackScreen = currentWindowFrame()
+                .flatMap { frame in
+                    windowController.screenContaining(point: CGPoint(x: frame.midX, y: frame.midY))
+                }
+            guard let screen = windowController.resolvedScreen(for: cursor.point, fallback: fallbackScreen) else {
+                overlayController.dismiss()
+                return
+            }
+
+            overlayController.update(
+                screen: screen,
+                slots: [],
+                highlightFrame: nil,
+                hoveredLayoutID: nil,
+                configuration: configuration,
+                cursor: cursor
+            )
+        }
+    }
+
+    func overlayCursorState() -> OverlayCursorState? {
+        guard state.active else {
+            return nil
         }
 
-        overlayController.update(
-            screen: screen,
-            slots: state.resolvedSlots,
-            highlightFrame: overlayHighlightFrame(),
-            hoveredLayoutID: state.hoveredLayoutID,
-            configuration: configuration
-        )
+        guard let point = state.cursorPoint ?? state.overlayActivationPoint ?? state.mouseDownPoint else {
+            return nil
+        }
+
+        return OverlayCursorState(point: point, mode: state.interactionMode)
     }
 
     func cycleLayoutGroup(at point: CGPoint, direction: LayoutGroupCycleDirection = .next) {
         guard state.interactionMode == .layoutSelection else {
             return
         }
+
+        state.cursorPoint = point
 
         guard let updatedConfiguration = cycleActiveLayoutGroup(direction) else {
             return
@@ -325,7 +363,8 @@ extension DragGridController {
             slots: state.resolvedSlots,
             highlightFrame: overlayHighlightFrame() ?? currentWindowFrame(),
             configuration: updatedConfiguration,
-            keepsOverlayVisibleAfterFlash: true
+            keepsOverlayVisibleAfterFlash: true,
+            cursor: overlayCursorState()
         )
     }
 

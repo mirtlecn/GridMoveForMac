@@ -143,6 +143,7 @@ struct DragInteractionState {
     var hoveredLayoutID: String?
     var lastAppliedLayoutID: String?
     var mouseDownPoint: CGPoint?
+    var cursorPoint: CGPoint?
     var overlayActivationPoint: CGPoint?
     var resolvedSlots: [ResolvedTriggerSlot] = []
     var suppressedMouseUpButton: DragTriggerButton?
