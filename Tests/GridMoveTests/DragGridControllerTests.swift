@@ -363,56 +363,6 @@ private func makeManagedWindow(frame: CGRect, identity: String = "drag-grid-wind
 }
 
 @MainActor
-@Test func overlayCursorStateUsesTrackedPointerAndMode() async throws {
-    let layoutEngine = LayoutEngine()
-    let windowController = WindowController(layoutEngine: layoutEngine)
-    let overlayController = OverlayController()
-    let controller = DragGridController(
-        layoutEngine: layoutEngine,
-        windowController: windowController,
-        overlayController: overlayController,
-        configurationProvider: { .defaultValue },
-        cycleActiveLayoutGroup: { _ in .defaultValue },
-        accessibilityTrustedProvider: { true },
-        accessibilityAccessValidator: { true },
-        onAccessibilityRevoked: {}
-    )
-
-    controller.state.active = true
-    controller.state.interactionMode = .moveOnly
-    controller.state.cursorPoint = CGPoint(x: 640, y: 420)
-
-    let cursor = try #require(controller.overlayCursorState())
-    #expect(cursor.point == CGPoint(x: 640, y: 420))
-    #expect(cursor.mode == .moveOnly)
-}
-
-@MainActor
-@Test func overlayCursorStateFallsBackToActivationPoint() async throws {
-    let layoutEngine = LayoutEngine()
-    let windowController = WindowController(layoutEngine: layoutEngine)
-    let overlayController = OverlayController()
-    let controller = DragGridController(
-        layoutEngine: layoutEngine,
-        windowController: windowController,
-        overlayController: overlayController,
-        configurationProvider: { .defaultValue },
-        cycleActiveLayoutGroup: { _ in .defaultValue },
-        accessibilityTrustedProvider: { true },
-        accessibilityAccessValidator: { true },
-        onAccessibilityRevoked: {}
-    )
-
-    controller.state.active = true
-    controller.state.interactionMode = .layoutSelection
-    controller.state.overlayActivationPoint = CGPoint(x: 200, y: 100)
-
-    let cursor = try #require(controller.overlayCursorState())
-    #expect(cursor.point == CGPoint(x: 200, y: 100))
-    #expect(cursor.mode == .layoutSelection)
-}
-
-@MainActor
 @Test func deferredLayoutApplyWaitsForMouseUp() async throws {
     let screen = try #require(NSScreen.screens.first)
     let layoutEngine = LayoutEngine()

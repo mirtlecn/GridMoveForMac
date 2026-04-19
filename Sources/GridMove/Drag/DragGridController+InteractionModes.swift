@@ -210,8 +210,7 @@ extension DragGridController {
                 screen: screen,
                 slots: state.resolvedSlots,
                 configuration: configuration,
-                keepsOverlayVisibleAfterFlash: true,
-                cursor: overlayCursorState()
+                keepsOverlayVisibleAfterFlash: true
             )
             return
         }
@@ -261,8 +260,7 @@ extension DragGridController {
                 frame: frame,
                 screen: screen,
                 configuration: configuration,
-                keepsOverlayVisibleAfterFlash: false,
-                cursor: overlayCursorState()
+                keepsOverlayVisibleAfterFlash: false
             )
             return
         }
@@ -328,7 +326,7 @@ extension DragGridController {
     }
 
     func refreshOverlay(configuration: AppConfiguration) {
-        guard state.active, let cursor = overlayCursorState() else {
+        guard state.active else {
             overlayController.dismiss()
             return
         }
@@ -345,15 +343,18 @@ extension DragGridController {
                 slots: state.resolvedSlots,
                 highlightFrame: overlayHighlightFrame(),
                 hoveredLayoutID: state.hoveredLayoutID,
-                configuration: configuration,
-                cursor: cursor
+                configuration: configuration
             )
         case .moveOnly:
+            guard let point = state.cursorPoint ?? state.overlayActivationPoint ?? state.mouseDownPoint else {
+                overlayController.dismiss()
+                return
+            }
             let fallbackScreen = currentWindowFrame()
                 .flatMap { frame in
                     windowController.screenContaining(point: CGPoint(x: frame.midX, y: frame.midY))
                 }
-            guard let screen = windowController.resolvedScreen(for: cursor.point, fallback: fallbackScreen) else {
+            guard let screen = windowController.resolvedScreen(for: point, fallback: fallbackScreen) else {
                 overlayController.dismiss()
                 return
             }
@@ -363,22 +364,9 @@ extension DragGridController {
                 slots: [],
                 highlightFrame: nil,
                 hoveredLayoutID: nil,
-                configuration: configuration,
-                cursor: cursor
+                configuration: configuration
             )
         }
-    }
-
-    func overlayCursorState() -> OverlayCursorState? {
-        guard state.active else {
-            return nil
-        }
-
-        guard let point = state.cursorPoint ?? state.overlayActivationPoint ?? state.mouseDownPoint else {
-            return nil
-        }
-
-        return OverlayCursorState(point: point, mode: state.interactionMode)
     }
 
     func cycleLayoutGroup(at point: CGPoint, direction: LayoutGroupCycleDirection = .next) {
@@ -409,8 +397,7 @@ extension DragGridController {
             slots: state.resolvedSlots,
             highlightFrame: overlayHighlightFrame() ?? currentWindowFrame(),
             configuration: updatedConfiguration,
-            keepsOverlayVisibleAfterFlash: true,
-            cursor: overlayCursorState()
+            keepsOverlayVisibleAfterFlash: true
         )
     }
 
