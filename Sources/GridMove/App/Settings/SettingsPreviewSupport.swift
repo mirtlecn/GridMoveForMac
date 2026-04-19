@@ -165,8 +165,15 @@ enum SettingsPreviewSupport {
     static func drawTriggerRegion(rect: CGRect, appearance: AppearanceSettings, cornerRadius: CGFloat) {
         let path = NSBezierPath(roundedRect: rect, xRadius: cornerRadius, yRadius: cornerRadius)
         let color = appearance.triggerStrokeColor.nsColor
+        color.withAlphaComponent(appearance.triggerFillOpacity).setFill()
+        path.fill()
+
+        guard let strokeWidth = triggerStrokeWidth(for: appearance) else {
+            return
+        }
+
         color.setStroke()
-        path.lineWidth = 2
+        path.lineWidth = strokeWidth
         path.stroke()
     }
 
@@ -176,6 +183,14 @@ enum SettingsPreviewSupport {
         }
 
         return CGFloat(appearance.highlightStrokeWidth)
+    }
+
+    static func triggerStrokeWidth(for appearance: AppearanceSettings) -> CGFloat? {
+        guard appearance.triggerStrokeWidth > 0 else {
+            return nil
+        }
+
+        return CGFloat(appearance.triggerStrokeWidth)
     }
 
     static func localRect(from globalRect: CGRect, in geometry: SettingsPreviewGeometry) -> CGRect {

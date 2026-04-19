@@ -116,8 +116,10 @@ The built-in default configuration currently resolves to the following values.
 
 `appearance`
 
-- `renderTriggerAreas = false`
+- `triggerHighlightMode = none`
+- `triggerFillOpacity = 0.08`
 - `triggerGap = 2`
+- `triggerStrokeWidth = 2`
 - `triggerStrokeColor = system accent color with alpha 0.2`
 - `layoutGap = 1` (integer, points)
 - `renderWindowHighlight = true`
@@ -197,6 +199,10 @@ Compatibility behavior:
 - missing `preferLayoutMode` defaults to `true`
 - missing `includeInGroupCycle` defaults to `true`
 - missing `triggerRegion` means the layout is menu, shortcut, and CLI only
+- missing `triggerHighlightMode` defaults to `none`
+- invalid `triggerHighlightMode` falls back to `all`
+- missing `triggerFillOpacity` defaults to `0.08`
+- missing `triggerStrokeWidth` defaults to `2`
 - missing `includeInMenu` defaults to `true`
 - missing `includeInLayoutIndex` defaults to `true`
 - missing or invalid `general.mouseButtonNumber` defaults to `3`

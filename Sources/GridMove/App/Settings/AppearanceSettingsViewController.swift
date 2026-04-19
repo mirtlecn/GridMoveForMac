@@ -11,8 +11,10 @@ final class AppearanceSettingsViewController: NSViewController {
     private let strokeWidthControl = AppearanceStepperControl(minValue: 0, maxValue: 24, unit: "pt")
     private let strokeColorControl = AppearanceColorControl()
     private let layoutGapControl = AppearanceStepperControl(minValue: 0, maxValue: 24, unit: "pt")
-    private let showOverlayCheckbox = makeCheckboxRow(title: "")
+    private let triggerHighlightModePopupButton = NSPopUpButton()
+    private let triggerFillOpacityControl = AppearanceSliderControl()
     private let triggerGapControl = AppearanceStepperControl(minValue: 0, maxValue: 24, unit: "pt")
+    private let triggerStrokeWidthControl = AppearanceStepperControl(minValue: 0, maxValue: 24, unit: "pt")
     private let triggerStrokeColorControl = AppearanceColorControl()
 
     init(prototypeState: SettingsPrototypeState, actionHandler: any SettingsActionHandling) {
@@ -51,7 +53,9 @@ final class AppearanceSettingsViewController: NSViewController {
                     title: UICopy.settingsTriggerAreaSectionTitle,
                     contentView: makeInlineTabContent(rows: [
                         makeLabeledControlRow(label: UICopy.settingsTriggerGapLabel, control: triggerGapControl),
-                        makeLabeledControlRow(label: UICopy.settingsHighlightTriggerAreaTitle, control: showOverlayCheckbox),
+                        makeLabeledControlRow(label: UICopy.settingsHighlightTriggerAreaTitle, control: triggerHighlightModePopupButton),
+                        makeLabeledControlRow(label: UICopy.settingsFillOpacityLabel, control: triggerFillOpacityControl),
+                        makeLabeledControlRow(label: UICopy.settingsStrokeWidthLabel, control: triggerStrokeWidthControl),
                         makeLabeledControlRow(label: UICopy.settingsStrokeColorLabel, control: triggerStrokeColorControl),
                     ])
                 ),
@@ -106,12 +110,34 @@ final class AppearanceSettingsViewController: NSViewController {
             }
         }
 
-        showOverlayCheckbox.target = self
-        showOverlayCheckbox.action = #selector(handleShowOverlayToggle(_:))
+        triggerHighlightModePopupButton.controlSize = .small
+        triggerHighlightModePopupButton.addItems(withTitles: [
+            UICopy.settingsAllValue,
+            UICopy.settingsCurrentValue,
+            UICopy.settingsNoneValue,
+        ])
+        triggerHighlightModePopupButton.target = self
+        triggerHighlightModePopupButton.action = #selector(handleTriggerHighlightModeChange(_:))
+
+        triggerFillOpacityControl.onPreviewChanged = { [weak self] value in
+            self?.updatePreview { configuration in
+                configuration.appearance.triggerFillOpacity = value
+            }
+        }
+        triggerFillOpacityControl.onValueCommitted = { [weak self] value in
+            self?.applyMutation { configuration in
+                configuration.appearance.triggerFillOpacity = value
+            }
+        }
 
         triggerGapControl.onValueChanged = { [weak self] value in
             self?.applyMutation { configuration in
                 configuration.appearance.triggerGap = value
+            }
+        }
+        triggerStrokeWidthControl.onValueChanged = { [weak self] value in
+            self?.applyMutation { configuration in
+                configuration.appearance.triggerStrokeWidth = value
             }
         }
         triggerStrokeColorControl.onPreviewChanged = { [weak self] color in
@@ -151,8 +177,10 @@ final class AppearanceSettingsViewController: NSViewController {
         strokeColorControl.setColor(appearance.highlightStrokeColor.nsColor)
         layoutGapControl.setValue(appearance.effectiveLayoutGap)
 
-        showOverlayCheckbox.state = appearance.renderTriggerAreas ? .on : .off
+        triggerHighlightModePopupButton.selectItem(withTitle: title(for: appearance.triggerHighlightMode))
+        triggerFillOpacityControl.setValue(appearance.triggerFillOpacity)
         triggerGapControl.setValue(appearance.triggerGap)
+        triggerStrokeWidthControl.setValue(appearance.triggerStrokeWidth)
         triggerStrokeColorControl.setColor(appearance.triggerStrokeColor.nsColor)
 
         previewView.updateConfiguration(configuration)
@@ -181,9 +209,31 @@ final class AppearanceSettingsViewController: NSViewController {
     }
 
     @objc
-    private func handleShowOverlayToggle(_ sender: NSButton) {
+    private func handleTriggerHighlightModeChange(_ sender: NSPopUpButton) {
         applyMutation { configuration in
-            configuration.appearance.renderTriggerAreas = sender.state == .on
+            configuration.appearance.triggerHighlightMode = self.selectedTriggerHighlightMode()
+        }
+    }
+
+    private func selectedTriggerHighlightMode() -> TriggerHighlightMode {
+        switch triggerHighlightModePopupButton.selectedItem?.title {
+        case UICopy.settingsAllValue:
+            return .all
+        case UICopy.settingsCurrentValue:
+            return .current
+        default:
+            return .none
+        }
+    }
+
+    private func title(for mode: TriggerHighlightMode) -> String {
+        switch mode {
+        case .all:
+            return UICopy.settingsAllValue
+        case .current:
+            return UICopy.settingsCurrentValue
+        case .none:
+            return UICopy.settingsNoneValue
         }
     }
 
@@ -417,13 +467,22 @@ extension AppearanceSettingsViewController {
         layoutGapControl.onValueChanged?(value)
     }
 
-    func setRenderTriggerAreasForTesting(_ isEnabled: Bool) {
-        showOverlayCheckbox.state = isEnabled ? .on : .off
-        handleShowOverlayToggle(showOverlayCheckbox)
+    func setTriggerHighlightModeForTesting(_ mode: TriggerHighlightMode) {
+        triggerHighlightModePopupButton.selectItem(withTitle: title(for: mode))
+        handleTriggerHighlightModeChange(triggerHighlightModePopupButton)
+    }
+
+    func setTriggerFillOpacityForTesting(_ value: Double) {
+        triggerFillOpacityControl.onPreviewChanged?(value)
+        triggerFillOpacityControl.onValueCommitted?(value)
     }
 
     func setTriggerGapForTesting(_ value: Int) {
         triggerGapControl.onValueChanged?(value)
+    }
+
+    func setTriggerStrokeWidthForTesting(_ value: Int) {
+        triggerStrokeWidthControl.onValueChanged?(value)
     }
 
     func previewTriggerStrokeColorForTesting(_ color: NSColor) {

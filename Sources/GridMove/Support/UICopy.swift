@@ -57,6 +57,8 @@ enum UICopy {
     static var settingsScreenGridValue: String { localized("settingsScreenGridValue", default: "Screen") }
     static var settingsMenuBarTriggerValue: String { localized("settingsMenuBarTriggerValue", default: "Menu bar") }
     static var settingsNoneValue: String { localized("settingsNoneValue", default: "None") }
+    static var settingsAllValue: String { localized("settingsAllValue", default: "All") }
+    static var settingsCurrentValue: String { localized("settingsCurrentValue", default: "Current") }
     static var settingsAllMonitorsValue: String { localized("settingsAllMonitorsValue", default: "All monitor") }
     static var settingsMainMonitorValue: String { localized("settingsMainMonitorValue", default: "Main monitor") }
     static var settingsCustomMonitorsValue: String { localized("settingsCustomMonitorsValue", default: "Custom monitors") }

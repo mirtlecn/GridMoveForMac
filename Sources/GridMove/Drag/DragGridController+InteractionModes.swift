@@ -261,6 +261,7 @@ extension DragGridController {
             screen: screen,
             slots: state.resolvedSlots,
             highlightFrame: overlayHighlightFrame(),
+            hoveredLayoutID: state.hoveredLayoutID,
             configuration: configuration
         )
     }

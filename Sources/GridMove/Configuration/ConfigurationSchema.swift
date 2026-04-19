@@ -60,8 +60,10 @@ private struct AnyCodingKey: CodingKey {
 }
 
 struct AppearanceConfiguration: Codable {
-    let renderTriggerAreas: Bool
+    let triggerHighlightMode: String
+    let triggerFillOpacity: Double
     let triggerGap: Int
+    let triggerStrokeWidth: Int
     let triggerStrokeColor: String
     let layoutGap: Int
     let renderWindowHighlight: Bool
@@ -70,8 +72,10 @@ struct AppearanceConfiguration: Codable {
     let highlightStrokeColor: String
 
     private enum CodingKeys: String, CodingKey {
-        case renderTriggerAreas
+        case triggerHighlightMode
+        case triggerFillOpacity
         case triggerGap
+        case triggerStrokeWidth
         case triggerStrokeColor
         case layoutGap
         case renderWindowHighlight
@@ -81,8 +85,10 @@ struct AppearanceConfiguration: Codable {
     }
 
     init(settings: AppearanceSettings) {
-        renderTriggerAreas = settings.renderTriggerAreas
+        triggerHighlightMode = settings.triggerHighlightMode.rawValue
+        triggerFillOpacity = settings.triggerFillOpacity
         triggerGap = settings.triggerGap
+        triggerStrokeWidth = settings.triggerStrokeWidth
         triggerStrokeColor = settings.triggerStrokeColor.hexString
         layoutGap = settings.layoutGap
         renderWindowHighlight = settings.renderWindowHighlight
@@ -93,8 +99,11 @@ struct AppearanceConfiguration: Codable {
 
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        renderTriggerAreas = try container.decode(Bool.self, forKey: .renderTriggerAreas)
+        let rawMode = (try? container.decode(String.self, forKey: .triggerHighlightMode)) ?? TriggerHighlightMode.none.rawValue
+        triggerHighlightMode = TriggerHighlightMode(rawValue: rawMode)?.rawValue ?? TriggerHighlightMode.all.rawValue
+        triggerFillOpacity = AppearanceValueNormalizer.decodeOpacity(from: container, forKey: .triggerFillOpacity, defaultValue: 0.08)
         triggerGap = AppearanceValueNormalizer.decodeNonNegativeInt(from: container, forKey: .triggerGap, defaultValue: 0)
+        triggerStrokeWidth = AppearanceValueNormalizer.decodeNonNegativeInt(from: container, forKey: .triggerStrokeWidth, defaultValue: 2)
         triggerStrokeColor = try container.decode(String.self, forKey: .triggerStrokeColor)
         layoutGap = AppearanceValueNormalizer.decodeLayoutGap(from: container, forKey: .layoutGap)
         renderWindowHighlight = try container.decode(Bool.self, forKey: .renderWindowHighlight)
@@ -105,8 +114,10 @@ struct AppearanceConfiguration: Codable {
 
     func makeSettings() throws -> AppearanceSettings {
         AppearanceSettings(
-            renderTriggerAreas: renderTriggerAreas,
+            triggerHighlightMode: TriggerHighlightMode(rawValue: triggerHighlightMode) ?? .all,
+            triggerFillOpacity: triggerFillOpacity,
             triggerGap: triggerGap,
+            triggerStrokeWidth: triggerStrokeWidth,
             triggerStrokeColor: try RGBAColor(hexString: triggerStrokeColor),
             layoutGap: layoutGap,
             renderWindowHighlight: renderWindowHighlight,

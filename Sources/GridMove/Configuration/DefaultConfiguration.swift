@@ -135,8 +135,10 @@ extension AppConfiguration {
             mouseButtonNumber: 3
         ),
         appearance: AppearanceSettings(
-            renderTriggerAreas: false,
+            triggerHighlightMode: .none,
+            triggerFillOpacity: 0.08,
             triggerGap: 2,
+            triggerStrokeWidth: 2,
             triggerStrokeColor: .defaultTriggerStrokeColor,
             layoutGap: 1,
             renderWindowHighlight: true,

@@ -20,15 +20,17 @@
       "activeLayoutGroup": "built-in" // The currently selected layout group. Menu-bar changes, layout-mode Shift cycling, and layout-mode mouse-wheel cycling all update this value.
     },
     "appearance": {
-      "renderTriggerAreas": false, // Show trigger-region overlay while in layout mode. The default is off.
+      "triggerHighlightMode": "none", // Allowed values: "all", "current", "none". Missing defaults to "none". Invalid values fall back to "all".
+      "triggerFillOpacity": 0.08, // Fill opacity for trigger regions. Uses a 0...1 range.
       "triggerGap": 2, // Gap between trigger-region cells, in points.
+      "triggerStrokeWidth": 2, // Border width for trigger regions, in points.
       "triggerStrokeColor": "#007AFF33", // Border color for trigger regions. Accepts #RRGGBB or #RRGGBBAA.
       "layoutGap": 1, // Integer gap between applied window layout frames and the highlight overlay, in points.
       "renderWindowHighlight": true, // Show the current window highlight overlay.
       "highlightFillOpacity": 0.08, // Fill opacity for the window highlight. Uses a 0...1 range.
       "highlightStrokeWidth": 3, // Border width for the window highlight, in points.
       "highlightStrokeColor": "#FFFFFFEB" // Border color for the window highlight. Accepts #RRGGBB or #RRGGBBAA.
-    },
+      },
     "dragTriggers": {
       "enableMouseButtonDrag": true, // Enable the mouse-button hold trigger path.
       "enableModifierLeftMouseDrag": true, // Enable the modifier-plus-left-click trigger path.

@@ -15,6 +15,7 @@ final class OverlayController {
         let screen: NSScreen
         let slots: [ResolvedTriggerSlot]
         let highlightFrame: CGRect?
+        let hoveredLayoutID: String?
         let badge: OverlayBadgeState?
         let configuration: AppConfiguration
     }
@@ -29,6 +30,7 @@ final class OverlayController {
         screen: NSScreen,
         slots: [ResolvedTriggerSlot],
         highlightFrame: CGRect?,
+        hoveredLayoutID: String?,
         configuration: AppConfiguration,
         badgeText: String? = nil
     ) {
@@ -43,6 +45,7 @@ final class OverlayController {
             screen: screen,
             slots: slots,
             highlightFrame: highlightFrame,
+            hoveredLayoutID: hoveredLayoutID,
             configuration: configuration,
             badge: badgeText.map { OverlayBadgeState(text: $0) }
         )
@@ -59,7 +62,13 @@ final class OverlayController {
 
         guard configuration.appearance.renderWindowHighlight else {
             if keepsOverlayVisibleAfterFlash {
-                showOverlay(screen: screen, slots: slots, highlightFrame: frame, configuration: configuration)
+                showOverlay(
+                    screen: screen,
+                    slots: slots,
+                    highlightFrame: frame,
+                    hoveredLayoutID: nil,
+                    configuration: configuration
+                )
             } else {
                 dismiss()
             }
@@ -70,6 +79,7 @@ final class OverlayController {
             screen: screen,
             slots: slots,
             highlightFrame: frame,
+            hoveredLayoutID: nil,
             badge: nil,
             configuration: configuration
         )
@@ -78,6 +88,7 @@ final class OverlayController {
             screen: steadyState.screen,
             slots: steadyState.slots,
             highlightFrame: steadyState.highlightFrame,
+            hoveredLayoutID: steadyState.hoveredLayoutID,
             configuration: steadyState.configuration,
             badge: steadyState.badge
         )
@@ -99,6 +110,7 @@ final class OverlayController {
                             screen: pendingPostFlashOverlayState.screen,
                             slots: pendingPostFlashOverlayState.slots,
                             highlightFrame: pendingPostFlashOverlayState.highlightFrame,
+                            hoveredLayoutID: pendingPostFlashOverlayState.hoveredLayoutID,
                             configuration: pendingPostFlashOverlayState.configuration,
                             badge: pendingPostFlashOverlayState.badge
                         )
@@ -123,6 +135,7 @@ final class OverlayController {
             screen: screen,
             slots: slots,
             highlightFrame: highlightFrame,
+            hoveredLayoutID: nil,
             configuration: configuration,
             badge: OverlayBadgeState(text: text)
         )
@@ -140,6 +153,7 @@ final class OverlayController {
                         screen: screen,
                         slots: slots,
                         highlightFrame: highlightFrame,
+                        hoveredLayoutID: nil,
                         configuration: configuration,
                         badge: nil
                     )
@@ -168,6 +182,7 @@ final class OverlayController {
         screen: NSScreen,
         slots: [ResolvedTriggerSlot],
         highlightFrame: CGRect?,
+        hoveredLayoutID: String?,
         configuration: AppConfiguration,
         badge: OverlayBadgeState? = nil
     ) {
@@ -195,6 +210,7 @@ final class OverlayController {
         overlayView.screenOrigin = screen.frame.origin
         overlayView.resolvedSlots = slots
         overlayView.highlightFrame = highlightFrame
+        overlayView.hoveredLayoutID = hoveredLayoutID
         overlayView.configuration = configuration
         overlayView.badge = badge
         overlayView.needsDisplay = true
@@ -237,6 +253,7 @@ private final class OverlayView: NSView {
     var screenOrigin: CGPoint = .zero
     var resolvedSlots: [ResolvedTriggerSlot] = []
     var highlightFrame: CGRect?
+    var hoveredLayoutID: String?
     var configuration: AppConfiguration = .defaultValue
     var badge: OverlayBadgeState?
 
@@ -262,7 +279,16 @@ private final class OverlayView: NSView {
     }
 
     private func drawTriggerSlots() {
-        for slot in resolvedSlots {
+        let visibleSlots: [ResolvedTriggerSlot] = switch configuration.appearance.triggerHighlightMode {
+        case .all:
+            resolvedSlots
+        case .current:
+            resolvedSlots.filter { $0.layoutID == hoveredLayoutID }
+        case .none:
+            []
+        }
+
+        for slot in visibleSlots {
             for hitTestFrame in slot.hitTestFrames {
                 SettingsPreviewSupport.drawTriggerRegion(
                     rect: localRect(from: hitTestFrame),

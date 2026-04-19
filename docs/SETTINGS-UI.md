@@ -192,11 +192,16 @@ Current control shape is intentional:
 - numeric fields use integer steppers with unit labels
 - the window fill opacity control is a slider
 - the slider updates preview immediately and only saves when the drag ends
+- `Highlight trigger area` uses the options `All`, `Current`, and `None`
+- trigger fill opacity is a slider
+- trigger stroke width is editable in the same way as window stroke width
 
 Current model expectations:
 
 - `highlightFillOpacity` remains `Double`
+- `triggerFillOpacity` remains `Double`
 - `triggerGap`, `layoutGap`, and `highlightStrokeWidth` are integer-based
+- `triggerStrokeWidth` is integer-based
 
 Preview rules:
 
@@ -208,11 +213,6 @@ Current shared draw helpers:
 
 - `SettingsPreviewSupport.drawWindowHighlight(...)`
 - `SettingsPreviewSupport.drawTriggerRegion(...)`
-
-Known limitation:
-
-- trigger stroke width is still fixed in preview and runtime because there is no separate appearance field for it
-- trigger rendering is stroke-only; there is no trigger fill opacity field in the current model
 
 ### Hotkeys
 

@@ -38,6 +38,9 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(initialText.contains("\"activeLayoutGroup\""))
     #expect(initialText.contains("\"launchAtLogin\""))
     #expect(initialText.contains("\"mouseButtonNumber\""))
+    #expect(initialText.contains("\"triggerHighlightMode\""))
+    #expect(initialText.contains("\"triggerFillOpacity\""))
+    #expect(initialText.contains("\"triggerStrokeWidth\""))
     #expect(initialText.contains("\"applyLayoutByIndex\""))
     #expect(!initialText.contains("\"layoutGroups\""))
     #expect(!initialText.contains("\"includeInCycle\""))
@@ -88,6 +91,72 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(reloadedConfiguration.monitors == updatedConfiguration.monitors)
     #expect(reloadedConfiguration.layouts.map(\.id) == (1...updatedConfiguration.layouts.count).map { "layout-\($0)" })
     #expect(reloadedConfiguration.hotkeys.bindings.map(\.id) == (1...updatedConfiguration.hotkeys.bindings.count).map { "binding-\($0)" })
+}
+
+@Test func configurationStoreIgnoresUnknownFieldsInMainAndLayoutFiles() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-unknown-fields-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+
+    try writeMainConfigurationJSON(
+        """
+        {
+          "general": {
+            "isEnabled": true,
+            "launchAtLogin": false,
+            "excludedBundleIDs": [],
+            "excludedWindowTitles": [],
+            "activeLayoutGroup": "work",
+            "mouseButtonNumber": 3
+          },
+          "appearance": {
+            "triggerHighlightMode": "none",
+            "triggerFillOpacity": 0.08,
+            "triggerGap": 2,
+            "triggerStrokeWidth": 2,
+            "triggerStrokeColor": "#007AFF33",
+            "layoutGap": 1,
+            "renderWindowHighlight": true,
+            "highlightFillOpacity": 0.08,
+            "highlightStrokeWidth": 3,
+            "highlightStrokeColor": "#FFFFFFEB"
+          },
+          "dragTriggers": {
+            "enableMouseButtonDrag": true,
+            "enableModifierLeftMouseDrag": true,
+            "preferLayoutMode": true,
+            "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
+            "activationDelaySeconds": 0.3,
+            "activationMoveThreshold": 10
+          },
+          "hotkeys": {
+            "bindings": []
+          },
+          "monitors": {},
+          "unusedRootField": 1
+        }
+        """,
+        to: store
+    )
+    try writeLayoutFile(
+        "1.grid.json",
+        json: """
+        {
+          "name": "work",
+          "includeInGroupCycle": false,
+          "protect": false,
+          "sets": [],
+          "unusedLayoutField": "ignored"
+        }
+        """,
+        to: store
+    )
+
+    let configuration = try store.load()
+    #expect(configuration.general.activeLayoutGroup == "work")
+    #expect(configuration.layoutGroups.map(\.name) == ["work"])
 }
 
 @Test func defaultConfigurationMarksBuiltInGroupsAsProtected() async throws {
@@ -1185,8 +1254,8 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 @Test func appearanceSettingsDecodeMissingTriggerStrokeColorWithDefaultValue() async throws {
     let json = """
     {
-      "renderTriggerAreas": false,
-      "triggerOpacity": 0.2,
+      "triggerHighlightMode": "none",
+      "triggerFillOpacity": 0.08,
       "triggerGap": 2,
       "renderWindowHighlight": true,
       "highlightFillOpacity": 0.08,
@@ -1204,15 +1273,17 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     let settings = try JSONDecoder().decode(AppearanceSettings.self, from: data)
 
     #expect(settings.triggerStrokeColor.alpha == 0.2)
+    #expect(settings.triggerFillOpacity == 0.08)
     #expect(settings.layoutGap == 1)
 }
 
 @Test func appearanceSettingsDecodeInvalidLayoutGapFallsBackToDefaultValue() async throws {
     let json = """
     {
-      "renderTriggerAreas": false,
-      "triggerOpacity": 0.2,
+      "triggerHighlightMode": "invalid",
+      "triggerFillOpacity": 0.25,
       "triggerGap": 2,
+      "triggerStrokeWidth": 5,
       "triggerStrokeColor": {
         "red": 0,
         "green": 0.4784313725,
@@ -1235,15 +1306,19 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     let data = try #require(json.data(using: .utf8))
     let settings = try JSONDecoder().decode(AppearanceSettings.self, from: data)
 
+    #expect(settings.triggerHighlightMode == .all)
+    #expect(settings.triggerFillOpacity == 0.25)
+    #expect(settings.triggerStrokeWidth == 5)
     #expect(settings.layoutGap == 1)
 }
 
 @Test func appearanceConfigurationDecodeInvalidLayoutGapFallsBackToDefaultValue() async throws {
     let json = """
     {
-      "renderTriggerAreas": false,
-      "triggerOpacity": 0.2,
+      "triggerHighlightMode": "invalid",
+      "triggerFillOpacity": 0.25,
       "triggerGap": 2,
+      "triggerStrokeWidth": 4,
       "triggerStrokeColor": "#007AFF33",
       "layoutGap": "invalid",
       "renderWindowHighlight": true,
@@ -1256,6 +1331,9 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     let data = try #require(json.data(using: .utf8))
     let configuration = try JSONDecoder().decode(AppearanceConfiguration.self, from: data)
 
+    #expect(configuration.triggerHighlightMode == "all")
+    #expect(configuration.triggerFillOpacity == 0.25)
+    #expect(configuration.triggerStrokeWidth == 4)
     #expect(configuration.layoutGap == 1)
 }
 

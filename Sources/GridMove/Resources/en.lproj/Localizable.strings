@@ -47,6 +47,8 @@
 "settingsScreenGridValue" = "Screen";
 "settingsMenuBarTriggerValue" = "Menu bar";
 "settingsNoneValue" = "None";
+"settingsAllValue" = "All";
+"settingsCurrentValue" = "Current";
 "settingsAllMonitorsValue" = "All monitor";
 "settingsMainMonitorValue" = "Main monitor";
 "settingsCustomMonitorsValue" = "Custom monitors";

@@ -47,6 +47,8 @@
 "settingsScreenGridValue" = "屏幕";
 "settingsMenuBarTriggerValue" = "菜单栏";
 "settingsNoneValue" = "无";
+"settingsAllValue" = "所有";
+"settingsCurrentValue" = "当前";
 "settingsAllMonitorsValue" = "所有显示器";
 "settingsMainMonitorValue" = "主显示器";
 "settingsCustomMonitorsValue" = "自定义显示器";

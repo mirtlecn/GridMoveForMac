@@ -55,15 +55,19 @@ struct AppearanceSettingsViewControllerTests {
         controller.setHighlightFillOpacityForTesting(0.25)
         controller.setHighlightStrokeWidthForTesting(6)
         controller.setLayoutGapForTesting(4)
-        controller.setRenderTriggerAreasForTesting(true)
+        controller.setTriggerHighlightModeForTesting(.all)
+        controller.setTriggerFillOpacityForTesting(0.18)
         controller.setTriggerGapForTesting(3)
+        controller.setTriggerStrokeWidthForTesting(5)
 
         #expect(state.configuration.appearance.renderWindowHighlight == false)
         #expect(state.configuration.appearance.highlightFillOpacity == 0.25)
         #expect(state.configuration.appearance.highlightStrokeWidth == 6)
         #expect(state.configuration.appearance.layoutGap == 4)
-        #expect(state.configuration.appearance.renderTriggerAreas == true)
+        #expect(state.configuration.appearance.triggerHighlightMode == .all)
+        #expect(state.configuration.appearance.triggerFillOpacity == 0.18)
         #expect(state.configuration.appearance.triggerGap == 3)
+        #expect(state.configuration.appearance.triggerStrokeWidth == 5)
         #expect(controller.previewConfigurationForTesting.appearance.highlightFillOpacity == 0.25)
     }
 
@@ -114,7 +118,7 @@ struct AppearanceSettingsViewControllerTests {
 
     @Test func appearancePreviewUsesBuiltInCenterTriggerSample() async throws {
         var configuration = AppConfiguration.defaultValue
-        configuration.appearance.renderTriggerAreas = true
+        configuration.appearance.triggerHighlightMode = .all
         let state = SettingsPrototypeState(configuration: configuration)
         let recorder = TestSettingsActionRecorder()
         let controller = AppearanceSettingsViewController(
@@ -152,11 +156,11 @@ struct AppearanceSettingsViewControllerTests {
         controller.loadViewIfNeeded()
 
         var reloadedConfiguration = AppConfiguration.defaultValue
-        reloadedConfiguration.appearance.renderTriggerAreas = true
+        reloadedConfiguration.appearance.triggerHighlightMode = .all
 
         state.reload(from: reloadedConfiguration)
 
-        #expect(controller.previewConfigurationForTesting.appearance.renderTriggerAreas == true)
+        #expect(controller.previewConfigurationForTesting.appearance.triggerHighlightMode == .all)
         #expect(controller.previewConfigurationForTesting.appearance.highlightFillOpacity == reloadedConfiguration.appearance.highlightFillOpacity)
     }
 

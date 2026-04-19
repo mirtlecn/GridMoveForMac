@@ -33,14 +33,14 @@ struct UICopyTests {
                 key: "settingsRemoveDraftConfirmationMessage",
                 defaultValue: "This change stays in draft mode until you click Save.",
                 preferredLanguages: ["en"]
-            ) == "This change stays in draft mode until you click Save."
+            ) == "This change stays in draft until you click Save."
         )
         #expect(
             UICopy.localizedStringForTesting(
                 key: "settingsRemoveDraftConfirmationMessage",
                 defaultValue: "This change stays in draft mode until you click Save.",
                 preferredLanguages: ["zh-Hans"]
-            ) == "这项更改会保持为草稿，直到你点击“保存”。"
+            ) == "删除后，你需要点击“保存”才能生效。"
         )
         #expect(
             UICopy.localizedStringForTesting(
