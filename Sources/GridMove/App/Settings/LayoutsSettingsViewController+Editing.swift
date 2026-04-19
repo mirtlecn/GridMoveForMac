@@ -627,6 +627,33 @@ extension LayoutsSettingsViewController {
         draftConfiguration
     }
 
+    var expandedGroupNamesForTesting: [String] {
+        treeNodes.compactMap { node in
+            guard case let .group(group, _) = node.kind,
+                  outlineView.isItemExpanded(node) else {
+                return nil
+            }
+            return group.name
+        }
+    }
+
+    func expandedSetCountForTesting(groupName: String) -> Int {
+        guard let groupNode = treeNodes.first(where: { node in
+            guard case let .group(group, _) = node.kind else {
+                return false
+            }
+            return group.name == groupName
+        }) else {
+            return 0
+        }
+
+        return groupNode.children.reduce(into: 0) { count, child in
+            if outlineView.isItemExpanded(child) {
+                count += 1
+            }
+        }
+    }
+
     func layoutTreeTitleForTesting(id layoutID: String) -> String? {
         findNode(withLayoutID: layoutID, in: treeNodes)?.title
     }

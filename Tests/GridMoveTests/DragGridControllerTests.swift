@@ -196,6 +196,31 @@ private func makeOtherMouseEvent(type: CGEventType, buttonNumber: Int64) throws 
 }
 
 @MainActor
+@Test func overlayHighlightFallsBackToCurrentWindowFrameOutsideTriggerSlots() async throws {
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController()
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { .defaultValue },
+        cycleActiveLayoutGroup: { _ in .defaultValue },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {}
+    )
+
+    let currentWindowFrame = CGRect(x: 10, y: 20, width: 300, height: 200)
+    controller.state.interactionMode = .layoutSelection
+    controller.state.currentWindowFrame = currentWindowFrame
+    controller.state.hasDraggedPastThreshold = true
+    controller.state.hoveredLayoutID = nil
+
+    #expect(controller.overlayHighlightFrame() == currentWindowFrame)
+}
+
+@MainActor
 @Test func scrollGroupCycleTrackerTriggersOncePerGestureAfterThreshold() async throws {
     var tracker = ScrollGroupCycleTracker(threshold: 6)
 

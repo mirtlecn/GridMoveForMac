@@ -166,6 +166,69 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(configuration.layoutGroups.first(where: { $0.name == "play" })?.protect == false)
 }
 
+@Test func configurationStoreDecodesMissingAndInvalidLaunchAtLoginAsFalse() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-launch-at-login-default-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+
+    let baseJSON = """
+    {
+      "general": {
+        "isEnabled": true,
+        "excludedBundleIDs": [],
+        "excludedWindowTitles": [],
+        "mouseButtonNumber": 3,
+        "activeLayoutGroup": "work"
+      },
+      "appearance": {
+        "renderTriggerAreas": false,
+        "triggerGap": 2,
+        "triggerStrokeColor": "#007AFF33",
+        "renderWindowHighlight": true,
+        "highlightFillOpacity": 0.08,
+        "highlightStrokeWidth": 3,
+        "highlightStrokeColor": "#FFFFFFEB"
+      },
+      "dragTriggers": {
+        "enableMouseButtonDrag": true,
+        "enableModifierLeftMouseDrag": true,
+        "preferLayoutMode": true,
+        "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
+        "activationDelaySeconds": 0.3,
+        "activationMoveThreshold": 10
+      },
+      "hotkeys": {
+        "bindings": []
+      },
+      "monitors": {}
+    }
+    """
+
+    let invalidLaunchAtLoginJSON = baseJSON.replacingOccurrences(
+        of: "\"mouseButtonNumber\": 3,",
+        with: "\"launchAtLogin\": \"yes\",\n        \"mouseButtonNumber\": 3,"
+    )
+
+    try writeMainConfigurationJSON(baseJSON, to: store)
+    try writeLayoutFile(
+        "1.grid.json",
+        json: """
+        {
+          "name": "work",
+          "includeInGroupCycle": false,
+          "sets": []
+        }
+        """,
+        to: store
+    )
+    #expect((try store.load()).general.launchAtLogin == false)
+
+    try writeMainConfigurationJSON(invalidLaunchAtLoginJSON, to: store)
+    #expect((try store.load()).general.launchAtLogin == false)
+}
+
 @Test func configurationStoreSavesEmptyGroupsAndSetsWithSequentialManagedFiles() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-empty-layout-groups-\(UUID().uuidString)", isDirectory: true)
@@ -343,7 +406,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     let configuration = try store.load()
 
     #expect(configuration.general.activeLayoutGroup == "work")
-    #expect(configuration.general.launchAtLogin == true)
+    #expect(configuration.general.launchAtLogin == false)
     #expect(configuration.general.mouseButtonNumber == 3)
     #expect(configuration.layoutGroups[0].includeInGroupCycle == false)
     #expect(configuration.layouts.map(\.id) == ["layout-1", "layout-2"])

@@ -93,7 +93,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
 }
 
 @MainActor
-@Test func appDelegateDecodesLaunchAtLoginMissingFieldAsTrue() async throws {
+@Test func appDelegateDecodesLaunchAtLoginMissingFieldAsFalse() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-launch-at-login-default-\(UUID().uuidString)", isDirectory: true)
     defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
@@ -141,7 +141,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     let delegate = AppDelegate(configurationStore: store, openURL: { _ in true })
     delegate.reloadConfigurationFromDisk(mode: .launch)
 
-    #expect(delegate.configuration.general.launchAtLogin == true)
+    #expect(delegate.configuration.general.launchAtLogin == false)
 }
 
 @MainActor
@@ -554,7 +554,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     delegate.showSettings()
 
     #expect(delegate.settingsVisibleStringsForTesting.contains("Mouse button 5 drag"))
-    #expect(delegate.settingsVisibleStringsForTesting.contains("Floating Panel"))
+    #expect(delegate.generalExcludedWindowTitlesForTesting == ["Floating Panel"])
 
     delegate.closeSettingsWindowForTesting()
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
@@ -593,6 +593,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsAllMonitorsValue))
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.defaultLayoutNames[0]))
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsNameLabel))
+    delegate.selectLayoutsLayoutForTesting(id: "layout-1")
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsLayoutInlineTabTitle))
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsWindowAreaInlineTabTitle))
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsTriggerAreaInlineTabTitle))

@@ -509,7 +509,7 @@ struct GeneralSettings: Codable, Equatable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         isEnabled = try container.decodeIfPresent(Bool.self, forKey: .isEnabled) ?? true
-        launchAtLogin = try container.decodeIfPresent(Bool.self, forKey: .launchAtLogin) ?? true
+        launchAtLogin = (try? container.decode(Bool.self, forKey: .launchAtLogin)) ?? false
         excludedBundleIDs = try container.decode([String].self, forKey: .excludedBundleIDs)
         excludedWindowTitles = try container.decode([String].self, forKey: .excludedWindowTitles)
         activeLayoutGroup = try container.decode(String.self, forKey: .activeLayoutGroup)

@@ -21,6 +21,8 @@ final class GeneralSettingsViewController: NSViewController {
     private lazy var mouseButtonControl = makeMouseButtonControl()
     private lazy var modifierLeftMouseDragCheckbox = makeCheckboxRow(title: UICopy.modifierLeftMouseDragMenuTitle)
     private lazy var preferLayoutModeCheckbox = makeCheckboxRow(title: UICopy.preferLayoutModeMenuTitle)
+    private let enableDescriptionLabel = makeSecondaryLabel(UICopy.enableMenuDescription)
+    private let preferLayoutModeDescriptionLabel = makeSecondaryLabel("")
 
     init(prototypeState: SettingsPrototypeState, actionHandler: any SettingsActionHandling) {
         self.prototypeState = prototypeState
@@ -77,7 +79,10 @@ final class GeneralSettingsViewController: NSViewController {
                     makeLabeledControlRow(label: UICopy.settingsMouseButtonNumberLabel, control: mouseButtonControl),
                     modifierLeftMouseDragCheckbox,
                     makeLabeledControlRow(label: UICopy.settingsModifierGroupsLabel, control: modifierGroupsControl),
-                    preferLayoutModeCheckbox,
+                    makeCheckboxWithDescription(
+                        checkbox: preferLayoutModeCheckbox,
+                        descriptionLabel: preferLayoutModeDescriptionLabel
+                    ),
                 ]
             )
         )
@@ -160,6 +165,9 @@ final class GeneralSettingsViewController: NSViewController {
         mouseButtonControl.setValue(configuration.general.mouseButtonNumber)
         modifierLeftMouseDragCheckbox.state = configuration.dragTriggers.enableModifierLeftMouseDrag ? .on : .off
         preferLayoutModeCheckbox.state = configuration.dragTriggers.preferLayoutMode ? .on : .off
+        preferLayoutModeDescriptionLabel.stringValue = configuration.dragTriggers.preferLayoutMode
+            ? UICopy.preferLayoutModeEnabledDescription
+            : UICopy.preferLayoutModeDisabledDescription
 
         modifierGroupsControl.items = modifierGroupDisplayNames
         excludedBundleIDsControl.items = excludedBundleIDs
@@ -186,7 +194,12 @@ final class GeneralSettingsViewController: NSViewController {
 
     private func makeRuntimeRows() -> NSView {
         let rowsStackView = makeVerticalGroup(spacing: 9)
-        rowsStackView.addArrangedSubview(enableCheckbox)
+        rowsStackView.addArrangedSubview(
+            makeCheckboxWithDescription(
+                checkbox: enableCheckbox,
+                descriptionLabel: enableDescriptionLabel
+            )
+        )
         rowsStackView.addArrangedSubview(launchAtLoginCheckbox)
         return makeIndentedContainer(for: rowsStackView)
     }
@@ -459,6 +472,18 @@ extension GeneralSettingsViewController {
     func setPreferLayoutModeForTesting(_ isEnabled: Bool) {
         preferLayoutModeCheckbox.state = isEnabled ? .on : .off
         handlePreferLayoutModeToggle(preferLayoutModeCheckbox)
+    }
+
+    var preferLayoutModeDescriptionForTesting: String {
+        preferLayoutModeDescriptionLabel.stringValue
+    }
+
+    var enableDescriptionForTesting: String {
+        enableDescriptionLabel.stringValue
+    }
+
+    var excludedWindowTitlesForTesting: [String] {
+        excludedWindowTitles
     }
 
     func addModifierGroupForTesting(_ modifierKeys: [ModifierKey]) {

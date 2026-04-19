@@ -343,6 +343,37 @@ func makeCenteredContainer(for view: NSView) -> NSView {
 }
 
 @MainActor
+func makeControlWithDescription(
+    control: NSView,
+    descriptionLabel: NSTextField,
+    descriptionLeadingInset: CGFloat = 0
+) -> NSView {
+    let stackView = makeVerticalGroup(spacing: 4)
+    stackView.addArrangedSubview(control)
+
+    let descriptionRow = makeHorizontalGroup(spacing: 0)
+    if descriptionLeadingInset > 0 {
+        let spacer = NSView()
+        spacer.widthAnchor.constraint(equalToConstant: descriptionLeadingInset).isActive = true
+        descriptionRow.addArrangedSubview(spacer)
+    }
+    descriptionRow.addArrangedSubview(descriptionLabel)
+    descriptionRow.addArrangedSubview(NSView())
+    stackView.addArrangedSubview(descriptionRow)
+
+    return stackView
+}
+
+@MainActor
+func makeCheckboxWithDescription(checkbox: NSButton, descriptionLabel: NSTextField) -> NSView {
+    makeControlWithDescription(
+        control: checkbox,
+        descriptionLabel: descriptionLabel,
+        descriptionLeadingInset: 22
+    )
+}
+
+@MainActor
 func makeFullWidthContainer(for view: NSView) -> NSView {
     let containerView = NSView()
     view.translatesAutoresizingMaskIntoConstraints = false

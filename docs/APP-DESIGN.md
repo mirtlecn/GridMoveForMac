@@ -78,7 +78,7 @@ Important properties:
 - persisted `applyLayoutByIndex` actions point to the 1-based layout index within the active layout group's indexed layouts
 - stroke colors are stored as `#RRGGBBAA`
 - `general.activeLayoutGroup` selects the currently active layout group
-- `general.launchAtLogin` stores the desired login-item state and defaults to `true` when missing
+- `general.launchAtLogin` stores the desired login-item state and defaults to `false` when missing or invalid
 - `general.mouseButtonNumber` selects the hold-to-drag mouse button using user-facing numbering, where `3` is the standard middle button
 - the menu bar shows `Middle mouse drag` when `general.mouseButtonNumber == 3`, and `Mouse button <n> drag` for other configured button numbers
 - `monitors` stores the last known monitor name by persistent display UUID using the shape `"<monitor-uuid>": "<monitor-name>"`
@@ -109,7 +109,7 @@ The built-in default configuration currently resolves to the following values.
 `general`
 
 - `isEnabled = true`
-- `launchAtLogin = true`
+- `launchAtLogin = false`
 - `excludedBundleIDs = ["com.apple.Spotlight"]`
 - `excludedWindowTitles = []`
 - `mouseButtonNumber = 3`
@@ -193,7 +193,7 @@ Compatibility behavior:
 - on manual reload, full-load failures are rejected and the current in-memory configuration keeps running
 - on manual reload, full success applies the config and posts a success notification
 - on manual reload, partial success applies valid layout files and warns about skipped files
-- missing `general.launchAtLogin` defaults to `true`
+- missing or invalid `general.launchAtLogin` defaults to `false`
 - missing `preferLayoutMode` defaults to `true`
 - missing `includeInGroupCycle` defaults to `true`
 - missing `triggerRegion` means the layout is menu, shortcut, and CLI only

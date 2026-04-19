@@ -32,6 +32,38 @@ struct GeneralSettingsViewControllerTests {
         #expect(state.configuration.general.excludedWindowTitles.contains("Floating Panel"))
     }
 
+    @Test func preferLayoutModeShowsStateSpecificDescription() async throws {
+        let state = SettingsPrototypeState(configuration: .defaultValue)
+        let recorder = TestSettingsActionRecorder()
+        let controller = GeneralSettingsViewController(
+            prototypeState: state,
+            actionHandler: recorder.makeActionHandler()
+        )
+        controller.loadViewIfNeeded()
+
+        #expect(controller.preferLayoutModeDescriptionForTesting == UICopy.preferLayoutModeEnabledDescription)
+
+        controller.setPreferLayoutModeForTesting(false)
+
+        #expect(controller.preferLayoutModeDescriptionForTesting == UICopy.preferLayoutModeDisabledDescription)
+    }
+
+    @Test func enableShowsStaticDescription() async throws {
+        let state = SettingsPrototypeState(configuration: .defaultValue)
+        let recorder = TestSettingsActionRecorder()
+        let controller = GeneralSettingsViewController(
+            prototypeState: state,
+            actionHandler: recorder.makeActionHandler()
+        )
+        controller.loadViewIfNeeded()
+
+        #expect(controller.enableDescriptionForTesting == UICopy.enableMenuDescription)
+
+        controller.setEnabledForTesting(false)
+
+        #expect(controller.enableDescriptionForTesting == UICopy.enableMenuDescription)
+    }
+
     @Test func modifierGroupSheetDisablesConfirmationForEmptySelection() async throws {
         let contentView = ModifierGroupSheetContentView()
 

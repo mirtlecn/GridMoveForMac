@@ -863,6 +863,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return generalController.isEnabledForTesting
     }
 
+    var generalExcludedWindowTitlesForTesting: [String]? {
+        guard let tabViewController = settingsWindowController?.window?.contentViewController as? NSTabViewController,
+              tabViewController.tabViewItems.indices.contains(0),
+              let generalController = tabViewController.tabViewItems[0].viewController as? GeneralSettingsViewController else {
+            return nil
+        }
+
+        generalController.loadViewIfNeeded()
+        return generalController.excludedWindowTitlesForTesting
+    }
+
     func setGeneralEnabledFromSettingsForTesting(_ isEnabled: Bool) {
         guard let tabViewController = settingsWindowController?.window?.contentViewController as? NSTabViewController,
               tabViewController.tabViewItems.indices.contains(0),

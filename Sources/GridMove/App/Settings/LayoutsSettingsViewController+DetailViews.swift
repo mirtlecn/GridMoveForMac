@@ -64,9 +64,14 @@ extension LayoutsSettingsViewController {
                 configuration.layoutGroups[groupIndex].includeInGroupCycle = isOn
             }
         }
+        let includeInCycleDescriptionLabel = makeSecondaryLabel(UICopy.settingsIncludeInGroupCycleDescription)
+        let includeInCycleContent = makeControlWithDescription(
+            control: includeInCycleControl,
+            descriptionLabel: includeInCycleDescriptionLabel
+        )
         let formView = makeInlineTabContent(rows: [
             makeLabeledControlRow(label: UICopy.settingsNameLabel, control: nameControl),
-            makeLabeledControlRow(label: UICopy.settingsIncludeInGroupCycleLabel, control: includeInCycleControl),
+            makeLabeledControlRow(label: UICopy.settingsIncludeInGroupCycleLabel, control: includeInCycleContent),
         ], width: 460)
         contentStackView.addArrangedSubview(makeCenteredContainer(for: formView))
         return makeDetailPanelContainer(contentView: contentStackView)

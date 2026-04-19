@@ -78,6 +78,16 @@ struct LayoutsSettingsViewControllerTests {
         #expect(controller.removeButtonToolTipForTesting == UICopy.settingsProtectedGroupTooltip)
     }
 
+    @Test func layoutsTreeInitiallyExpandsOnlyActiveGroup() async throws {
+        var configuration = AppConfiguration.defaultValue
+        configuration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
+        let (controller, _, _) = makeController(configuration: configuration)
+
+        #expect(controller.expandedGroupNamesForTesting == [AppConfiguration.fullscreenGroupName])
+        #expect(controller.expandedSetCountForTesting(groupName: AppConfiguration.fullscreenGroupName) == 2)
+        #expect(controller.selectedGroupNameForTesting == AppConfiguration.fullscreenGroupName)
+    }
+
     @Test func saveButtonTracksLayoutsDraftChangesAndCommit() async throws {
         let (controller, state, recorder) = makeController()
 

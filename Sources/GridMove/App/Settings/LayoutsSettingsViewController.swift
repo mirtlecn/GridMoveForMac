@@ -111,7 +111,7 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
         observePrototypeState()
 
         outlineView.reloadData()
-        outlineView.expandItem(nil, expandChildren: true)
+        applyInitialExpansionState()
         selectFallbackNodeIfNeeded()
         updateCommandBar()
     }
@@ -226,7 +226,7 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
 
     private func selectFallbackNodeIfNeeded() {
         guard outlineView.selectedRow < 0,
-              let defaultSelection = firstAvailableSelection(in: treeNodes) else {
+              let defaultSelection = preferredInitialSelection(in: treeNodes) else {
             return
         }
         reloadTree(preserving: defaultSelection)
@@ -267,14 +267,15 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
     }
 
     func reloadTree(preserving selection: NodeSelection?) {
+        let expandedSelections = expandedNodeSelections()
         treeNodes = LayoutsTreeNode.makeTree(
             configuration: draftConfiguration,
             monitorMap: prototypeState.currentMonitorNameMap()
         )
         outlineView.reloadData()
-        outlineView.expandItem(nil, expandChildren: true)
+        restoreExpansionState(from: expandedSelections)
 
-        let effectiveSelection = selection ?? firstAvailableSelection(in: treeNodes)
+        let effectiveSelection = selection ?? preferredInitialSelection(in: treeNodes)
         guard let effectiveSelection,
               let node = findNode(matching: effectiveSelection, in: treeNodes) else {
             detailContainerView.subviews.forEach { $0.removeFromSuperview() }
@@ -282,6 +283,7 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
             return
         }
 
+        expandAncestors(of: node, in: treeNodes)
         let row = outlineView.row(forItem: node)
         guard row >= 0 else {
             return
@@ -302,6 +304,66 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
             }
         }
         return nil
+    }
+
+    private func preferredInitialSelection(in nodes: [LayoutsTreeNode]) -> NodeSelection? {
+        if let activeGroupNode = findNode(
+            matching: .group(name: draftConfiguration.general.activeLayoutGroup),
+            in: nodes
+        ) {
+            return selectionKey(for: activeGroupNode)
+        }
+        return firstAvailableSelection(in: nodes)
+    }
+
+    private func applyInitialExpansionState() {
+        restoreExpansionState(from: [])
+    }
+
+    private func expandedNodeSelections() -> [NodeSelection] {
+        var expandedSelections: [NodeSelection] = []
+        for row in 0..<outlineView.numberOfRows {
+            guard let node = outlineView.item(atRow: row) as? LayoutsTreeNode,
+                  outlineView.isItemExpanded(node) else {
+                continue
+            }
+            expandedSelections.append(selectionKey(for: node))
+        }
+        return expandedSelections
+    }
+
+    private func restoreExpansionState(from expandedSelections: [NodeSelection]) {
+        if expandedSelections.isEmpty {
+            if let activeGroupNode = findNode(
+                matching: .group(name: draftConfiguration.general.activeLayoutGroup),
+                in: treeNodes
+            ) {
+                outlineView.expandItem(activeGroupNode, expandChildren: true)
+            }
+            return
+        }
+
+        for selection in expandedSelections {
+            guard let node = findNode(matching: selection, in: treeNodes) else {
+                continue
+            }
+            expandAncestors(of: node, in: treeNodes)
+            outlineView.expandItem(node)
+        }
+    }
+
+    @discardableResult
+    private func expandAncestors(of targetNode: LayoutsTreeNode, in nodes: [LayoutsTreeNode]) -> Bool {
+        for node in nodes {
+            if node === targetNode {
+                return true
+            }
+            if expandAncestors(of: targetNode, in: node.children) {
+                outlineView.expandItem(node)
+                return true
+            }
+        }
+        return false
     }
 
     func selectionKey(for node: LayoutsTreeNode) -> NodeSelection {
