@@ -547,8 +547,8 @@ extension LayoutsSettingsViewController {
         removeButton.toolTip
     }
 
-    var removeButtonTitleForTesting: String {
-        removeButton.title
+    var removeButtonUsesSymbolOnlyPresentationForTesting: Bool {
+        removeButton.title.isEmpty && removeButton.image != nil
     }
 
     var selectedGroupNameForTesting: String? {

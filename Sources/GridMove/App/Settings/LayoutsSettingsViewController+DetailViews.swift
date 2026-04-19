@@ -427,6 +427,9 @@ extension LayoutsSettingsViewController {
         addButton.action = #selector(handleAddAction(_:))
 
         removeButton.bezelStyle = .rounded
+        removeButton.controlSize = .small
+        removeButton.image = NSImage(systemSymbolName: "minus", accessibilityDescription: UICopy.settingsRemoveButtonTitle)
+        removeButton.imagePosition = .imageOnly
         removeButton.target = self
         removeButton.action = #selector(handleRemoveAction(_:))
 
@@ -473,7 +476,7 @@ extension LayoutsSettingsViewController {
 
         saveButton.title = UICopy.settingsSaveButtonTitle
         restoreButton.title = UICopy.settingsRestoreButtonTitle
-        removeButton.title = "-"
+        removeButton.title = ""
         saveButton.isEnabled = prototypeState.hasLayoutsDraftChanges
         restoreButton.isHidden = !prototypeState.hasLayoutsDraftChanges
         restoreButton.isEnabled = prototypeState.hasLayoutsDraftChanges
