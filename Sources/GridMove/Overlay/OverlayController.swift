@@ -22,12 +22,13 @@ final class OverlayController {
         let highlightFrame: CGRect?
         let hoveredLayoutID: String?
         let badge: OverlayBadgeState?
-        let cursor: OverlayCursorState?
         let configuration: AppConfiguration
     }
 
     private var panel: OverlayPanel?
     private var screenIdentifier: String?
+    private var cursorPanel: OverlayPanel?
+    private var cursorScreenIdentifier: String?
     private var flashGeneration: UInt64 = 0
     private var badgeGeneration: UInt64 = 0
     private var pendingPostFlashOverlayState: OverlayContentState?
@@ -43,20 +44,20 @@ final class OverlayController {
     ) {
         cancelPendingFlash()
 
-        guard shouldRenderOverlay(configuration: configuration, badgeText: badgeText, cursor: cursor) else {
-            dismiss()
-            return
+        if shouldRenderOverlay(configuration: configuration, badgeText: badgeText) {
+            showOverlay(
+                screen: screen,
+                slots: slots,
+                highlightFrame: highlightFrame,
+                hoveredLayoutID: hoveredLayoutID,
+                configuration: configuration,
+                badge: badgeText.map { OverlayBadgeState(text: $0) }
+            )
+        } else {
+            dismissPanel()
         }
 
-        showOverlay(
-            screen: screen,
-            slots: slots,
-            highlightFrame: highlightFrame,
-            hoveredLayoutID: hoveredLayoutID,
-            configuration: configuration,
-            badge: badgeText.map { OverlayBadgeState(text: $0) },
-            cursor: cursor
-        )
+        updateCursorOverlay(screen: screen, cursor: cursor)
     }
 
     func flashHighlight(
@@ -64,9 +65,11 @@ final class OverlayController {
         screen: NSScreen,
         slots: [ResolvedTriggerSlot] = [],
         configuration: AppConfiguration,
-        keepsOverlayVisibleAfterFlash: Bool = false
+        keepsOverlayVisibleAfterFlash: Bool = false,
+        cursor: OverlayCursorState? = nil
     ) {
         cancelPendingFlash()
+        updateCursorOverlay(screen: screen, cursor: cursor)
 
         guard configuration.appearance.renderWindowHighlight else {
             if keepsOverlayVisibleAfterFlash {
@@ -75,11 +78,10 @@ final class OverlayController {
                     slots: slots,
                     highlightFrame: frame,
                     hoveredLayoutID: nil,
-                    configuration: configuration,
-                    cursor: nil
+                    configuration: configuration
                 )
             } else {
-                dismiss()
+                dismissPanel()
             }
             return
         }
@@ -90,7 +92,6 @@ final class OverlayController {
             highlightFrame: frame,
             hoveredLayoutID: nil,
             badge: nil,
-            cursor: nil,
             configuration: configuration
         )
         pendingPostFlashOverlayState = keepsOverlayVisibleAfterFlash ? steadyState : nil
@@ -100,8 +101,7 @@ final class OverlayController {
             highlightFrame: steadyState.highlightFrame,
             hoveredLayoutID: steadyState.hoveredLayoutID,
             configuration: steadyState.configuration,
-            badge: steadyState.badge,
-            cursor: steadyState.cursor
+            badge: steadyState.badge
         )
         panel?.alphaValue = 1.0
 
@@ -123,8 +123,7 @@ final class OverlayController {
                             highlightFrame: pendingPostFlashOverlayState.highlightFrame,
                             hoveredLayoutID: pendingPostFlashOverlayState.hoveredLayoutID,
                             configuration: pendingPostFlashOverlayState.configuration,
-                            badge: pendingPostFlashOverlayState.badge,
-                            cursor: pendingPostFlashOverlayState.cursor
+                            badge: pendingPostFlashOverlayState.badge
                         )
                         self.pendingPostFlashOverlayState = nil
                     } else {
@@ -144,14 +143,14 @@ final class OverlayController {
         keepsOverlayVisibleAfterFlash: Bool,
         cursor: OverlayCursorState?
     ) {
+        updateCursorOverlay(screen: screen, cursor: cursor)
         showOverlay(
             screen: screen,
             slots: slots,
             highlightFrame: highlightFrame,
             hoveredLayoutID: nil,
             configuration: configuration,
-            badge: OverlayBadgeState(text: text),
-            cursor: cursor
+            badge: OverlayBadgeState(text: text)
         )
 
         badgeGeneration &+= 1
@@ -169,11 +168,10 @@ final class OverlayController {
                         highlightFrame: highlightFrame,
                         hoveredLayoutID: nil,
                         configuration: configuration,
-                        badge: nil,
-                        cursor: cursor
+                        badge: nil
                     )
                 } else {
-                    self.dismiss()
+                    self.dismissPanel()
                 }
             }
         }
@@ -181,9 +179,8 @@ final class OverlayController {
 
     func dismiss() {
         cancelPendingFlash()
-        panel?.orderOut(nil)
-        panel = nil
-        screenIdentifier = nil
+        dismissPanel()
+        dismissCursorPanel()
     }
 
     private func cancelPendingFlash() {
@@ -195,13 +192,11 @@ final class OverlayController {
 
     private func shouldRenderOverlay(
         configuration: AppConfiguration,
-        badgeText: String?,
-        cursor: OverlayCursorState?
+        badgeText: String?
     ) -> Bool {
         configuration.appearance.renderTriggerAreas
             || configuration.appearance.renderWindowHighlight
             || badgeText != nil
-            || cursor != nil
     }
 
     private func showOverlay(
@@ -210,8 +205,7 @@ final class OverlayController {
         highlightFrame: CGRect?,
         hoveredLayoutID: String?,
         configuration: AppConfiguration,
-        badge: OverlayBadgeState? = nil,
-        cursor: OverlayCursorState? = nil
+        badge: OverlayBadgeState? = nil
     ) {
         let identifier = Geometry.screenIdentifier(for: screen)
         if panel == nil || screenIdentifier != identifier {
@@ -240,7 +234,7 @@ final class OverlayController {
         overlayView.hoveredLayoutID = hoveredLayoutID
         overlayView.configuration = configuration
         overlayView.badge = badge
-        overlayView.cursor = cursor
+        overlayView.cursor = nil
         overlayView.needsDisplay = true
     }
 
@@ -250,6 +244,50 @@ final class OverlayController {
         screenIdentifier = nil
         pendingPostFlashOverlayState = nil
         badgeGeneration &+= 1
+    }
+
+    private func updateCursorOverlay(screen: NSScreen, cursor: OverlayCursorState?) {
+        guard let cursor else {
+            dismissCursorPanel()
+            return
+        }
+
+        let identifier = Geometry.screenIdentifier(for: screen)
+        if cursorPanel == nil || cursorScreenIdentifier != identifier {
+            dismissCursorPanel()
+            let panel = OverlayPanel(contentRect: screen.frame)
+            panel.setFrame(screen.frame, display: true)
+            panel.orderFrontRegardless()
+            cursorPanel = panel
+            cursorScreenIdentifier = identifier
+        } else {
+            cursorPanel?.setFrame(screen.frame, display: true)
+            cursorPanel?.orderFrontRegardless()
+        }
+
+        let overlayView: OverlayView
+        if let currentView = cursorPanel?.contentView as? OverlayView {
+            overlayView = currentView
+        } else {
+            overlayView = OverlayView(frame: NSRect(origin: .zero, size: screen.frame.size))
+            cursorPanel?.contentView = overlayView
+        }
+
+        overlayView.frame = NSRect(origin: .zero, size: screen.frame.size)
+        overlayView.screenOrigin = screen.frame.origin
+        overlayView.resolvedSlots = []
+        overlayView.highlightFrame = nil
+        overlayView.hoveredLayoutID = nil
+        overlayView.configuration = .defaultValue
+        overlayView.badge = nil
+        overlayView.cursor = cursor
+        overlayView.needsDisplay = true
+    }
+
+    private func dismissCursorPanel() {
+        cursorPanel?.orderOut(nil)
+        cursorPanel = nil
+        cursorScreenIdentifier = nil
     }
 }
 
@@ -278,6 +316,8 @@ private final class OverlayPanel: NSPanel {
 
 @MainActor
 private final class OverlayView: NSView {
+    private static let cursorOffset = CGPoint(x: 10, y: -18)
+
     var screenOrigin: CGPoint = .zero
     var resolvedSlots: [ResolvedTriggerSlot] = []
     var highlightFrame: CGRect?
@@ -372,8 +412,8 @@ private final class OverlayView: NSView {
 
     private func drawCursor(_ cursor: OverlayCursorState) {
         let localPoint = CGPoint(
-            x: cursor.point.x - screenOrigin.x,
-            y: cursor.point.y - screenOrigin.y
+            x: cursor.point.x - screenOrigin.x + Self.cursorOffset.x,
+            y: cursor.point.y - screenOrigin.y + Self.cursorOffset.y
         )
 
         switch cursor.mode {
@@ -385,10 +425,10 @@ private final class OverlayView: NSView {
     }
 
     private func drawLayoutCursor(at point: CGPoint) {
-        let outerRadius: CGFloat = 14
-        let innerRadius: CGFloat = 4
-        let lineLength: CGFloat = 10
-        let gap: CGFloat = 8
+        let outerRadius: CGFloat = 8
+        let innerRadius: CGFloat = 2.25
+        let lineLength: CGFloat = 5
+        let gap: CGFloat = 4.5
 
         let ringPath = NSBezierPath(ovalIn: CGRect(
             x: point.x - outerRadius,
@@ -396,11 +436,11 @@ private final class OverlayView: NSView {
             width: outerRadius * 2,
             height: outerRadius * 2
         ))
-        ringPath.lineWidth = 2.5
+        ringPath.lineWidth = 2
         applyCursorShadow()
         cursorOutlineColor.setStroke()
         ringPath.stroke()
-        ringPath.lineWidth = 1.25
+        ringPath.lineWidth = 1
         cursorFillColor.setStroke()
         ringPath.stroke()
 
@@ -414,7 +454,7 @@ private final class OverlayView: NSView {
         cursorOutlineColor.setFill()
         centerPath.fill()
         cursorFillColor.setFill()
-        NSBezierPath(ovalIn: centerRect.insetBy(dx: 1.5, dy: 1.5)).fill()
+        NSBezierPath(ovalIn: centerRect.insetBy(dx: 1, dy: 1)).fill()
 
         let crosshairPath = NSBezierPath()
         crosshairPath.lineCapStyle = .round
@@ -426,47 +466,106 @@ private final class OverlayView: NSView {
         crosshairPath.line(to: CGPoint(x: point.x, y: point.y - gap - lineLength))
         crosshairPath.move(to: CGPoint(x: point.x - gap, y: point.y))
         crosshairPath.line(to: CGPoint(x: point.x - gap - lineLength, y: point.y))
-        crosshairPath.lineWidth = 3.5
+        crosshairPath.lineWidth = 2.75
         cursorOutlineColor.setStroke()
         crosshairPath.stroke()
-        crosshairPath.lineWidth = 1.5
+        crosshairPath.lineWidth = 1
         cursorFillColor.setStroke()
         crosshairPath.stroke()
     }
 
     private func drawMoveCursor(at point: CGPoint) {
-        let arrowPath = NSBezierPath()
-        arrowPath.move(to: CGPoint(x: point.x - 2, y: point.y + 11))
-        arrowPath.line(to: CGPoint(x: point.x + 8, y: point.y + 1))
-        arrowPath.line(to: CGPoint(x: point.x + 2, y: point.y - 1))
-        arrowPath.line(to: CGPoint(x: point.x + 6, y: point.y - 10))
-        arrowPath.line(to: CGPoint(x: point.x - 1, y: point.y - 6))
-        arrowPath.line(to: CGPoint(x: point.x - 8, y: point.y - 12))
-        arrowPath.line(to: CGPoint(x: point.x - 6, y: point.y - 4))
-        arrowPath.line(to: CGPoint(x: point.x - 15, y: point.y))
-        arrowPath.close()
-
+        let coreRadius: CGFloat = 4
+        let arrowInset: CGFloat = 7
+        let arrowSize: CGFloat = 4
+        let centerPath = NSBezierPath(ovalIn: CGRect(
+            x: point.x - coreRadius,
+            y: point.y - coreRadius,
+            width: coreRadius * 2,
+            height: coreRadius * 2
+        ))
         applyCursorShadow()
-        cursorFillColor.setFill()
-        arrowPath.fill()
-        arrowPath.lineWidth = 2.5
-        arrowPath.lineJoinStyle = .round
+        centerPath.lineWidth = 2
         cursorOutlineColor.setStroke()
-        arrowPath.stroke()
+        centerPath.stroke()
+        centerPath.lineWidth = 1
+        cursorFillColor.setStroke()
+        centerPath.stroke()
 
-        let gripPath = NSBezierPath(ovalIn: CGRect(x: point.x - 5, y: point.y - 5, width: 10, height: 10))
-        cursorAccentColor.setFill()
-        gripPath.fill()
-        gripPath.lineWidth = 1
+        drawMoveArrow(
+            from: CGPoint(x: point.x, y: point.y + coreRadius + 1.5),
+            to: CGPoint(x: point.x, y: point.y + arrowInset),
+            direction: .up,
+            size: arrowSize
+        )
+        drawMoveArrow(
+            from: CGPoint(x: point.x, y: point.y - coreRadius - 1.5),
+            to: CGPoint(x: point.x, y: point.y - arrowInset),
+            direction: .down,
+            size: arrowSize
+        )
+        drawMoveArrow(
+            from: CGPoint(x: point.x - coreRadius - 1.5, y: point.y),
+            to: CGPoint(x: point.x - arrowInset, y: point.y),
+            direction: .left,
+            size: arrowSize
+        )
+        drawMoveArrow(
+            from: CGPoint(x: point.x + coreRadius + 1.5, y: point.y),
+            to: CGPoint(x: point.x + arrowInset, y: point.y),
+            direction: .right,
+            size: arrowSize
+        )
+    }
+
+    private func drawMoveArrow(from start: CGPoint, to end: CGPoint, direction: MoveArrowDirection, size: CGFloat) {
+        let shaftPath = NSBezierPath()
+        shaftPath.lineCapStyle = .round
+        shaftPath.move(to: start)
+        shaftPath.line(to: end)
+        shaftPath.lineWidth = 2.75
         cursorOutlineColor.setStroke()
-        gripPath.stroke()
+        shaftPath.stroke()
+        shaftPath.lineWidth = 1
+        cursorFillColor.setStroke()
+        shaftPath.stroke()
+
+        let tipA: CGPoint
+        let tipB: CGPoint
+        switch direction {
+        case .up:
+            tipA = CGPoint(x: end.x - size, y: end.y - size)
+            tipB = CGPoint(x: end.x + size, y: end.y - size)
+        case .down:
+            tipA = CGPoint(x: end.x - size, y: end.y + size)
+            tipB = CGPoint(x: end.x + size, y: end.y + size)
+        case .left:
+            tipA = CGPoint(x: end.x + size, y: end.y - size)
+            tipB = CGPoint(x: end.x + size, y: end.y + size)
+        case .right:
+            tipA = CGPoint(x: end.x - size, y: end.y - size)
+            tipB = CGPoint(x: end.x - size, y: end.y + size)
+        }
+
+        let headPath = NSBezierPath()
+        headPath.lineCapStyle = .round
+        headPath.lineJoinStyle = .round
+        headPath.move(to: tipA)
+        headPath.line(to: end)
+        headPath.line(to: tipB)
+        headPath.lineWidth = 2.75
+        cursorOutlineColor.setStroke()
+        headPath.stroke()
+        headPath.lineWidth = 1
+        cursorFillColor.setStroke()
+        headPath.stroke()
     }
 
     private func applyCursorShadow() {
         let shadow = NSShadow()
-        shadow.shadowColor = NSColor.black.withAlphaComponent(0.35)
-        shadow.shadowBlurRadius = 7
-        shadow.shadowOffset = .zero
+        shadow.shadowColor = NSColor.black.withAlphaComponent(0.14)
+        shadow.shadowBlurRadius = 1.5
+        shadow.shadowOffset = CGSize(width: 0, height: -0.5)
         shadow.set()
     }
 
@@ -478,8 +577,11 @@ private final class OverlayView: NSView {
         NSColor.black.withAlphaComponent(0.9)
     }
 
-    private var cursorAccentColor: NSColor {
-        NSColor.controlAccentColor.withAlphaComponent(0.95)
+    private enum MoveArrowDirection {
+        case up
+        case down
+        case left
+        case right
     }
 
     private func localRect(from globalRect: CGRect) -> CGRect {

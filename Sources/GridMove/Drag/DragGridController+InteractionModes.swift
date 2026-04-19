@@ -111,6 +111,8 @@ extension DragGridController {
             frame.origin = nextOrigin
             state.currentWindowFrame = frame
         }
+
+        refreshOverlay(configuration: configurationProvider())
     }
 
     func toggleInteractionMode(at point: CGPoint, configuration: AppConfiguration) {
@@ -179,7 +181,8 @@ extension DragGridController {
                 screen: screen,
                 slots: state.resolvedSlots,
                 configuration: configuration,
-                keepsOverlayVisibleAfterFlash: true
+                keepsOverlayVisibleAfterFlash: true,
+                cursor: overlayCursorState()
             )
             return
         }
@@ -214,12 +217,24 @@ extension DragGridController {
             windowController.screenContaining(point: CGPoint(x: frame.midX, y: frame.midY))
         }
         let pointerScreen = windowController.resolvedScreen(for: point, fallback: fallbackScreen)
-        _ = Self.preferredMoveOnlyFlashScreen(
+        let flashScreen = Self.preferredMoveOnlyFlashScreen(
             windowScreen: fallbackScreen,
             activeScreen: state.activeScreen,
             pointerScreen: pointerScreen
         )
-        _ = shouldFlashHighlight
+        if shouldFlashHighlight,
+           let screen = flashScreen,
+           let frame = windowFrame
+        {
+            overlayController.flashHighlight(
+                frame: frame,
+                screen: screen,
+                configuration: configuration,
+                keepsOverlayVisibleAfterFlash: false,
+                cursor: overlayCursorState()
+            )
+            return
+        }
 
         refreshOverlay(configuration: configuration)
     }
