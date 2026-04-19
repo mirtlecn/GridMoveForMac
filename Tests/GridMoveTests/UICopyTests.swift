@@ -63,5 +63,19 @@ struct UICopyTests {
                 preferredLanguages: ["zh-Hans"]
             ) == "这会把所有设置恢复为内置默认值。"
         )
+        #expect(
+            UICopy.localizedStringForTesting(
+                key: "settingsRestoreButtonTitle",
+                defaultValue: "Restore",
+                preferredLanguages: ["en"]
+            ) == "Restore"
+        )
+        #expect(
+            UICopy.localizedStringForTesting(
+                key: "settingsRestoreButtonTitle",
+                defaultValue: "Restore",
+                preferredLanguages: ["zh-Hans"]
+            ) == "恢复"
+        )
     }
 }

@@ -72,6 +72,7 @@
 "settingsRemoveButtonTitle" = "Remove";
 "settingsDeleteButtonTitle" = "Delete";
 "settingsSaveButtonTitle" = "Save";
+"settingsRestoreButtonTitle" = "Restore";
 "settingsCancelButtonTitle" = "Cancel";
 "settingsSlotLabel" = "Action";
 "settingsCurrentTargetLabel" = "Current layout target";

@@ -72,6 +72,7 @@
 "settingsRemoveButtonTitle" = "移除";
 "settingsDeleteButtonTitle" = "删除";
 "settingsSaveButtonTitle" = "保存";
+"settingsRestoreButtonTitle" = "恢复";
 "settingsCancelButtonTitle" = "取消";
 "settingsSlotLabel" = "行为";
 "settingsCurrentTargetLabel" = "对应的布局";
