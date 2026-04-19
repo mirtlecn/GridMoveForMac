@@ -13,6 +13,7 @@ protocol SettingsWindowSizing {
 @MainActor
 final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private let onWindowWillClose: () -> Void
+    private var closeShortcutMonitor: Any?
 
     init(
         prototypeState: SettingsPrototypeState,
@@ -39,6 +40,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         super.init(window: window)
 
         window.delegate = self
+        installCloseShortcutMonitor()
         tabViewController.onSelectedMetricsChanged = { [weak self] metrics in
             self?.applyWindowMetrics(metrics, animated: true)
         }
@@ -62,7 +64,21 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     }
 
     func windowWillClose(_ notification: Notification) {
+        removeCloseShortcutMonitor()
         onWindowWillClose()
+    }
+
+    func handleCommandWForTesting(isKeyWindow: Bool = true) -> Bool {
+        guard let window else {
+            return false
+        }
+
+        guard shouldHandleCloseShortcut(isVisible: window.isVisible, isKeyWindow: isKeyWindow) else {
+            return false
+        }
+
+        window.performClose(nil)
+        return true
     }
 
     private func applyWindowMetrics(_ metrics: SettingsWindowMetrics, animated: Bool) {
@@ -92,6 +108,49 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private func clearEditingFocus(in window: NSWindow) {
         window.endEditing(for: nil)
         _ = window.makeFirstResponder(nil)
+    }
+
+    private var shouldHandleCloseShortcut: Bool {
+        guard let window else {
+            return false
+        }
+
+        return shouldHandleCloseShortcut(isVisible: window.isVisible, isKeyWindow: window.isKeyWindow)
+    }
+
+    private func installCloseShortcutMonitor() {
+        closeShortcutMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard let self else {
+                return event
+            }
+
+            return self.handleCloseShortcutEvent(event)
+        }
+    }
+
+    private func removeCloseShortcutMonitor() {
+        guard let closeShortcutMonitor else {
+            return
+        }
+
+        NSEvent.removeMonitor(closeShortcutMonitor)
+        self.closeShortcutMonitor = nil
+    }
+
+    private func handleCloseShortcutEvent(_ event: NSEvent) -> NSEvent? {
+        guard event.type == .keyDown,
+              event.modifierFlags.intersection(.deviceIndependentFlagsMask) == [.command],
+              event.charactersIgnoringModifiers?.lowercased() == "w",
+              shouldHandleCloseShortcut else {
+            return event
+        }
+
+        window?.performClose(nil)
+        return nil
+    }
+
+    private func shouldHandleCloseShortcut(isVisible: Bool, isKeyWindow: Bool) -> Bool {
+        isVisible && isKeyWindow
     }
 }
 

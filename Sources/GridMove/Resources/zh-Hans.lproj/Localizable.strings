@@ -1,6 +1,5 @@
 "applicationMenuTitle" = "应用";
 "settingsMenuTitle" = "设置...";
-"closeSettingsPanelMenuTitle" = "关闭设置";
 "settingsWindowTitle" = "设置";
 "settingsGeneralTabTitle" = "通用";
 "settingsLayoutsTabTitle" = "布局";
@@ -35,7 +34,7 @@
 "settingsIncludeInLayoutIndexLabel" = "包含在循环内";
 "settingsIncludeInGroupCycleLabel" = "包含在循环内";
 "settingsIncludeInGroupCycleDescription" = "在布局模式中，可以用鼠标滚轮或 Shift 键快速切换循环内的布局组。";
-"settingsProtectedGroupInfo" = "受保护的布局组：你不能删除这个组，也不能更改这个组的名字。";
+"settingsProtectedGroupInfo" = "这个组不能改名或者删除。";
 "settingsActiveGroupLabel" = "当前激活组";
 "settingsMonitorLabel" = "显示器";
 "settingsLayoutsCountLabel" = "布局";
@@ -59,6 +58,7 @@
 "settingsYPositionLabel" = "Y 位置";
 "settingsWidthLabel" = "宽度";
 "settingsHeightLabel" = "高度";
+"settingsNoteLabel" = "备注";
 "settingsAddButtonTitle" = "添加";
 "settingsAddEllipsisButtonTitle" = "添加...";
 "settingsAddGroupButtonTitle" = "添加组";

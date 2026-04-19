@@ -522,21 +522,18 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
 
     #expect(delegate.mainMenuItemDescriptorsForTesting == [
         UICopy.settingsMenuTitle,
-        UICopy.closeSettingsPanelMenuTitle,
         "|",
         UICopy.quitAppMenuTitle,
     ])
     #expect(delegate.mainMenuShortcutDescriptorsForTesting[UICopy.settingsMenuTitle] == "⌘,")
-    #expect(delegate.mainMenuShortcutDescriptorsForTesting[UICopy.closeSettingsPanelMenuTitle] == "⌘W")
     #expect(delegate.mainMenuShortcutDescriptorsForTesting[UICopy.quitAppMenuTitle] == "⌘Q")
-    #expect(delegate.mainMenuEnabledDescriptorsForTesting[UICopy.closeSettingsPanelMenuTitle] == false)
     #expect(delegate.visibleMenuItemDescriptorsForTesting.contains(UICopy.settingsMenuTitle))
 
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
 }
 
 @MainActor
-@Test func appDelegateCloseSettingsPanelMenuEnablesOnlyWhenSettingsWindowIsVisible() async throws {
+@Test func appDelegateCommandWClosesSettingsOnlyWhenSettingsWindowIsKey() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-main-menu-close-settings-\(UUID().uuidString)", isDirectory: true)
     defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
@@ -549,15 +546,14 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     )
 
     delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
-    #expect(delegate.mainMenuEnabledDescriptorsForTesting[UICopy.closeSettingsPanelMenuTitle] == false)
+    #expect(delegate.performSettingsCloseShortcutForTesting() == false)
 
     delegate.showSettings()
-    NSApplication.shared.mainMenu?.update()
-    #expect(delegate.mainMenuEnabledDescriptorsForTesting[UICopy.closeSettingsPanelMenuTitle] == true)
+    #expect(delegate.performSettingsCloseShortcutForTesting(isKeyWindow: false) == false)
+    #expect(delegate.isSettingsWindowOpenForTesting == true)
 
-    delegate.closeSettingsWindowForTesting()
-    NSApplication.shared.mainMenu?.update()
-    #expect(delegate.mainMenuEnabledDescriptorsForTesting[UICopy.closeSettingsPanelMenuTitle] == false)
+    #expect(delegate.performSettingsCloseShortcutForTesting(isKeyWindow: true) == true)
+    #expect(delegate.isSettingsWindowOpenForTesting == false)
 
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
 }
@@ -863,10 +859,12 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     delegate.selectSettingsTabForTesting(index: 1)
 
     delegate.selectLayoutsGroupForTesting(named: AppConfiguration.defaultGroupName)
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsNoteLabel))
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsProtectedGroupInfo))
 
     delegate.triggerLayoutsAddActionForTesting()
     delegate.selectLayoutsGroupForTesting(named: "Group 1")
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsNoteLabel) == false)
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsProtectedGroupInfo) == false)
 
     delegate.closeSettingsWindowForTesting()

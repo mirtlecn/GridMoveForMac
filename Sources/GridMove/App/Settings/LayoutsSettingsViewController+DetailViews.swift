@@ -74,7 +74,12 @@ extension LayoutsSettingsViewController {
             makeLabeledControlRow(label: UICopy.settingsIncludeInGroupCycleLabel, control: includeInCycleContent),
         ]
         if group.protect {
-            rows.append(makeInfoMessageRow(text: UICopy.settingsProtectedGroupInfo))
+            rows.append(
+                makeLabeledControlRow(
+                    label: UICopy.settingsNoteLabel,
+                    control: makeInfoMessageRow(text: UICopy.settingsProtectedGroupInfo)
+                )
+            )
         }
         let formView = makeInlineTabContent(rows: rows, width: 460)
         contentStackView.addArrangedSubview(makeCenteredContainer(for: formView))

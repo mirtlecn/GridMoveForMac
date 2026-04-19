@@ -1,6 +1,5 @@
 "applicationMenuTitle" = "Application";
 "settingsMenuTitle" = "Settings...";
-"closeSettingsPanelMenuTitle" = "Close Settings";
 "settingsWindowTitle" = "Settings";
 "settingsGeneralTabTitle" = "General";
 "settingsLayoutsTabTitle" = "Layouts";
@@ -35,7 +34,7 @@
 "settingsIncludeInLayoutIndexLabel" = "Include in layout index";
 "settingsIncludeInGroupCycleLabel" = "Include in group cycle";
 "settingsIncludeInGroupCycleDescription" = "Enabled groups can be cycled in layout mode with the mouse wheel or the Shift key.";
-"settingsProtectedGroupInfo" = "Protected layout group: you cannot delete this group or change its name.";
+"settingsProtectedGroupInfo" = "This group cannot be renamed or deleted.";
 "settingsActiveGroupLabel" = "Active group";
 "settingsMonitorLabel" = "Monitor";
 "settingsLayoutsCountLabel" = "Layouts";
@@ -59,6 +58,7 @@
 "settingsYPositionLabel" = "Y position";
 "settingsWidthLabel" = "Width";
 "settingsHeightLabel" = "Height";
+"settingsNoteLabel" = "Note";
 "settingsAddButtonTitle" = "Add";
 "settingsAddEllipsisButtonTitle" = "Add...";
 "settingsAddGroupButtonTitle" = "Add group";
