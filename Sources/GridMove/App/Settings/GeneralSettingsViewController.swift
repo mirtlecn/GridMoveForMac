@@ -17,13 +17,14 @@ final class GeneralSettingsViewController: NSViewController {
 
     private lazy var enableCheckbox = makeCheckboxRow(title: UICopy.enableMenuTitle)
     private lazy var launchAtLoginCheckbox = makeCheckboxRow(title: UICopy.launchAtLoginMenuTitle)
-    private lazy var mouseButtonDragCheckbox = makeCheckboxRow(title: UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 3))
+    private lazy var mouseButtonDragCheckbox = makeCheckboxRow(title: UICopy.settingsMouseDragTitle)
     private lazy var mouseButtonControl = makeMouseButtonControl()
     private lazy var activationDelayControl = SettingsIntegerStepperControl(
         value: DragTriggerSettings.defaultActivationDelayMilliseconds,
         minValue: DragTriggerSettings.activationDelayMillisecondsRange.lowerBound,
         maxValue: DragTriggerSettings.activationDelayMillisecondsRange.upperBound,
         textFieldWidth: 68,
+        showsStepButtons: false,
         fallbackValueOnInvalidInput: DragTriggerSettings.defaultActivationDelayMilliseconds
     )
     private lazy var modifierLeftMouseDragCheckbox = makeCheckboxRow(title: UICopy.modifierLeftMouseDragMenuTitle)
@@ -177,9 +178,7 @@ final class GeneralSettingsViewController: NSViewController {
         enableCheckbox.state = configuration.general.isEnabled ? .on : .off
         launchAtLoginCheckbox.state = configuration.general.launchAtLogin ? .on : .off
         mouseButtonDragCheckbox.state = configuration.dragTriggers.enableMouseButtonDrag ? .on : .off
-        mouseButtonDragCheckbox.title = UICopy.mouseButtonDragMenuTitle(
-            mouseButtonNumber: configuration.general.mouseButtonNumber
-        )
+        mouseButtonDragCheckbox.title = UICopy.settingsMouseDragTitle
         mouseButtonControl.setValue(configuration.general.mouseButtonNumber)
         activationDelayControl.setValue(configuration.dragTriggers.activationDelayMilliseconds)
         modifierLeftMouseDragCheckbox.state = configuration.dragTriggers.enableModifierLeftMouseDrag ? .on : .off

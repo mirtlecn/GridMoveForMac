@@ -579,7 +579,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
     delegate.showSettings()
 
-    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 5)))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsMouseDragTitle))
     #expect(delegate.generalExcludedWindowTitlesForTesting == ["Floating Panel"])
 
     delegate.closeSettingsWindowForTesting()
@@ -736,7 +736,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
 
     delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
     delegate.showSettings()
-    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 3)))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsMouseDragTitle))
 
     savedConfiguration.general.mouseButtonNumber = 5
     savedConfiguration.general.excludedWindowTitles = ["Reloaded Panel"]
@@ -745,7 +745,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     delegate.reloadSettingsFromAboutTabForTesting()
     delegate.selectSettingsTabForTesting(index: 0)
 
-    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 5)))
+    #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsMouseDragTitle))
 
     delegate.closeSettingsWindowForTesting()
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))

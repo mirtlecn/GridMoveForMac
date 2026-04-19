@@ -156,6 +156,7 @@ final class SettingsIntegerStepperControl: NSView, NSTextFieldDelegate {
     private let decrementButton = NSButton()
     private let minValue: Int
     private let maxValue: Int?
+    private let showsStepButtons: Bool
     private let fallbackValueOnInvalidInput: Int?
 
     init(
@@ -163,10 +164,12 @@ final class SettingsIntegerStepperControl: NSView, NSTextFieldDelegate {
         minValue: Int = 0,
         maxValue: Int? = 99,
         textFieldWidth: CGFloat = 56,
+        showsStepButtons: Bool = true,
         fallbackValueOnInvalidInput: Int? = nil
     ) {
         self.minValue = minValue
         self.maxValue = maxValue
+        self.showsStepButtons = showsStepButtons
         self.fallbackValueOnInvalidInput = fallbackValueOnInvalidInput
         super.init(frame: .zero)
 
@@ -194,16 +197,17 @@ final class SettingsIntegerStepperControl: NSView, NSTextFieldDelegate {
             action: #selector(handleDecrement(_:))
         )
 
-        let buttonsStackView = makeVerticalGroup(spacing: 1)
-        buttonsStackView.alignment = .centerX
-        buttonsStackView.addArrangedSubview(incrementButton)
-        buttonsStackView.addArrangedSubview(decrementButton)
-
         let stackView = makeHorizontalGroup(spacing: 6)
         stackView.alignment = .centerY
         stackView.translatesAutoresizingMaskIntoConstraints = false
         stackView.addArrangedSubview(textField)
-        stackView.addArrangedSubview(buttonsStackView)
+        if showsStepButtons {
+            let buttonsStackView = makeVerticalGroup(spacing: 1)
+            buttonsStackView.alignment = .centerX
+            buttonsStackView.addArrangedSubview(incrementButton)
+            buttonsStackView.addArrangedSubview(decrementButton)
+            stackView.addArrangedSubview(buttonsStackView)
+        }
         addSubview(stackView)
 
         NSLayoutConstraint.activate([
@@ -244,6 +248,9 @@ final class SettingsIntegerStepperControl: NSView, NSTextFieldDelegate {
     }
 
     private func updateButtonState(for value: Int) {
+        guard showsStepButtons else {
+            return
+        }
         decrementButton.isEnabled = value > minValue
         incrementButton.isEnabled = maxValue.map { value < $0 } ?? true
     }

@@ -15,8 +15,9 @@
 "settingsTriggerAreaSectionTitle" = "Trigger area";
 "settingsModifierGroupsLabel" = "Modifier groups";
 "settingsMouseButtonNumberLabel" = "Mouse button number";
+"settingsMouseDragTitle" = "Mouse drag";
 "settingsActivationDelayLabel" = "Activation delay";
-"settingsMillisecondsUnit" = "ms";
+"settingsMillisecondsUnit" = "ms (0 ~ 1,000)";
 "settingsExcludedBundleIDsLabel" = "Excluded bundle IDs";
 "settingsExcludedWindowTitlesLabel" = "Excluded window titles";
 "settingsHighlightWindowAreaTitle" = "Highlight window area";

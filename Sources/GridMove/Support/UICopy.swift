@@ -20,8 +20,9 @@ enum UICopy {
     static var settingsTriggerAreaSectionTitle: String { localized("settingsTriggerAreaSectionTitle", default: "Trigger area") }
     static var settingsModifierGroupsLabel: String { localized("settingsModifierGroupsLabel", default: "Modifier groups") }
     static var settingsMouseButtonNumberLabel: String { localized("settingsMouseButtonNumberLabel", default: "Mouse button number") }
+    static var settingsMouseDragTitle: String { localized("settingsMouseDragTitle", default: "Mouse drag") }
     static var settingsActivationDelayLabel: String { localized("settingsActivationDelayLabel", default: "Activation delay") }
-    static var settingsMillisecondsUnit: String { localized("settingsMillisecondsUnit", default: "ms") }
+    static var settingsMillisecondsUnit: String { localized("settingsMillisecondsUnit", default: "ms (0 ~ 1,000)") }
     static var settingsExcludedBundleIDsLabel: String { localized("settingsExcludedBundleIDsLabel", default: "Excluded bundle IDs") }
     static var settingsExcludedWindowTitlesLabel: String { localized("settingsExcludedWindowTitlesLabel", default: "Excluded window titles") }
     static var settingsHighlightWindowAreaTitle: String { localized("settingsHighlightWindowAreaTitle", default: "Highlight window area") }
