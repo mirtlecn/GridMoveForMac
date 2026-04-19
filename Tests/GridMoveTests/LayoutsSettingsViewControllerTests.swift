@@ -93,6 +93,7 @@ struct LayoutsSettingsViewControllerTests {
 
         #expect(controller.saveButtonEnabledForTesting == false)
         #expect(controller.saveButtonUsesDefaultActionStyleForTesting == false)
+        #expect(controller.restoreButtonIsHiddenForTesting == true)
 
         state.applyLayoutsMutation { configuration in
             configuration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
@@ -100,12 +101,42 @@ struct LayoutsSettingsViewControllerTests {
 
         #expect(controller.saveButtonEnabledForTesting == true)
         #expect(controller.saveButtonUsesDefaultActionStyleForTesting == true)
+        #expect(controller.restoreButtonIsHiddenForTesting == false)
 
         controller.saveLayoutsForTesting()
 
         #expect(recorder.savedLayoutsCandidates.last?.general.activeLayoutGroup == AppConfiguration.fullscreenGroupName)
         #expect(controller.saveButtonEnabledForTesting == false)
         #expect(controller.saveButtonUsesDefaultActionStyleForTesting == false)
+        #expect(controller.restoreButtonIsHiddenForTesting == true)
+    }
+
+    @Test func restoreButtonRevertsLayoutsDraftWithoutConfirmation() async throws {
+        let (controller, _, _) = makeController()
+        let originalLayout = try #require(
+            controller.draftConfigurationForTesting.layoutGroups[0].sets[0].layouts.first(where: { $0.id == "layout-1" })
+        )
+
+        #expect(controller.restoreButtonIsHiddenForTesting == true)
+
+        controller.selectLayoutForTesting(id: "layout-1")
+        controller.selectLayoutDetailTabForTesting(1)
+        controller.simulateCurrentLayoutPreviewGridDragForTesting(
+            from: SettingsPreviewGridCell(column: 1, row: 1),
+            to: SettingsPreviewGridCell(column: 2, row: 2)
+        )
+
+        #expect(controller.saveButtonEnabledForTesting == true)
+        #expect(controller.restoreButtonIsHiddenForTesting == false)
+
+        controller.restoreLayoutsForTesting()
+
+        let restoredLayout = try #require(
+            controller.draftConfigurationForTesting.layoutGroups[0].sets[0].layouts.first(where: { $0.id == "layout-1" })
+        )
+        #expect(restoredLayout.windowSelection == originalLayout.windowSelection)
+        #expect(controller.saveButtonEnabledForTesting == false)
+        #expect(controller.restoreButtonIsHiddenForTesting == true)
     }
 
     @Test func addGroupAppendsProtectedFalseGroupWithEmptyAllMonitorSet() async throws {

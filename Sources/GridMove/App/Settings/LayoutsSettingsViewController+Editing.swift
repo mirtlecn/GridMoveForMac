@@ -3,6 +3,11 @@ import AppKit
 @MainActor
 extension LayoutsSettingsViewController {
     @objc
+    func handleRestoreLayoutEdits(_ sender: NSButton) {
+        prototypeState.discardLayoutsDraft()
+    }
+
+    @objc
     func handleSaveLayoutEdits(_ sender: NSButton) {
         _ = prototypeState.commitLayoutsDraft(using: actionHandler)
     }
@@ -530,6 +535,10 @@ extension LayoutsSettingsViewController {
         saveButton.keyEquivalent == "\r"
     }
 
+    var restoreButtonIsHiddenForTesting: Bool {
+        restoreButton.isHidden
+    }
+
     var removeButtonEnabledForTesting: Bool {
         removeButton.isEnabled
     }
@@ -578,6 +587,10 @@ extension LayoutsSettingsViewController {
 
     func saveLayoutsForTesting() {
         handleSaveLayoutEdits(saveButton)
+    }
+
+    func restoreLayoutsForTesting() {
+        handleRestoreLayoutEdits(restoreButton)
     }
 
     func activateSelectedGroupForTesting() {

@@ -87,6 +87,7 @@ enum UICopy {
     static var settingsRemoveButtonTitle: String { localized("settingsRemoveButtonTitle", default: "Remove") }
     static var settingsDeleteButtonTitle: String { localized("settingsDeleteButtonTitle", default: "Delete") }
     static var settingsSaveButtonTitle: String { localized("settingsSaveButtonTitle", default: "Save") }
+    static var settingsRestoreButtonTitle: String { localized("settingsRestoreButtonTitle", default: "Restore") }
     static var settingsCancelButtonTitle: String { localized("settingsCancelButtonTitle", default: "Cancel") }
     static var settingsSlotLabel: String { localized("settingsSlotLabel", default: "Slot") }
     static var settingsCurrentTargetLabel: String { localized("settingsCurrentTargetLabel", default: "Current target") }

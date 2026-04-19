@@ -35,6 +35,7 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
     let addButton = NSButton(title: UICopy.settingsAddLayoutButtonTitle, target: nil, action: nil)
     let removeButton = NSButton(title: UICopy.settingsRemoveButtonTitle, target: nil, action: nil)
     let saveButton = NSButton(title: UICopy.settingsSaveButtonTitle, target: nil, action: nil)
+    let restoreButton = NSButton(title: UICopy.settingsRestoreButtonTitle, target: nil, action: nil)
     var treeNodes: [LayoutsTreeNode]
     var pendingSelection: NodeSelection?
     var selectedLayoutDetailTabIndex = 0

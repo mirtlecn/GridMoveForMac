@@ -434,11 +434,16 @@ extension LayoutsSettingsViewController {
         saveButton.target = self
         saveButton.action = #selector(handleSaveLayoutEdits(_:))
 
+        restoreButton.bezelStyle = .rounded
+        restoreButton.target = self
+        restoreButton.action = #selector(handleRestoreLayoutEdits(_:))
+
         let row = makeHorizontalGroup(spacing: 8)
         row.translatesAutoresizingMaskIntoConstraints = false
         row.alignment = .centerY
         row.addArrangedSubview(addButton)
         row.addArrangedSubview(NSView())
+        row.addArrangedSubview(restoreButton)
         row.addArrangedSubview(saveButton)
         row.addArrangedSubview(removeButton)
         containerView.addSubview(row)
@@ -467,8 +472,11 @@ extension LayoutsSettingsViewController {
         }
 
         saveButton.title = UICopy.settingsSaveButtonTitle
+        restoreButton.title = UICopy.settingsRestoreButtonTitle
         removeButton.title = UICopy.settingsRemoveButtonTitle
         saveButton.isEnabled = prototypeState.hasLayoutsDraftChanges
+        restoreButton.isHidden = !prototypeState.hasLayoutsDraftChanges
+        restoreButton.isEnabled = prototypeState.hasLayoutsDraftChanges
         saveButton.keyEquivalent = saveButton.isEnabled ? "\r" : ""
         saveButton.keyEquivalentModifierMask = []
         if let buttonCell = saveButton.cell as? NSButtonCell {
