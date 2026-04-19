@@ -288,6 +288,9 @@ private final class MetalOverlayView: MTKView {
         let renderer = MetalOverlayRenderer()
         self.renderer = renderer
 
+        // When Metal is unavailable (e.g. in tests), pass nil device;
+        // MTKView still creates a valid NSView but draw() will no-op
+        // because the renderer guard fails.
         super.init(frame: frame, device: renderer?.device)
 
         commonInit()

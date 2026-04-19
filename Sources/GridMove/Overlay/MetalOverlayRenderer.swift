@@ -8,8 +8,8 @@ import MetalKit
 /// Layout must match the Metal shader struct exactly (64 bytes stride).
 struct OverlayRoundedRect {
     var rect: SIMD4<Float>        // x, y, width, height in pixels
-    var fillColor: SIMD4<Float>   // RGBA (straight alpha)
-    var strokeColor: SIMD4<Float> // RGBA (straight alpha)
+    var fillColor: SIMD4<Float>   // RGBA non-premultiplied (shader premultiplies)
+    var strokeColor: SIMD4<Float> // RGBA non-premultiplied (shader premultiplies)
     var cornerRadius: Float
     var strokeWidth: Float
     private var _pad0: Float = 0
@@ -259,8 +259,8 @@ extension MetalOverlayRenderer {
     // Must match Swift `OverlayRoundedRect` layout (64-byte stride).
     struct RoundedRectInstance {
         packed_float4 rect;          // x  y  w  h   (pixels)
-        packed_float4 fillColor;     // RGBA straight
-        packed_float4 strokeColor;   // RGBA straight
+        packed_float4 fillColor;     // RGBA non-premultiplied; shader premultiplies
+        packed_float4 strokeColor;   // RGBA non-premultiplied; shader premultiplies
         float         cornerRadius;
         float         strokeWidth;
         float         _pad0;
@@ -291,7 +291,8 @@ extension MetalOverlayRenderer {
         float2 origin = float2(inst.rect[0], inst.rect[1]);
         float2 size   = float2(inst.rect[2], inst.rect[3]);
 
-        // 1-pixel expansion for anti-aliased edges
+        // Expand each quad by 1 pixel on every side so the SDF smoothstep
+        // anti-aliasing has room to fade to zero without hard clipping.
         float expand = 1.0;
         float2 expOrigin = origin - expand;
         float2 expSize   = size   + expand * 2.0;
@@ -346,6 +347,9 @@ extension MetalOverlayRenderer {
             color.a   = sA + color.a * (1.0 - sA);
         }
 
+        // Discard nearly-invisible fragments to avoid blending artefacts
+        // and save fill-rate.  0.002 ≈ 1/512, below the 8-bit precision
+        // of the render target.
         if (color.a < 0.002) discard_fragment();
         return color;
     }
