@@ -44,6 +44,8 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
     var currentLayoutWindowYControl: SettingsIntegerStepperControl?
     var currentLayoutWindowWidthControl: SettingsIntegerStepperControl?
     var currentLayoutWindowHeightControl: SettingsIntegerStepperControl?
+    var currentGroupNameControl: CallbackTextField?
+    var currentLayoutNameControl: CallbackTextField?
 
     private var hasAppliedInitialSplitPosition = false
 

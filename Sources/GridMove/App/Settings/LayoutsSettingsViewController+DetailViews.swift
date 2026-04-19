@@ -3,6 +3,8 @@ import AppKit
 @MainActor
 extension LayoutsSettingsViewController {
     func updateDetailView() {
+        currentGroupNameControl = nil
+        currentLayoutNameControl = nil
         currentLayoutGridColumnsControl = nil
         currentLayoutGridRowsControl = nil
         currentLayoutWindowXControl = nil
@@ -56,6 +58,7 @@ extension LayoutsSettingsViewController {
         let nameControl = makeEditableTextControl(value: group.name, width: 220, isEditable: !group.protect) { [weak self] value in
             self?.renameGroup(from: group.name, to: value)
         }
+        currentGroupNameControl = nameControl
         let includeInCycleControl = makeEditableCheckboxControl(isOn: group.includeInGroupCycle) { [weak self] isOn in
             self?.mutateLayoutsDraft(preserving: .group(name: group.name)) { configuration in
                 guard let groupIndex = configuration.layoutGroups.firstIndex(where: { $0.name == group.name }) else {
@@ -191,11 +194,15 @@ extension LayoutsSettingsViewController {
                     contentView: makeInlineTabContent(rows: [
                         makeLabeledControlRow(
                             label: UICopy.settingsNameLabel,
-                            control: makeEditableTextControl(value: layout.name, width: 220) { [weak self] value in
-                                self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
-                                    draftLayout.name = value
+                            control: {
+                                let nameControl = makeEditableTextControl(value: layout.name, width: 220) { [weak self] value in
+                                    self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
+                                        draftLayout.name = value
+                                    }
                                 }
-                            }
+                                currentLayoutNameControl = nameControl
+                                return nameControl
+                            }()
                         ),
                         makeLabeledControlRow(
                             label: UICopy.settingsIncludeInMenuLabel,
@@ -245,7 +252,7 @@ extension LayoutsSettingsViewController {
             ],
             selectedIndex: selectedLayoutDetailTabIndex
         )
-        detailTabsView.onSelectionChanged = { [weak self, weak previewView] selectedIndex in
+        detailTabsView.onSelectionChanged = { [weak self, weak previewView] (selectedIndex: Int) in
             self?.selectedLayoutDetailTabIndex = selectedIndex
             previewView?.mode = self?.previewMode(for: selectedIndex) ?? .combined
         }
@@ -286,7 +293,7 @@ extension LayoutsSettingsViewController {
         width: CGFloat,
         isEditable: Bool = true,
         onCommit: @escaping (String) -> Void
-    ) -> NSTextField {
+    ) -> CallbackTextField {
         let textField = CallbackTextField(string: value)
         textField.controlSize = .small
         textField.translatesAutoresizingMaskIntoConstraints = false
@@ -424,7 +431,7 @@ extension LayoutsSettingsViewController {
 }
 
 @MainActor
-private final class CallbackTextField: NSTextField, NSTextFieldDelegate {
+final class CallbackTextField: NSTextField, NSTextFieldDelegate {
     var onCommit: ((String) -> Void)?
 
     override init(frame frameRect: NSRect) {
@@ -444,6 +451,13 @@ private final class CallbackTextField: NSTextField, NSTextFieldDelegate {
 
     func controlTextDidEndEditing(_ notification: Notification) {
         onCommit?(stringValue)
+    }
+}
+
+extension CallbackTextField {
+    func setRawValueForTesting(_ value: String) {
+        window?.makeFirstResponder(self)
+        stringValue = value
     }
 }
 

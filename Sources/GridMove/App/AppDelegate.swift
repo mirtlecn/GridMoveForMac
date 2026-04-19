@@ -857,6 +857,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         settingsWindowController?.handleCommandWForTesting(isKeyWindow: isKeyWindow) ?? false
     }
 
+    @discardableResult
+    func commitSettingsEditingFromBackgroundClickForTesting(clickedInsideEditableControl: Bool) -> Bool {
+        settingsWindowController?.commitEditingForTesting(clickedInsideEditableControl: clickedInsideEditableControl) ?? false
+    }
+
     func selectSettingsTabForTesting(index: Int) {
         guard let tabViewController = settingsWindowController?.window?.contentViewController as? NSTabViewController,
               index >= 0,
@@ -900,6 +905,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         generalController.setEnabledForTesting(isEnabled)
     }
 
+    func setGeneralActivationDelayRawWithoutCommitForTesting(_ value: String) {
+        guard let tabViewController = settingsWindowController?.window?.contentViewController as? NSTabViewController,
+              tabViewController.tabViewItems.indices.contains(0),
+              let generalController = tabViewController.tabViewItems[0].viewController as? GeneralSettingsViewController else {
+            return
+        }
+
+        generalController.loadViewIfNeeded()
+        generalController.setRawActivationDelayMillisecondsWithoutCommitForTesting(value)
+    }
+
     func reloadSettingsFromAboutTabForTesting() {
         guard let tabViewController = settingsWindowController?.window?.contentViewController as? NSTabViewController,
               tabViewController.tabViewItems.indices.contains(4),
@@ -926,6 +942,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     var layoutsDraftConfigurationForTesting: AppConfiguration? {
         layoutsSettingsControllerForTesting?.draftConfigurationForTesting
+    }
+
+    func setLayoutsGroupNameRawWithoutCommitForTesting(_ value: String) {
+        layoutsSettingsControllerForTesting?.setSelectedGroupNameRawWithoutCommitForTesting(value)
     }
 
     func selectLayoutsGroupForTesting(named groupName: String) {

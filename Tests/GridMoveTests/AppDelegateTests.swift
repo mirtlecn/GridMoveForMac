@@ -872,6 +872,88 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
 }
 
 @MainActor
+@Test func backgroundClickCommitsGeneralTextEditing() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-background-commit-general-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    delegate.showSettings()
+    delegate.selectSettingsTabForTesting(index: 0)
+
+    delegate.setGeneralActivationDelayRawWithoutCommitForTesting("640")
+    #expect(delegate.configuration.dragTriggers.activationDelayMilliseconds == DragTriggerSettings.defaultActivationDelayMilliseconds)
+
+    #expect(delegate.commitSettingsEditingFromBackgroundClickForTesting(clickedInsideEditableControl: false) == true)
+    #expect(delegate.configuration.dragTriggers.activationDelayMilliseconds == 640)
+
+    delegate.closeSettingsWindowForTesting()
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
+@Test func backgroundClickDoesNotCommitWhenClickStaysInsideEditableControl() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-background-no-commit-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    delegate.showSettings()
+    delegate.selectSettingsTabForTesting(index: 0)
+
+    delegate.setGeneralActivationDelayRawWithoutCommitForTesting("640")
+    #expect(delegate.commitSettingsEditingFromBackgroundClickForTesting(clickedInsideEditableControl: true) == false)
+    #expect(delegate.configuration.dragTriggers.activationDelayMilliseconds == DragTriggerSettings.defaultActivationDelayMilliseconds)
+
+    delegate.closeSettingsWindowForTesting()
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
+@Test func backgroundClickCommitsLayoutsNameEditing() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-background-commit-layouts-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    delegate.showSettings()
+    delegate.selectSettingsTabForTesting(index: 1)
+    delegate.selectLayoutsGroupForTesting(named: AppConfiguration.defaultGroupName)
+    delegate.triggerLayoutsAddActionForTesting()
+    delegate.selectLayoutsGroupForTesting(named: "Group 1")
+
+    delegate.setLayoutsGroupNameRawWithoutCommitForTesting("work")
+    #expect(delegate.layoutsDraftConfigurationForTesting?.layoutGroups.last?.name == "Group 1")
+
+    #expect(delegate.commitSettingsEditingFromBackgroundClickForTesting(clickedInsideEditableControl: false) == true)
+    #expect(delegate.layoutsDraftConfigurationForTesting?.layoutGroups.last?.name == "work")
+
+    delegate.closeSettingsWindowForTesting()
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
 @Test func layoutsSaveFromSettingsNotifiesWhenSaveFails() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-settings-layouts-save-failure-\(UUID().uuidString)", isDirectory: true)

@@ -618,6 +618,10 @@ extension LayoutsSettingsViewController {
         )
     }
 
+    func setSelectedGroupNameRawWithoutCommitForTesting(_ value: String) {
+        currentGroupNameControl?.setRawValueForTesting(value)
+    }
+
     func mutateLayoutsDraftForTesting(_ mutate: (inout AppConfiguration) -> Void) {
         let preservedSelection = selectedNode.map(selectionKey(for:)) ?? firstAvailableSelection(in: treeNodes)
         mutateLayoutsDraft(preserving: preservedSelection, mutate)

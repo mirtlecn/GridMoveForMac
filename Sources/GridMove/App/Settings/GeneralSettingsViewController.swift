@@ -504,6 +504,10 @@ extension GeneralSettingsViewController {
         activationDelayControl.commitTextEditingForTesting()
     }
 
+    func setRawActivationDelayMillisecondsWithoutCommitForTesting(_ value: String) {
+        activationDelayControl.setRawValueForTesting(value)
+    }
+
     func setRawMouseButtonNumberForTesting(_ value: String) {
         mouseButtonControl.setRawValueForTesting(value)
         mouseButtonControl.commitTextEditingForTesting()

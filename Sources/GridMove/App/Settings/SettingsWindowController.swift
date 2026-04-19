@@ -14,6 +14,7 @@ protocol SettingsWindowSizing {
 final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private let onWindowWillClose: () -> Void
     private var closeShortcutMonitor: Any?
+    private var editingCommitMonitor: Any?
 
     init(
         prototypeState: SettingsPrototypeState,
@@ -41,6 +42,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
         window.delegate = self
         installCloseShortcutMonitor()
+        installEditingCommitMonitor()
         tabViewController.onSelectedMetricsChanged = { [weak self] metrics in
             self?.applyWindowMetrics(metrics, animated: true)
         }
@@ -65,6 +67,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         removeCloseShortcutMonitor()
+        removeEditingCommitMonitor()
         onWindowWillClose()
     }
 
@@ -78,6 +81,17 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         }
 
         window.performClose(nil)
+        return true
+    }
+
+    func commitEditingForTesting(clickedInsideEditableControl: Bool) -> Bool {
+        guard let window,
+              window.firstResponder is NSTextView,
+              shouldCommitEditing(clickedInsideEditableControl: clickedInsideEditableControl) else {
+            return false
+        }
+
+        clearEditingFocus(in: window)
         return true
     }
 
@@ -137,6 +151,26 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         self.closeShortcutMonitor = nil
     }
 
+    private func installEditingCommitMonitor() {
+        editingCommitMonitor = NSEvent.addLocalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] event in
+            guard let self else {
+                return event
+            }
+
+            self.commitEditingIfNeeded(for: event)
+            return event
+        }
+    }
+
+    private func removeEditingCommitMonitor() {
+        guard let editingCommitMonitor else {
+            return
+        }
+
+        NSEvent.removeMonitor(editingCommitMonitor)
+        self.editingCommitMonitor = nil
+    }
+
     private func handleCloseShortcutEvent(_ event: NSEvent) -> NSEvent? {
         guard event.type == .keyDown,
               event.modifierFlags.intersection(.deviceIndependentFlagsMask) == [.command],
@@ -151,6 +185,49 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
     private func shouldHandleCloseShortcut(isVisible: Bool, isKeyWindow: Bool) -> Bool {
         isVisible && isKeyWindow
+    }
+
+    private func commitEditingIfNeeded(for event: NSEvent) {
+        guard let window,
+              window.isVisible,
+              window.firstResponder is NSTextView,
+              shouldCommitEditing(for: event, in: window) else {
+            return
+        }
+
+        clearEditingFocus(in: window)
+    }
+
+    private func shouldCommitEditing(for event: NSEvent, in window: NSWindow) -> Bool {
+        guard let contentView = window.contentView else {
+            return false
+        }
+
+        let locationInContentView = contentView.convert(event.locationInWindow, from: nil)
+        guard let clickedView = contentView.hitTest(locationInContentView) else {
+            return true
+        }
+
+        return shouldCommitEditing(clickedInsideEditableControl: clickedView.isDescendant(ofEditableControlIn: window))
+    }
+
+    private func shouldCommitEditing(clickedInsideEditableControl: Bool) -> Bool {
+        clickedInsideEditableControl == false
+    }
+}
+
+private extension NSView {
+    func isDescendant(ofEditableControlIn window: NSWindow) -> Bool {
+        if let textField = self as? NSTextField, textField.isEditable {
+            return true
+        }
+
+        if let textView = self as? NSTextView,
+           textView == window.firstResponder || textView.isFieldEditor {
+            return true
+        }
+
+        return superview?.isDescendant(ofEditableControlIn: window) ?? false
     }
 }
 

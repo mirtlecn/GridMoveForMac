@@ -288,6 +288,7 @@ final class SettingsIntegerStepperControl: NSView, NSTextFieldDelegate {
 
 extension SettingsIntegerStepperControl {
     func setRawValueForTesting(_ value: String) {
+        window?.makeFirstResponder(textField)
         textField.stringValue = value
     }
 
