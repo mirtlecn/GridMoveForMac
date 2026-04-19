@@ -84,7 +84,15 @@ final class AppearanceSettingsViewController: NSViewController {
                 configuration.appearance.highlightStrokeWidth = value
             }
         }
-        strokeColorControl.onColorChanged = { [weak self] color in
+        strokeColorControl.onPreviewChanged = { [weak self] color in
+            guard let rgbaColor = Self.makeRGBAColor(from: color) else {
+                return
+            }
+            self?.updatePreview { configuration in
+                configuration.appearance.highlightStrokeColor = rgbaColor
+            }
+        }
+        strokeColorControl.onColorCommitted = { [weak self] color in
             guard let rgbaColor = Self.makeRGBAColor(from: color) else {
                 return
             }
@@ -106,7 +114,15 @@ final class AppearanceSettingsViewController: NSViewController {
                 configuration.appearance.triggerGap = value
             }
         }
-        triggerStrokeColorControl.onColorChanged = { [weak self] color in
+        triggerStrokeColorControl.onPreviewChanged = { [weak self] color in
+            guard let rgbaColor = Self.makeRGBAColor(from: color) else {
+                return
+            }
+            self?.updatePreview { configuration in
+                configuration.appearance.triggerStrokeColor = rgbaColor
+            }
+        }
+        triggerStrokeColorControl.onColorCommitted = { [weak self] color in
             guard let rgbaColor = Self.makeRGBAColor(from: color) else {
                 return
             }
@@ -286,9 +302,12 @@ private final class AppearanceStepperControl: NSView {
 
 @MainActor
 private final class AppearanceColorControl: NSView {
-    var onColorChanged: ((NSColor) -> Void)?
+    var onPreviewChanged: ((NSColor) -> Void)?
+    var onColorCommitted: ((NSColor) -> Void)?
 
     private let colorWell = NSColorWell()
+    private var pendingColor: NSColor?
+    private var isObservingColorPanelClose = false
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -308,6 +327,12 @@ private final class AppearanceColorControl: NSView {
         ])
     }
 
+    deinit {
+        if isObservingColorPanelClose {
+            NotificationCenter.default.removeObserver(self)
+        }
+    }
+
     @available(*, unavailable)
     required init?(coder: NSCoder) {
         nil
@@ -315,11 +340,45 @@ private final class AppearanceColorControl: NSView {
 
     func setColor(_ color: NSColor) {
         colorWell.color = color
+        pendingColor = nil
     }
 
     @objc
     private func handleColorChanged(_ sender: NSColorWell) {
-        onColorChanged?(sender.color)
+        pendingColor = sender.color
+        onPreviewChanged?(sender.color)
+        startObservingColorPanelClose()
+    }
+
+    private func startObservingColorPanelClose() {
+        guard isObservingColorPanelClose == false else {
+            return
+        }
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleColorPanelWillClose(_:)),
+            name: NSWindow.willCloseNotification,
+            object: NSColorPanel.shared
+        )
+        isObservingColorPanelClose = true
+    }
+
+    @objc
+    private func handleColorPanelWillClose(_ notification: Notification) {
+        if let pendingColor {
+            onColorCommitted?(pendingColor)
+        }
+        pendingColor = nil
+
+        if isObservingColorPanelClose {
+            NotificationCenter.default.removeObserver(
+                self,
+                name: NSWindow.willCloseNotification,
+                object: NSColorPanel.shared
+            )
+            isObservingColorPanelClose = false
+        }
     }
 }
 
@@ -346,6 +405,14 @@ extension AppearanceSettingsViewController {
         strokeWidthControl.onValueChanged?(value)
     }
 
+    func previewHighlightStrokeColorForTesting(_ color: NSColor) {
+        strokeColorControl.onPreviewChanged?(color)
+    }
+
+    func commitHighlightStrokeColorForTesting(_ color: NSColor) {
+        strokeColorControl.onColorCommitted?(color)
+    }
+
     func setLayoutGapForTesting(_ value: Int) {
         layoutGapControl.onValueChanged?(value)
     }
@@ -359,6 +426,14 @@ extension AppearanceSettingsViewController {
         triggerGapControl.onValueChanged?(value)
     }
 
+    func previewTriggerStrokeColorForTesting(_ color: NSColor) {
+        triggerStrokeColorControl.onPreviewChanged?(color)
+    }
+
+    func commitTriggerStrokeColorForTesting(_ color: NSColor) {
+        triggerStrokeColorControl.onColorCommitted?(color)
+    }
+
     var previewResolvedSlotsForTesting: [ResolvedTriggerSlot] {
         previewView.resolvedSlotsForTesting
     }
@@ -369,5 +444,9 @@ extension AppearanceSettingsViewController {
 
     var previewConfigurationForTesting: AppConfiguration {
         previewView.configurationForTesting
+    }
+
+    static func makeRGBAColorForTesting(_ color: NSColor) -> RGBAColor? {
+        makeRGBAColor(from: color)
     }
 }

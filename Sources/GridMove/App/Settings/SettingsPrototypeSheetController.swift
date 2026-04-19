@@ -49,16 +49,23 @@ final class SettingsPrototypeSheetController: NSViewController {
         let contentStackView = makeSettingsPageStackView()
         contentStackView.edgeInsets = NSEdgeInsets(top: 20, left: 24, bottom: 20, right: 24)
         contentStackView.spacing = 16
-        contentStackView.addArrangedSubview(makeSectionTitleLabel(sheetTitle))
-
-        if let message, !message.isEmpty {
-            contentStackView.addArrangedSubview(makeSecondaryLabel(message))
-        }
+        contentStackView.addArrangedSubview(makeSheetHeaderView())
 
         contentStackView.addArrangedSubview(makeFullWidthContainer(for: bodyView))
         contentStackView.addArrangedSubview(makeSheetButtonsRow())
         view = makeSettingsPageContainerView(contentView: contentStackView)
         configureValidation()
+    }
+
+    private func makeSheetHeaderView() -> NSView {
+        let headerStackView = makeVerticalGroup(spacing: 6)
+        headerStackView.addArrangedSubview(makeSectionTitleLabel(sheetTitle))
+
+        if let message, !message.isEmpty {
+            headerStackView.addArrangedSubview(makeSecondaryLabel(message))
+        }
+
+        return headerStackView
     }
 
     @objc

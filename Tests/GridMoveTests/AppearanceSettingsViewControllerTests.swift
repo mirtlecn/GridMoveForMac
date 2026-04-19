@@ -84,6 +84,34 @@ struct AppearanceSettingsViewControllerTests {
         #expect(state.configuration.appearance.highlightFillOpacity == 0.42)
     }
 
+    @Test func appearanceStrokeColorPreviewChangesBeforePersisting() async throws {
+        let state = SettingsPrototypeState(configuration: .defaultValue)
+        let recorder = TestSettingsActionRecorder()
+        let controller = AppearanceSettingsViewController(
+            prototypeState: state,
+            actionHandler: recorder.makeActionHandler()
+        )
+        controller.loadViewIfNeeded()
+
+        let previewColor = NSColor.systemRed
+        controller.previewHighlightStrokeColorForTesting(previewColor)
+
+        #expect(
+            controller.previewConfigurationForTesting.appearance.highlightStrokeColor
+                == AppearanceSettingsViewController.makeRGBAColorForTesting(previewColor)
+        )
+        #expect(
+            state.configuration.appearance.highlightStrokeColor
+                == AppConfiguration.defaultValue.appearance.highlightStrokeColor
+        )
+
+        controller.commitHighlightStrokeColorForTesting(previewColor)
+        #expect(
+            state.configuration.appearance.highlightStrokeColor
+                == AppearanceSettingsViewController.makeRGBAColorForTesting(previewColor)
+        )
+    }
+
     @Test func appearancePreviewUsesBuiltInCenterTriggerSample() async throws {
         var configuration = AppConfiguration.defaultValue
         configuration.appearance.renderTriggerAreas = true

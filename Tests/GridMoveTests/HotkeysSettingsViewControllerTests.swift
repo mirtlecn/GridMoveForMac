@@ -198,6 +198,13 @@ private func makeTestLayout(
     #expect(cycleNextBindings.compactMap(\.shortcut) == [KeyboardShortcut(modifiers: [.cmd], key: "9")])
 }
 
+@Test func emptyHotkeyBindingsRenderAsBlankSummary() async throws {
+    let slots = HotkeyPrototypeSlot.makePrototypeSlots(configuration: .defaultValue)
+    let emptyBindingSlot = try #require(slots.first(where: { $0.bindings.isEmpty }))
+
+    #expect(emptyBindingSlot.bindingSummary.isEmpty)
+}
+
 @MainActor
 @Test func hotkeysTableSupportsDoubleClickToOpenAddSheet() async throws {
     let controller = HotkeysSettingsViewController(

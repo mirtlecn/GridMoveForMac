@@ -526,8 +526,8 @@ extension LayoutsSettingsViewController {
         saveButton.isEnabled
     }
 
-    var saveButtonUsesAccentStyleForTesting: Bool {
-        saveButton.bezelColor != nil
+    var saveButtonUsesDefaultActionStyleForTesting: Bool {
+        saveButton.keyEquivalent == "\r"
     }
 
     var removeButtonEnabledForTesting: Bool {

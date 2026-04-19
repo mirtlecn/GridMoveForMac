@@ -82,20 +82,20 @@ struct LayoutsSettingsViewControllerTests {
         let (controller, state, recorder) = makeController()
 
         #expect(controller.saveButtonEnabledForTesting == false)
-        #expect(controller.saveButtonUsesAccentStyleForTesting == false)
+        #expect(controller.saveButtonUsesDefaultActionStyleForTesting == false)
 
         state.applyLayoutsMutation { configuration in
             configuration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
         }
 
         #expect(controller.saveButtonEnabledForTesting == true)
-        #expect(controller.saveButtonUsesAccentStyleForTesting == true)
+        #expect(controller.saveButtonUsesDefaultActionStyleForTesting == true)
 
         controller.saveLayoutsForTesting()
 
         #expect(recorder.savedLayoutsCandidates.last?.general.activeLayoutGroup == AppConfiguration.fullscreenGroupName)
         #expect(controller.saveButtonEnabledForTesting == false)
-        #expect(controller.saveButtonUsesAccentStyleForTesting == false)
+        #expect(controller.saveButtonUsesDefaultActionStyleForTesting == false)
     }
 
     @Test func addGroupAppendsProtectedFalseGroupWithEmptyAllMonitorSet() async throws {

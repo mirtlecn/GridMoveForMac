@@ -291,7 +291,7 @@ struct HotkeyPrototypeSlot {
     var bindings: [String]
 
     var bindingSummary: String {
-        bindings.isEmpty ? UICopy.settingsNoShortcutsValue : bindings.joined(separator: ", ")
+        bindings.joined(separator: ", ")
     }
 
     var actionDescriptor: HotkeyPrototypeAction {

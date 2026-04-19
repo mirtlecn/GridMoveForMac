@@ -375,8 +375,11 @@ extension LayoutsSettingsViewController {
         saveButton.title = UICopy.settingsSaveButtonTitle
         removeButton.title = UICopy.settingsRemoveButtonTitle
         saveButton.isEnabled = prototypeState.hasLayoutsDraftChanges
-        saveButton.bezelColor = saveButton.isEnabled ? .controlAccentColor : nil
-        saveButton.contentTintColor = saveButton.isEnabled ? .white : nil
+        saveButton.keyEquivalent = saveButton.isEnabled ? "\r" : ""
+        saveButton.keyEquivalentModifierMask = []
+        if let buttonCell = saveButton.cell as? NSButtonCell {
+            view.window?.defaultButtonCell = saveButton.isEnabled ? buttonCell : nil
+        }
 
         let removeState = removeButtonState(for: selectedNode)
         removeButton.isEnabled = removeState.isEnabled

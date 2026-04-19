@@ -149,6 +149,11 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
         hasAppliedInitialSplitPosition = true
     }
 
+    override func viewDidAppear() {
+        super.viewDidAppear()
+        updateCommandBar()
+    }
+
     func outlineView(_ outlineView: NSOutlineView, numberOfChildrenOfItem item: Any?) -> Int {
         let node = item as? LayoutsTreeNode
         return (node?.children ?? treeNodes).count
