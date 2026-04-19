@@ -1,5 +1,7 @@
 import AppKit
 import Foundation
+import Metal
+import MetalKit
 
 private struct OverlayBadgeState {
     let text: String
@@ -204,11 +206,13 @@ final class OverlayController {
             panel?.setFrame(screen.frame, display: true)
         }
 
-        let overlayView: OverlayView
-        if let currentView = panel?.contentView as? OverlayView {
+        let overlayView: MetalOverlayView
+        if let currentView = panel?.contentView as? MetalOverlayView {
             overlayView = currentView
         } else {
-            overlayView = OverlayView(frame: NSRect(origin: .zero, size: screen.frame.size))
+            overlayView = MetalOverlayView(
+                frame: NSRect(origin: .zero, size: screen.frame.size)
+            )
             panel?.contentView = overlayView
         }
 
@@ -218,7 +222,7 @@ final class OverlayController {
         overlayView.highlightFrame = highlightFrame
         overlayView.hoveredLayoutID = hoveredLayoutID
         overlayView.configuration = configuration
-        overlayView.badge = badge
+        overlayView.badgeText = badge?.text
         overlayView.needsDisplay = true
     }
 
@@ -230,6 +234,8 @@ final class OverlayController {
         badgeGeneration &+= 1
     }
 }
+
+// MARK: - Overlay Panel
 
 @MainActor
 private final class OverlayPanel: NSPanel {
@@ -254,94 +260,144 @@ private final class OverlayPanel: NSPanel {
     override var canBecomeMain: Bool { false }
 }
 
+// MARK: - Metal Overlay View
+
+/// Replaces the old `OverlayView` (NSView + NSBezierPath) with an MTKView
+/// that renders trigger regions, window highlights, and badge labels using
+/// GPU-accelerated SDF rounded-rectangle shaders.
 @MainActor
-private final class OverlayView: NSView {
+private final class MetalOverlayView: MTKView {
+
+    // MARK: Public state (set by OverlayController)
+
     var screenOrigin: CGPoint = .zero
     var resolvedSlots: [ResolvedTriggerSlot] = []
     var highlightFrame: CGRect?
     var hoveredLayoutID: String?
     var configuration: AppConfiguration = .defaultValue
-    var badge: OverlayBadgeState?
+    var badgeText: String?
+
+    // MARK: Private
+
+    private let renderer: MetalOverlayRenderer?
+    private static let overlayCornerRadius: CGFloat = 10
+
+    // MARK: Init
+
+    init(frame: NSRect) {
+        let renderer = MetalOverlayRenderer()
+        self.renderer = renderer
+
+        super.init(frame: frame, device: renderer?.device)
+
+        commonInit()
+    }
+
+    @available(*, unavailable)
+    required init(coder _: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
+
+    private func commonInit() {
+        // Only redraw when explicitly requested (needsDisplay = true).
+        isPaused = true
+        enableSetNeedsDisplay = true
+
+        // Transparent background so the desktop shows through.
+        clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 0)
+        layer?.isOpaque = false
+
+        colorPixelFormat = .bgra8Unorm
+    }
 
     override var isOpaque: Bool { false }
 
+    // MARK: Drawing
+
     override func draw(_ dirtyRect: NSRect) {
-        super.draw(dirtyRect)
+        guard let renderer else { return }
 
-        NSColor.clear.setFill()
-        dirtyRect.fill()
+        let scale = window?.backingScaleFactor ?? 2.0
+        var rects: [OverlayRoundedRect] = []
 
+        // --- trigger regions ---
         if configuration.appearance.renderTriggerAreas {
-            drawTriggerSlots()
-        }
+            let visibleSlots: [ResolvedTriggerSlot] = switch configuration.appearance.triggerHighlightMode {
+            case .all:
+                resolvedSlots
+            case .current:
+                resolvedSlots.filter { $0.layoutID == hoveredLayoutID }
+            case .none:
+                []
+            }
 
-        if configuration.appearance.renderWindowHighlight, let highlightFrame {
-            drawHighlight(frame: highlightFrame)
-        }
+            let appearance = configuration.appearance
+            let triggerColor = appearance.triggerStrokeColor
+            let triggerStrokeWidth = SettingsPreviewSupport.triggerStrokeWidth(for: appearance)
 
-        if let badge {
-            drawBadge(text: badge.text, highlightedFrame: highlightFrame)
-        }
-    }
-
-    private func drawTriggerSlots() {
-        let visibleSlots: [ResolvedTriggerSlot] = switch configuration.appearance.triggerHighlightMode {
-        case .all:
-            resolvedSlots
-        case .current:
-            resolvedSlots.filter { $0.layoutID == hoveredLayoutID }
-        case .none:
-            []
-        }
-
-        for slot in visibleSlots {
-            for hitTestFrame in slot.hitTestFrames {
-                SettingsPreviewSupport.drawTriggerRegion(
-                    rect: localRect(from: hitTestFrame),
-                    appearance: configuration.appearance,
-                    cornerRadius: 10
-                )
+            for slot in visibleSlots {
+                for hitTestFrame in slot.hitTestFrames {
+                    rects.append(makeRoundedRect(
+                        globalFrame: hitTestFrame,
+                        fillColor: triggerColor,
+                        fillOpacity: appearance.triggerFillOpacity,
+                        strokeColor: triggerColor,
+                        strokeWidth: triggerStrokeWidth,
+                        cornerRadius: Self.overlayCornerRadius,
+                        scale: scale
+                    ))
+                }
             }
         }
-    }
 
-    private func drawHighlight(frame: CGRect) {
-        SettingsPreviewSupport.drawWindowHighlight(
-            rect: localRect(from: frame),
-            appearance: configuration.appearance,
-            cornerRadius: 10
+        // --- window highlight ---
+        if configuration.appearance.renderWindowHighlight, let highlightFrame {
+            let appearance = configuration.appearance
+            let highlightColor = appearance.highlightStrokeColor
+            let highlightStrokeWidth = SettingsPreviewSupport.windowHighlightStrokeWidth(for: appearance)
+
+            rects.append(makeRoundedRect(
+                globalFrame: highlightFrame,
+                fillColor: highlightColor,
+                fillOpacity: appearance.highlightFillOpacity,
+                strokeColor: highlightColor,
+                strokeWidth: highlightStrokeWidth,
+                cornerRadius: Self.overlayCornerRadius,
+                scale: scale
+            ))
+        }
+
+        // --- badge ---
+        var badgeTexture: MTLTexture?
+        var badgeRectSIMD: SIMD4<Float>?
+
+        if let badgeText, !badgeText.isEmpty {
+            let targetRect = highlightFrame.map(localRect(from:))
+                ?? bounds.insetBy(dx: 48, dy: 48)
+            let badgeInfo = Self.computeBadgeRect(text: badgeText, in: targetRect)
+
+            badgeTexture = renderer.makeBadgeTexture(
+                text: badgeText,
+                badgeSize: badgeInfo.size,
+                scaleFactor: scale
+            )
+            badgeRectSIMD = SIMD4<Float>(
+                Float(badgeInfo.origin.x * scale),
+                Float(badgeInfo.origin.y * scale),
+                Float(badgeInfo.width * scale),
+                Float(badgeInfo.height * scale)
+            )
+        }
+
+        renderer.draw(
+            in: self,
+            rects: rects,
+            badgeTexture: badgeTexture,
+            badgeRect: badgeRectSIMD
         )
     }
 
-    private func drawBadge(text: String, highlightedFrame: CGRect?) {
-        let targetRect = highlightedFrame.map(localRect(from:)) ?? bounds.insetBy(dx: 48, dy: 48)
-        let textAttributes: [NSAttributedString.Key: Any] = [
-            .font: NSFont.systemFont(ofSize: 18, weight: .semibold),
-            .foregroundColor: NSColor.white,
-        ]
-        let attributedText = NSAttributedString(string: text, attributes: textAttributes)
-        let textSize = attributedText.size()
-        let horizontalPadding: CGFloat = 16
-        let verticalPadding: CGFloat = 10
-        let badgeRect = CGRect(
-            x: targetRect.midX - ((textSize.width + horizontalPadding * 2) / 2),
-            y: targetRect.midY - ((textSize.height + verticalPadding * 2) / 2),
-            width: textSize.width + horizontalPadding * 2,
-            height: textSize.height + verticalPadding * 2
-        )
-
-        let backgroundPath = NSBezierPath(roundedRect: badgeRect, xRadius: 12, yRadius: 12)
-        NSColor.black.withAlphaComponent(0.72).setFill()
-        backgroundPath.fill()
-
-        let textRect = CGRect(
-            x: badgeRect.minX + horizontalPadding,
-            y: badgeRect.minY + verticalPadding,
-            width: textSize.width,
-            height: textSize.height
-        )
-        attributedText.draw(in: textRect)
-    }
+    // MARK: - Helpers
 
     private func localRect(from globalRect: CGRect) -> CGRect {
         CGRect(
@@ -349,6 +405,59 @@ private final class OverlayView: NSView {
             y: globalRect.origin.y - screenOrigin.y,
             width: globalRect.width,
             height: globalRect.height
+        )
+    }
+
+    /// Convert an appearance colour + opacity into an `OverlayRoundedRect`.
+    private func makeRoundedRect(
+        globalFrame: CGRect,
+        fillColor: RGBAColor,
+        fillOpacity: Double,
+        strokeColor: RGBAColor,
+        strokeWidth: CGFloat?,
+        cornerRadius: CGFloat,
+        scale: CGFloat
+    ) -> OverlayRoundedRect {
+        let local = localRect(from: globalFrame)
+        return OverlayRoundedRect(
+            rect: SIMD4<Float>(
+                Float(local.origin.x * scale),
+                Float(local.origin.y * scale),
+                Float(local.width * scale),
+                Float(local.height * scale)
+            ),
+            fillColor: SIMD4<Float>(
+                Float(fillColor.red),
+                Float(fillColor.green),
+                Float(fillColor.blue),
+                Float(fillOpacity)
+            ),
+            strokeColor: SIMD4<Float>(
+                Float(strokeColor.red),
+                Float(strokeColor.green),
+                Float(strokeColor.blue),
+                Float(strokeColor.alpha)
+            ),
+            cornerRadius: Float(cornerRadius * scale),
+            strokeWidth: Float((strokeWidth ?? 0) * scale)
+        )
+    }
+
+    /// Compute the badge CGRect (in local view coordinates) for the given
+    /// text, mirroring the original `OverlayView.drawBadge` layout.
+    private static func computeBadgeRect(text: String, in targetRect: CGRect) -> CGRect {
+        let textAttributes: [NSAttributedString.Key: Any] = [
+            .font: NSFont.systemFont(ofSize: 18, weight: .semibold),
+            .foregroundColor: NSColor.white,
+        ]
+        let textSize = NSAttributedString(string: text, attributes: textAttributes).size()
+        let horizontalPadding: CGFloat = 16
+        let verticalPadding: CGFloat = 10
+        return CGRect(
+            x: targetRect.midX - ((textSize.width + horizontalPadding * 2) / 2),
+            y: targetRect.midY - ((textSize.height + verticalPadding * 2) / 2),
+            width: textSize.width + horizontalPadding * 2,
+            height: textSize.height + verticalPadding * 2
         )
     }
 }
