@@ -166,6 +166,120 @@ private func makeManagedWindow(frame: CGRect, identity: String = "drag-grid-wind
 }
 
 @MainActor
+@Test func moveOnlyDragCoalescesUpdatesUntilMinimumInterval() async throws {
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController()
+    var currentTime: TimeInterval = 10
+    var appliedOrigins: [CGPoint] = []
+    var overlayRefreshCount = 0
+
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { .defaultValue },
+        cycleActiveLayoutGroup: { _ in .defaultValue },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {},
+        testHooks: .init(
+            currentTimeProvider: { currentTime },
+            moveWindow: { origin, _, _ in
+                appliedOrigins.append(origin)
+                return true
+            },
+            refreshOverlay: { _ in
+                overlayRefreshCount += 1
+            }
+        )
+    )
+
+    controller.state.active = true
+    controller.state.interactionMode = .moveOnly
+    controller.state.targetWindow = makeManagedWindow(frame: CGRect(x: 120, y: 80, width: 300, height: 200))
+    controller.state.currentWindowFrame = CGRect(x: 120, y: 80, width: 300, height: 200)
+    controller.state.moveAnchor = MoveAnchor(
+        mousePoint: CGPoint(x: 400, y: 300),
+        windowOrigin: CGPoint(x: 120, y: 80)
+    )
+
+    controller.updateMoveOnlyDrag(at: CGPoint(x: 440, y: 340))
+    #expect(appliedOrigins == [CGPoint(x: 160, y: 120)])
+    #expect(controller.state.currentWindowFrame?.origin == CGPoint(x: 160, y: 120))
+    #expect(overlayRefreshCount == 1)
+
+    currentTime += 0.002
+    controller.updateMoveOnlyDrag(at: CGPoint(x: 470, y: 360))
+
+    #expect(appliedOrigins == [CGPoint(x: 160, y: 120)])
+    #expect(controller.state.pendingMoveOnlyPoint == CGPoint(x: 470, y: 360))
+    #expect(controller.state.currentWindowFrame?.origin == CGPoint(x: 160, y: 120))
+    #expect(overlayRefreshCount == 1)
+
+    currentTime += 0.010
+    controller.updateMoveOnlyDrag(at: CGPoint(x: 500, y: 390))
+
+    #expect(appliedOrigins == [CGPoint(x: 160, y: 120), CGPoint(x: 220, y: 170)])
+    #expect(controller.state.pendingMoveOnlyPoint == nil)
+    #expect(controller.state.currentWindowFrame?.origin == CGPoint(x: 220, y: 170))
+    #expect(overlayRefreshCount == 2)
+}
+
+@MainActor
+@Test func moveOnlyDragMouseUpFlushesLatestPendingPoint() async throws {
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController()
+    var currentTime: TimeInterval = 20
+    var appliedOrigins: [CGPoint] = []
+
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { .defaultValue },
+        cycleActiveLayoutGroup: { _ in .defaultValue },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {},
+        testHooks: .init(
+            currentTimeProvider: { currentTime },
+            moveWindow: { origin, _, _ in
+                appliedOrigins.append(origin)
+                return true
+            }
+        )
+    )
+
+    controller.state.active = true
+    controller.state.activeButton = .left
+    controller.state.interactionMode = .moveOnly
+    controller.state.targetWindow = makeManagedWindow(frame: CGRect(x: 120, y: 80, width: 300, height: 200))
+    controller.state.currentWindowFrame = CGRect(x: 120, y: 80, width: 300, height: 200)
+    controller.state.moveAnchor = MoveAnchor(
+        mousePoint: CGPoint(x: 400, y: 300),
+        windowOrigin: CGPoint(x: 120, y: 80)
+    )
+
+    controller.updateMoveOnlyDrag(at: CGPoint(x: 440, y: 340))
+    currentTime += 0.001
+    controller.updateMoveOnlyDrag(at: CGPoint(x: 500, y: 390))
+
+    #expect(appliedOrigins == [CGPoint(x: 160, y: 120)])
+    #expect(controller.state.pendingMoveOnlyPoint == CGPoint(x: 500, y: 390))
+
+    _ = controller.handleMouseUp(
+        event: try makeLeftMouseEvent(type: .leftMouseUp, point: .zero),
+        button: .left,
+        configuration: .defaultValue
+    )
+
+    #expect(appliedOrigins == [CGPoint(x: 160, y: 120), CGPoint(x: 220, y: 170)])
+    #expect(controller.state.active == false)
+}
+
+@MainActor
 @Test func moveOnlyFlashPrefersWindowScreenOverActiveScreen() async throws {
     #expect(
         DragGridController.preferredMoveOnlyFlashScreen(
@@ -224,7 +338,7 @@ private func makeManagedWindow(frame: CGRect, identity: String = "drag-grid-wind
 }
 
 @MainActor
-@Test func overlayHighlightFallsBackToCurrentWindowFrameOutsideTriggerSlots() async throws {
+@Test func overlayHighlightFallsBackToCurrentWindowFrameBeforeDragThreshold() async throws {
     let layoutEngine = LayoutEngine()
     let windowController = WindowController(layoutEngine: layoutEngine)
     let overlayController = OverlayController()
@@ -242,7 +356,7 @@ private func makeManagedWindow(frame: CGRect, identity: String = "drag-grid-wind
     let currentWindowFrame = CGRect(x: 10, y: 20, width: 300, height: 200)
     controller.state.interactionMode = .layoutSelection
     controller.state.currentWindowFrame = currentWindowFrame
-    controller.state.hasDraggedPastThreshold = true
+    controller.state.hasDraggedPastThreshold = false
     controller.state.hoveredLayoutID = nil
 
     #expect(controller.overlayHighlightFrame() == currentWindowFrame)

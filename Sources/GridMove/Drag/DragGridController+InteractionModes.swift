@@ -2,6 +2,10 @@ import CoreGraphics
 import Foundation
 
 extension DragGridController {
+    private enum MoveOnlyUpdateConstants {
+        static let minimumInterval: TimeInterval = 1.0 / 120.0
+    }
+
     static func preferredMoveOnlyFlashScreen<Screen>(
         windowScreen: Screen?,
         activeScreen: Screen?,
@@ -90,29 +94,54 @@ extension DragGridController {
     }
 
     func updateMoveOnlyDrag(at point: CGPoint) {
-        guard
-            let targetWindow = state.targetWindow,
-            let moveAnchor = state.moveAnchor,
-            var frame = state.currentWindowFrame
-        else {
-            return
-        }
+        state.pendingMoveOnlyPoint = point
+        let timestamp = testHooks?.currentTimeProvider?() ?? ProcessInfo.processInfo.systemUptime
+        applyPendingMoveOnlyDragIfNeeded(at: timestamp)
+    }
 
+    func applyPendingMoveOnlyDragIfNeeded(at timestamp: TimeInterval, force: Bool = false) {
         guard validateAccessibilityAccessForInteraction() else {
             return
         }
 
-        let nextOrigin = moveAnchor.movedOrigin(for: point)
-        guard !pointsApproximatelyEqual(nextOrigin, frame.origin) else {
+        guard
+            let targetWindow = state.targetWindow,
+            let moveAnchor = state.moveAnchor,
+            var frame = state.currentWindowFrame,
+            let pendingPoint = state.pendingMoveOnlyPoint
+        else {
             return
         }
 
-        if windowController.moveWindow(to: nextOrigin, currentFrame: frame, for: targetWindow) {
+        if !force,
+           let lastMoveOnlyUpdateTime = state.lastMoveOnlyUpdateTime,
+           timestamp - lastMoveOnlyUpdateTime < MoveOnlyUpdateConstants.minimumInterval
+        {
+            return
+        }
+
+        let nextOrigin = moveAnchor.movedOrigin(for: pendingPoint)
+        guard !pointsApproximatelyEqual(nextOrigin, frame.origin) else {
+            state.pendingMoveOnlyPoint = nil
+            state.lastMoveOnlyUpdateTime = timestamp
+            return
+        }
+
+        let moveWindow = testHooks?.moveWindow ?? { [windowController] origin, currentFrame, window in
+            windowController.moveWindow(to: origin, currentFrame: currentFrame, for: window)
+        }
+        if moveWindow(nextOrigin, frame, targetWindow) {
             frame.origin = nextOrigin
             state.currentWindowFrame = frame
         }
 
-        refreshOverlay(configuration: configurationProvider())
+        state.pendingMoveOnlyPoint = nil
+        state.lastMoveOnlyUpdateTime = timestamp
+        if let refreshOverlay = testHooks?.refreshOverlay {
+            refreshOverlay(configurationProvider())
+        } else {
+            refreshOverlay(configuration: configurationProvider())
+        }
     }
 
     func toggleInteractionMode(at point: CGPoint, configuration: AppConfiguration) {
@@ -205,6 +234,8 @@ extension DragGridController {
         state.scrollGroupCycleResetWorkItem?.cancel()
         state.scrollGroupCycleResetWorkItem = nil
         state.scrollGroupCycleTracker = nil
+        state.pendingMoveOnlyPoint = nil
+        state.lastMoveOnlyUpdateTime = nil
 
         let windowFrame = currentWindowFrame()
         if let frame = windowFrame {
