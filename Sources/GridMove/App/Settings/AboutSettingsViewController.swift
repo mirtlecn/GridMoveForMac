@@ -46,10 +46,13 @@ final class AboutSettingsViewController: NSViewController {
     private func currentVersionString() -> String {
         let shortVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
         let buildVersion = Bundle.main.object(forInfoDictionaryKey: kCFBundleVersionKey as String) as? String
+        return Self.formattedVersionString(shortVersion: shortVersion, buildVersion: buildVersion)
+    }
 
+    nonisolated static func formattedVersionString(shortVersion: String?, buildVersion: String?) -> String {
         switch (shortVersion, buildVersion) {
         case let (shortVersion?, buildVersion?) where !shortVersion.isEmpty && !buildVersion.isEmpty:
-            return "\(shortVersion) (\(buildVersion))"
+            return "\(shortVersion)(\(buildVersion))"
         case let (shortVersion?, _) where !shortVersion.isEmpty:
             return shortVersion
         case let (_, buildVersion?) where !buildVersion.isEmpty:

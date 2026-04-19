@@ -26,14 +26,12 @@ GridMove requires accessibility permissions.
 GridMove relays CLI actions to a running app instance:
 
 ```bash
-path/to/GridMove.app/Contents/MacOS/GridMove -next
+path/to/GridMove.app/Contents/MacOS/GridMove -next # move focus window
 path/to/GridMove.app/Contents/MacOS/GridMove -pre
 path/to/GridMove.app/Contents/MacOS/GridMove -layout 4
-path/to/GridMove.app/Contents/MacOS/GridMove -layout "Center"
-path/to/GridMove.app/Contents/MacOS/GridMove -layout "Center" -window-id 12345
+path/to/GridMove.app/Contents/MacOS/GridMove -layout "Center" 
+path/to/GridMove.app/Contents/MacOS/GridMove -layout "Center" -window-id 12345 # move specific window
 ```
-
-If `-window-id <cg-window-id>` is omitted, GridMove targets the currently focused window.
 
 ## Development
 
@@ -44,17 +42,8 @@ make test
 make dev
 # build and package
 make build
-# build a release package for the current VERSION
+# build a release package
 make release
-
-# update VERSION, create a release commit and tag, and build a release package
-make release v0.1.1
-```
-
-The default signing mode is ad-hoc for local testing. To use a real certificate, override `SIGN_IDENTITY`:
-
-```bash
-make build SIGN_IDENTITY="Developer ID Application: Example Name (TEAMID)"
 ```
 
 ## Additional Docs

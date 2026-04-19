@@ -8,8 +8,8 @@ SIGN_IDENTITY ?= -
 APP_BUNDLE_ID ?= cn.mirtle.GridMove
 APP_AUTHOR ?= Mirtle
 APP_AUTHOR_URL ?= https://github.com/mirtlecn
-APP_COMMIT_SHA ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo unknown)
-PACKAGE_VERSION_INFO ?= $(APP_VERSION)+$(APP_COMMIT_SHA)
+APP_COMMIT_COUNT ?= $(shell git rev-list --count HEAD 2>/dev/null || echo 0)
+PACKAGE_VERSION_INFO ?= $(APP_VERSION)($(APP_COMMIT_COUNT))
 RELEASE_VERSION ?= $(word 2,$(MAKECMDGOALS))
 RELEASE_TAG ?= $(if $(RELEASE_VERSION),v$(shell printf '%s' "$(RELEASE_VERSION)" | sed 's/^[vV]//'))
 
@@ -44,7 +44,8 @@ release:
 	@if [[ -n "$(RELEASE_VERSION)" ]]; then $(MAKE) update-version VERSION="$(RELEASE_VERSION)"; fi
 	@if [[ -n "$(RELEASE_VERSION)" ]]; then $(MAKE) release-vcs RELEASE_TAG="$(RELEASE_TAG)"; fi
 	@release_version="$$(tr -d '\n' < $(VERSION_FILE))"; \
-	$(MAKE) build APP_VERSION="$$release_version" BUILD_NUMBER="$$release_version" PACKAGE_VERSION_INFO="$$release_version"
+	release_commit_count="$$(git rev-list --count HEAD 2>/dev/null || echo 0)"; \
+	$(MAKE) build APP_VERSION="$$release_version" BUILD_NUMBER="$$release_commit_count" PACKAGE_VERSION_INFO="$$release_version($$release_commit_count)"
 
 release-vcs:
 	@if [[ -z "$(RELEASE_TAG)" ]]; then echo 'usage: make release v0.1.1'; exit 1; fi
