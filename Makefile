@@ -23,7 +23,8 @@ endif
 
 .PHONY: build test dev run sign-app verify-app clean update-version release release-vcs
 
-build: clean test
+build:
+	rm -rf $(DIST_DIR)
 	swift build -c release	
 	./scripts/package_app.sh \
 		"$(APP_NAME)" \
