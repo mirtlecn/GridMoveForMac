@@ -555,3 +555,39 @@ private func makeManagedWindow(frame: CGRect, identity: String = "drag-grid-wind
 
     controller.resetState()
 }
+
+@MainActor
+@Test func otherMouseActivationWithoutWindowConsumesMatchingMouseUp() async throws {
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController()
+    var configuration = AppConfiguration.defaultValue
+    configuration.general.mouseButtonNumber = 5
+
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { configuration },
+        cycleActiveLayoutGroup: { _ in configuration },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {}
+    )
+
+    controller.state.activeButton = .mouseButton
+    controller.state.activeOtherMouseButtonNumber = 4
+    controller.state.mouseDownPoint = CGPoint(x: -10_000, y: -10_000)
+
+    controller.handleOtherMouseActivation(configuration: configuration)
+
+    #expect(controller.state.active == false)
+    #expect(controller.state.activeButton == nil)
+    #expect(controller.state.suppressedMouseUpButton == .mouseButton)
+
+    let matchingUp = try makeOtherMouseEvent(type: .otherMouseUp, buttonNumber: 4)
+    let result = controller.handleOtherMouseUp(event: matchingUp, configuration: configuration)
+
+    #expect(result == nil)
+    #expect(controller.state.suppressedMouseUpButton == nil)
+}

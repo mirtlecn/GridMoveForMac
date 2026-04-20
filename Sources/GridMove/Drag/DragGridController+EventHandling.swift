@@ -90,28 +90,7 @@ extension DragGridController {
             self.state.activationTimer?.cancel()
             self.state.activationTimer = nil
 
-            guard
-                self.state.activeButton == .mouseButton,
-                let point = self.state.mouseDownPoint,
-                let activeOtherMouseButtonNumber = self.state.activeOtherMouseButtonNumber
-            else {
-                return
-            }
-
-            guard self.validateAccessibilityAccessForInteraction() else {
-                return
-            }
-
-            guard let targetWindow = self.windowController.windowUnderCursor(at: point, configuration: configuration) else {
-                self.postSyntheticOtherMouseDown(
-                    at: self.windowController.quartzPoint(fromAppKitPoint: point),
-                    buttonNumber: activeOtherMouseButtonNumber
-                )
-                self.resetState()
-                return
-            }
-
-            self.enterDragMode(button: .mouseButton, targetWindow: targetWindow, point: point, configuration: configuration)
+            self.handleOtherMouseActivation(configuration: configuration)
         }
         state.activationTimer = timer
         timer.resume()
@@ -191,6 +170,27 @@ extension DragGridController {
         }
 
         return handleMouseUp(event: event, button: .mouseButton, configuration: configuration)
+    }
+
+    func handleOtherMouseActivation(configuration: AppConfiguration) {
+        guard
+            state.activeButton == .mouseButton,
+            let point = state.mouseDownPoint
+        else {
+            return
+        }
+
+        guard validateAccessibilityAccessForInteraction() else {
+            return
+        }
+
+        guard let targetWindow = windowController.windowUnderCursor(at: point, configuration: configuration) else {
+            state.suppressedMouseUpButton = .mouseButton
+            resetState(keepSuppressedMouseUp: true)
+            return
+        }
+
+        enterDragMode(button: .mouseButton, targetWindow: targetWindow, point: point, configuration: configuration)
     }
 
     func handleScrollWheel(event: CGEvent) -> Unmanaged<CGEvent>? {
