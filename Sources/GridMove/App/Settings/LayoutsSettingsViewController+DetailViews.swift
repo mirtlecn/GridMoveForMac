@@ -321,7 +321,9 @@ extension LayoutsSettingsViewController {
     func makeLayoutPreviewView(layout: LayoutPreset, mode: LayoutPreviewView.Mode) -> LayoutPreviewView {
         let previewView = LayoutPreviewView(layout: layout, appearance: draftConfiguration.appearance, mode: mode)
         previewView.translatesAutoresizingMaskIntoConstraints = false
-        previewView.widthAnchor.constraint(equalToConstant: 420).isActive = true
+        let preferredWidthConstraint = previewView.widthAnchor.constraint(equalToConstant: 420)
+        preferredWidthConstraint.priority = .defaultHigh
+        preferredWidthConstraint.isActive = true
         previewView.heightAnchor.constraint(equalToConstant: 260).isActive = true
         return previewView
     }
@@ -367,7 +369,9 @@ extension LayoutsSettingsViewController {
         let textField = CallbackTextField(string: value)
         textField.controlSize = .small
         textField.translatesAutoresizingMaskIntoConstraints = false
-        textField.widthAnchor.constraint(equalToConstant: width).isActive = true
+        let preferredWidthConstraint = textField.widthAnchor.constraint(equalToConstant: width)
+        preferredWidthConstraint.priority = .defaultHigh
+        preferredWidthConstraint.isActive = true
         textField.isEditable = isEditable
         textField.isSelectable = isEditable
         textField.isEnabled = true

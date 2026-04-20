@@ -83,7 +83,11 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
         sidebarScrollView.translatesAutoresizingMaskIntoConstraints = false
 
         detailContainerView.translatesAutoresizingMaskIntoConstraints = false
-        detailContainerView.widthAnchor.constraint(greaterThanOrEqualToConstant: SplitViewMetrics.minimumDetailWidth).isActive = true
+        let minimumDetailWidthConstraint = detailContainerView.widthAnchor.constraint(
+            greaterThanOrEqualToConstant: SplitViewMetrics.minimumDetailWidth
+        )
+        minimumDetailWidthConstraint.priority = .defaultHigh
+        minimumDetailWidthConstraint.isActive = true
         let preferredDetailWidthConstraint = detailContainerView.widthAnchor.constraint(equalToConstant: SplitViewMetrics.preferredDetailWidth)
         preferredDetailWidthConstraint.priority = .defaultLow
         preferredDetailWidthConstraint.isActive = true

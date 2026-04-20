@@ -36,7 +36,7 @@
 "settingsIncludeInMenuLabel" = "Include in menu";
 "settingsIncludeInLayoutIndexLabel" = "Include in layout index";
 "settingsIncludeInGroupCycleLabel" = "Include in group cycle";
-"settingsIncludeInGroupCycleDescription" = "Enabled groups can be cycled in layout mode with the mouse wheel or the Shift key.";
+"settingsIncludeInGroupCycleDescription" = "Cycle group in layout mode with mouse wheel or Shift key.";
 "settingsProtectedGroupInfo" = "This group cannot be renamed or deleted.";
 "settingsActiveGroupLabel" = "Active group";
 "settingsMonitorLabel" = "Monitor";

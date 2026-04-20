@@ -19,6 +19,36 @@ struct LayoutsSettingsViewControllerTests {
         return (controller, state, recorder)
     }
 
+    @Test func layoutDetailWidthConstraintsArePreferredInsteadOfRequired() async throws {
+        let (controller, _, _) = makeController()
+
+        let minimumDetailWidthPriority = controller.detailContainerView.constraints.first(where: {
+            $0.firstAttribute == .width && $0.relation == .greaterThanOrEqual && $0.constant == 520
+        })?.priority
+        #expect(minimumDetailWidthPriority == .defaultHigh)
+
+        let inlineContent = makeInlineTabContent(rows: [])
+        let inlineContentWidthPriority = inlineContent.constraints.first(where: {
+            $0.firstAttribute == .width && $0.constant == SettingsLayoutMetrics.inlineTabContentWidth
+        })?.priority
+        #expect(inlineContentWidthPriority == .defaultHigh)
+
+        let nameControl = controller.makeEditableTextControl(value: "Test", width: 220) { _ in }
+        let nameControlWidthPriority = nameControl.constraints.first(where: {
+            $0.firstAttribute == .width && $0.constant == 220
+        })?.priority
+        #expect(nameControlWidthPriority == .defaultHigh)
+
+        let previewView = controller.makeLayoutPreviewView(
+            layout: AppConfiguration.defaultLayouts[0],
+            mode: .combined
+        )
+        let previewWidthPriority = previewView.constraints.first(where: {
+            $0.firstAttribute == .width && $0.constant == 420
+        })?.priority
+        #expect(previewWidthPriority == .defaultHigh)
+    }
+
     @Test func movingLayoutInsideSelectedSetReordersOnlyThatSet() async throws {
         let (controller, _, _) = makeController()
 

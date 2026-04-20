@@ -337,7 +337,9 @@ final class GeneralSettingsViewController: NSViewController {
         let controlContainer = NSView()
         buttonsRow.translatesAutoresizingMaskIntoConstraints = false
         controlContainer.translatesAutoresizingMaskIntoConstraints = false
-        controlContainer.widthAnchor.constraint(equalToConstant: 420).isActive = true
+        let preferredWidthConstraint = controlContainer.widthAnchor.constraint(equalToConstant: 420)
+        preferredWidthConstraint.priority = .defaultHigh
+        preferredWidthConstraint.isActive = true
         controlContainer.addSubview(buttonsRow)
 
         NSLayoutConstraint.activate([

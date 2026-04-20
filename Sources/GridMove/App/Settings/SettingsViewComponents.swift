@@ -92,7 +92,9 @@ private func makeLabeledControlRow(label: String, control: NSView, labelWidth: C
 func makeInlineTabContent(rows: [NSView], width: CGFloat = SettingsLayoutMetrics.inlineTabContentWidth) -> NSView {
     let stackView = makeVerticalGroup(spacing: SettingsLayoutMetrics.rowSpacing)
     stackView.translatesAutoresizingMaskIntoConstraints = false
-    stackView.widthAnchor.constraint(equalToConstant: width).isActive = true
+    let preferredWidthConstraint = stackView.widthAnchor.constraint(equalToConstant: width)
+    preferredWidthConstraint.priority = .defaultHigh
+    preferredWidthConstraint.isActive = true
     rows.forEach { stackView.addArrangedSubview($0) }
     return stackView
 }
@@ -429,7 +431,9 @@ func makeSettingsTableScrollView(tableView: NSTableView, width: CGFloat? = nil, 
     scrollView.translatesAutoresizingMaskIntoConstraints = false
 
     if let width {
-        scrollView.widthAnchor.constraint(greaterThanOrEqualToConstant: width).isActive = true
+        let preferredWidthConstraint = scrollView.widthAnchor.constraint(equalToConstant: width)
+        preferredWidthConstraint.priority = .defaultHigh
+        preferredWidthConstraint.isActive = true
     }
 
     if let height {
@@ -447,14 +451,19 @@ func makeSettingsTableCellView(identifier: NSUserInterfaceItemIdentifier, text: 
     let label = NSTextField(labelWithString: text)
     label.font = .systemFont(ofSize: 13)
     label.lineBreakMode = .byTruncatingTail
+    label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+    label.setContentHuggingPriority(.defaultLow, for: .horizontal)
     label.translatesAutoresizingMaskIntoConstraints = false
 
     cellView.addSubview(label)
     cellView.textField = label
 
+    let trailingConstraint = label.trailingAnchor.constraint(equalTo: cellView.trailingAnchor, constant: -8)
+    trailingConstraint.priority = .defaultHigh
+
     NSLayoutConstraint.activate([
         label.leadingAnchor.constraint(equalTo: cellView.leadingAnchor, constant: 8),
-        label.trailingAnchor.constraint(equalTo: cellView.trailingAnchor, constant: -8),
+        trailingConstraint,
         label.centerYAnchor.constraint(equalTo: cellView.centerYAnchor),
     ])
 

@@ -36,7 +36,7 @@
 "settingsIncludeInMenuLabel" = "在菜单中显示";
 "settingsIncludeInLayoutIndexLabel" = "包含在循环内";
 "settingsIncludeInGroupCycleLabel" = "包含在循环内";
-"settingsIncludeInGroupCycleDescription" = "在布局模式中，可以用鼠标滚轮或 Shift 键快速切换循环内的布局组。";
+"settingsIncludeInGroupCycleDescription" = "在布局模式中，用鼠标滚轮或 Shift 键快速切换布局组。";
 "settingsProtectedGroupInfo" = "这个组不能改名或者删除。";
 "settingsActiveGroupLabel" = "当前激活组";
 "settingsMonitorLabel" = "显示器";

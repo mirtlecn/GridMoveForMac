@@ -4,6 +4,12 @@ import Testing
 
 @MainActor
 struct GeneralSettingsViewControllerTests {
+    @Test func selectableListControlUsesPreferredWidthInsteadOfRequiredMinimum() async throws {
+        let control = SelectableListControlView(items: [], width: 420, showsButtons: false)
+
+        #expect(control.preferredWidthConstraintPriorityForTesting == .defaultHigh)
+    }
+
     @Test func generalSettingsWritesRealConfigurationFields() async throws {
         let state = SettingsPrototypeState(configuration: .defaultValue)
         let recorder = TestSettingsActionRecorder()
