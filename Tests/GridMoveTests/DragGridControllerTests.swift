@@ -280,24 +280,6 @@ private func makeManagedWindow(frame: CGRect, identity: String = "drag-grid-wind
 }
 
 @MainActor
-@Test func moveOnlyFlashPrefersWindowScreenOverActiveScreen() async throws {
-    #expect(
-        DragGridController.preferredMoveOnlyFlashScreen(
-            windowScreen: "window-screen",
-            activeScreen: "active-screen",
-            pointerScreen: "pointer-screen"
-        ) == "window-screen"
-    )
-    #expect(
-        DragGridController.preferredMoveOnlyFlashScreen(
-            windowScreen: nil,
-            activeScreen: "active-screen",
-            pointerScreen: "pointer-screen"
-        ) == "active-screen"
-    )
-}
-
-@MainActor
 @Test func layoutGroupCycleReturnsToThresholdPhaseBeforeApplyingLayouts() async throws {
     let screen = try #require(NSScreen.screens.first)
     let layoutEngine = LayoutEngine()

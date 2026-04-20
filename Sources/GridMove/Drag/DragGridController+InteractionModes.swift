@@ -6,14 +6,6 @@ extension DragGridController {
         static let minimumInterval: TimeInterval = 1.0 / 120.0
     }
 
-    static func preferredMoveOnlyFlashScreen<Screen>(
-        windowScreen: Screen?,
-        activeScreen: Screen?,
-        pointerScreen: Screen?
-    ) -> Screen? {
-        windowScreen ?? activeScreen ?? pointerScreen
-    }
-
     func enterDragMode(
         button: DragTriggerButton,
         targetWindow: ManagedWindow,
@@ -44,7 +36,7 @@ extension DragGridController {
                 shouldFlashHighlight: false
             )
         case .moveOnly:
-            configureMoveOnlyMode(at: point, configuration: configuration, shouldFlashHighlight: true)
+            configureMoveOnlyMode(at: point, configuration: configuration)
         }
     }
 
@@ -151,7 +143,7 @@ extension DragGridController {
 
         switch state.interactionMode {
         case .layoutSelection:
-            configureMoveOnlyMode(at: point, configuration: configuration, shouldFlashHighlight: true)
+            configureMoveOnlyMode(at: point, configuration: configuration)
         case .moveOnly:
             configureLayoutSelectionMode(
                 at: point,
@@ -220,8 +212,7 @@ extension DragGridController {
 
     func configureMoveOnlyMode(
         at point: CGPoint,
-        configuration: AppConfiguration,
-        shouldFlashHighlight: Bool
+        configuration: AppConfiguration
     ) {
         state.interactionMode = .moveOnly
         state.cursorPoint = point
@@ -241,28 +232,6 @@ extension DragGridController {
             state.moveAnchor = MoveAnchor(mousePoint: point, windowOrigin: frame.origin)
         } else {
             state.moveAnchor = nil
-        }
-
-        let fallbackScreen = windowFrame.flatMap { frame in
-            windowController.screenContaining(point: CGPoint(x: frame.midX, y: frame.midY))
-        }
-        let pointerScreen = windowController.resolvedScreen(for: point, fallback: fallbackScreen)
-        let flashScreen = Self.preferredMoveOnlyFlashScreen(
-            windowScreen: fallbackScreen,
-            activeScreen: state.activeScreen,
-            pointerScreen: pointerScreen
-        )
-        if shouldFlashHighlight,
-           let screen = flashScreen,
-           let frame = windowFrame
-        {
-            overlayController.flashHighlight(
-                frame: frame,
-                screen: screen,
-                configuration: configuration,
-                keepsOverlayVisibleAfterFlash: false
-            )
-            return
         }
 
         refreshOverlay(configuration: configuration)
