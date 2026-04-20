@@ -19,14 +19,14 @@ private func makeScrollEvent(deltaY: Int32) throws -> CGEvent {
     )
 }
 
-private func makeOtherMouseEvent(type: CGEventType, buttonNumber: Int64) throws -> CGEvent {
+private func makeOtherMouseEvent(type: CGEventType, buttonNumber: Int64, point: CGPoint = .zero) throws -> CGEvent {
     let source = try #require(CGEventSource(stateID: .hidSystemState))
     let mouseButton = try #require(CGMouseButton(rawValue: UInt32(buttonNumber)))
     let event = try #require(
         CGEvent(
             mouseEventSource: source,
             mouseType: type,
-            mouseCursorPosition: .zero,
+            mouseCursorPosition: point,
             mouseButton: mouseButton
         )
     )
@@ -660,6 +660,41 @@ private final class OverlayUpdateRecorder {
     #expect(passthroughResult?.takeUnretainedValue() === middleButtonDown)
 
     controller.resetState()
+}
+
+@MainActor
+@Test func zeroDelayOtherMouseActivationDoesNotWaitForTimer() async throws {
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController()
+    var configuration = AppConfiguration.defaultValue
+    configuration.general.mouseButtonNumber = 5
+    configuration.dragTriggers.activationDelayMilliseconds = 0
+
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { configuration },
+        cycleActiveLayoutGroup: { _ in configuration },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {}
+    )
+
+    let offscreenPoint = CGPoint(x: -10_000, y: -10_000)
+    let sideButtonDown = try makeOtherMouseEvent(
+        type: .otherMouseDown,
+        buttonNumber: 4,
+        point: offscreenPoint
+    )
+
+    let result = controller.handleOtherMouseDown(event: sideButtonDown, configuration: configuration)
+
+    #expect(result == nil)
+    #expect(controller.state.activationTimer == nil)
+    #expect(controller.state.active == false)
+    #expect(controller.state.suppressedMouseUpButton == .mouseButton)
 }
 
 @MainActor

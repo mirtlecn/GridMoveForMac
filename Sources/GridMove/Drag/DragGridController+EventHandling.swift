@@ -80,6 +80,11 @@ extension DragGridController {
         state.activeOtherMouseButtonNumber = buttonNumber
         state.mouseDownPoint = point
 
+        if configuration.dragTriggers.activationDelayMilliseconds == 0 {
+            handleOtherMouseActivation(configuration: configuration)
+            return nil
+        }
+
         let timer = DispatchSource.makeTimerSource(queue: .main)
         timer.schedule(deadline: .now() + .milliseconds(configuration.dragTriggers.activationDelayMilliseconds))
         timer.setEventHandler { [weak self] in
