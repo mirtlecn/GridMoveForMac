@@ -24,12 +24,31 @@ jobs:
       - name: Select Xcode 26
         shell: bash
         run: |
-          developer_dir="$(
-            find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app' \
-              | rg -v 'beta' \
-              | sort -V \
-              | tail -n 1
-          )/Contents/Developer"
+          developer_dir=""
+          best_key=""
+
+          while IFS= read -r app_path; do
+            app_name="$(basename "${app_path}" .app)"
+            version="${app_name#Xcode_}"
+
+            if [[ "${version}" == *beta* ]]; then
+              continue
+            fi
+
+            version_key="$(
+              awk -F. '{
+                major = ($1 == "" ? 0 : $1)
+                minor = ($2 == "" ? 0 : $2)
+                patch = ($3 == "" ? 0 : $3)
+                printf("%03d%03d%03d\n", major, minor, patch)
+              }' <<< "${version}"
+            )"
+
+            if [[ -z "${best_key}" || "${version_key}" > "${best_key}" ]]; then
+              best_key="${version_key}"
+              developer_dir="${app_path}/Contents/Developer"
+            fi
+          done < <(find /Applications -maxdepth 1 -type d -name 'Xcode_26*.app')
 
           if [[ ! -d "${developer_dir}" ]]; then
             developer_dir="$(xcode-select -p)"
