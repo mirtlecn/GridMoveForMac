@@ -6,6 +6,7 @@ import Foundation
 final class WindowQueryService {
     private let mainDisplayHeightProvider: () -> CGFloat
     private let builtInExcludedBundleIDs = Set(AppConfiguration.builtInExcludedBundleIDs)
+    private let currentProcessIdentifier = getpid()
 
     init(mainDisplayHeightProvider: @escaping () -> CGFloat) {
         self.mainDisplayHeightProvider = mainDisplayHeightProvider
@@ -58,9 +59,9 @@ final class WindowQueryService {
     func windowUnderCursor(at point: CGPoint, configuration: AppConfiguration) -> ManagedWindow? {
         let quartzPoint = Geometry.quartzPoint(fromAppKitPoint: point, mainDisplayHeight: mainDisplayHeight)
         let windowInfos = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
-        var fallbackCandidate: ManagedWindow?
+        AppLogger.debugTargeting("windowUnderCursor(point: \(point.debugDescription)) begin quartzPoint=\(quartzPoint.debugDescription) cgWindowCount=\(windowInfos.count)")
 
-        for windowInfo in windowInfos {
+        for (index, windowInfo) in windowInfos.enumerated() {
             guard
                 let boundsDictionary = windowInfo[kCGWindowBounds as String] as? NSDictionary,
                 let bounds = CGRect(dictionaryRepresentation: boundsDictionary),
@@ -69,35 +70,37 @@ final class WindowQueryService {
                 continue
             }
 
+            AppLogger.debugTargeting("windowUnderCursor hit[\(index)] cg=\(cgWindowDebugDescription(windowInfo))")
+
+            if let exclusionReason = exclusionReason(windowInfo: windowInfo) {
+                AppLogger.debugTargeting("windowUnderCursor hit[\(index)] -> excluded CG window reason=\(exclusionReason)")
+                continue
+            }
+
             guard let candidate = resolveWindow(from: windowInfo, point: point) else {
+                AppLogger.debugTargeting("windowUnderCursor hit[\(index)] -> failed to resolve AX window")
                 continue
             }
 
-            if isWindowExcluded(candidate, configuration: configuration) {
+            if let exclusionReason = exclusionReason(candidate, configuration: configuration) {
+                AppLogger.debugTargeting("windowUnderCursor hit[\(index)] -> excluded reason=\(exclusionReason) candidate=\(candidate.debugDescription)")
                 continue
             }
 
-            if candidate.isStandardWindow {
-                return candidate
-            }
-
-            if fallbackCandidate == nil {
-                fallbackCandidate = candidate
-            }
-        }
-
-        if let fallbackCandidate {
-            return fallbackCandidate
+            AppLogger.debugTargeting("windowUnderCursor hit[\(index)] -> selected candidate=\(candidate.debugDescription)")
+            return candidate
         }
 
         guard
             let hitElement = elementAtPoint(quartzPoint),
             let hitWindow = resolveWindowByTraversal(from: hitElement),
-            !isWindowExcluded(hitWindow, configuration: configuration)
+            exclusionReason(hitWindow, configuration: configuration) == nil
         else {
+            AppLogger.debugTargeting("windowUnderCursor fallback -> no selectable AX element at point \(point.debugDescription)")
             return nil
         }
 
+        AppLogger.debugTargeting("windowUnderCursor fallback -> selected candidate=\(hitWindow.debugDescription)")
         return hitWindow
     }
 
@@ -116,11 +119,50 @@ final class WindowQueryService {
     }
 
     private func isWindowExcluded(_ window: ManagedWindow, configuration: AppConfiguration) -> Bool {
-        if isExcludedByIdentityRules(window, configuration: configuration) {
-            return true
+        exclusionReason(window, configuration: configuration) != nil
+    }
+
+    private func exclusionReason(_ window: ManagedWindow, configuration: AppConfiguration) -> String? {
+        if isGridMoveOverlayWindow(window) {
+            return "gridmove-overlay-window"
         }
 
-        return !isOperable(window)
+        if isDesktopWindow(window) {
+            return "desktop-window"
+        }
+
+        if let bundleIdentifier = window.bundleIdentifier {
+            if builtInExcludedBundleIDs.contains(bundleIdentifier) {
+                return "built-in-excluded-bundle-id=\(bundleIdentifier)"
+            }
+            if configuration.general.excludedBundleIDs.contains(bundleIdentifier) {
+                return "user-excluded-bundle-id=\(bundleIdentifier)"
+            }
+        }
+
+        if configuration.general.excludedWindowTitles.contains(window.title) {
+            return "user-excluded-title=\(window.title)"
+        }
+
+        if let appName = window.appName, ["Dock", "Notification Center"].contains(appName) {
+            return "excluded-app-name=\(appName)"
+        }
+
+        let canSetPosition = isAttributeSettable(kAXPositionAttribute as CFString, on: window.element)
+        let canSetSize = isAttributeSettable(kAXSizeAttribute as CFString, on: window.element)
+        if shouldExcludeForOperability(canSetPosition: canSetPosition, canSetSize: canSetSize) {
+            return "non-operable-window"
+        }
+
+        return nil
+    }
+
+    private func exclusionReason(windowInfo: [String: Any]) -> String? {
+        guard isGridMoveOverlayWindowInfo(windowInfo) else {
+            return nil
+        }
+
+        return "gridmove-overlay-cg-window"
     }
 
     private func isExcludedByIdentityRules(_ window: ManagedWindow, configuration: AppConfiguration) -> Bool {
@@ -148,6 +190,32 @@ final class WindowQueryService {
         isExcludedByIdentityRules(window, configuration: configuration)
     }
 
+    func isWindowExcludedForTesting(_ window: ManagedWindow, configuration: AppConfiguration) -> Bool {
+        isWindowExcluded(window, configuration: configuration)
+    }
+
+    func preferredHitCandidateForTesting(_ candidates: [ManagedWindow]) -> ManagedWindow? {
+        candidates.first
+    }
+
+    func shouldExcludeForOperabilityForTesting(canSetPosition: Bool, canSetSize: Bool) -> Bool {
+        shouldExcludeForOperability(canSetPosition: canSetPosition, canSetSize: canSetSize)
+    }
+
+    func isGridMoveOverlayWindowInfoForTesting(_ windowInfo: [String: Any]) -> Bool {
+        isGridMoveOverlayWindowInfo(windowInfo)
+    }
+
+    func acceptsMatchForTesting(
+        window: ManagedWindow,
+        expectedTitle: String?,
+        expectedBounds: CGRect?,
+        point: CGPoint?
+    ) -> Bool {
+        let score = matchScore(window, expectedTitle: expectedTitle, expectedBounds: expectedBounds, point: point)
+        return isReliableMatch(score: score)
+    }
+
     private func focusedWindow(from application: AXUIElement, configuration: AppConfiguration) -> ManagedWindow? {
         guard let focusedWindowElement: AXUIElement = copyAttribute(kAXFocusedWindowAttribute as CFString, from: application) else {
             return nil
@@ -166,11 +234,6 @@ final class WindowQueryService {
 
     private func isDesktopWindow(_ window: ManagedWindow) -> Bool {
         window.bundleIdentifier == "com.apple.finder" && window.title.isEmpty
-    }
-
-    private func isOperable(_ window: ManagedWindow) -> Bool {
-        isAttributeSettable(kAXPositionAttribute as CFString, on: window.element)
-            && isAttributeSettable(kAXSizeAttribute as CFString, on: window.element)
     }
 
     private func elementAtPoint(_ point: CGPoint) -> AXUIElement? {
@@ -214,14 +277,24 @@ final class WindowQueryService {
             )
 
             guard score > 0 else {
+                AppLogger.debugTargeting("resolveWindow cg=\(cgWindowDebugDescription(windowInfo)) -> rejected AX candidate score=0 candidate=\(managedWindow.debugDescription)")
                 continue
             }
 
+            guard isReliableMatch(score: score) else {
+                AppLogger.debugTargeting("resolveWindow cg=\(cgWindowDebugDescription(windowInfo)) -> rejected weak AX candidate score=\(score) candidate=\(managedWindow.debugDescription)")
+                continue
+            }
+
+            AppLogger.debugTargeting("resolveWindow cg=\(cgWindowDebugDescription(windowInfo)) -> AX candidate score=\(score) candidate=\(managedWindow.debugDescription)")
             if bestMatch == nil || score > bestMatch?.score ?? 0 {
                 bestMatch = (managedWindow, score)
             }
         }
 
+        if let bestMatch {
+            AppLogger.debugTargeting("resolveWindow cg=\(cgWindowDebugDescription(windowInfo)) -> best AX candidate score=\(bestMatch.score) candidate=\(bestMatch.window.debugDescription)")
+        }
         return bestMatch?.window
     }
 
@@ -272,6 +345,54 @@ final class WindowQueryService {
         return score
     }
 
+    private func isReliableMatch(score: Int) -> Bool {
+        score >= 4
+    }
+
+    private func shouldExcludeForOperability(canSetPosition: Bool, canSetSize: Bool) -> Bool {
+        !canSetPosition && !canSetSize
+    }
+
+    private func isGridMoveOverlayWindow(_ window: ManagedWindow) -> Bool {
+        guard
+            window.pid == currentProcessIdentifier,
+            window.title.isEmpty,
+            !window.isStandardWindow
+        else {
+            return false
+        }
+
+        return NSScreen.screens.contains { screen in
+            Geometry.approximatelyEqual(screen.frame, window.frame, tolerance: 2)
+        }
+    }
+
+    private func isGridMoveOverlayWindowInfo(_ windowInfo: [String: Any]) -> Bool {
+        guard
+            let pid = windowInfo[kCGWindowOwnerPID as String] as? pid_t,
+            pid == currentProcessIdentifier,
+            let layer = windowInfo[kCGWindowLayer as String] as? Int,
+            layer > 0
+        else {
+            return false
+        }
+
+        let windowTitle = (windowInfo[kCGWindowName as String] as? String) ?? ""
+        guard windowTitle.isEmpty else {
+            return false
+        }
+
+        guard let boundsDictionary = windowInfo[kCGWindowBounds as String] as? NSDictionary,
+              let bounds = CGRect(dictionaryRepresentation: boundsDictionary) else {
+            return false
+        }
+
+        return NSScreen.screens.contains { screen in
+            let quartzScreenFrame = Geometry.quartzRect(fromAppKitRect: screen.frame, mainDisplayHeight: mainDisplayHeight)
+            return Geometry.approximatelyEqual(quartzScreenFrame, bounds, tolerance: 2)
+        }
+    }
+
     private func managedWindow(from element: AXUIElement, cgWindowID: CGWindowID?) -> ManagedWindow? {
         var pid = pid_t()
         guard AXUIElementGetPid(element, &pid) == .success else {
@@ -304,14 +425,14 @@ final class WindowQueryService {
         )
     }
 
+    private func setBooleanAttribute(_ attribute: CFString, value: Bool, on element: AXUIElement) -> Bool {
+        AXUIElementSetAttributeValue(element, attribute, value as CFBoolean) == .success
+    }
+
     private func isAttributeSettable(_ attribute: CFString, on element: AXUIElement) -> Bool {
         var settable = DarwinBoolean(false)
         let error = AXUIElementIsAttributeSettable(element, attribute, &settable)
         return error == .success && settable.boolValue
-    }
-
-    private func setBooleanAttribute(_ attribute: CFString, value: Bool, on element: AXUIElement) -> Bool {
-        AXUIElementSetAttributeValue(element, attribute, value as CFBoolean) == .success
     }
 
     private func frame(of element: AXUIElement) -> CGRect? {
@@ -342,5 +463,27 @@ final class WindowQueryService {
             return nil
         }
         return value as? T
+    }
+
+    private func cgWindowDebugDescription(_ windowInfo: [String: Any]) -> String {
+        let windowID = (windowInfo[kCGWindowNumber as String] as? CGWindowID).map(String.init) ?? "nil"
+        let ownerPID = (windowInfo[kCGWindowOwnerPID as String] as? pid_t).map(String.init) ?? "nil"
+        let ownerName = (windowInfo[kCGWindowOwnerName as String] as? String) ?? "nil"
+        let windowName = (windowInfo[kCGWindowName as String] as? String) ?? "nil"
+        let layer = (windowInfo[kCGWindowLayer as String] as? Int).map(String.init) ?? "nil"
+        let bounds = ((windowInfo[kCGWindowBounds as String] as? NSDictionary).flatMap { CGRect(dictionaryRepresentation: $0) })?.debugDescription ?? "nil"
+        return "id=\(windowID) pid=\(ownerPID) owner=\(ownerName) title=\(windowName) layer=\(layer) bounds=\(bounds)"
+    }
+}
+
+private extension CGPoint {
+    var debugDescription: String {
+        "(\(Int(x.rounded())), \(Int(y.rounded())))"
+    }
+}
+
+private extension CGRect {
+    var debugDescription: String {
+        "(x: \(Int(origin.x.rounded())), y: \(Int(origin.y.rounded())), w: \(Int(size.width.rounded())), h: \(Int(size.height.rounded())))"
     }
 }
