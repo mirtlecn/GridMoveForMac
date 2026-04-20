@@ -2,11 +2,6 @@ name: Release
 
 on:
   workflow_dispatch:
-    inputs:
-      tag:
-        description: Tag for the prerelease, such as v0.1.0-rc1
-        required: true
-        type: string
   push:
     tags:
       - "v*"
@@ -30,19 +25,21 @@ jobs:
         id: release_tag
         shell: bash
         run: |
-          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
-            tag="${{ github.event.inputs.tag }}"
-          else
+          if [[ "${GITHUB_EVENT_NAME}" == "push" ]]; then
             tag="${GITHUB_REF_NAME}"
+            version="${tag#v}"
+          else
+            version="$(tr -d '\n' < VERSION)"
+            version="${version#v}"
+            short_sha="$(git rev-parse --short=7 HEAD)"
+            tag="v${version}-pre.${short_sha}"
           fi
 
           tag="${tag#refs/tags/}"
-          if [[ -z "${tag}" ]]; then
-            echo "Release tag is required." >&2
+          if [[ -z "${tag}" || -z "${version}" ]]; then
+            echo "Release tag or version is missing." >&2
             exit 1
           fi
-
-          version="${tag#v}"
 
           echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
           echo "version=${version}" >> "${GITHUB_OUTPUT}"

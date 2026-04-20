@@ -70,11 +70,6 @@ make build
 make release
 ```
 
-## GitHub Release 自动发布
-
-- 推送 `v0.1.0` 这类 tag，或者在 Actions 页面手动运行 `Release` 工作流并填写 tag。
-- 工作流会在 GitHub 官方 arm64 macOS runner 上构建 `GridMove.arm64.dmg`，并上传到对应的 GitHub Release。
-
 ## 附加说明
 
 - GridMove 这个名字来自我之前维护的一个 [Windows AHK 应用](https://github.com/mirtlecn/GridMove)。这个项目可以看作它的 macOS 对应版本。
