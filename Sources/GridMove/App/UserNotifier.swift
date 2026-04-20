@@ -16,6 +16,7 @@ final class UserNotifier {
     }
 
     private let notifyHandler: (Kind, String, String) -> Void
+    static let foregroundPresentationOptions: UNNotificationPresentationOptions = [.banner, .list, .sound]
 
     init(notifyHandler: @escaping (Kind, String, String) -> Void = UserNotifier.postSystemNotification) {
         self.notifyHandler = notifyHandler
@@ -80,5 +81,9 @@ final class UserNotifier {
         value
             .replacingOccurrences(of: "\\", with: "\\\\")
             .replacingOccurrences(of: "\"", with: "\\\"")
+    }
+
+    static var foregroundPresentationOptionsForTesting: UNNotificationPresentationOptions {
+        foregroundPresentationOptions
     }
 }

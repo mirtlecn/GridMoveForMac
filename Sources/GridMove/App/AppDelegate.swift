@@ -1,8 +1,9 @@
 import AppKit
 import Foundation
+@preconcurrency import UserNotifications
 
 @MainActor
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     enum ConfigurationReloadMode {
         case launch
         case manual
@@ -105,6 +106,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         reloadConfigurationFromDisk(mode: .launch)
+        UNUserNotificationCenter.current().delegate = self
         configureMainMenu()
         commandRelay.startListening { [weak self] command in
             MainActor.assumeIsolated {
@@ -159,6 +161,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         shortcutController.stop()
         accessibilityCoordinator.stop()
         commandRelay.stopListening()
+    }
+
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        willPresent notification: UNNotification
+    ) async -> UNNotificationPresentationOptions {
+        UserNotifier.foregroundPresentationOptions
     }
 
     func evaluateAccessibilityState() {
