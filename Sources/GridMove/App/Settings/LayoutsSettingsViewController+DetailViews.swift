@@ -73,7 +73,8 @@ extension LayoutsSettingsViewController {
         let includeInCycleDescriptionLabel = makeSecondaryLabel(UICopy.settingsIncludeInGroupCycleDescription)
         let includeInCycleContent = makeControlWithDescription(
             control: includeInCycleControl,
-            descriptionLabel: includeInCycleDescriptionLabel
+            descriptionLabel: includeInCycleDescriptionLabel,
+            descriptionLeadingInset: 22
         )
         var rows = [
             makeLabeledControlRow(label: UICopy.settingsNameLabel, control: nameControl),
@@ -88,7 +89,7 @@ extension LayoutsSettingsViewController {
             )
         }
         let formView = makeInlineTabContent(rows: rows)
-        contentStackView.addArrangedSubview(makeFullWidthContainer(for: makeInlinePanel(contentView: formView)))
+        contentStackView.addArrangedSubview(makeDetailContentContainer(for: formView))
         return makeDetailPanelContainer(contentView: contentStackView)
     }
 
@@ -110,7 +111,7 @@ extension LayoutsSettingsViewController {
         let formView = makeInlineTabContent(rows: [
             makeLabeledControlRow(label: UICopy.settingsApplyToLabel, control: applyToControl),
         ])
-        contentStackView.addArrangedSubview(makeFullWidthContainer(for: makeInlinePanel(contentView: formView)))
+        contentStackView.addArrangedSubview(makeDetailContentContainer(for: formView))
         return makeDetailPanelContainer(contentView: contentStackView)
     }
 
@@ -301,6 +302,21 @@ extension LayoutsSettingsViewController {
         row.addArrangedSubview(control)
         row.addArrangedSubview(makeFieldLabel("grid"))
         return row
+    }
+
+    private func makeDetailContentContainer(for view: NSView) -> NSView {
+        let containerView = NSView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        containerView.addSubview(view)
+
+        NSLayoutConstraint.activate([
+            view.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: SettingsLayoutMetrics.inlineTabPanelInsets.left),
+            view.topAnchor.constraint(equalTo: containerView.topAnchor),
+            view.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
+            containerView.trailingAnchor.constraint(greaterThanOrEqualTo: view.trailingAnchor),
+        ])
+
+        return containerView
     }
 
     func makeLayoutPreviewView(layout: LayoutPreset, mode: LayoutPreviewView.Mode) -> LayoutPreviewView {

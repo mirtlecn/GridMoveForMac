@@ -18,34 +18,6 @@ enum SettingsLayoutMetrics {
 }
 
 @MainActor
-final class SettingsInlinePanelBackgroundView: NSVisualEffectView {
-    override init(frame frameRect: NSRect) {
-        super.init(frame: frameRect)
-        wantsLayer = true
-        updateLayerAppearance()
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        nil
-    }
-
-    override func viewDidChangeEffectiveAppearance() {
-        super.viewDidChangeEffectiveAppearance()
-        updateLayerAppearance()
-    }
-
-    private func updateLayerAppearance() {
-        material = .underWindowBackground
-        blendingMode = .withinWindow
-        state = .followsWindowActiveState
-        layer?.cornerRadius = SettingsLayoutMetrics.inlineTabPanelCornerRadius
-        layer?.masksToBounds = true
-        layer?.borderWidth = 0
-    }
-}
-
-@MainActor
 func makeSettingsPageStackView() -> NSStackView {
     let stackView = makeVerticalGroup(spacing: SettingsLayoutMetrics.pageSpacing)
     stackView.edgeInsets = SettingsLayoutMetrics.pageInsets
@@ -123,23 +95,6 @@ func makeInlineTabContent(rows: [NSView], width: CGFloat = SettingsLayoutMetrics
     stackView.widthAnchor.constraint(equalToConstant: width).isActive = true
     rows.forEach { stackView.addArrangedSubview($0) }
     return stackView
-}
-
-@MainActor
-func makeInlinePanel(contentView: NSView) -> NSView {
-    let panelView = SettingsInlinePanelBackgroundView()
-    panelView.translatesAutoresizingMaskIntoConstraints = false
-    contentView.translatesAutoresizingMaskIntoConstraints = false
-    panelView.addSubview(contentView)
-
-    NSLayoutConstraint.activate([
-        contentView.leadingAnchor.constraint(equalTo: panelView.leadingAnchor, constant: SettingsLayoutMetrics.inlineTabPanelInsets.left),
-        contentView.trailingAnchor.constraint(lessThanOrEqualTo: panelView.trailingAnchor, constant: -SettingsLayoutMetrics.inlineTabPanelInsets.right),
-        contentView.topAnchor.constraint(equalTo: panelView.topAnchor, constant: SettingsLayoutMetrics.inlineTabPanelInsets.top),
-        contentView.bottomAnchor.constraint(equalTo: panelView.bottomAnchor, constant: -SettingsLayoutMetrics.inlineTabPanelInsets.bottom),
-    ])
-
-    return panelView
 }
 
 @MainActor

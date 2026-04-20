@@ -6,6 +6,34 @@ struct SettingsInlineTab {
 }
 
 @MainActor
+private final class SettingsInlineTabPanelView: NSVisualEffectView {
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        wantsLayer = true
+        updateLayerAppearance()
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        nil
+    }
+
+    override func viewDidChangeEffectiveAppearance() {
+        super.viewDidChangeEffectiveAppearance()
+        updateLayerAppearance()
+    }
+
+    private func updateLayerAppearance() {
+        material = .underWindowBackground
+        blendingMode = .withinWindow
+        state = .followsWindowActiveState
+        layer?.cornerRadius = SettingsLayoutMetrics.inlineTabPanelCornerRadius
+        layer?.masksToBounds = true
+        layer?.borderWidth = 0
+    }
+}
+
+@MainActor
 private final class SettingsInlineTabBridgeView: NSVisualEffectView {
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -36,7 +64,7 @@ private final class SettingsInlineTabBridgeView: NSVisualEffectView {
 final class SettingsInlineTabsView: NSView {
     private let segmentedControl: NSSegmentedControl
     private let contentStackView = makeVerticalGroup(spacing: 0)
-    private let contentBackgroundView = SettingsInlinePanelBackgroundView()
+    private let contentBackgroundView = SettingsInlineTabPanelView()
     private let segmentedBridgeView = SettingsInlineTabBridgeView()
     private let tabViews: [NSView]
     var onSelectionChanged: ((Int) -> Void)?
