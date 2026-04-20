@@ -31,6 +31,10 @@ final class WindowQueryService {
         return nil
     }
 
+    func currentFrame(for window: ManagedWindow) -> CGRect? {
+        frame(of: window.element)
+    }
+
     func window(cgWindowID: CGWindowID, configuration: AppConfiguration) -> ManagedWindow? {
         let windowInfos = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
 

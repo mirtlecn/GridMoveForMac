@@ -7,6 +7,7 @@ final class DragGridController {
     struct TestHooks {
         var currentTimeProvider: (() -> TimeInterval)?
         var moveWindow: ((CGPoint, CGRect, ManagedWindow) -> Bool)?
+        var currentWindowFrame: ((ManagedWindow) -> CGRect?)?
         var refreshOverlay: ((AppConfiguration) -> Void)?
     }
 

@@ -511,6 +511,107 @@ private final class OverlayUpdateRecorder {
 }
 
 @MainActor
+@Test func switchingToMoveModeRefreshesOverlayFromLiveWindowFrame() async throws {
+    let screen = try #require(NSScreen.screens.first)
+    let recorder = OverlayUpdateRecorder()
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController(
+        testHooks: .init(
+            showOverlay: { screen, slots, highlightFrame, hoveredLayoutID, _, _ in
+                recorder.record(
+                    screen: screen,
+                    slots: slots,
+                    highlightFrame: highlightFrame,
+                    hoveredLayoutID: hoveredLayoutID
+                )
+            }
+        )
+    )
+    let staleFrame = CGRect(x: screen.frame.minX + 80, y: screen.frame.minY + 80, width: 500, height: 300)
+    let liveFrame = CGRect(x: screen.frame.minX + 130, y: screen.frame.minY + 140, width: 360, height: 220)
+    let targetWindow = makeManagedWindow(frame: staleFrame)
+
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { .defaultValue },
+        cycleActiveLayoutGroup: { _ in .defaultValue },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {},
+        testHooks: .init(
+            currentWindowFrame: { _ in liveFrame }
+        )
+    )
+
+    controller.state.active = true
+    controller.state.interactionMode = .layoutSelection
+    controller.state.targetWindow = targetWindow
+    controller.state.currentWindowFrame = staleFrame
+
+    controller.configureMoveOnlyMode(
+        at: CGPoint(x: liveFrame.midX, y: liveFrame.midY),
+        configuration: .defaultValue
+    )
+
+    #expect(controller.state.currentWindowFrame == liveFrame)
+    #expect(recorder.highlightFrame == liveFrame)
+}
+
+@MainActor
+@Test func switchingToLayoutModeRefreshesOverlayFromLiveWindowFrame() async throws {
+    let screen = try #require(NSScreen.screens.first)
+    let recorder = OverlayUpdateRecorder()
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController(
+        testHooks: .init(
+            showOverlay: { screen, slots, highlightFrame, hoveredLayoutID, _, _ in
+                recorder.record(
+                    screen: screen,
+                    slots: slots,
+                    highlightFrame: highlightFrame,
+                    hoveredLayoutID: hoveredLayoutID
+                )
+            }
+        )
+    )
+    let staleFrame = CGRect(x: screen.frame.minX + 90, y: screen.frame.minY + 90, width: 520, height: 320)
+    let liveFrame = CGRect(x: screen.frame.minX + 150, y: screen.frame.minY + 150, width: 340, height: 210)
+    let targetWindow = makeManagedWindow(frame: staleFrame)
+
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { .defaultValue },
+        cycleActiveLayoutGroup: { _ in .defaultValue },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {},
+        testHooks: .init(
+            currentWindowFrame: { _ in liveFrame }
+        )
+    )
+
+    controller.state.active = true
+    controller.state.interactionMode = .moveOnly
+    controller.state.targetWindow = targetWindow
+    controller.state.currentWindowFrame = staleFrame
+
+    controller.configureLayoutSelectionMode(
+        at: CGPoint(x: liveFrame.midX, y: liveFrame.midY),
+        configuration: .defaultValue,
+        shouldApplyImmediately: false
+    )
+
+    #expect(controller.state.currentWindowFrame == liveFrame)
+    #expect(recorder.highlightFrame == liveFrame)
+}
+
+@MainActor
 @Test func deferredLayoutApplyWaitsForMouseUp() async throws {
     let screen = try #require(NSScreen.screens.first)
     let layoutEngine = LayoutEngine()

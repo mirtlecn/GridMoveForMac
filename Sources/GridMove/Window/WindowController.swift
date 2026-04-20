@@ -64,6 +64,10 @@ final class WindowController {
         queryService.windowUnderCursor(at: point, configuration: configuration)
     }
 
+    func currentFrame(for window: ManagedWindow) -> CGRect? {
+        queryService.currentFrame(for: window)
+    }
+
     func focus(_ window: ManagedWindow) {
         queryService.focus(window)
     }

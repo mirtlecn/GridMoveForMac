@@ -157,13 +157,8 @@ extension DragGridController {
         configuration: AppConfiguration,
         shouldApplyImmediately: Bool
     ) {
-        state.interactionMode = .layoutSelection
-        state.cursorPoint = point
+        prepareForModeTransition(at: point, interactionMode: .layoutSelection)
         state.moveAnchor = nil
-        state.overlayActivationPoint = point
-        state.hoveredLayoutID = nil
-        state.lastAppliedLayoutID = nil
-        state.shiftGroupCycleTracker = ShiftGroupCycleTracker(baselineModifiers: currentModifierKeys)
         state.scrollGroupCycleResetWorkItem?.cancel()
         state.scrollGroupCycleResetWorkItem = nil
         state.scrollGroupCycleTracker = makeScrollGroupCycleTracker()
@@ -197,11 +192,7 @@ extension DragGridController {
         at point: CGPoint,
         configuration: AppConfiguration
     ) {
-        state.interactionMode = .moveOnly
-        state.cursorPoint = point
-        state.overlayActivationPoint = point
-        state.hoveredLayoutID = nil
-        state.lastAppliedLayoutID = nil
+        prepareForModeTransition(at: point, interactionMode: .moveOnly)
         state.hasDraggedPastThreshold = true
         state.shiftGroupCycleTracker = nil
         state.scrollGroupCycleResetWorkItem?.cancel()
@@ -218,6 +209,27 @@ extension DragGridController {
         }
 
         refreshOverlay(configuration: configuration)
+    }
+
+    func prepareForModeTransition(at point: CGPoint, interactionMode: DragInteractionMode) {
+        syncCurrentWindowFrameFromLiveWindow()
+        state.interactionMode = interactionMode
+        state.cursorPoint = point
+        state.overlayActivationPoint = point
+        state.hoveredLayoutID = nil
+        state.lastAppliedLayoutID = nil
+        state.shiftGroupCycleTracker = ShiftGroupCycleTracker(baselineModifiers: currentModifierKeys)
+    }
+
+    func syncCurrentWindowFrameFromLiveWindow() {
+        guard let targetWindow = state.targetWindow else {
+            return
+        }
+
+        let liveWindowFrame = testHooks?.currentWindowFrame?(targetWindow) ?? windowController.currentFrame(for: targetWindow)
+        if let liveWindowFrame {
+            state.currentWindowFrame = liveWindowFrame
+        }
     }
 
     func updateLayoutSelection(at point: CGPoint, configuration: AppConfiguration) {
