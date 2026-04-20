@@ -663,6 +663,18 @@ extension LayoutsSettingsViewController {
         currentLayoutPreviewView?.interactiveCursorRegionForTesting
     }
 
+    var currentGroupNameControlMinXForTesting: CGFloat? {
+        minXInDetailContainer(for: currentGroupNameControl)
+    }
+
+    var currentSetApplyToControlMinXForTesting: CGFloat? {
+        minXInDetailContainer(for: currentSetApplyToControl)
+    }
+
+    var currentLayoutNameControlMinXForTesting: CGFloat? {
+        minXInDetailContainer(for: currentLayoutNameControl)
+    }
+
     func setSelectedGroupNameRawWithoutCommitForTesting(_ value: String) {
         currentGroupNameControl?.setRawValueForTesting(value)
     }
@@ -717,5 +729,13 @@ extension LayoutsSettingsViewController {
             }
         }
         return nil
+    }
+
+    private func minXInDetailContainer(for view: NSView?) -> CGFloat? {
+        guard let view else {
+            return nil
+        }
+        self.view.layoutSubtreeIfNeeded()
+        return detailContainerView.convert(view.bounds, from: view).minX
     }
 }

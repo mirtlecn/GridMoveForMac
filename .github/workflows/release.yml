@@ -1,0 +1,112 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Tag for the prerelease, such as v0.1.0-rc1
+        required: true
+        type: string
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build arm64 DMG and publish release
+    runs-on: macos-26
+    env:
+      APP_NAME: GridMove
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release tag
+        id: release_tag
+        shell: bash
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            tag="${{ github.event.inputs.tag }}"
+          else
+            tag="${GITHUB_REF_NAME}"
+          fi
+
+          tag="${tag#refs/tags/}"
+          if [[ -z "${tag}" ]]; then
+            echo "Release tag is required." >&2
+            exit 1
+          fi
+
+          version="${tag#v}"
+
+          echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build release package
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          make release
+          mv "dist/${APP_NAME}.dmg" "dist/${APP_NAME}.arm64.dmg"
+
+      - name: Build prerelease package
+        if: github.event_name == 'workflow_dispatch'
+        shell: bash
+        run: |
+          make build
+          mv "dist/${APP_NAME}.dmg" "dist/${APP_NAME}.arm64.dmg"
+
+      - name: Verify arm64 binary
+        shell: bash
+        run: |
+          binary_path="dist/${APP_NAME}.app/Contents/MacOS/${APP_NAME}"
+          file "${binary_path}"
+          [[ "$(lipo -archs "${binary_path}")" == "arm64" ]]
+
+      - name: Create or update release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ steps.release_tag.outputs.tag }}
+        run: |
+          asset_path="dist/${APP_NAME}.arm64.dmg"
+
+          if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
+            release_id="$(gh release view "${RELEASE_TAG}" --json id --jq '.id')"
+            gh release upload "${RELEASE_TAG}" "${asset_path}" --clobber
+
+            if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+              gh api \
+                --method PATCH \
+                "repos/${GITHUB_REPOSITORY}/releases/${release_id}" \
+                -f prerelease=true \
+                -f make_latest=false \
+                -f name="${RELEASE_TAG}" >/dev/null
+            else
+              gh api \
+                --method PATCH \
+                "repos/${GITHUB_REPOSITORY}/releases/${release_id}" \
+                -f prerelease=false \
+                -f make_latest=true \
+                -f name="${RELEASE_TAG}" >/dev/null
+            fi
+          else
+            if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+              gh release create "${RELEASE_TAG}" "${asset_path}" \
+                --target "${GITHUB_SHA}" \
+                --generate-notes \
+                --latest=false \
+                --prerelease \
+                --title "${RELEASE_TAG}"
+            else
+              gh release create "${RELEASE_TAG}" "${asset_path}" \
+                --generate-notes \
+                --title "${RELEASE_TAG}" \
+                --verify-tag
+            fi
+          fi

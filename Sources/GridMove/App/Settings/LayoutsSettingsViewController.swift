@@ -46,6 +46,7 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
     var currentLayoutWindowWidthControl: SettingsIntegerStepperControl?
     var currentLayoutWindowHeightControl: SettingsIntegerStepperControl?
     var currentGroupNameControl: CallbackTextField?
+    var currentSetApplyToControl: ApplyToControlView?
     var currentLayoutNameControl: CallbackTextField?
     var currentLayoutPreviewView: LayoutPreviewView?
     var currentLayoutTriggerContentView: TriggerTabContentView?

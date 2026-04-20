@@ -13,7 +13,9 @@ struct LayoutsSettingsViewControllerTests {
             prototypeState: state,
             actionHandler: recorder.makeActionHandler()
         )
-        _ = controller.view
+        let rootView = controller.view
+        rootView.frame = NSRect(x: 0, y: 0, width: 980, height: 720)
+        rootView.layoutSubtreeIfNeeded()
         return (controller, state, recorder)
     }
 
@@ -381,5 +383,20 @@ struct LayoutsSettingsViewControllerTests {
 
         controller.setCurrentLayoutTriggerAreaKindForTesting(.none)
         #expect(controller.currentLayoutPreviewInteractiveCursorRegionForTesting == LayoutPreviewView.InteractiveCursorRegion.none)
+    }
+
+    @Test func groupAndDisplaySetDetailsAlignWithLayoutDetailContent() async throws {
+        let (controller, _, _) = makeController()
+
+        controller.selectLayoutForTesting(id: "layout-1")
+        let layoutMinX = try #require(controller.currentLayoutNameControlMinXForTesting)
+
+        controller.selectGroupForTesting(named: AppConfiguration.defaultGroupName)
+        let groupMinX = try #require(controller.currentGroupNameControlMinXForTesting)
+        #expect(abs(groupMinX - layoutMinX) <= 1)
+
+        controller.selectSetForTesting(groupName: AppConfiguration.defaultGroupName, setIndex: 0)
+        let setMinX = try #require(controller.currentSetApplyToControlMinXForTesting)
+        #expect(abs(setMinX - layoutMinX) <= 1)
     }
 }

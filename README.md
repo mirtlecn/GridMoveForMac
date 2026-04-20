@@ -70,6 +70,11 @@ make build
 make release
 ```
 
+## GitHub Release Automation
+
+- Push a tag such as `v0.1.0`, or run the `Release` workflow manually and enter a tag.
+- The workflow builds `GridMove.arm64.dmg` on GitHub's official arm64 macOS runner and uploads it to the matching GitHub Release.
+
 ## Additional Notes
 
 - GridMove takes its name from a [Windows AHK app](https://github.com/mirtlecn/GridMove) I previously maintained. This project is essentially its macOS counterpart.

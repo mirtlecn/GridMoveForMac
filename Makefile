@@ -22,7 +22,7 @@ $(RELEASE_VERSION):
 endif
 endif
 
-.PHONY: build test dev run sign-app verify-app clean update-version release release-vcs
+.PHONY: build test dev run sign-app verify-app clean update-version release release-ci release-vcs
 
 build:
 	rm -rf $(DIST_DIR)
@@ -46,6 +46,12 @@ release:
 	@if [[ -n "$(RELEASE_VERSION)" ]]; then $(MAKE) update-version VERSION="$(RELEASE_VERSION)"; fi
 	@if [[ -n "$(RELEASE_VERSION)" ]]; then $(MAKE) release-vcs RELEASE_TAG="$(RELEASE_TAG)"; fi
 	@release_version="$$(tr -d '\n' < $(VERSION_FILE))"; \
+	release_commit_count="$$(git rev-list --count HEAD 2>/dev/null || echo 0)"; \
+	$(MAKE) build APP_VERSION="$$release_version" BUILD_NUMBER="$$release_commit_count" PACKAGE_VERSION_INFO="$$release_version"
+
+release-ci:
+	@if [[ -z "$(RELEASE_TAG)" ]]; then echo 'usage: make release-ci RELEASE_TAG=v0.1.1'; exit 1; fi
+	@release_version="$$(printf '%s' "$(RELEASE_TAG)" | sed 's/^[vV]//')"; \
 	release_commit_count="$$(git rev-list --count HEAD 2>/dev/null || echo 0)"; \
 	$(MAKE) build APP_VERSION="$$release_version" BUILD_NUMBER="$$release_commit_count" PACKAGE_VERSION_INFO="$$release_version"
 

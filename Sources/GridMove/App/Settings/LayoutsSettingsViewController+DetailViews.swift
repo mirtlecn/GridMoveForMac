@@ -4,6 +4,7 @@ import AppKit
 extension LayoutsSettingsViewController {
     func updateDetailView() {
         currentGroupNameControl = nil
+        currentSetApplyToControl = nil
         currentLayoutNameControl = nil
         currentLayoutGridColumnsControl = nil
         currentLayoutGridRowsControl = nil
@@ -86,8 +87,8 @@ extension LayoutsSettingsViewController {
                 )
             )
         }
-        let formView = makeInlineTabContent(rows: rows, width: 460)
-        contentStackView.addArrangedSubview(makeCenteredContainer(for: formView))
+        let formView = makeInlineTabContent(rows: rows)
+        contentStackView.addArrangedSubview(makeFullWidthContainer(for: makeInlinePanel(contentView: formView)))
         return makeDetailPanelContainer(contentView: contentStackView)
     }
 
@@ -105,10 +106,11 @@ extension LayoutsSettingsViewController {
         applyToControl.onRefreshRequested = { [weak self] in
             self?.refreshMonitorMetadata()
         }
+        currentSetApplyToControl = applyToControl
         let formView = makeInlineTabContent(rows: [
             makeLabeledControlRow(label: UICopy.settingsApplyToLabel, control: applyToControl),
-        ], width: 460)
-        contentStackView.addArrangedSubview(makeCenteredContainer(for: formView))
+        ])
+        contentStackView.addArrangedSubview(makeFullWidthContainer(for: makeInlinePanel(contentView: formView)))
         return makeDetailPanelContainer(contentView: contentStackView)
     }
 
