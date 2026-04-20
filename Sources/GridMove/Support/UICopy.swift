@@ -1,6 +1,8 @@
 import Foundation
 
 enum UICopy {
+    private final class ResourceBundleLocator {}
+
     static let appName = "GridMove"
 
     static var applicationMenuTitle: String { localized("applicationMenuTitle", default: "Application") }
@@ -404,15 +406,49 @@ enum UICopy {
     }
 
     static var supportedLocalizationsForTesting: [String] {
-        Array(Set(Bundle.main.localizations + Bundle.module.localizations)).sorted()
+        Array(Set(localizationBundles.flatMap(\.localizations))).sorted()
     }
 
     private static let tableName = "Localizable"
+    private static let resourceBundleName = "GridMove_GridMove.bundle"
+
+    private static var localizationBundles: [Bundle] {
+        var bundles: [Bundle] = [Bundle.main]
+        if let resourceBundle, resourceBundle.bundleURL != Bundle.main.bundleURL {
+            bundles.append(resourceBundle)
+        }
+        return bundles
+    }
+
+    private static var resourceBundle: Bundle? {
+        let locatorBundle = Bundle(for: ResourceBundleLocator.self)
+        let candidateBaseURLs: [URL] = [
+            Bundle.main.bundleURL,
+            Bundle.main.resourceURL,
+            locatorBundle.bundleURL,
+            locatorBundle.resourceURL,
+            locatorBundle.bundleURL.deletingLastPathComponent(),
+            locatorBundle.resourceURL?.deletingLastPathComponent(),
+        ].compactMap { $0 }
+
+        let candidateURLs = candidateBaseURLs.flatMap { baseURL in
+            [
+                baseURL.appendingPathComponent(resourceBundleName),
+                baseURL.appendingPathComponent("Contents/Resources/\(resourceBundleName)"),
+            ]
+        }
+
+        for candidateURL in candidateURLs {
+            if let bundle = Bundle(url: candidateURL.standardizedFileURL) {
+                return bundle
+            }
+        }
+
+        return nil
+    }
 
     private static func localized(_ key: String, default defaultValue: String, preferredLanguages: [String]? = nil) -> String {
-        let bundles = [Bundle.main, Bundle.module]
-
-        for bundle in bundles {
+        for bundle in localizationBundles {
             if let preferredLanguages {
                 if let localizedValue = localizedInBundle(
                     bundle,
