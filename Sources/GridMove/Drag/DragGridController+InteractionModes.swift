@@ -386,19 +386,6 @@ extension DragGridController {
             shouldApplyImmediately: false,
             shouldFlashHighlight: false
         )
-
-        guard let screen = state.activeScreen else {
-            return
-        }
-
-        overlayController.flashGroupLabel(
-            text: updatedConfiguration.general.activeLayoutGroup,
-            screen: screen,
-            slots: state.resolvedSlots,
-            highlightFrame: overlayHighlightFrame() ?? currentWindowFrame(),
-            configuration: updatedConfiguration,
-            keepsOverlayVisibleAfterFlash: true
-        )
     }
 
     func cancelAndSuppressActiveMouseUp() {

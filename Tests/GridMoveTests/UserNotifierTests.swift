@@ -10,4 +10,19 @@ struct UserNotifierTests {
         #expect(options.contains(.list))
         #expect(options.contains(.sound))
     }
+
+    @Test func userNotificationCenterSupportRequiresAppBundleAndIdentifier() {
+        #expect(
+            UserNotifier.supportsUserNotificationCenter(
+                bundleURL: URL(fileURLWithPath: "/Applications/GridMove.app"),
+                bundleIdentifier: "cn.mirtle.GridMove"
+            ) == true
+        )
+        #expect(
+            UserNotifier.supportsUserNotificationCenter(
+                bundleURL: URL(fileURLWithPath: "/usr/bin"),
+                bundleIdentifier: nil
+            ) == false
+        )
+    }
 }

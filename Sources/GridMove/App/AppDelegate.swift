@@ -47,7 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         overlayController: overlayController,
         configurationProvider: { [weak self] in self?.configuration ?? AppConfiguration.defaultValue },
         cycleActiveLayoutGroup: { [weak self] direction in
-            self?.cycleLayoutGroup(direction: direction)
+            self?.cycleLayoutGroupForDrag(direction: direction)
         },
         accessibilityTrustedProvider: { [weak self] in
             self?.accessibilityCoordinator.hasAccess ?? false
@@ -106,7 +106,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         reloadConfigurationFromDisk(mode: .launch)
-        UNUserNotificationCenter.current().delegate = self
+        if UserNotifier.supportsUserNotificationCenter(
+            bundleURL: Bundle.main.bundleURL,
+            bundleIdentifier: Bundle.main.bundleIdentifier
+        ) {
+            UNUserNotificationCenter.current().delegate = self
+        }
         configureMainMenu()
         commandRelay.startListening { [weak self] command in
             MainActor.assumeIsolated {
@@ -335,6 +340,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         updatedConfiguration.general.activeLayoutGroup = nextGroupName
         applyConfiguration(updatedConfiguration)
         persistConfigurationAsync(updatedConfiguration)
+        return updatedConfiguration
+    }
+
+    private func cycleLayoutGroupForDrag(direction: LayoutGroupCycleDirection) -> AppConfiguration? {
+        guard let updatedConfiguration = cycleLayoutGroup(direction: direction) else {
+            return nil
+        }
+
+        userNotifier.notify(
+            kind: .layoutGroupChanged,
+            title: UICopy.layoutGroupChangedTitle,
+            body: UICopy.layoutGroupChangedBody(groupName: updatedConfiguration.general.activeLayoutGroup)
+        )
         return updatedConfiguration
     }
 
@@ -1012,6 +1030,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
 
     func cycleToNextLayoutGroupForTesting() -> AppConfiguration? {
         cycleLayoutGroup(direction: .next)
+    }
+
+    func cycleToNextLayoutGroupForDragForTesting() -> AppConfiguration? {
+        cycleLayoutGroupForDrag(direction: .next)
     }
 
     func waitForDeferredConfigurationSaveForTesting() async {

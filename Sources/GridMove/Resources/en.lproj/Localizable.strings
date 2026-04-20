@@ -122,6 +122,7 @@
 "configReloadFailedTitle" = "GridMove config reload failed";
 "configReloadSkippedLayoutsTitle" = "GridMove skipped invalid layout files";
 "layoutsSaveFailedTitle" = "GridMove could not save layouts";
+"layoutGroupChangedTitle" = "GridMove layout group changed";
 "launchAtLoginEnableFailedTitle" = "Unable to enable launch at login";
 "launchAtLoginDisableFailedTitle" = "Unable to disable launch at login";
 "quitMenuTitle" = "Quit";
@@ -147,6 +148,7 @@
 "configReloadSucceededBody" = "Config was applied successfully.";
 "layoutsSaveFailedBodyLineOne" = "Layout changes were not applied.";
 "layoutsSaveFailedBodyLineTwo" = "GridMove kept running with the current configuration.";
+"layoutGroupChangedBodyFormat" = "Switched to %@.";
 "launchAtLoginEnableFailedPrefix" = "GridMove could not enable launch at login.";
 "launchAtLoginDisableFailedPrefix" = "GridMove could not disable launch at login.";
 "launchAtLoginFailureCheckSettings" = "Check System Settings > General > Login Items and try again.";

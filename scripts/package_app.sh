@@ -2,22 +2,23 @@
 
 set -euo pipefail
 
-if [[ $# -ne 9 ]]; then
-  echo "usage: $0 <app-name> <app-bundle-path> <bundle-id> <version> <build-number> <sign-identity> <author-name> <author-url> <version-info>" >&2
+if [[ $# -ne 10 ]]; then
+  echo "usage: $0 <product-name> <app-name> <app-bundle-path> <bundle-id> <version> <build-number> <sign-identity> <author-name> <author-url> <version-info>" >&2
   exit 1
 fi
 
-app_name="$1"
-app_bundle_path="$2"
-bundle_id="$3"
-version="$4"
-build_number="$5"
-sign_identity="$6"
-author_name="$7"
-author_url="$8"
-version_info="$9"
+product_name="$1"
+app_name="$2"
+app_bundle_path="$3"
+bundle_id="$4"
+version="$5"
+build_number="$6"
+sign_identity="$7"
+author_name="$8"
+author_url="$9"
+version_info="${10}"
 
-release_binary=".build/release/${app_name}"
+release_binary=".build/release/${product_name}"
 contents_path="${app_bundle_path}/Contents"
 macos_path="${contents_path}/MacOS"
 resources_path="${contents_path}/Resources"
@@ -25,6 +26,7 @@ plist_path="${contents_path}/Info.plist"
 dmg_path="${app_bundle_path:r}.dmg"
 staging_root="${app_bundle_path:h}/.dmg-staging"
 staging_path="${staging_root}/${app_name}"
+app_bundle_name="$(basename "${app_bundle_path}")"
 icon_path="${resources_path}/AppIcon.icns"
 static_icon_path="Sources/GridMove/Resources/AppIcon.icns"
 source_resources_path="Sources/GridMove/Resources"
@@ -38,7 +40,7 @@ fi
 rm -rf "${app_bundle_path}" "${dmg_path}" "${staging_root}"
 mkdir -p "${macos_path}" "${resources_path}"
 
-cp "${release_binary}" "${macos_path}/${app_name}"
+cp "${release_binary}" "${macos_path}/${product_name}"
 
 if [[ -f "${static_icon_path}" ]]; then
   cp "${static_icon_path}" "${icon_path}"
@@ -75,7 +77,7 @@ cat > "${plist_path}" <<EOF
   <key>CFBundleDisplayName</key>
   <string>${app_name}</string>
   <key>CFBundleExecutable</key>
-  <string>${app_name}</string>
+  <string>${product_name}</string>
   <key>CFBundleIconFile</key>
   <string>AppIcon</string>
   <key>CFBundleIdentifier</key>
@@ -116,7 +118,7 @@ codesign --force --deep --sign "${sign_identity}" --timestamp=none "${app_bundle
 codesign --verify --deep --strict --verbose=2 "${app_bundle_path}"
 
 mkdir -p "${staging_path}"
-cp -R "${app_bundle_path}" "${staging_path}/${app_name}.app"
+cp -R "${app_bundle_path}" "${staging_path}/${app_bundle_name}"
 ln -s /Applications "${staging_path}/Applications"
 
 hdiutil create \

@@ -151,7 +151,15 @@ import Testing
 
     controller.updateAccessibilityAccess(false)
 
-    #expect(controller.menuItemDescriptorsForTesting == [UICopy.requestAccessibilityAccessMenuTitle])
+    #expect(
+        controller.menuItemDescriptorsForTesting == [
+            UICopy.requestAccessibilityAccessMenuTitle,
+            "|",
+            UICopy.quitMenuTitle,
+        ]
+    )
+    #expect(controller.stateColumnSpacingDescriptorsForTesting[UICopy.requestAccessibilityAccessMenuTitle] == false)
+    #expect(controller.stateColumnSpacingDescriptorsForTesting[UICopy.quitMenuTitle] == false)
 }
 
 @MainActor

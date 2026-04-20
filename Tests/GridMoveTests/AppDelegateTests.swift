@@ -424,6 +424,35 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
 }
 
 @MainActor
+@Test func appDelegateDragGroupCyclePostsSystemNotification() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-group-cycle-notify-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var receivedKind: UserNotifier.Kind?
+    var receivedTitle: String?
+    var receivedBody: String?
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        notifyUser: { kind, title, body in
+            receivedKind = kind
+            receivedTitle = title
+            receivedBody = body
+        }
+    )
+    delegate.reloadConfigurationFromDisk(mode: .launch)
+
+    let updatedConfiguration = try #require(delegate.cycleToNextLayoutGroupForDragForTesting())
+
+    #expect(updatedConfiguration.general.activeLayoutGroup == AppConfiguration.fullscreenGroupName)
+    #expect(receivedKind == .layoutGroupChanged)
+    #expect(receivedTitle == UICopy.layoutGroupChangedTitle)
+    #expect(receivedBody == UICopy.layoutGroupChangedBody(groupName: AppConfiguration.fullscreenGroupName))
+}
+
+@MainActor
 @Test func appDelegateMenuActionsHideLayoutsExcludedFromMenu() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-menu-actions-\(UUID().uuidString)", isDirectory: true)
@@ -1504,7 +1533,13 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     #expect(promptCount == 1)
     #expect(delegate.isAccessibilityPollingActiveForTesting == true)
     #expect(delegate.accessibilityPollingIntervalForTesting == 1.0)
-    #expect(delegate.visibleMenuItemDescriptorsForTesting == [UICopy.requestAccessibilityAccessMenuTitle])
+    #expect(
+        delegate.visibleMenuItemDescriptorsForTesting == [
+            UICopy.requestAccessibilityAccessMenuTitle,
+            "|",
+            UICopy.quitMenuTitle,
+        ]
+    )
 
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
 }
@@ -1538,7 +1573,13 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     #expect(promptCount == 1)
     #expect(delegate.isAccessibilityPollingActiveForTesting == true)
     #expect(delegate.accessibilityPollingIntervalForTesting == 1.0)
-    #expect(delegate.visibleMenuItemDescriptorsForTesting == [UICopy.requestAccessibilityAccessMenuTitle])
+    #expect(
+        delegate.visibleMenuItemDescriptorsForTesting == [
+            UICopy.requestAccessibilityAccessMenuTitle,
+            "|",
+            UICopy.quitMenuTitle,
+        ]
+    )
 
     trustState = true
     delegate.evaluateAccessibilityState()
@@ -1605,12 +1646,24 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
 
     #expect(promptCount == 1)
-    #expect(delegate.visibleMenuItemDescriptorsForTesting == [UICopy.requestAccessibilityAccessMenuTitle])
+    #expect(
+        delegate.visibleMenuItemDescriptorsForTesting == [
+            UICopy.requestAccessibilityAccessMenuTitle,
+            "|",
+            UICopy.quitMenuTitle,
+        ]
+    )
 
     delegate.requestAccessibilityAccessFromMenu()
 
     #expect(promptCount == 2)
-    #expect(delegate.visibleMenuItemDescriptorsForTesting == [UICopy.requestAccessibilityAccessMenuTitle])
+    #expect(
+        delegate.visibleMenuItemDescriptorsForTesting == [
+            UICopy.requestAccessibilityAccessMenuTitle,
+            "|",
+            UICopy.quitMenuTitle,
+        ]
+    )
 
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
 }

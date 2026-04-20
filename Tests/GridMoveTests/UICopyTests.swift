@@ -77,5 +77,27 @@ struct UICopyTests {
                 preferredLanguages: ["zh-Hans"]
             ) == "恢复"
         )
+        #expect(
+            UICopy.localizedStringForTesting(
+                key: "layoutGroupChangedTitle",
+                defaultValue: "GridMove layout group changed",
+                preferredLanguages: ["en"]
+            ) == "GridMove layout group changed"
+        )
+        #expect(
+            UICopy.localizedStringForTesting(
+                key: "layoutGroupChangedTitle",
+                defaultValue: "GridMove layout group changed",
+                preferredLanguages: ["zh-Hans"]
+            ) == "GridMove 布局组已切换"
+        )
+        #expect(UICopy.layoutGroupChangedBody(groupName: "work") == "Switched to work.")
+        #expect(
+            UICopy.localizedStringForTesting(
+                key: "layoutGroupChangedBodyFormat",
+                defaultValue: "Switched to %@.",
+                preferredLanguages: ["zh-Hans"]
+            ) == "已切换到 %@。"
+        )
     }
 }

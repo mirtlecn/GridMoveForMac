@@ -33,6 +33,11 @@ final class MenuBarController: NSObject {
         let launchAtLogin: Bool
     }
 
+    private enum StateColumnSpacing {
+        case preserved
+        case removed
+    }
+
     private let statusItem: NSStatusItem
     private let menu = NSMenu()
     private let requestAccessibilityAccessMenuItem = NSMenuItem(title: UICopy.requestAccessibilityAccessMenuTitle, action: nil, keyEquivalent: "")
@@ -107,13 +112,13 @@ final class MenuBarController: NSObject {
 
         requestAccessibilityAccessMenuItem.target = self
         requestAccessibilityAccessMenuItem.action = #selector(requestAccessibilityAccess)
-        applyStateColumnSpacing(to: requestAccessibilityAccessMenuItem)
+        setStateColumnSpacing(.preserved, for: requestAccessibilityAccessMenuItem)
         menu.addItem(requestAccessibilityAccessMenuItem)
 
         dragGridMenuItem.state = dragGridEnabled ? .on : .off
         dragGridMenuItem.target = self
         dragGridMenuItem.action = #selector(toggleDragGrid)
-        applyStateColumnSpacing(to: dragGridMenuItem)
+        setStateColumnSpacing(.preserved, for: dragGridMenuItem)
         menu.addItem(dragGridMenuItem)
         menu.addItem(enableSeparatorItem)
 
@@ -129,12 +134,12 @@ final class MenuBarController: NSObject {
         settingsMenuItem.target = self
         settingsMenuItem.action = #selector(openSettings)
         settingsMenuItem.keyEquivalentModifierMask = [.command]
-        applyStateColumnSpacing(to: settingsMenuItem)
+        setStateColumnSpacing(.preserved, for: settingsMenuItem)
         menu.addItem(settingsMenuItem)
 
         launchAtLoginMenuItem.target = self
         launchAtLoginMenuItem.action = #selector(toggleLaunchAtLogin)
-        applyStateColumnSpacing(to: launchAtLoginMenuItem)
+        setStateColumnSpacing(.preserved, for: launchAtLoginMenuItem)
         menu.addItem(launchAtLoginMenuItem)
 
         menu.addItem(quitSectionSeparatorItem)
@@ -142,7 +147,7 @@ final class MenuBarController: NSObject {
         quitMenuItem.target = self
         quitMenuItem.action = #selector(quit)
         quitMenuItem.keyEquivalentModifierMask = [.command]
-        applyStateColumnSpacing(to: quitMenuItem)
+        setStateColumnSpacing(.preserved, for: quitMenuItem)
         menu.addItem(quitMenuItem)
 
         statusItem.menu = menu
@@ -163,9 +168,9 @@ final class MenuBarController: NSObject {
         modifierLeftMouseDragMenuItem.action = #selector(toggleModifierLeftMouseDrag)
         preferLayoutModeMenuItem.target = self
         preferLayoutModeMenuItem.action = #selector(togglePreferLayoutMode)
-        applyStateColumnSpacing(to: mouseButtonDragMenuItem)
-        applyStateColumnSpacing(to: modifierLeftMouseDragMenuItem)
-        applyStateColumnSpacing(to: preferLayoutModeMenuItem)
+        setStateColumnSpacing(.preserved, for: mouseButtonDragMenuItem)
+        setStateColumnSpacing(.preserved, for: modifierLeftMouseDragMenuItem)
+        setStateColumnSpacing(.preserved, for: preferLayoutModeMenuItem)
 
         updateToggleStates(toggleSettings)
 
@@ -177,7 +182,7 @@ final class MenuBarController: NSObject {
     private func configureLayoutGroupMenu() {
         menu.addItem(layoutGroupSectionSeparatorItem)
         layoutGroupMenuItem.submenu = layoutGroupSubmenu
-        applyStateColumnSpacing(to: layoutGroupMenuItem)
+        setStateColumnSpacing(.preserved, for: layoutGroupMenuItem)
         menu.addItem(layoutGroupMenuItem)
         rebuildLayoutGroupItems()
     }
@@ -203,9 +208,13 @@ final class MenuBarController: NSObject {
         actionSectionSeparatorItem.isHidden = !hasAccessibilityAccess || actionItems.isEmpty
         settingsMenuItem.isHidden = !hasAccessibilityAccess
         launchAtLoginMenuItem.isHidden = !hasAccessibilityAccess
-        quitSectionSeparatorItem.isHidden = !hasAccessibilityAccess
-        quitMenuItem.isHidden = !hasAccessibilityAccess
+        quitSectionSeparatorItem.isHidden = false
+        quitMenuItem.isHidden = false
         actionMenuItems.forEach { $0.isHidden = !hasAccessibilityAccess }
+
+        let visibleItemSpacing: StateColumnSpacing = hasAccessibilityAccess ? .preserved : .removed
+        setStateColumnSpacing(visibleItemSpacing, for: requestAccessibilityAccessMenuItem)
+        setStateColumnSpacing(visibleItemSpacing, for: quitMenuItem)
     }
 
     func updateToggleStates(_ toggleSettings: ToggleSettingsState) {
@@ -251,7 +260,7 @@ final class MenuBarController: NSObject {
             menuItem.representedObject = item.action
             menuItem.isEnabled = isEnabled
             menuItem.keyEquivalentModifierMask = item.shortcut?.menuModifierMask ?? []
-            applyStateColumnSpacing(to: menuItem)
+            setStateColumnSpacing(.preserved, for: menuItem)
             menu.insertItem(menuItem, at: nextIndex)
             menuItem.isHidden = !hasAccessibilityAccess
             actionMenuItems.append(menuItem)
@@ -269,14 +278,20 @@ final class MenuBarController: NSObject {
             item.target = self
             item.representedObject = groupName
             item.state = groupName == layoutGroupState.activeGroupName ? .on : .off
-            applyStateColumnSpacing(to: item)
+            setStateColumnSpacing(.preserved, for: item)
             layoutGroupSubmenu.addItem(item)
         }
     }
 
-    private func applyStateColumnSpacing(to item: NSMenuItem) {
-        item.offStateImage = Self.menuStatePlaceholderImage
-        item.mixedStateImage = Self.menuStatePlaceholderImage
+    private func setStateColumnSpacing(_ spacing: StateColumnSpacing, for item: NSMenuItem) {
+        switch spacing {
+        case .preserved:
+            item.offStateImage = Self.menuStatePlaceholderImage
+            item.mixedStateImage = Self.menuStatePlaceholderImage
+        case .removed:
+            item.offStateImage = nil
+            item.mixedStateImage = nil
+        }
     }
 
     @objc private func openSettings() {

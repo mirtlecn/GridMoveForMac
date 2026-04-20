@@ -191,6 +191,9 @@ enum UICopy {
     static var layoutsSaveFailedTitle: String {
         localized("layoutsSaveFailedTitle", default: "GridMove could not save layouts")
     }
+    static var layoutGroupChangedTitle: String {
+        localized("layoutGroupChangedTitle", default: "GridMove layout group changed")
+    }
     static var launchAtLoginEnableFailedTitle: String {
         localized("launchAtLoginEnableFailedTitle", default: "Unable to enable launch at login")
     }
@@ -363,6 +366,10 @@ enum UICopy {
         }
 
         return segments.joined(separator: " ")
+    }
+
+    static func layoutGroupChangedBody(groupName: String) -> String {
+        formatted("layoutGroupChangedBodyFormat", default: "Switched to %@.", groupName)
     }
 
     static func launchAtLoginEnableFailedBody(details: String?) -> String {

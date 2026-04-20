@@ -22,7 +22,6 @@ final class OverlayController {
 
     private var renderer: CALayerOverlayRenderer?
     private var flashGeneration: UInt64 = 0
-    private var badgeGeneration: UInt64 = 0
     private var pendingPostFlashOverlayState: OverlayContentState?
 
     func update(
@@ -128,47 +127,6 @@ final class OverlayController {
         }
     }
 
-    func flashGroupLabel(
-        text: String,
-        screen: NSScreen,
-        slots: [ResolvedTriggerSlot],
-        highlightFrame: CGRect?,
-        configuration: AppConfiguration,
-        keepsOverlayVisibleAfterFlash: Bool
-    ) {
-        showOverlay(
-            screen: screen,
-            slots: slots,
-            highlightFrame: highlightFrame,
-            hoveredLayoutID: nil,
-            configuration: configuration,
-            badge: OverlayBadgeState(text: text)
-        )
-
-        badgeGeneration &+= 1
-        let expectedGeneration = badgeGeneration
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + FlashDuration.seconds) { [weak self] in
-            Task { @MainActor in
-                guard let self else { return }
-                guard self.badgeGeneration == expectedGeneration else { return }
-
-                if keepsOverlayVisibleAfterFlash && self.shouldRenderOverlay(configuration: configuration, badgeText: nil) {
-                    self.showOverlay(
-                        screen: screen,
-                        slots: slots,
-                        highlightFrame: highlightFrame,
-                        hoveredLayoutID: nil,
-                        configuration: configuration,
-                        badge: nil
-                    )
-                } else {
-                    self.dismissRenderer()
-                }
-            }
-        }
-    }
-
     func dismiss() {
         cancelPendingFlash()
         dismissRenderer()
@@ -176,7 +134,6 @@ final class OverlayController {
 
     private func cancelPendingFlash() {
         flashGeneration &+= 1
-        badgeGeneration &+= 1
         pendingPostFlashOverlayState = nil
         renderer?.overlayPanel?.alphaValue = 1.0
     }
@@ -216,6 +173,5 @@ final class OverlayController {
         renderer?.dismiss()
         renderer = nil
         pendingPostFlashOverlayState = nil
-        badgeGeneration &+= 1
     }
 }

@@ -122,6 +122,7 @@
 "configReloadFailedTitle" = "GridMove 配置重新加载失败";
 "configReloadSkippedLayoutsTitle" = "GridMove 跳过了无效的布局文件";
 "layoutsSaveFailedTitle" = "GridMove 无法保存布局";
+"layoutGroupChangedTitle" = "GridMove 布局组已切换";
 "launchAtLoginEnableFailedTitle" = "无法启用登录时启动";
 "launchAtLoginDisableFailedTitle" = "无法关闭登录时启动";
 "quitMenuTitle" = "退出";
@@ -147,6 +148,7 @@
 "configReloadSucceededBody" = "配置已成功应用。";
 "layoutsSaveFailedBodyLineOne" = "布局改动未应用。";
 "layoutsSaveFailedBodyLineTwo" = "GridMove 将继续使用当前配置运行。";
+"layoutGroupChangedBodyFormat" = "已切换到 %@。";
 "launchAtLoginEnableFailedPrefix" = "GridMove 无法启用登录时启动。";
 "launchAtLoginDisableFailedPrefix" = "GridMove 无法关闭登录时启动。";
 "launchAtLoginFailureCheckSettings" = "请检查“系统设置 > 通用 > 登录项”，然后再试一次。";

@@ -7,6 +7,7 @@ final class UserNotifier {
         case configReloadSkippedLayouts = "gridmove-config-reload-skipped-layouts"
         case configReloadFailed = "gridmove-config-reload-failed"
         case layoutsSaveFailed = "gridmove-layouts-save-failed"
+        case layoutGroupChanged = "gridmove-layout-group-changed"
         case launchAtLoginEnableFailed = "gridmove-launch-at-login-enable-failed"
         case launchAtLoginDisableFailed = "gridmove-launch-at-login-disable-failed"
 
@@ -27,12 +28,14 @@ final class UserNotifier {
     }
 
     nonisolated private static func postSystemNotification(kind: Kind, title: String, body: String) {
-        if Bundle.main.bundleURL.pathExtension == "app", Bundle.main.bundleIdentifier != nil {
-            postUserNotificationCenterNotification(kind: kind, title: title, body: body)
+        guard supportsUserNotificationCenter(
+            bundleURL: Bundle.main.bundleURL,
+            bundleIdentifier: Bundle.main.bundleIdentifier
+        ) else {
+            AppLogger.shared.debug("Skipping system notification outside an app bundle.")
             return
         }
-
-        postAppleScriptNotification(title: title, body: body)
+        postUserNotificationCenterNotification(kind: kind, title: title, body: body)
     }
 
     nonisolated private static func postUserNotificationCenterNotification(kind: Kind, title: String, body: String) {
@@ -65,25 +68,18 @@ final class UserNotifier {
         }
     }
 
-    nonisolated private static func postAppleScriptNotification(title: String, body: String) {
-        let scriptSource = """
-        display notification "\(escapeAppleScript(body))" with title "\(escapeAppleScript(title))"
-        """
-
-        var error: NSDictionary?
-        NSAppleScript(source: scriptSource)?.executeAndReturnError(&error)
-        if let error {
-            AppLogger.shared.error("Failed to post AppleScript notification: \(error.description, privacy: .public)")
-        }
-    }
-
-    nonisolated private static func escapeAppleScript(_ value: String) -> String {
-        value
-            .replacingOccurrences(of: "\\", with: "\\\\")
-            .replacingOccurrences(of: "\"", with: "\\\"")
-    }
-
     static var foregroundPresentationOptionsForTesting: UNNotificationPresentationOptions {
         foregroundPresentationOptions
+    }
+
+    static func supportsUserNotificationCenter(bundleURL: URL, bundleIdentifier: String?) -> Bool {
+        bundleURL.pathExtension == "app" && bundleIdentifier != nil
+    }
+
+    static var supportsUserNotificationCenterForTesting: Bool {
+        supportsUserNotificationCenter(
+            bundleURL: Bundle.main.bundleURL,
+            bundleIdentifier: Bundle.main.bundleIdentifier
+        )
     }
 }

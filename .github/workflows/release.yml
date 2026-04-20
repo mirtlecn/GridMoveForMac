@@ -14,7 +14,9 @@ jobs:
     name: Build arm64 DMG and publish release
     runs-on: macos-26
     env:
-      APP_NAME: GridMove
+      PRODUCT_NAME: GridMove
+      RELEASE_APP_NAME: GridMove
+      DEV_APP_NAME: GridMove Dev
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -86,6 +88,31 @@ jobs:
           echo "tag=${tag}" >> "${GITHUB_OUTPUT}"
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
 
+      - name: Resolve artifact names
+        id: artifact_names
+        shell: bash
+        run: |
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            app_name="${DEV_APP_NAME}"
+          else
+            app_name="${RELEASE_APP_NAME}"
+          fi
+
+          {
+            echo "app_name<<EOF"
+            echo "${app_name}"
+            echo "EOF"
+            echo "app_bundle<<EOF"
+            echo "dist/${app_name}.app"
+            echo "EOF"
+            echo "app_dmg<<EOF"
+            echo "dist/${app_name}.dmg"
+            echo "EOF"
+            echo "arm64_dmg<<EOF"
+            echo "dist/${app_name}.arm64.dmg"
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
+
       - name: Sync version for tag release
         if: github.event_name == 'push'
         shell: bash
@@ -113,19 +140,19 @@ jobs:
         shell: bash
         run: |
           make release
-          mv "dist/${APP_NAME}.dmg" "dist/${APP_NAME}.arm64.dmg"
+          mv "${{ steps.artifact_names.outputs.app_dmg }}" "${{ steps.artifact_names.outputs.arm64_dmg }}"
 
       - name: Build prerelease package
         if: github.event_name == 'workflow_dispatch'
         shell: bash
         run: |
           make build
-          mv "dist/${APP_NAME}.dmg" "dist/${APP_NAME}.arm64.dmg"
+          mv "${{ steps.artifact_names.outputs.app_dmg }}" "${{ steps.artifact_names.outputs.arm64_dmg }}"
 
       - name: Verify arm64 binary
         shell: bash
         run: |
-          binary_path="dist/${APP_NAME}.app/Contents/MacOS/${APP_NAME}"
+          binary_path="${{ steps.artifact_names.outputs.app_bundle }}/Contents/MacOS/${PRODUCT_NAME}"
           file "${binary_path}"
           [[ "$(lipo -archs "${binary_path}")" == "arm64" ]]
 
@@ -135,7 +162,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ steps.release_tag.outputs.tag }}
         run: |
-          asset_path="dist/${APP_NAME}.arm64.dmg"
+          asset_path="${{ steps.artifact_names.outputs.arm64_dmg }}"
 
           if gh release view "${RELEASE_TAG}" >/dev/null 2>&1; then
             release_id="$(gh release view "${RELEASE_TAG}" --json id --jq '.id')"
