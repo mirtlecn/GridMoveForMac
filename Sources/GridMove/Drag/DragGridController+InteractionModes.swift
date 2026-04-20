@@ -32,8 +32,7 @@ extension DragGridController {
             configureLayoutSelectionMode(
                 at: point,
                 configuration: configuration,
-                shouldApplyImmediately: false,
-                shouldFlashHighlight: false
+                shouldApplyImmediately: false
             )
         case .moveOnly:
             configureMoveOnlyMode(at: point, configuration: configuration)
@@ -148,8 +147,7 @@ extension DragGridController {
             configureLayoutSelectionMode(
                 at: point,
                 configuration: configuration,
-                shouldApplyImmediately: false,
-                shouldFlashHighlight: false
+                shouldApplyImmediately: false
             )
         }
     }
@@ -157,8 +155,7 @@ extension DragGridController {
     func configureLayoutSelectionMode(
         at point: CGPoint,
         configuration: AppConfiguration,
-        shouldApplyImmediately: Bool,
-        shouldFlashHighlight: Bool
+        shouldApplyImmediately: Bool
     ) {
         state.interactionMode = .layoutSelection
         state.cursorPoint = point
@@ -192,20 +189,6 @@ extension DragGridController {
         }
 
         state.hasDraggedPastThreshold = false
-
-        if shouldFlashHighlight,
-           let screen = state.activeScreen,
-           let frame = currentWindowFrame()
-        {
-            overlayController.flashHighlight(
-                frame: frame,
-                screen: screen,
-                slots: state.resolvedSlots,
-                configuration: configuration,
-                keepsOverlayVisibleAfterFlash: true
-            )
-            return
-        }
 
         refreshOverlay(configuration: configuration)
     }
@@ -354,8 +337,7 @@ extension DragGridController {
         configureLayoutSelectionMode(
             at: point,
             configuration: updatedConfiguration,
-            shouldApplyImmediately: false,
-            shouldFlashHighlight: false
+            shouldApplyImmediately: false
         )
     }
 

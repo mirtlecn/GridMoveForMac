@@ -134,12 +134,15 @@ jobs:
           git add VERSION
           git commit -m "chore: sync version to ${RELEASE_TAG}"
           git push origin "HEAD:${DEFAULT_BRANCH}"
+          git checkout --detach "${GITHUB_SHA}"
 
       - name: Build release package
         if: github.event_name == 'push'
         shell: bash
+        env:
+          RELEASE_TAG: ${{ steps.release_tag.outputs.tag }}
         run: |
-          make release
+          make release-ci RELEASE_TAG="${RELEASE_TAG}"
           mv "${{ steps.artifact_names.outputs.app_dmg }}" "${{ steps.artifact_names.outputs.arm64_dmg }}"
 
       - name: Build prerelease package

@@ -37,31 +37,26 @@ final class WindowQueryService {
         guard let matchedWindowInfo = windowInfos.first(where: {
             ($0[kCGWindowNumber as String] as? CGWindowID) == cgWindowID
         }) else {
-            AppLogger.debugTargeting("window(cgWindowID: \(cgWindowID)) -> no matching CG window info")
             return nil
         }
 
         guard let managedWindow = resolveWindow(from: matchedWindowInfo, point: nil) else {
-            AppLogger.debugTargeting("window(cgWindowID: \(cgWindowID)) -> failed to resolve AX window")
             return nil
         }
 
         guard !isWindowExcluded(managedWindow, configuration: configuration) else {
-            AppLogger.debugTargeting("window(cgWindowID: \(cgWindowID)) -> excluded \(managedWindow.debugDescription)")
             return nil
         }
 
         focus(managedWindow)
-        AppLogger.debugTargeting("window(cgWindowID: \(cgWindowID)) -> \(managedWindow.debugDescription)")
         return managedWindow
     }
 
     func windowUnderCursor(at point: CGPoint, configuration: AppConfiguration) -> ManagedWindow? {
         let quartzPoint = Geometry.quartzPoint(fromAppKitPoint: point, mainDisplayHeight: mainDisplayHeight)
         let windowInfos = CGWindowListCopyWindowInfo([.optionOnScreenOnly, .excludeDesktopElements], kCGNullWindowID) as? [[String: Any]] ?? []
-        AppLogger.debugTargeting("windowUnderCursor(point: \(point.debugDescription)) begin quartzPoint=\(quartzPoint.debugDescription) cgWindowCount=\(windowInfos.count)")
 
-        for (index, windowInfo) in windowInfos.enumerated() {
+        for windowInfo in windowInfos {
             guard
                 let boundsDictionary = windowInfo[kCGWindowBounds as String] as? NSDictionary,
                 let bounds = CGRect(dictionaryRepresentation: boundsDictionary),
@@ -70,24 +65,16 @@ final class WindowQueryService {
                 continue
             }
 
-            AppLogger.debugTargeting("windowUnderCursor hit[\(index)] cg=\(cgWindowDebugDescription(windowInfo))")
-
-            if let exclusionReason = exclusionReason(windowInfo: windowInfo) {
-                AppLogger.debugTargeting("windowUnderCursor hit[\(index)] -> excluded CG window reason=\(exclusionReason)")
+            if exclusionReason(windowInfo: windowInfo) != nil {
                 continue
             }
 
-            guard let candidate = resolveWindow(from: windowInfo, point: point) else {
-                AppLogger.debugTargeting("windowUnderCursor hit[\(index)] -> failed to resolve AX window")
+            guard let candidate = resolveWindow(from: windowInfo, point: point) else { continue }
+
+            if exclusionReason(candidate, configuration: configuration) != nil {
                 continue
             }
 
-            if let exclusionReason = exclusionReason(candidate, configuration: configuration) {
-                AppLogger.debugTargeting("windowUnderCursor hit[\(index)] -> excluded reason=\(exclusionReason) candidate=\(candidate.debugDescription)")
-                continue
-            }
-
-            AppLogger.debugTargeting("windowUnderCursor hit[\(index)] -> selected candidate=\(candidate.debugDescription)")
             return candidate
         }
 
@@ -96,16 +83,13 @@ final class WindowQueryService {
             let hitWindow = resolveWindowByTraversal(from: hitElement),
             exclusionReason(hitWindow, configuration: configuration) == nil
         else {
-            AppLogger.debugTargeting("windowUnderCursor fallback -> no selectable AX element at point \(point.debugDescription)")
             return nil
         }
 
-        AppLogger.debugTargeting("windowUnderCursor fallback -> selected candidate=\(hitWindow.debugDescription)")
         return hitWindow
     }
 
     func focus(_ window: ManagedWindow) {
-        AppLogger.debugTargeting("focus -> \(window.debugDescription)")
         if let runningApplication = NSRunningApplication(processIdentifier: window.pid) {
             runningApplication.activate()
         }
@@ -190,14 +174,6 @@ final class WindowQueryService {
         isExcludedByIdentityRules(window, configuration: configuration)
     }
 
-    func isWindowExcludedForTesting(_ window: ManagedWindow, configuration: AppConfiguration) -> Bool {
-        isWindowExcluded(window, configuration: configuration)
-    }
-
-    func preferredHitCandidateForTesting(_ candidates: [ManagedWindow]) -> ManagedWindow? {
-        candidates.first
-    }
-
     func shouldExcludeForOperabilityForTesting(canSetPosition: Bool, canSetSize: Bool) -> Bool {
         shouldExcludeForOperability(canSetPosition: canSetPosition, canSetSize: canSetSize)
     }
@@ -276,25 +252,13 @@ final class WindowQueryService {
                 point: point
             )
 
-            guard score > 0 else {
-                AppLogger.debugTargeting("resolveWindow cg=\(cgWindowDebugDescription(windowInfo)) -> rejected AX candidate score=0 candidate=\(managedWindow.debugDescription)")
-                continue
-            }
-
-            guard isReliableMatch(score: score) else {
-                AppLogger.debugTargeting("resolveWindow cg=\(cgWindowDebugDescription(windowInfo)) -> rejected weak AX candidate score=\(score) candidate=\(managedWindow.debugDescription)")
-                continue
-            }
-
-            AppLogger.debugTargeting("resolveWindow cg=\(cgWindowDebugDescription(windowInfo)) -> AX candidate score=\(score) candidate=\(managedWindow.debugDescription)")
+            guard score > 0 else { continue }
+            guard isReliableMatch(score: score) else { continue }
             if bestMatch == nil || score > bestMatch?.score ?? 0 {
                 bestMatch = (managedWindow, score)
             }
         }
 
-        if let bestMatch {
-            AppLogger.debugTargeting("resolveWindow cg=\(cgWindowDebugDescription(windowInfo)) -> best AX candidate score=\(bestMatch.score) candidate=\(bestMatch.window.debugDescription)")
-        }
         return bestMatch?.window
     }
 
@@ -463,27 +427,5 @@ final class WindowQueryService {
             return nil
         }
         return value as? T
-    }
-
-    private func cgWindowDebugDescription(_ windowInfo: [String: Any]) -> String {
-        let windowID = (windowInfo[kCGWindowNumber as String] as? CGWindowID).map(String.init) ?? "nil"
-        let ownerPID = (windowInfo[kCGWindowOwnerPID as String] as? pid_t).map(String.init) ?? "nil"
-        let ownerName = (windowInfo[kCGWindowOwnerName as String] as? String) ?? "nil"
-        let windowName = (windowInfo[kCGWindowName as String] as? String) ?? "nil"
-        let layer = (windowInfo[kCGWindowLayer as String] as? Int).map(String.init) ?? "nil"
-        let bounds = ((windowInfo[kCGWindowBounds as String] as? NSDictionary).flatMap { CGRect(dictionaryRepresentation: $0) })?.debugDescription ?? "nil"
-        return "id=\(windowID) pid=\(ownerPID) owner=\(ownerName) title=\(windowName) layer=\(layer) bounds=\(bounds)"
-    }
-}
-
-private extension CGPoint {
-    var debugDescription: String {
-        "(\(Int(x.rounded())), \(Int(y.rounded())))"
-    }
-}
-
-private extension CGRect {
-    var debugDescription: String {
-        "(x: \(Int(origin.x.rounded())), y: \(Int(origin.y.rounded())), w: \(Int(size.width.rounded())), h: \(Int(size.height.rounded())))"
     }
 }

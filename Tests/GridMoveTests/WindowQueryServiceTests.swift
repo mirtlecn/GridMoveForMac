@@ -24,39 +24,6 @@ import Testing
 }
 
 @MainActor
-@Test func windowQueryServicePrefersFrontmostHitCandidateEvenIfItIsNonStandard() async throws {
-    let service = WindowQueryService(mainDisplayHeightProvider: { 900 })
-    let frontmostPanel = ManagedWindow(
-        element: AXUIElementCreateSystemWide(),
-        pid: getpid(),
-        bundleIdentifier: "com.example.demo",
-        appName: "Demo App",
-        title: "Front Panel",
-        role: kAXWindowRole as String,
-        subrole: "AXDialog",
-        frame: CGRect(x: 0, y: 0, width: 400, height: 300),
-        identity: "front-panel",
-        cgWindowID: nil
-    )
-    let backStandardWindow = ManagedWindow(
-        element: AXUIElementCreateSystemWide(),
-        pid: getpid(),
-        bundleIdentifier: "com.example.demo",
-        appName: "Demo App",
-        title: "Back Window",
-        role: kAXWindowRole as String,
-        subrole: kAXStandardWindowSubrole as String,
-        frame: CGRect(x: 0, y: 0, width: 400, height: 300),
-        identity: "back-window",
-        cgWindowID: nil
-    )
-
-    let preferredCandidate = service.preferredHitCandidateForTesting([frontmostPanel, backStandardWindow])
-
-    #expect(preferredCandidate?.identity == "front-panel")
-}
-
-@MainActor
 @Test func windowQueryServiceExcludesOnlyFullyNonOperableCandidates() async throws {
     let service = WindowQueryService(mainDisplayHeightProvider: { 900 })
 

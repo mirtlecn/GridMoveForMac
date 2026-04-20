@@ -105,19 +105,3 @@ final class WindowController {
         return NSScreen.main?.frame.height ?? 0
     }
 }
-
-extension ManagedWindow {
-    var debugDescription: String {
-        let resolvedAppName = appName ?? "UnknownApp"
-        let resolvedBundleID = bundleIdentifier ?? "UnknownBundle"
-        let resolvedWindowID = cgWindowID.map(String.init) ?? "nil"
-        let sanitizedTitle = title.isEmpty ? "<empty>" : title
-        return "app=\(resolvedAppName) bundle=\(resolvedBundleID) title=\(sanitizedTitle) pid=\(pid) windowID=\(resolvedWindowID) identity=\(identity)"
-    }
-}
-
-private extension CGPoint {
-    var debugDescription: String {
-        "(\(Int(x.rounded())), \(Int(y.rounded())))"
-    }
-}
