@@ -4,9 +4,12 @@ English | [中文](./README.zh-CN.md)
 
 GridMove is a native macOS app for moving windows across monitors and snapping them into preset layouts.
 
-Get [arm64 installer↓](https://github.com/mirtlecn/GridMoveForMac/releases/latest/download/GridMove.arm64.dmg)
+Get arm64 installer: [🔗](https://github.com/mirtlecn/GridMoveForMac/releases/latest/download/GridMove.arm64.dmg)
 
-## Demo 
+> [!NOTE]
+> The app is unsigned, you need to trust it in System Preferences > Privacy & Security on first launch.
+
+## Demo
 
 Move windows by dragging from anywhere inside them.
 
@@ -54,7 +57,7 @@ path/to/GridMove.app/Contents/MacOS/GridMove -next # move focus window
 path/to/GridMove.app/Contents/MacOS/GridMove -pre
 path/to/GridMove.app/Contents/MacOS/GridMove -layout 4
 path/to/GridMove.app/Contents/MacOS/GridMove -layout "Center" 
-path/to/GridMove.app/Contents/MacOS/GridMove -layout "Center" -window-id 12345 # move specific window
+path/to/GridMove.app/Contents/MacOS/GridMove -layout "Center" -window-id 12345 # move specific window in current monitor
 ```
 
 ## Development
@@ -73,7 +76,5 @@ make release
 ## Additional Notes
 
 - GridMove takes its name from a [Windows AHK app](https://github.com/mirtlecn/GridMove) I previously maintained. This project is essentially its macOS counterpart.
-- [docs/UI.md](docs/UI.md) — UI structure, editing patterns, and interface rules
-- [docs/SETTINGS-UI.md](docs/SETTINGS-UI.md) — accepted settings-window baseline, entry points, and model-integration rules
 - [docs/APP-DESIGN.md](docs/APP-DESIGN.md) — runtime behavior, architecture, configuration details, and implementation notes
-- [docs/CONFIG-REFERENCE.jsonc](docs/CONFIG-REFERENCE.jsonc) — annotated JSON configuration reference
+- [docs/CONFIG-REFERENCE.jsonc](docs/CONFIG-REFERENCE.jsonc) — Advanced JSON configuration reference

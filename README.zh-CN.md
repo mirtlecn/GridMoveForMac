@@ -2,9 +2,12 @@
 
 # GridMove for macOS
 
-GridMove 是一个原生 macOS 应用，用于跨显示器移动窗口，并将窗口吸附到预设布局中。
+GridMove 是一个用于跨显示器移动窗口，并将窗口吸附到自定义布局的原生 macOS 应用。
 
-获取 [Arm64 安装包↓](https://github.com/mirtlecn/GridMoveForMac/releases/latest/download/GridMove.arm64.dmg)
+**获取 arm64 安装包**：[🔗](https://github.com/mirtlecn/GridMoveForMac/releases/latest/download/GridMove.arm64.dmg)  
+
+> [!NOTE]
+> 软件未签名，首次打开需在系统「隐私与安全性」中信任
 
 ## 演示
 
@@ -16,7 +19,7 @@ https://github.com/user-attachments/assets/9f1a4fec-e022-4667-96c6-9ee199e15887
 
 https://github.com/user-attachments/assets/0373bb1d-1de4-4542-a67e-b6598859bfd1
 
-## 功能
+## 特点
 
 - 速度快，体积轻
 - 可通过鼠标、键盘或 CLI 触发操作
@@ -54,7 +57,7 @@ path/to/GridMove.app/Contents/MacOS/GridMove -next # 移动当前聚焦窗口
 path/to/GridMove.app/Contents/MacOS/GridMove -pre
 path/to/GridMove.app/Contents/MacOS/GridMove -layout 4
 path/to/GridMove.app/Contents/MacOS/GridMove -layout "Center"
-path/to/GridMove.app/Contents/MacOS/GridMove -layout "Center" -window-id 12345 # 移动指定窗口
+path/to/GridMove.app/Contents/MacOS/GridMove -layout "Center" -window-id 12345 # 移动当前屏幕中的指定窗口
 ```
 
 ## 开发
@@ -73,7 +76,5 @@ make release
 ## 附加说明
 
 - GridMove 这个名字来自我之前维护的一个 [Windows AHK 应用](https://github.com/mirtlecn/GridMove)。这个项目可以看作它的 macOS 对应版本。
-- [docs/UI.md](docs/UI.md) — UI 结构、编辑模式和界面规则
-- [docs/SETTINGS-UI.md](docs/SETTINGS-UI.md) — 已接受的设置窗口基线、入口和模型集成规则
 - [docs/APP-DESIGN.md](docs/APP-DESIGN.md) — 运行时行为、架构、配置细节和实现说明
-- [docs/CONFIG-REFERENCE.jsonc](docs/CONFIG-REFERENCE.jsonc) — 带注释的 JSON 配置参考
+- [docs/CONFIG-REFERENCE.jsonc](docs/CONFIG-REFERENCE.jsonc) — 进阶配置：注释的 JSON 配置参考

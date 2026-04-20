@@ -1,6 +1,7 @@
 ---
 title: GridMove UI / UX 说明
-description: 描述 GridMove 的 UI 控件交互逻辑、信息分组方式、以及未来可视化设置界面的组织原则。
+description: 描述 GridMove 的 UI 设计的基本原则、交互和组织逻辑。此文件用于初版软件的界面设计参考，当前转为存档状态，不随软件迭代更新。记录的设计原则和已实现的界面元素组织逻辑可供未来界面迭代参考，但不反映未来可能的设计变更。
+status: achieved
 ---
 
 # GridMove UI / UX 说明

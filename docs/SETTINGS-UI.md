@@ -1,3 +1,9 @@
+---
+title: GridMove Settings UI Integration Notes
+description: 记录设置界面的已接受基线和当前与真实模型的集成规则。文档用于初版设置界面的开发参考，当前转为存档状态，不随软件迭代更新。
+status: achieved
+---
+
 # GridMove Settings UI Integration Notes
 
 This document records the accepted settings-window baseline and the current real model integration rules.

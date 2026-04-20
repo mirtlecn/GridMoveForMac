@@ -1,3 +1,9 @@
+---
+title: GridMove App Design
+description: 记录 GridMove 的当前软件行为和实现细节，基于 `Sources/GridMove/` 代码。此文档用于对软件设计的整体理解和新功能。此文档随着软件迭代更新，反映当前设计和实现状态。
+status: active
+---
+
 # GridMove App Design
 
 ## 1. Purpose
