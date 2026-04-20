@@ -296,22 +296,24 @@ final class GeneralSettingsViewController: NSViewController {
         }
     }
 
-    private func removeExcludedBundleID(at index: Int) {
+    @discardableResult
+    private func removeExcludedBundleID(at index: Int) -> Bool {
         guard excludedBundleIDs.indices.contains(index) else {
-            return
+            return false
         }
 
-        _ = prototypeState.applyImmediateMutation(using: actionHandler) { configuration in
+        return prototypeState.applyImmediateMutation(using: actionHandler) { configuration in
             configuration.general.excludedBundleIDs.remove(at: index)
         }
     }
 
-    private func removeExcludedWindowTitle(at index: Int) {
+    @discardableResult
+    private func removeExcludedWindowTitle(at index: Int) -> Bool {
         guard excludedWindowTitles.indices.contains(index) else {
-            return
+            return false
         }
 
-        _ = prototypeState.applyImmediateMutation(using: actionHandler) { configuration in
+        return prototypeState.applyImmediateMutation(using: actionHandler) { configuration in
             configuration.general.excludedWindowTitles.remove(at: index)
         }
     }
@@ -453,13 +455,15 @@ final class GeneralSettingsViewController: NSViewController {
     private func handleRemoveExclusion(_ sender: NSButton) {
         switch selectedExclusion {
         case let .bundleID(index):
-            removeExcludedBundleID(at: index)
-            selectedExclusion = nil
-            excludedBundleIDsControl.selectItem(at: nil)
+            if removeExcludedBundleID(at: index) {
+                selectedExclusion = nil
+                excludedBundleIDsControl.selectItem(at: nil)
+            }
         case let .windowTitle(index):
-            removeExcludedWindowTitle(at: index)
-            selectedExclusion = nil
-            excludedWindowTitlesControl.selectItem(at: nil)
+            if removeExcludedWindowTitle(at: index) {
+                selectedExclusion = nil
+                excludedWindowTitlesControl.selectItem(at: nil)
+            }
         case nil:
             break
         }
@@ -551,6 +555,24 @@ extension GeneralSettingsViewController {
         excludedWindowTitles
     }
 
+    var selectedExcludedBundleIDIndexForTesting: Int? {
+        guard case let .bundleID(index)? = selectedExclusion else {
+            return nil
+        }
+        return index
+    }
+
+    var selectedExcludedWindowTitleIndexForTesting: Int? {
+        guard case let .windowTitle(index)? = selectedExclusion else {
+            return nil
+        }
+        return index
+    }
+
+    var isExclusionRemoveEnabledForTesting: Bool {
+        exclusionRemoveButton.isEnabled
+    }
+
     func addModifierGroupForTesting(_ modifierKeys: [ModifierKey]) {
         if let existingIndex = modifierGroups.firstIndex(of: modifierKeys) {
             modifierGroupsControl.selectItem(at: existingIndex)
@@ -582,5 +604,9 @@ extension GeneralSettingsViewController {
         let sheetContentView = ExclusionEntrySheetContentView(initialKind: kind)
         sheetContentView.setValueForTesting(value)
         applyExclusionSheetResult(sheetContentView)
+    }
+
+    func removeSelectedExclusionForTesting() {
+        handleRemoveExclusion(exclusionRemoveButton)
     }
 }

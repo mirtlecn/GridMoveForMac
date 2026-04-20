@@ -6,8 +6,13 @@ import QuartzCore
 final class CALayerOverlayRenderer {
     private var panel: CALayerOverlayPanel?
     private var screenIdentifier: String?
+    private let screenScaleProvider: (NSScreen) -> CGFloat
 
     var overlayPanel: NSPanel? { panel }
+
+    init(screenScaleProvider: @escaping (NSScreen) -> CGFloat = { $0.backingScaleFactor }) {
+        self.screenScaleProvider = screenScaleProvider
+    }
 
     func show(
         on screen: NSScreen,
@@ -73,7 +78,8 @@ final class CALayerOverlayRenderer {
                 text: badge.text,
                 highlightFrame: highlightFrame,
                 screenOrigin: screenOrigin,
-                viewBounds: contentView.bounds
+                viewBounds: contentView.bounds,
+                contentsScale: screenScaleProvider(screen)
             )
         }
 
@@ -170,7 +176,8 @@ final class CALayerOverlayRenderer {
         text: String,
         highlightFrame: CGRect?,
         screenOrigin: CGPoint,
-        viewBounds: CGRect
+        viewBounds: CGRect,
+        contentsScale: CGFloat
     ) {
         let targetRect: CGRect
         if let highlightFrame {
@@ -216,7 +223,7 @@ final class CALayerOverlayRenderer {
             height: textSize.height
         )
         textLayer.string = NSAttributedString(string: text, attributes: textAttributes)
-        textLayer.contentsScale = NSScreen.main?.backingScaleFactor ?? 2.0
+        textLayer.contentsScale = contentsScale
         rootLayer.addSublayer(textLayer)
     }
 

@@ -515,6 +515,27 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
 }
 
 @MainActor
+@Test func appDelegateMenuActionsUseUserFacingFallbackForUntitledLayouts() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-menu-untitled-layout-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    var configuration = AppConfiguration.defaultValue
+    configuration.layoutGroups[0].sets[0].layouts[3].name = ""
+    try store.save(configuration)
+
+    let delegate = AppDelegate(configurationStore: store, openURL: { _ in true })
+    delegate.reloadConfigurationFromDisk(mode: .launch)
+
+    let actionItems = delegate.menuActionItemsForTesting()
+    let layoutActionTitles = actionItems.dropFirst(2).map(\.title)
+
+    #expect(layoutActionTitles.contains(UICopy.applyLayout(UICopy.settingsUntitledLayoutTitle(4))))
+    #expect(layoutActionTitles.contains(where: { $0.contains("layout-4") }) == false)
+}
+
+@MainActor
 @Test func appDelegateCustomizeOpensConfigurationDirectory() async throws {
     let temporaryDirectory = FileManager.default.temporaryDirectory
         .appendingPathComponent("codex-gridmove-customize-\(UUID().uuidString)", isDirectory: true)
@@ -716,6 +737,33 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     let aboutMinimumSize = try #require(delegate.settingsMinimumSizeForTesting)
     #expect(aboutMinimumSize.width == 680)
     #expect(aboutMinimumSize.height < generalMinimumSize.height)
+
+    delegate.closeSettingsWindowForTesting()
+    delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))
+}
+
+@MainActor
+@Test func settingsWindowUsesCurrentTabMetricsOnFirstOpen() async throws {
+    let temporaryDirectory = FileManager.default.temporaryDirectory
+        .appendingPathComponent("codex-gridmove-settings-window-initial-metrics-\(UUID().uuidString)", isDirectory: true)
+    defer { try? FileManager.default.removeItem(at: temporaryDirectory) }
+
+    let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
+    let delegate = AppDelegate(
+        configurationStore: store,
+        openURL: { _ in true },
+        accessibilityStatusProvider: { true }
+    )
+
+    delegate.applicationDidFinishLaunching(Notification(name: NSApplication.didFinishLaunchingNotification))
+    delegate.showSettings()
+
+    let metrics = try #require(delegate.settingsResolvedMetricsForTesting)
+
+    #expect(metrics.preferredContentSize.width == 700)
+    #expect(metrics.preferredContentSize.height == 640)
+    #expect(metrics.minimumContentSize.width == 680)
+    #expect(metrics.minimumContentSize.height == 640)
 
     delegate.closeSettingsWindowForTesting()
     delegate.applicationWillTerminate(Notification(name: NSApplication.willTerminateNotification))

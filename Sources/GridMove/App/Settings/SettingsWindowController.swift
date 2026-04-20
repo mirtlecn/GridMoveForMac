@@ -27,6 +27,7 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
             prototypeState: prototypeState,
             actionHandler: actionHandler
         )
+        tabViewController.loadViewIfNeeded()
         let initialMetrics = tabViewController.currentWindowMetrics
         let window = NSWindow(contentViewController: tabViewController)
         window.title = UICopy.settingsWindowTitle
@@ -93,6 +94,17 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
         clearEditingFocus(in: window)
         return true
+    }
+
+    var currentWindowMetricsForTesting: SettingsWindowMetrics {
+        guard let tabViewController = window?.contentViewController as? SettingsTabViewController else {
+            return SettingsWindowMetrics(
+                preferredContentSize: .zero,
+                minimumContentSize: .zero
+            )
+        }
+
+        return tabViewController.currentWindowMetrics
     }
 
     private func applyWindowMetrics(_ metrics: SettingsWindowMetrics, animated: Bool) {

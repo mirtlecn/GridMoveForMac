@@ -164,6 +164,26 @@ struct GeneralSettingsViewControllerTests {
         #expect(state.configuration.general.excludedWindowTitles == AppConfiguration.defaultValue.general.excludedWindowTitles)
     }
 
+    @Test func generalSettingsKeepsExclusionSelectionWhenRemovalFails() async throws {
+        let state = SettingsPrototypeState(configuration: .defaultValue)
+        let recorder = TestSettingsActionRecorder()
+        let controller = GeneralSettingsViewController(
+            prototypeState: state,
+            actionHandler: recorder.makeActionHandler()
+        )
+        controller.loadViewIfNeeded()
+
+        controller.addExcludedBundleIDForTesting("com.example.Hidden")
+        recorder.applySucceeds = false
+
+        controller.removeSelectedExclusionForTesting()
+
+        #expect(state.configuration.general.excludedBundleIDs.contains("com.example.Hidden"))
+        #expect(controller.selectedExcludedBundleIDIndexForTesting == 1)
+        #expect(controller.selectedExcludedWindowTitleIndexForTesting == nil)
+        #expect(controller.isExclusionRemoveEnabledForTesting == true)
+    }
+
     @Test func generalSettingsShowsPersistedMouseButtonNumberAboveFive() async throws {
         var configuration = AppConfiguration.defaultValue
         configuration.general.mouseButtonNumber = 6

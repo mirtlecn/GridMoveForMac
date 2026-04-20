@@ -1009,15 +1009,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     }
 
     var settingsContentSizeForTesting: NSSize? {
-        settingsWindowController?.window?.contentLayoutRect.size
+        guard let window = settingsWindowController?.window else {
+            return nil
+        }
+
+        return window.contentRect(forFrameRect: window.frame).size
     }
 
     var settingsMinimumSizeForTesting: NSSize? {
-        settingsWindowController?.window?.minSize
+        guard let window = settingsWindowController?.window else {
+            return nil
+        }
+
+        return window.contentRect(
+            forFrameRect: NSRect(origin: .zero, size: window.minSize)
+        ).size
     }
 
     var settingsUsesTextEditingFocusForTesting: Bool {
         settingsWindowController?.window?.firstResponder is NSTextView
+    }
+
+    var settingsResolvedMetricsForTesting: SettingsWindowMetrics? {
+        settingsWindowController?.currentWindowMetricsForTesting
     }
 
     func recordLayoutIDForTesting(_ layoutID: String, windowIdentity: String) {

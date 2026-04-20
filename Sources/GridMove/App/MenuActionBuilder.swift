@@ -26,6 +26,11 @@ struct MenuActionBuilder {
                 (entry.layout.id, offset + 1)
             }
         )
+        let layoutMenuIndexByID = Dictionary(
+            uniqueKeysWithValues: LayoutGroupResolver.flattenedActiveEntries(in: configuration).map { entry in
+                (entry.layout.id, entry.menuIndex)
+            }
+        )
 
         return LayoutGroupResolver.activeGroup(in: configuration)?.sets.flatMap { set in
             set.layouts.compactMap { layout in
@@ -36,7 +41,9 @@ struct MenuActionBuilder {
                 let title = UICopy.applyLayout(
                     UICopy.layoutMenuName(
                         name: layout.name,
-                        fallbackIdentifier: layout.id
+                        fallbackIdentifier: UICopy.settingsUntitledLayoutTitle(
+                            layoutMenuIndexByID[layout.id] ?? 1
+                        )
                     )
                 )
                 let shortcut = layoutIndexByID[layout.id].flatMap {
