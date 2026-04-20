@@ -73,8 +73,7 @@ extension LayoutsSettingsViewController {
         let includeInCycleDescriptionLabel = makeSecondaryLabel(UICopy.settingsIncludeInGroupCycleDescription)
         let includeInCycleContent = makeControlWithDescription(
             control: includeInCycleControl,
-            descriptionLabel: includeInCycleDescriptionLabel,
-            descriptionLeadingInset: 22
+            descriptionLabel: includeInCycleDescriptionLabel
         )
         var rows = [
             makeLabeledControlRow(label: UICopy.settingsNameLabel, control: nameControl),

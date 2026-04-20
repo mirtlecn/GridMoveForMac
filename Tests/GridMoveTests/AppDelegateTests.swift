@@ -938,6 +938,13 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     delegate.selectLayoutsGroupForTesting(named: AppConfiguration.defaultGroupName)
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsNoteLabel))
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsProtectedGroupInfo))
+    let includeDescriptionMinX = try #require(
+        delegate.settingsMinXForStringForTesting(UICopy.settingsIncludeInGroupCycleDescription)
+    )
+    let protectedInfoMinX = try #require(
+        delegate.settingsMinXForStringForTesting(UICopy.settingsProtectedGroupInfo)
+    )
+    #expect(includeDescriptionMinX == protectedInfoMinX)
 
     delegate.triggerLayoutsAddActionForTesting()
     delegate.selectLayoutsGroupForTesting(named: "Group 1")

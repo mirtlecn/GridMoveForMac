@@ -875,6 +875,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         return collectVisibleStrings(in: rootView)
     }
 
+    func settingsMinXForStringForTesting(_ string: String) -> CGFloat? {
+        guard let rootView = settingsWindowController?.window?.contentViewController?.view else {
+            return nil
+        }
+
+        rootView.layoutSubtreeIfNeeded()
+        return findVisibleStringMinX(in: rootView, matching: string, rootView: rootView)
+    }
+
     func closeSettingsWindowForTesting() {
         settingsWindowController?.close()
     }
@@ -1121,6 +1130,44 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         }
 
         return strings
+    }
+
+    private func findVisibleStringMinX(in view: NSView, matching string: String, rootView: NSView) -> CGFloat? {
+        let trimmedTarget = string.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if let textField = view as? NSTextField {
+            let value = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            if value == trimmedTarget {
+                return textField.convert(textField.bounds, to: rootView).minX
+            }
+        }
+
+        if let button = view as? NSButton {
+            let title = button.title.trimmingCharacters(in: .whitespacesAndNewlines)
+            if title == trimmedTarget {
+                return button.convert(button.bounds, to: rootView).minX
+            }
+        }
+
+        if let box = view as? NSBox,
+           let contentView = box.contentView,
+           let minX = findVisibleStringMinX(in: contentView, matching: string, rootView: rootView) {
+            return minX
+        }
+
+        if let scrollView = view as? NSScrollView,
+           let documentView = scrollView.documentView,
+           let minX = findVisibleStringMinX(in: documentView, matching: string, rootView: rootView) {
+            return minX
+        }
+
+        for subview in view.subviews {
+            if let minX = findVisibleStringMinX(in: subview, matching: string, rootView: rootView) {
+                return minX
+            }
+        }
+
+        return nil
     }
 
     private var layoutsSettingsControllerForTesting: LayoutsSettingsViewController? {
