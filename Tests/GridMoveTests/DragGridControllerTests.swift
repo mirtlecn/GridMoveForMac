@@ -62,6 +62,26 @@ private func makeManagedWindow(frame: CGRect, identity: String = "drag-grid-wind
 }
 
 @MainActor
+private final class OverlayUpdateRecorder {
+    var screen: NSScreen?
+    var slots: [ResolvedTriggerSlot] = []
+    var highlightFrame: CGRect?
+    var hoveredLayoutID: String?
+
+    func record(
+        screen: NSScreen,
+        slots: [ResolvedTriggerSlot],
+        highlightFrame: CGRect?,
+        hoveredLayoutID: String?
+    ) {
+        self.screen = screen
+        self.slots = slots
+        self.highlightFrame = highlightFrame
+        self.hoveredLayoutID = hoveredLayoutID
+    }
+}
+
+@MainActor
 @Test func preferredInteractionModeDefaultsToLayoutSelection() async throws {
     #expect(DragGridController.preferredInteractionMode(preferLayoutMode: true) == .layoutSelection)
     #expect(DragGridController.preferredInteractionMode(preferLayoutMode: false) == .moveOnly)
@@ -342,6 +362,152 @@ private func makeManagedWindow(frame: CGRect, identity: String = "drag-grid-wind
     controller.state.hoveredLayoutID = nil
 
     #expect(controller.overlayHighlightFrame() == currentWindowFrame)
+}
+
+@MainActor
+@Test func layoutModeKeepsActualWindowHighlightWhenNoLayoutIsHovered() async throws {
+    let screen = try #require(NSScreen.screens.first)
+    let recorder = OverlayUpdateRecorder()
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController(
+        testHooks: .init(
+            showOverlay: { screen, slots, highlightFrame, hoveredLayoutID, _, _ in
+                recorder.record(
+                    screen: screen,
+                    slots: slots,
+                    highlightFrame: highlightFrame,
+                    hoveredLayoutID: hoveredLayoutID
+                )
+            }
+        )
+    )
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { .defaultValue },
+        cycleActiveLayoutGroup: { _ in .defaultValue },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {}
+    )
+
+    let currentWindowFrame = CGRect(x: screen.frame.minX + 80, y: screen.frame.minY + 60, width: 320, height: 240)
+    controller.state.active = true
+    controller.state.interactionMode = .layoutSelection
+    controller.state.activeScreen = screen
+    controller.state.currentWindowFrame = currentWindowFrame
+    controller.state.hasDraggedPastThreshold = true
+    controller.state.hoveredLayoutID = nil
+
+    controller.refreshOverlay(configuration: .defaultValue)
+
+    #expect(recorder.highlightFrame == currentWindowFrame)
+    #expect(recorder.hoveredLayoutID == nil)
+}
+
+@MainActor
+@Test func moveModeUsesCurrentWindowFrameForWindowHighlight() async throws {
+    let screen = try #require(NSScreen.screens.first)
+    let recorder = OverlayUpdateRecorder()
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController(
+        testHooks: .init(
+            showOverlay: { screen, slots, highlightFrame, hoveredLayoutID, _, _ in
+                recorder.record(
+                    screen: screen,
+                    slots: slots,
+                    highlightFrame: highlightFrame,
+                    hoveredLayoutID: hoveredLayoutID
+                )
+            }
+        )
+    )
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { .defaultValue },
+        cycleActiveLayoutGroup: { _ in .defaultValue },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {}
+    )
+
+    let currentWindowFrame = CGRect(x: screen.frame.minX + 100, y: screen.frame.minY + 90, width: 360, height: 260)
+    controller.state.active = true
+    controller.state.interactionMode = .moveOnly
+    controller.state.cursorPoint = CGPoint(x: currentWindowFrame.midX, y: currentWindowFrame.midY)
+    controller.state.currentWindowFrame = currentWindowFrame
+
+    controller.refreshOverlay(configuration: .defaultValue)
+
+    #expect(recorder.highlightFrame == currentWindowFrame)
+    #expect(recorder.slots.isEmpty)
+    #expect(recorder.hoveredLayoutID == nil)
+}
+
+@MainActor
+@Test func switchingFromLayoutPreviewToMoveModeRestoresActualWindowHighlight() async throws {
+    let screen = try #require(NSScreen.screens.first)
+    let recorder = OverlayUpdateRecorder()
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController(
+        testHooks: .init(
+            showOverlay: { screen, slots, highlightFrame, hoveredLayoutID, _, _ in
+                recorder.record(
+                    screen: screen,
+                    slots: slots,
+                    highlightFrame: highlightFrame,
+                    hoveredLayoutID: hoveredLayoutID
+                )
+            }
+        )
+    )
+    var configuration = AppConfiguration.defaultValue
+    configuration.dragTriggers.applyLayoutImmediatelyWhileDragging = false
+
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { configuration },
+        cycleActiveLayoutGroup: { _ in configuration },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {}
+    )
+
+    let currentWindowFrame = CGRect(x: screen.frame.minX + 120, y: screen.frame.minY + 120, width: 320, height: 240)
+    let targetWindow = makeManagedWindow(frame: currentWindowFrame)
+    let resolvedSlots = layoutEngine.resolveTriggerSlots(
+        on: screen,
+        layouts: LayoutGroupResolver.triggerableLayouts(for: screen, configuration: configuration),
+        triggerGap: Double(configuration.appearance.triggerGap),
+        layoutGap: configuration.appearance.effectiveLayoutGap
+    )
+    let hoveredSlot = try #require(resolvedSlots.first)
+    let togglePoint = CGPoint(x: currentWindowFrame.midX, y: currentWindowFrame.midY)
+
+    controller.state.active = true
+    controller.state.interactionMode = .layoutSelection
+    controller.state.targetWindow = targetWindow
+    controller.state.currentWindowFrame = currentWindowFrame
+    controller.state.activeScreen = screen
+    controller.state.cursorPoint = togglePoint
+    controller.state.resolvedSlots = resolvedSlots
+    controller.state.hasDraggedPastThreshold = true
+    controller.state.hoveredLayoutID = hoveredSlot.layoutID
+
+    #expect(controller.overlayHighlightFrame() == hoveredSlot.targetFrame)
+
+    controller.configureMoveOnlyMode(at: togglePoint, configuration: configuration)
+
+    #expect(recorder.highlightFrame == currentWindowFrame)
+    #expect(recorder.hoveredLayoutID == nil)
 }
 
 @MainActor

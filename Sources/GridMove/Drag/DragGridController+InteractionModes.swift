@@ -300,6 +300,8 @@ extension DragGridController {
             return
         }
 
+        let highlightFrame = overlayHighlightFrame()
+
         switch state.interactionMode {
         case .layoutSelection:
             guard let screen = state.activeScreen else {
@@ -310,7 +312,7 @@ extension DragGridController {
             overlayController.update(
                 screen: screen,
                 slots: state.resolvedSlots,
-                highlightFrame: overlayHighlightFrame(),
+                highlightFrame: highlightFrame,
                 hoveredLayoutID: state.hoveredLayoutID,
                 configuration: configuration
             )
@@ -331,7 +333,7 @@ extension DragGridController {
             overlayController.update(
                 screen: screen,
                 slots: [],
-                highlightFrame: nil,
+                highlightFrame: highlightFrame,
                 hoveredLayoutID: nil,
                 configuration: configuration
             )
@@ -374,14 +376,21 @@ extension DragGridController {
     }
 
     func overlayHighlightFrame() -> CGRect? {
-        if !state.hasDraggedPastThreshold {
-            return currentWindowFrame()
+        let actualWindowFrame = currentWindowFrame()
+
+        guard state.interactionMode == .layoutSelection else {
+            return actualWindowFrame
+        }
+
+        guard state.hasDraggedPastThreshold else {
+            return actualWindowFrame
         }
 
         guard let hoveredLayoutID = state.hoveredLayoutID else {
-            return nil
+            return actualWindowFrame
         }
 
-        return state.resolvedSlots.first(where: { $0.layoutID == hoveredLayoutID })?.targetFrame
+        let previewFrame = state.resolvedSlots.first(where: { $0.layoutID == hoveredLayoutID })?.targetFrame
+        return previewFrame ?? actualWindowFrame
     }
 }
