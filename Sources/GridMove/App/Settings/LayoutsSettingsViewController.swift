@@ -393,7 +393,7 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
         let layoutID: String
     }
 
-    private struct DropTarget {
+    struct DropTarget {
         let groupName: String
         let setIndex: Int
         let childIndex: Int
@@ -431,7 +431,10 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
             return []
         }
 
-        outlineView.setDropItem(itemForSet(groupName: dropTarget.groupName, setIndex: dropTarget.setIndex), dropChildIndex: dropTarget.childIndex)
+        outlineView.setDropItem(
+            itemForSet(groupName: dropTarget.groupName, setIndex: dropTarget.setIndex),
+            dropChildIndex: dropTarget.childIndex
+        )
         return .move
     }
 
@@ -471,7 +474,7 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
         return DragContext(groupName: components[0], setIndex: setIndex, layoutID: components[2])
     }
 
-    private func dropTarget(for item: Any?, childIndex index: Int, draggingPoint: NSPoint) -> DropTarget? {
+    func dropTarget(for item: Any?, childIndex index: Int, draggingPoint: NSPoint) -> DropTarget? {
         guard let node = item as? LayoutsTreeNode else {
             return nil
         }

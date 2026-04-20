@@ -21,7 +21,6 @@ final class SelectableListControlView: NSView, NSTableViewDataSource, NSTableVie
     private let removeButton: NSButton
     private let valueColumn = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("value"))
     private var selectedIndex: Int?
-    private let initialColumnWidth: CGFloat
     private let preferredWidth: CGFloat
 
     init(
@@ -33,7 +32,6 @@ final class SelectableListControlView: NSView, NSTableViewDataSource, NSTableVie
         showsButtons: Bool = true
     ) {
         self.items = items
-        self.initialColumnWidth = width
         self.preferredWidth = width
         self.scrollView = makeSettingsTableScrollView(tableView: tableView, width: width, height: height)
         self.addButton = NSButton(title: addButtonTitle, target: nil, action: nil)
@@ -155,8 +153,8 @@ final class SelectableListControlView: NSView, NSTableViewDataSource, NSTableVie
     }
 
     private func syncColumnWidth() {
-        let resolvedWidth = max(1, scrollView.contentSize.width)
-        valueColumn.minWidth = min(preferredWidth, resolvedWidth)
+        let resolvedWidth = max(preferredWidth, scrollView.contentSize.width)
+        valueColumn.minWidth = preferredWidth
         valueColumn.width = resolvedWidth
     }
 

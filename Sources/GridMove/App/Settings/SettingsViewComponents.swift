@@ -449,7 +449,7 @@ func makeSettingsTableCellView(identifier: NSUserInterfaceItemIdentifier, text: 
     cellView.identifier = identifier
 
     let label = NSTextField(labelWithString: text)
-    label.font = .systemFont(ofSize: 13)
+    label.font = .systemFont(ofSize: 12)
     label.lineBreakMode = .byTruncatingTail
     label.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
     label.setContentHuggingPriority(.defaultLow, for: .horizontal)

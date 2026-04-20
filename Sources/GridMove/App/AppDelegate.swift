@@ -867,6 +867,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         return tabViewController.tabViewItems.map(\.label)
     }
 
+    var settingsWindowTitleForTesting: String? {
+        settingsWindowController?.window?.title
+    }
+
     var settingsVisibleStringsForTesting: [String] {
         guard let rootView = settingsWindowController?.window?.contentViewController?.view else {
             return []

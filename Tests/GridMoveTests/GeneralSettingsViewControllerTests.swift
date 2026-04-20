@@ -10,6 +10,15 @@ struct GeneralSettingsViewControllerTests {
         #expect(control.preferredWidthConstraintPriorityForTesting == .defaultHigh)
     }
 
+    @Test func settingsSelectableListCellUsesCompactFontSize() async throws {
+        let cellView = makeSettingsTableCellView(
+            identifier: NSUserInterfaceItemIdentifier("SelectableListCell"),
+            text: "com.apple.Spotlight"
+        )
+
+        #expect(cellView.textField?.font?.pointSize == 12)
+    }
+
     @Test func generalSettingsWritesRealConfigurationFields() async throws {
         let state = SettingsPrototypeState(configuration: .defaultValue)
         let recorder = TestSettingsActionRecorder()

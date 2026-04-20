@@ -617,6 +617,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     let store = ConfigurationStore(baseDirectoryURL: temporaryDirectory)
     var savedConfiguration = AppConfiguration.defaultValue
     savedConfiguration.general.mouseButtonNumber = 5
+    savedConfiguration.general.excludedBundleIDs = ["com.apple.Spotlight"]
     savedConfiguration.general.excludedWindowTitles = ["Floating Panel"]
     try store.save(savedConfiguration)
 
@@ -630,6 +631,13 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     delegate.showSettings()
 
     #expect(delegate.settingsVisibleStringsForTesting.contains(UICopy.settingsMouseDragTitle))
+    #expect(delegate.settingsVisibleStringsForTesting.contains("com.apple.Spotlight"))
+    #expect(delegate.settingsVisibleStringsForTesting.contains("Floating Panel"))
+    #expect(
+        delegate.settingsVisibleStringsForTesting.contains(
+            ModifierKey.allCases.map(\.displayName).joined(separator: " + ")
+        )
+    )
     #expect(delegate.generalExcludedWindowTitlesForTesting == ["Floating Panel"])
 
     delegate.closeSettingsWindowForTesting()
@@ -653,6 +661,7 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
     delegate.showSettings()
 
     #expect(delegate.isSettingsWindowOpenForTesting == true)
+    #expect(delegate.settingsWindowTitleForTesting == UICopy.settingsWindowTitle)
     #expect(delegate.settingsTabTitlesForTesting == [
         UICopy.settingsGeneralTabTitle,
         UICopy.settingsLayoutsTabTitle,

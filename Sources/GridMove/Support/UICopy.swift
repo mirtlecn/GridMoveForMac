@@ -7,7 +7,7 @@ enum UICopy {
 
     static var applicationMenuTitle: String { localized("applicationMenuTitle", default: "Application") }
     static var settingsMenuTitle: String { localized("settingsMenuTitle", default: "Settings...") }
-    static var settingsWindowTitle: String { localized("settingsWindowTitle", default: "Settings") }
+    static var settingsWindowTitle: String { localized("settingsWindowTitle", default: "GridMove Settings") }
     static var settingsGeneralTabTitle: String { localized("settingsGeneralTabTitle", default: "General") }
     static var settingsLayoutsTabTitle: String { localized("settingsLayoutsTabTitle", default: "Layouts") }
     static var settingsAppearanceTabTitle: String { localized("settingsAppearanceTabTitle", default: "Appearance") }
