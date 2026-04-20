@@ -123,7 +123,7 @@ extension DragGridController {
         }
         if moveWindow(nextOrigin, frame, targetWindow) {
             frame.origin = nextOrigin
-            state.currentWindowFrame = frame
+            updateCurrentWindowFrame(for: targetWindow, fallback: frame)
         }
 
         state.pendingMoveOnlyPoint = nil
@@ -226,9 +226,18 @@ extension DragGridController {
             return
         }
 
+        updateCurrentWindowFrame(for: targetWindow, fallback: nil)
+    }
+
+    func updateCurrentWindowFrame(for targetWindow: ManagedWindow, fallback: CGRect?) {
         let liveWindowFrame = testHooks?.currentWindowFrame?(targetWindow) ?? windowController.currentFrame(for: targetWindow)
         if let liveWindowFrame {
             state.currentWindowFrame = liveWindowFrame
+            return
+        }
+
+        if let fallback {
+            state.currentWindowFrame = fallback
         }
     }
 

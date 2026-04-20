@@ -300,6 +300,65 @@ private final class OverlayUpdateRecorder {
 }
 
 @MainActor
+@Test func moveOnlyDragRefreshesOverlayFromLiveWindowFrame() async throws {
+    let recorder = OverlayUpdateRecorder()
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController(
+        testHooks: .init(
+            showOverlay: { screen, slots, highlightFrame, hoveredLayoutID, _, _ in
+                recorder.record(
+                    screen: screen,
+                    slots: slots,
+                    highlightFrame: highlightFrame,
+                    hoveredLayoutID: hoveredLayoutID
+                )
+            }
+        )
+    )
+    let initialFrame = CGRect(x: 120, y: 80, width: 300, height: 200)
+    let liveFrame = CGRect(x: 172, y: 126, width: 300, height: 200)
+    let targetWindow = makeManagedWindow(frame: initialFrame)
+    let currentTime: TimeInterval = 10
+    var appliedOrigins: [CGPoint] = []
+
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { .defaultValue },
+        cycleActiveLayoutGroup: { _ in .defaultValue },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {},
+        testHooks: .init(
+            currentTimeProvider: { currentTime },
+            moveWindow: { origin, _, _ in
+                appliedOrigins.append(origin)
+                return true
+            },
+            currentWindowFrame: { _ in liveFrame }
+        )
+    )
+
+    controller.state.active = true
+    controller.state.interactionMode = .moveOnly
+    controller.state.targetWindow = targetWindow
+    controller.state.cursorPoint = CGPoint(x: initialFrame.midX, y: initialFrame.midY)
+    controller.state.currentWindowFrame = initialFrame
+    controller.state.moveAnchor = MoveAnchor(
+        mousePoint: CGPoint(x: 400, y: 300),
+        windowOrigin: initialFrame.origin
+    )
+
+    controller.updateMoveOnlyDrag(at: CGPoint(x: 440, y: 340))
+
+    #expect(appliedOrigins == [CGPoint(x: 160, y: 120)])
+    #expect(controller.state.currentWindowFrame == liveFrame)
+    #expect(recorder.highlightFrame == liveFrame)
+}
+
+@MainActor
 @Test func layoutGroupCycleReturnsToThresholdPhaseBeforeApplyingLayouts() async throws {
     let screen = try #require(NSScreen.screens.first)
     let layoutEngine = LayoutEngine()
