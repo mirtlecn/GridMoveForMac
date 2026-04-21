@@ -13,11 +13,11 @@ Get arm64 installer: [🔗](https://github.com/mirtlecn/GridMoveForMac/releases/
 
 Move windows by dragging from anywhere inside them.
 
-https://github.com/user-attachments/assets/9f1a4fec-e022-4667-96c6-9ee199e15887
+![](./docs/demo_1.gif)
 
 Drag windows into preset spots to instantly resize and position them.
 
-https://github.com/user-attachments/assets/0373bb1d-1de4-4542-a67e-b6598859bfd1
+![](./docs/demo_2.gif)
 
 ## Features
 
@@ -41,11 +41,11 @@ https://github.com/user-attachments/assets/0373bb1d-1de4-4542-a67e-b6598859bfd1
 
 Settings
 
-<img width="1070" height="860" alt="image" src="https://github.com/user-attachments/assets/322b6636-9bac-4d9b-8690-427fda6f2f1d" />
+<img width="1070" height="860" alt="image" src="docs/screen_1.png" />
 
 Custom layouts:
 
-<img width="1070" height="811" alt="image" src="https://github.com/user-attachments/assets/18528949-58d3-40ec-a126-3e13a6d6beaf" />
+<img width="1070" height="811" alt="image" src="docs/screen_2.png" />
 
 
 ### CLI
