@@ -341,6 +341,9 @@ Behavior:
 - show overlay
 - keep a move threshold before layout application starts
 - before the threshold is crossed, highlight the current window frame
+- when `applyLayoutImmediatelyWhileDragging` is `false`, after the threshold is crossed the window continues moving with the pointer using the same throttled move path as `moveOnly`
+- when `applyLayoutImmediatelyWhileDragging` is `false`, trigger hit testing still follows the pointer position; hovered trigger slots only drive preview and mouse-up apply
+- when `applyLayoutImmediatelyWhileDragging` is `false`, after the threshold is crossed and no trigger slot is hovered, the window highlight overlay is hidden
 - after the threshold is crossed, use hovered trigger slot to apply layouts
 - remember the last applied layout to avoid redundant reapplication
 - if trigger regions overlap on one display, the later declared layout wins
@@ -433,6 +436,7 @@ Runtime rules:
 - overlay is only relevant in `layoutSelection`
 - before threshold crossing, it highlights the current target window
 - after threshold crossing, it highlights the target frame of the hovered slot
+- when `applyLayoutImmediatelyWhileDragging` is `false` and no trigger slot is hovered after threshold crossing, the highlight is hidden even though the window still follows the pointer
 - in `moveOnly`, a brief highlight flash of the current window frame is shown at mode entry, then the overlay fades out and is dismissed
 - the flash respects `appearance.renderWindowHighlight` and uses the same highlight style
 

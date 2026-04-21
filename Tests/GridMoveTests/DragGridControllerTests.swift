@@ -233,7 +233,7 @@ private final class OverlayUpdateRecorder {
     controller.updateMoveOnlyDrag(at: CGPoint(x: 470, y: 360))
 
     #expect(appliedOrigins == [CGPoint(x: 160, y: 120)])
-    #expect(controller.state.pendingMoveOnlyPoint == CGPoint(x: 470, y: 360))
+    #expect(controller.state.pendingDragMovePoint == CGPoint(x: 470, y: 360))
     #expect(controller.state.currentWindowFrame?.origin == CGPoint(x: 160, y: 120))
     #expect(overlayRefreshCount == 1)
 
@@ -241,7 +241,7 @@ private final class OverlayUpdateRecorder {
     controller.updateMoveOnlyDrag(at: CGPoint(x: 500, y: 390))
 
     #expect(appliedOrigins == [CGPoint(x: 160, y: 120), CGPoint(x: 220, y: 170)])
-    #expect(controller.state.pendingMoveOnlyPoint == nil)
+    #expect(controller.state.pendingDragMovePoint == nil)
     #expect(controller.state.currentWindowFrame?.origin == CGPoint(x: 220, y: 170))
     #expect(overlayRefreshCount == 2)
 }
@@ -287,7 +287,7 @@ private final class OverlayUpdateRecorder {
     controller.updateMoveOnlyDrag(at: CGPoint(x: 500, y: 390))
 
     #expect(appliedOrigins == [CGPoint(x: 160, y: 120)])
-    #expect(controller.state.pendingMoveOnlyPoint == CGPoint(x: 500, y: 390))
+    #expect(controller.state.pendingDragMovePoint == CGPoint(x: 500, y: 390))
 
     _ = controller.handleMouseUp(
         event: try makeLeftMouseEvent(type: .leftMouseUp, point: .zero),
@@ -420,11 +420,11 @@ private final class OverlayUpdateRecorder {
     controller.state.hasDraggedPastThreshold = false
     controller.state.hoveredLayoutID = nil
 
-    #expect(controller.overlayHighlightFrame() == currentWindowFrame)
+    #expect(controller.overlayHighlightFrame(configuration: .defaultValue) == currentWindowFrame)
 }
 
 @MainActor
-@Test func layoutModeKeepsActualWindowHighlightWhenNoLayoutIsHovered() async throws {
+@Test func deferredLayoutModeHidesWindowHighlightWhenNoLayoutIsHovered() async throws {
     let screen = try #require(NSScreen.screens.first)
     let recorder = OverlayUpdateRecorder()
     let layoutEngine = LayoutEngine()
@@ -461,6 +461,52 @@ private final class OverlayUpdateRecorder {
     controller.state.hoveredLayoutID = nil
 
     controller.refreshOverlay(configuration: .defaultValue)
+
+    #expect(recorder.highlightFrame == nil)
+    #expect(recorder.hoveredLayoutID == nil)
+}
+
+@MainActor
+@Test func immediateLayoutModeKeepsActualWindowHighlightWhenNoLayoutIsHovered() async throws {
+    let screen = try #require(NSScreen.screens.first)
+    let recorder = OverlayUpdateRecorder()
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController(
+        testHooks: .init(
+            showOverlay: { screen, slots, highlightFrame, hoveredLayoutID, _, _ in
+                recorder.record(
+                    screen: screen,
+                    slots: slots,
+                    highlightFrame: highlightFrame,
+                    hoveredLayoutID: hoveredLayoutID
+                )
+            }
+        )
+    )
+    var configuration = AppConfiguration.defaultValue
+    configuration.dragTriggers.applyLayoutImmediatelyWhileDragging = true
+
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { configuration },
+        cycleActiveLayoutGroup: { _ in configuration },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {}
+    )
+
+    let currentWindowFrame = CGRect(x: screen.frame.minX + 80, y: screen.frame.minY + 60, width: 320, height: 240)
+    controller.state.active = true
+    controller.state.interactionMode = .layoutSelection
+    controller.state.activeScreen = screen
+    controller.state.currentWindowFrame = currentWindowFrame
+    controller.state.hasDraggedPastThreshold = true
+    controller.state.hoveredLayoutID = nil
+
+    controller.refreshOverlay(configuration: configuration)
 
     #expect(recorder.highlightFrame == currentWindowFrame)
     #expect(recorder.hoveredLayoutID == nil)
@@ -561,7 +607,7 @@ private final class OverlayUpdateRecorder {
     controller.state.hasDraggedPastThreshold = true
     controller.state.hoveredLayoutID = hoveredSlot.layoutID
 
-    #expect(controller.overlayHighlightFrame() == hoveredSlot.targetFrame)
+    #expect(controller.overlayHighlightFrame(configuration: configuration) == hoveredSlot.targetFrame)
 
     controller.configureMoveOnlyMode(at: togglePoint, configuration: configuration)
 
@@ -617,6 +663,225 @@ private final class OverlayUpdateRecorder {
 
     #expect(controller.state.currentWindowFrame == liveFrame)
     #expect(recorder.highlightFrame == liveFrame)
+}
+
+@MainActor
+@Test func deferredLayoutSelectionDragMovesWindowAfterThresholdUsingSharedThrottle() async throws {
+    let screen = try #require(NSScreen.screens.first)
+    let recorder = OverlayUpdateRecorder()
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController(
+        testHooks: .init(
+            showOverlay: { screen, slots, highlightFrame, hoveredLayoutID, _, _ in
+                recorder.record(
+                    screen: screen,
+                    slots: slots,
+                    highlightFrame: highlightFrame,
+                    hoveredLayoutID: hoveredLayoutID
+                )
+            }
+        )
+    )
+    var configuration = AppConfiguration.defaultValue
+    configuration.dragTriggers.applyLayoutImmediatelyWhileDragging = false
+    var currentTime: TimeInterval = 30
+    var appliedOrigins: [CGPoint] = []
+
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { configuration },
+        cycleActiveLayoutGroup: { _ in configuration },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {},
+        testHooks: .init(
+            currentTimeProvider: { currentTime },
+            moveWindow: { origin, _, _ in
+                appliedOrigins.append(origin)
+                return true
+            }
+        )
+    )
+
+    let currentWindowFrame = CGRect(x: screen.frame.minX + 120, y: screen.frame.minY + 80, width: 320, height: 240)
+    let targetWindow = makeManagedWindow(frame: currentWindowFrame)
+    let activationPoint = CGPoint(x: currentWindowFrame.midX, y: currentWindowFrame.midY)
+    let nonTriggerPoint = CGPoint(x: screen.frame.midX, y: screen.frame.midY)
+
+    controller.state.active = true
+    controller.state.interactionMode = .layoutSelection
+    controller.state.activeScreen = screen
+    controller.state.targetWindow = targetWindow
+    controller.state.currentWindowFrame = currentWindowFrame
+    controller.state.overlayActivationPoint = activationPoint
+    controller.state.resolvedSlots = []
+    controller.state.moveAnchor = MoveAnchor(
+        mousePoint: activationPoint,
+        windowOrigin: currentWindowFrame.origin
+    )
+
+    controller.updateLayoutSelectionDrag(at: nonTriggerPoint, configuration: configuration)
+    #expect(controller.state.hasDraggedPastThreshold == true)
+    #expect(appliedOrigins.count == 1)
+    #expect(controller.state.hoveredLayoutID == nil)
+    #expect(recorder.highlightFrame == nil)
+
+    currentTime += 0.002
+    let throttledPoint = CGPoint(x: nonTriggerPoint.x + 40, y: nonTriggerPoint.y - 20)
+    controller.updateLayoutSelectionDrag(at: throttledPoint, configuration: configuration)
+
+    #expect(appliedOrigins.count == 1)
+    #expect(controller.state.pendingDragMovePoint == throttledPoint)
+}
+
+@MainActor
+@Test func deferredLayoutSelectionHoverKeepsMovingWithoutImmediateApply() async throws {
+    let screen = try #require(NSScreen.screens.first)
+    let recorder = OverlayUpdateRecorder()
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController(
+        testHooks: .init(
+            showOverlay: { screen, slots, highlightFrame, hoveredLayoutID, _, _ in
+                recorder.record(
+                    screen: screen,
+                    slots: slots,
+                    highlightFrame: highlightFrame,
+                    hoveredLayoutID: hoveredLayoutID
+                )
+            }
+        )
+    )
+    var configuration = AppConfiguration.defaultValue
+    configuration.dragTriggers.applyLayoutImmediatelyWhileDragging = false
+    var currentTime: TimeInterval = 40
+    var appliedOrigins: [CGPoint] = []
+
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { configuration },
+        cycleActiveLayoutGroup: { _ in configuration },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {},
+        testHooks: .init(
+            currentTimeProvider: { currentTime },
+            moveWindow: { origin, _, _ in
+                appliedOrigins.append(origin)
+                return true
+            }
+        )
+    )
+
+    let currentWindowFrame = CGRect(x: screen.frame.minX + 80, y: screen.frame.minY + 80, width: 320, height: 240)
+    let targetWindow = makeManagedWindow(frame: currentWindowFrame)
+    let resolvedSlots = layoutEngine.resolveTriggerSlots(
+        on: screen,
+        layouts: LayoutGroupResolver.triggerableLayouts(for: screen, configuration: configuration),
+        triggerGap: Double(configuration.appearance.triggerGap),
+        layoutGap: configuration.appearance.effectiveLayoutGap
+    )
+    let hoveredSlot = try #require(resolvedSlots.first)
+    let activationPoint = CGPoint(x: currentWindowFrame.midX, y: currentWindowFrame.midY)
+    let hoverPoint = CGPoint(x: hoveredSlot.triggerFrame.midX, y: hoveredSlot.triggerFrame.midY)
+
+    controller.state.active = true
+    controller.state.activeButton = .left
+    controller.state.interactionMode = .layoutSelection
+    controller.state.activeScreen = screen
+    controller.state.targetWindow = targetWindow
+    controller.state.currentWindowFrame = currentWindowFrame
+    controller.state.overlayActivationPoint = activationPoint
+    controller.state.resolvedSlots = resolvedSlots
+    controller.state.moveAnchor = MoveAnchor(
+        mousePoint: activationPoint,
+        windowOrigin: currentWindowFrame.origin
+    )
+
+    controller.updateLayoutSelectionDrag(at: hoverPoint, configuration: configuration)
+
+    #expect(appliedOrigins.count == 1)
+    #expect(controller.state.hoveredLayoutID == hoveredSlot.layoutID)
+    #expect(controller.state.lastAppliedLayoutID == nil)
+    #expect(recorder.highlightFrame == hoveredSlot.targetFrame)
+
+    currentTime += 0.001
+    let mouseUpPoint = CGPoint(x: hoverPoint.x + 30, y: hoverPoint.y + 20)
+    controller.updateLayoutSelectionDrag(at: mouseUpPoint, configuration: configuration)
+    #expect(controller.state.pendingDragMovePoint == mouseUpPoint)
+
+    _ = controller.handleMouseUp(
+        event: try makeLeftMouseEvent(
+            type: .leftMouseUp,
+            point: controller.windowController.quartzPoint(fromAppKitPoint: mouseUpPoint)
+        ),
+        button: .left,
+        configuration: configuration
+    )
+
+    #expect(appliedOrigins.count == 2)
+    #expect(controller.state.active == false)
+}
+
+@MainActor
+@Test func immediateLayoutSelectionDoesNotMoveWindowWhileDragging() async throws {
+    let screen = try #require(NSScreen.screens.first)
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController()
+    var configuration = AppConfiguration.defaultValue
+    configuration.dragTriggers.applyLayoutImmediatelyWhileDragging = true
+    var appliedOrigins: [CGPoint] = []
+
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { configuration },
+        cycleActiveLayoutGroup: { _ in configuration },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {},
+        testHooks: .init(
+            moveWindow: { origin, _, _ in
+                appliedOrigins.append(origin)
+                return true
+            }
+        )
+    )
+
+    let currentWindowFrame = CGRect(x: screen.frame.minX + 80, y: screen.frame.minY + 80, width: 320, height: 240)
+    let targetWindow = makeManagedWindow(frame: currentWindowFrame)
+    let resolvedSlots = layoutEngine.resolveTriggerSlots(
+        on: screen,
+        layouts: LayoutGroupResolver.triggerableLayouts(for: screen, configuration: configuration),
+        triggerGap: Double(configuration.appearance.triggerGap),
+        layoutGap: configuration.appearance.effectiveLayoutGap
+    )
+    let hoveredSlot = try #require(resolvedSlots.first)
+    let activationPoint = CGPoint(x: currentWindowFrame.midX, y: currentWindowFrame.midY)
+    let hoverPoint = CGPoint(x: hoveredSlot.triggerFrame.midX, y: hoveredSlot.triggerFrame.midY)
+
+    controller.state.active = true
+    controller.state.interactionMode = .layoutSelection
+    controller.state.activeScreen = screen
+    controller.state.targetWindow = targetWindow
+    controller.state.currentWindowFrame = currentWindowFrame
+    controller.state.overlayActivationPoint = activationPoint
+    controller.state.resolvedSlots = resolvedSlots
+    controller.state.moveAnchor = MoveAnchor(
+        mousePoint: activationPoint,
+        windowOrigin: currentWindowFrame.origin
+    )
+
+    controller.updateLayoutSelectionDrag(at: hoverPoint, configuration: configuration)
+
+    #expect(appliedOrigins.isEmpty)
 }
 
 @MainActor
@@ -720,7 +985,7 @@ private final class OverlayUpdateRecorder {
     #expect(controller.state.hoveredLayoutID == hoveredSlot.layoutID)
     #expect(controller.state.lastAppliedLayoutID == nil)
     #expect(controller.state.currentWindowFrame == currentWindowFrame)
-    #expect(controller.overlayHighlightFrame() == hoveredSlot.targetFrame)
+    #expect(controller.overlayHighlightFrame(configuration: configuration) == hoveredSlot.targetFrame)
 
     controller.finalizeLayoutSelection(at: hoverPoint, configuration: configuration)
 

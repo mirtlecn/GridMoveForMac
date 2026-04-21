@@ -2,7 +2,7 @@ import CoreGraphics
 import Foundation
 
 extension DragGridController {
-    private enum MoveOnlyUpdateConstants {
+    private enum DragMoveUpdateConstants {
         static let minimumInterval: TimeInterval = 1.0 / 120.0
     }
 
@@ -54,22 +54,9 @@ extension DragGridController {
             return
         }
 
-        let nextScreen = windowController.resolvedScreen(for: point, fallback: state.activeScreen)
-        if nextScreen.map(Geometry.screenIdentifier(for:)) != state.activeScreen.map(Geometry.screenIdentifier(for:)) {
-            state.activeScreen = nextScreen
-            state.resolvedSlots = nextScreen.map {
-                layoutEngine.resolveTriggerSlots(
-                    on: $0,
-                    layouts: LayoutGroupResolver.triggerableLayouts(for: $0, configuration: configuration),
-                    triggerGap: Double(configuration.appearance.triggerGap),
-                    layoutGap: configuration.appearance.effectiveLayoutGap
-                )
-            } ?? []
-            state.hoveredLayoutID = nil
-            state.lastAppliedLayoutID = nil
-        }
-
         if !state.hasDraggedPastThreshold {
+            updateActiveScreenAndResolvedSlots(at: point, configuration: configuration)
+
             guard let activationPoint = state.overlayActivationPoint else {
                 return
             }
@@ -81,58 +68,68 @@ extension DragGridController {
             state.hasDraggedPastThreshold = true
         }
 
+        if shouldMoveWindowDuringActiveDrag(configuration: configuration) {
+            queuePendingDragMove(at: point)
+            _ = applyPendingDragMoveIfNeeded(at: currentDragMoveTimestamp())
+        }
+
+        updateActiveScreenAndResolvedSlots(at: point, configuration: configuration)
         updateLayoutSelection(at: point, configuration: configuration)
     }
 
     func updateMoveOnlyDrag(at point: CGPoint) {
-        state.pendingMoveOnlyPoint = point
-        let timestamp = testHooks?.currentTimeProvider?() ?? ProcessInfo.processInfo.systemUptime
-        applyPendingMoveOnlyDragIfNeeded(at: timestamp)
+        queuePendingDragMove(at: point)
+        let didMoveWindow = applyPendingDragMoveIfNeeded(at: currentDragMoveTimestamp())
+        if didMoveWindow {
+            if let refreshOverlay = testHooks?.refreshOverlay {
+                refreshOverlay(configurationProvider())
+            } else {
+                refreshOverlay(configuration: configurationProvider())
+            }
+        }
     }
 
-    func applyPendingMoveOnlyDragIfNeeded(at timestamp: TimeInterval, force: Bool = false) {
+    @discardableResult
+    func applyPendingDragMoveIfNeeded(at timestamp: TimeInterval, force: Bool = false) -> Bool {
         guard validateAccessibilityAccessForInteraction() else {
-            return
+            return false
         }
 
         guard
             let targetWindow = state.targetWindow,
             let moveAnchor = state.moveAnchor,
             var frame = state.currentWindowFrame,
-            let pendingPoint = state.pendingMoveOnlyPoint
+            let pendingPoint = state.pendingDragMovePoint
         else {
-            return
+            return false
         }
 
         if !force,
-           let lastMoveOnlyUpdateTime = state.lastMoveOnlyUpdateTime,
-           timestamp - lastMoveOnlyUpdateTime < MoveOnlyUpdateConstants.minimumInterval
+           let lastDragMoveUpdateTime = state.lastDragMoveUpdateTime,
+           timestamp - lastDragMoveUpdateTime < DragMoveUpdateConstants.minimumInterval
         {
-            return
+            return false
         }
 
         let nextOrigin = moveAnchor.movedOrigin(for: pendingPoint)
         guard !pointsApproximatelyEqual(nextOrigin, frame.origin) else {
-            state.pendingMoveOnlyPoint = nil
-            state.lastMoveOnlyUpdateTime = timestamp
-            return
+            state.pendingDragMovePoint = nil
+            state.lastDragMoveUpdateTime = timestamp
+            return false
         }
 
         let moveWindow = testHooks?.moveWindow ?? { [windowController] origin, currentFrame, window in
             windowController.moveWindow(to: origin, currentFrame: currentFrame, for: window)
         }
-        if moveWindow(nextOrigin, frame, targetWindow) {
+        let didMoveWindow = moveWindow(nextOrigin, frame, targetWindow)
+        if didMoveWindow {
             frame.origin = nextOrigin
             updateCurrentWindowFrame(for: targetWindow, fallback: frame)
         }
 
-        state.pendingMoveOnlyPoint = nil
-        state.lastMoveOnlyUpdateTime = timestamp
-        if let refreshOverlay = testHooks?.refreshOverlay {
-            refreshOverlay(configurationProvider())
-        } else {
-            refreshOverlay(configuration: configurationProvider())
-        }
+        state.pendingDragMovePoint = nil
+        state.lastDragMoveUpdateTime = timestamp
+        return didMoveWindow
     }
 
     func toggleInteractionMode(at point: CGPoint, configuration: AppConfiguration) {
@@ -158,12 +155,20 @@ extension DragGridController {
         shouldApplyImmediately: Bool
     ) {
         prepareForModeTransition(at: point, interactionMode: .layoutSelection)
-        state.moveAnchor = nil
         state.scrollGroupCycleResetWorkItem?.cancel()
         state.scrollGroupCycleResetWorkItem = nil
         state.scrollGroupCycleTracker = makeScrollGroupCycleTracker()
 
-        let fallbackScreen = currentWindowFrame()
+        let windowFrame = currentWindowFrame()
+        if let frame = windowFrame {
+            state.moveAnchor = MoveAnchor(mousePoint: point, windowOrigin: frame.origin)
+        } else {
+            state.moveAnchor = nil
+        }
+        state.pendingDragMovePoint = nil
+        state.lastDragMoveUpdateTime = nil
+
+        let fallbackScreen = windowFrame
             .flatMap { frame in
                 windowController.screenContaining(point: CGPoint(x: frame.midX, y: frame.midY))
             }
@@ -198,8 +203,8 @@ extension DragGridController {
         state.scrollGroupCycleResetWorkItem?.cancel()
         state.scrollGroupCycleResetWorkItem = nil
         state.scrollGroupCycleTracker = nil
-        state.pendingMoveOnlyPoint = nil
-        state.lastMoveOnlyUpdateTime = nil
+        state.pendingDragMovePoint = nil
+        state.lastDragMoveUpdateTime = nil
 
         let windowFrame = currentWindowFrame()
         if let frame = windowFrame {
@@ -304,7 +309,7 @@ extension DragGridController {
             return
         }
 
-        let highlightFrame = overlayHighlightFrame()
+        let highlightFrame = overlayHighlightFrame(configuration: configuration)
 
         switch state.interactionMode {
         case .layoutSelection:
@@ -378,7 +383,7 @@ extension DragGridController {
         overlayController.dismiss()
     }
 
-    func overlayHighlightFrame() -> CGRect? {
+    func overlayHighlightFrame(configuration: AppConfiguration) -> CGRect? {
         let actualWindowFrame = currentWindowFrame()
 
         guard state.interactionMode == .layoutSelection else {
@@ -390,10 +395,47 @@ extension DragGridController {
         }
 
         guard let hoveredLayoutID = state.hoveredLayoutID else {
+            if !configuration.dragTriggers.applyLayoutImmediatelyWhileDragging {
+                return nil
+            }
             return actualWindowFrame
         }
 
         let previewFrame = state.resolvedSlots.first(where: { $0.layoutID == hoveredLayoutID })?.targetFrame
         return previewFrame ?? actualWindowFrame
+    }
+
+    func updateActiveScreenAndResolvedSlots(at point: CGPoint, configuration: AppConfiguration) {
+        let nextScreen = windowController.resolvedScreen(for: point, fallback: state.activeScreen)
+        if nextScreen.map(Geometry.screenIdentifier(for:)) != state.activeScreen.map(Geometry.screenIdentifier(for:)) {
+            state.activeScreen = nextScreen
+            state.resolvedSlots = nextScreen.map {
+                layoutEngine.resolveTriggerSlots(
+                    on: $0,
+                    layouts: LayoutGroupResolver.triggerableLayouts(for: $0, configuration: configuration),
+                    triggerGap: Double(configuration.appearance.triggerGap),
+                    layoutGap: configuration.appearance.effectiveLayoutGap
+                )
+            } ?? []
+            state.hoveredLayoutID = nil
+            state.lastAppliedLayoutID = nil
+        }
+    }
+
+    func queuePendingDragMove(at point: CGPoint) {
+        state.pendingDragMovePoint = point
+    }
+
+    func currentDragMoveTimestamp() -> TimeInterval {
+        testHooks?.currentTimeProvider?() ?? ProcessInfo.processInfo.systemUptime
+    }
+
+    func shouldMoveWindowDuringActiveDrag(configuration: AppConfiguration) -> Bool {
+        switch state.interactionMode {
+        case .moveOnly:
+            return true
+        case .layoutSelection:
+            return state.hasDraggedPastThreshold && !configuration.dragTriggers.applyLayoutImmediatelyWhileDragging
+        }
     }
 }

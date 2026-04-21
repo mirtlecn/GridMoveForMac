@@ -150,8 +150,8 @@ struct DragInteractionState {
     var targetWindow: ManagedWindow?
     var currentWindowFrame: CGRect?
     var moveAnchor: MoveAnchor?
-    var pendingMoveOnlyPoint: CGPoint?
-    var lastMoveOnlyUpdateTime: TimeInterval?
+    var pendingDragMovePoint: CGPoint?
+    var lastDragMoveUpdateTime: TimeInterval?
     var optionToggleTracker: OptionToggleTracker?
     var shiftGroupCycleTracker: ShiftGroupCycleTracker?
     var scrollGroupCycleTracker: ScrollGroupCycleTracker?
