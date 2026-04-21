@@ -35,8 +35,8 @@
 "settingsApplyToLabel" = "Apply to";
 "settingsIncludeInMenuLabel" = "Include in menu";
 "settingsIncludeInLayoutIndexLabel" = "Include in layout index";
-"settingsIncludeInGroupCycleLabel" = "Include in group cycle";
-"settingsIncludeInGroupCycleDescription" = "Cycle group in layout mode with mouse wheel or Shift key.";
+"settingsIncludeInGroupCycleLabel" = "Quick switch";
+"settingsIncludeInGroupCycleDescription" = "Switch enabled groups in layout mode with mouse wheel or Shift key.";
 "settingsProtectedGroupInfo" = "This group cannot be renamed or deleted.";
 "settingsActiveGroupLabel" = "Active group";
 "settingsMonitorLabel" = "Monitor";
@@ -113,8 +113,8 @@
 "modifierLeftMouseDragMenuTitle" = "Modifier + left mouse drag";
 "preferLayoutModeMenuTitle" = "Prefer layout mode";
 "applyLayoutImmediatelyWhileDraggingTitle" = "Apply layout immediately while dragging";
-"preferLayoutModeEnabledDescription" = "Start in layout mode by default. Right-click or press Option to switch to free move.";
-"preferLayoutModeDisabledDescription" = "Start in free move by default. Right-click or press Option to switch to layout mode.";
+"preferLayoutModeEnabledDescription" = "Start in layout mode by default. Right-click or click Option to switch to free move.";
+"preferLayoutModeDisabledDescription" = "Start in free move by default. Right-click or click Option to switch to layout mode.";
 "layoutGroupMenuTitle" = "Layout group";
 "reloadConfigMenuTitle" = "Reload";
 "launchAtLoginMenuTitle" = "Launch at login";

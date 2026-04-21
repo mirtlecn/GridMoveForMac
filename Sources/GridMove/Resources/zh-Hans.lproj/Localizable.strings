@@ -34,9 +34,9 @@
 "settingsTriggerAreaLabel" = "触发区域";
 "settingsApplyToLabel" = "应用到";
 "settingsIncludeInMenuLabel" = "在菜单中显示";
-"settingsIncludeInLayoutIndexLabel" = "包含在循环内";
-"settingsIncludeInGroupCycleLabel" = "包含在循环内";
-"settingsIncludeInGroupCycleDescription" = "在布局模式中，用鼠标滚轮或 Shift 键快速切换布局组。";
+"settingsIncludeInLayoutIndexLabel" = "包含在循环中";
+"settingsIncludeInGroupCycleLabel" = "快速切换";
+"settingsIncludeInGroupCycleDescription" = "在布局模式中鼠标滚轮或按 Shift 键切换已启用的布局组。";
 "settingsProtectedGroupInfo" = "这个组不能改名或者删除。";
 "settingsActiveGroupLabel" = "当前激活组";
 "settingsMonitorLabel" = "显示器";
@@ -113,8 +113,8 @@
 "modifierLeftMouseDragMenuTitle" = "修饰键 + 左键拖动";
 "preferLayoutModeMenuTitle" = "布局模式优先";
 "applyLayoutImmediatelyWhileDraggingTitle" = "拖动时立刻应用布局";
-"preferLayoutModeEnabledDescription" = "默认进入布局模式。右键点击或按住 Option 键可自由移动。";
-"preferLayoutModeDisabledDescription" = "默认自由移动。右键点击或按住 Option 键可切换到布局模式。";
+"preferLayoutModeEnabledDescription" = "默认进入布局模式。右键或点击 Option 键可自由移动。";
+"preferLayoutModeDisabledDescription" = "默认自由移动。右键或点击 Option 键可切换到布局模式。";
 "layoutGroupMenuTitle" = "布局组";
 "reloadConfigMenuTitle" = "重新加载";
 "launchAtLoginMenuTitle" = "登录时启动";
