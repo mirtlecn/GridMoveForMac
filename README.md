@@ -76,5 +76,6 @@ make release
 ## Additional Notes
 
 - GridMove takes its name from a [Windows AHK app](https://github.com/mirtlecn/GridMove) I previously maintained. This project is essentially its macOS counterpart.
+- The entire app—including the icon, documentation, and demo video—was built with OpenAI Codex. The user prompts are available [here](docs/prompts.md). (Note: the file is 700 KB+.)
 - [docs/APP-DESIGN.md](docs/APP-DESIGN.md) — runtime behavior, architecture, configuration details, and implementation notes
 - [docs/CONFIG-REFERENCE.jsonc](docs/CONFIG-REFERENCE.jsonc) — Advanced JSON configuration reference
