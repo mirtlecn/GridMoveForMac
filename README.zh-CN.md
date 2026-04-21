@@ -4,10 +4,19 @@
 
 GridMove 是一个用于跨显示器移动窗口，并将窗口吸附到自定义布局的原生 macOS 应用。
 
-**获取 arm64 安装包**：[🔗](https://github.com/mirtlecn/GridMoveForMac/releases/latest/download/GridMove.arm64.dmg)  
+Homebrew 安装：
+```
+brew install mirtlecn/tap/GridMove
+```
+
+或者手动下载 arm64 安装包：[🔗](https://github.com/mirtlecn/GridMoveForMac/releases/latest/download/GridMove.arm64.dmg)  
 
 > [!NOTE]
-> 软件未签名，首次打开需在系统「隐私与安全性」中信任
+> 软件未签名，首次打开需在系统「隐私与安全性」中信任，**或**在终端执行<br>
+>
+> ```bash
+> xattr -dr com.apple.quarantine /Applications/GridMove.app
+> ```
 
 ## 演示
 

@@ -4,10 +4,19 @@ English | [中文](./README.zh-CN.md)
 
 GridMove is a native macOS app for moving windows across monitors and snapping them into preset layouts.
 
-Get arm64 installer: [🔗](https://github.com/mirtlecn/GridMoveForMac/releases/latest/download/GridMove.arm64.dmg)
+Install with Homebrew:
+```
+brew install mirtlecn/tap/GridMove
+```
 
-> [!NOTE]
-> The app is unsigned, you need to trust it in System Preferences > Privacy & Security on first launch.
+Or download the latest release: [🔗](https://github.com/mirtlecn/GridMoveForMac/releases/latest/download/GridMove.arm64.dmg)
+
+> [!IMPORTANT]
+> The app is unsigned, you need to trust it in System Preferences > Privacy & Security **OR** run <br>
+>
+> ```
+> xattr -dr com.apple.quarantine /Applications/GridMove.app
+> ```
 
 ## Demo
 

@@ -119,6 +119,8 @@ message_count: "1445"
 - 问题修复：解决删除布局列表最后一项导致界面空白的问题，设定至少保留一项
 - UI 调整：修改左侧列表界面布局，调整添加布局按钮的位置
 - 代码审查：检查本地存储方案，确认没有使用复杂框架，准备整理代码
+- 功能新增：应用布局时，同时调整窗口位置
+- Bug 修复：应用不同的布局，会有遮挡或者漏底的现象发生。需要绘制动画或者遮罩。放弃
 
 # User Messages: GridMove
 
@@ -20584,4 +20586,138 @@ Layout 页面
 <image>
 
 </image>
+```
+
+## User
+
+```codex-user
+把默认值「布局模式优先」默认/不填/非法都从 true 改为 false
+```
+
+## User
+
+```codex-user
+改一个行为，尽量复用 move-模式的逻辑
+
+当「立刻应用布局」这个选项是关的时候
+- layout 模式当前行为：鼠标移动，窗口还在原位，松开时应用对应布局，
+- 预期改为，鼠标移动并过了布局触发边界时，像 move 模式一样，窗口也跟着移动（最好抽象一下，同样的节流），但移动时不显示窗口外圈的 overlay。移动到对应的 trigger，行为不变，按配置展示 layout 的 overlay 或者其他的，松开鼠标应用。
+
+选项关闭时，行为不变
+```
+
+## User
+
+```codex-user
+`立刻应用布局 = false` 时，窗口跟手移动应当发生在哪种区域？
+
+这个问题我不理解，如果移动到触发区域。窗口仍然跟着移动会有什么问题吗。移动到触发区域的行为只是展示 overlay，只有松手才应用布局。
+```
+
+## User
+
+```codex-user
+# 延迟应用布局时复用跟手移动逻辑
+
+## Summary
+
+调整 `dragTriggers.applyLayoutImmediatelyWhileDragging == false` 的 `layoutSelection` 行为：
+
+- 过了当前激活阈值后，窗口也要像 `moveOnly` 一样跟手移动，并复用同一套节流与抓取偏移逻辑。
+- 即使当前鼠标已经进入某个 trigger，窗口也继续跟手移动；trigger 只负责决定 overlay 预览和松手时应用哪个布局。
+- `applyLayoutImmediatelyWhileDragging == true` 的现有行为保持不变。
+
+## Implementation Changes
+
+- 在 `DragGridController` 中把“窗口跟手移动”的逻辑从 `moveOnly` 专属分支抽成共享能力，供这两个场景复用：
+  - `moveOnly`
+  - `layoutSelection + applyImmediatelyWhileDragging == false + 已过激活阈值`
+- 保留当前 `MoveAnchor` 和现有节流频率，不重新定义新的移动模型。实现上应把当前 `pendingMoveOnlyPoint` / `lastMoveOnlyUpdateTime` 这一类状态泛化成“共享拖拽移动状态”，避免两套并行实现。
+- `updateDrag` / `updateLayoutSelectionDrag` 的新顺序固定为：
+  - 更新当前鼠标点
+  - 在延迟应用分支且已过阈值时，先按共享节流推进窗口位置
+  - 再继续做当前的 trigger 命中、screen 切换、hovered layout 计算与 overlay 刷新
+- `finalizeLayoutSelection` / `handleMouseUp` 需要在延迟应用分支也强制 flush 最后一次待处理的移动点，再按当前 hovered slot 决定是否应用布局，避免松手前最后一次鼠标位移丢失。
+- trigger 命中规则保持按“当前鼠标位置”解析，不改成按窗口中心或窗口 frame 解析；跨屏 slot 重算也继续跟随鼠标位置。
+
+## Overlay / Runtime Behavior
+
+- `layoutSelection` 下，`applyImmediatelyWhileDragging == false` 时：
+  - 过阈值前：保持现有行为，仍可显示当前窗口高亮。
+  - 过阈值后且未命中 trigger：窗口继续跟手移动，但不显示窗口外圈高亮 overlay。
+  - 过阈值后且命中 trigger：窗口仍继续跟手移动；overlay 行为保持现有 trigger 预览语义，按当前配置展示 trigger / layout 预览；松手时才真正应用布局。
+- `moveOnly` 行为不改，只是底层移动节流与位移推进改为复用共享实现。
+- `applyLayoutImmediatelyWhileDragging == true` 的 layout 模式不改：仍按当前逻辑在拖动中即时应用布局。
+
+## Tests
+
+补充或更新 `DragGridControllerTests`，至少覆盖：
+
+- 延迟应用分支在 `layoutSelection` 过阈值后会调用与 `moveOnly` 同样的节流移动路径。
+- 延迟应用分支在未命中 trigger 时不会显示当前窗口高亮 overlay。
+- 延迟应用分支在命中 trigger 时，窗口仍继续跟手移动，但 `lastAppliedLayoutID` 在鼠标松开前保持 `nil`。
+- 鼠标松开时会先 flush 最后一次待处理移动，再应用 hovered layout。
+- `applyLayoutImmediatelyWhileDragging == true` 分支行为不变。
+- 现有 `moveOnly` 节流测试继续保留，确保抽象后没有退化。
+
+## Public Interfaces / Docs
+
+- 不新增对外配置项，也不改现有配置字段语义。
+- 更新 `docs/APP-DESIGN.md` 中 drag interaction / overlay 行为说明，明确延迟应用分支现在会在 layout 模式中跟手移动，以及命中 trigger 时仅预览、松手才应用。
+
+## Assumptions
+
+- `applyLayoutImmediatelyWhileDragging == true` 维持现状。
+- 延迟应用分支中，窗口在“命中 trigger”时也继续跟手移动；trigger 只影响 overlay 和 mouse-up apply。
+- 现有抓取偏移、节流频率、鼠标位置驱动的 trigger 命中与跨屏解析规则继续沿用，不另起新规则。
+```
+
+## User
+
+```codex-user
+1. 确定下立即应用窗口这个选项默认关，如果不是，就改为关然后提交。
+2. 这次模式下（窗口随鼠标移动应用布局），我观察到一个观感较差的地方，如果你明确知道原因，就改，不知道又或者有猜测，你可以加 log 让我辅助你验证（不要提交）。
+- 两个现象，观感上，应用布局的时候，特别是窗口从小变大，例如从模式布局 4 的中间一小部分到变成全屏
+--> 假设一个窗口当前已经遮挡到另外一个窗口的东西，我看不到底下窗口的内容
+--> 此时调整这个窗口的 layout，即使目标 layout 仍然时遮挡到另外窗口，我会在一瞬间看到底下窗口的内容，就像应用窗口大小和位置不是同步完成的一样
+
+- 应用布局的时候，特别是窗口从大变小
+--> 假设已经窗口本身的位置并没有遮住底下窗口的内容
+--> 我调整这个窗口的 layout 到一个小的 layout，那么会有一瞬间遮住底下窗口的内容
+```
+
+## User
+
+```codex-user
+你改了之后，我发现窗口从大变小应用 layout 一般挺正常，但是从小变大，好像失败率很高，往往时实际的大小比较小。
+```
+
+## User
+
+```codex-user
+观感不对，实际上大小位置很复杂。这种判断方式还是有问题。
+
+我回退了。
+
+有办法让这两个操作几乎在一瞬同时完成吗，
+```
+
+## User
+
+```codex-user
+截图从哪里得到呢，需要额外权限吗
+```
+
+## User
+
+```codex-user
+不要提交，我看看看这个不走真实截图方案，能做到什么效果。
+```
+
+## User
+
+```codex-user
+不折腾了，不改这个了，我已经回退
+
+把默认的 window layout 颜色改为 #666666，不要白色了
 ```
