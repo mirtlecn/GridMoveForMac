@@ -29,7 +29,7 @@
       "renderWindowHighlight": true, // Show the current window highlight overlay.
       "highlightFillOpacity": 0.20, // Fill opacity for the window highlight. Uses a 0...1 range.
       "highlightStrokeWidth": 3, // Border width for the window highlight, in points.
-      "highlightStrokeColor": "#FFFFFFEB" // Border color for the window highlight. Accepts #RRGGBB or #RRGGBBAA.
+      "highlightStrokeColor": "#666666" // Border color for the window highlight. Accepts #RRGGBB or #RRGGBBAA.
       },
     "dragTriggers": {
       "enableMouseButtonDrag": true, // Enable the mouse-button hold trigger path.

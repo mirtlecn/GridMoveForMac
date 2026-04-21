@@ -144,7 +144,7 @@ extension AppConfiguration {
             renderWindowHighlight: true,
             highlightFillOpacity: 0.20,
             highlightStrokeWidth: 3,
-            highlightStrokeColor: RGBAColor(red: 1.0, green: 1.0, blue: 1.0, alpha: 0.92)
+            highlightStrokeColor: RGBAColor(red: 0.4, green: 0.4, blue: 0.4, alpha: 1.0)
         ),
         dragTriggers: DragTriggerSettings(
             enableMouseButtonDrag: true,

@@ -132,7 +132,7 @@ The built-in default configuration currently resolves to the following values.
 - `renderWindowHighlight = true`
 - `highlightFillOpacity = 0.20`
 - `highlightStrokeWidth = 3`
-- `highlightStrokeColor = #FFFFFFEB`
+- `highlightStrokeColor = #666666`
 
 `dragTriggers`
 
