@@ -34,7 +34,7 @@
     "dragTriggers": {
       "enableMouseButtonDrag": true, // Enable the mouse-button hold trigger path.
       "enableModifierLeftMouseDrag": true, // Enable the modifier-plus-left-click trigger path.
-      "preferLayoutMode": false, // true: start drag interaction in layout mode. false: start in move-only mode. Missing or invalid values default to false.
+      "preferLayoutMode": true, // true: start drag interaction in layout mode. false: start in move-only mode. Missing or invalid values default to true.
       "applyLayoutImmediatelyWhileDragging": false, // true applies the hovered layout during drag. false previews first and applies only when the trigger button is released. Missing or invalid values default to false.
       "modifierGroups": [
         ["ctrl", "cmd", "shift", "alt"], // Allowed modifier names are ctrl, cmd, shift, alt. Matching is exact by group.

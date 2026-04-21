@@ -60,7 +60,7 @@ struct GeneralSettingsViewControllerTests {
         )
         controller.loadViewIfNeeded()
 
-        #expect(controller.preferLayoutModeDescriptionForTesting == UICopy.preferLayoutModeDisabledDescription)
+        #expect(controller.preferLayoutModeDescriptionForTesting == UICopy.preferLayoutModeEnabledDescription)
 
         controller.setPreferLayoutModeForTesting(true)
 

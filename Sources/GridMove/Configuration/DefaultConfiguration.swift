@@ -149,7 +149,7 @@ extension AppConfiguration {
         dragTriggers: DragTriggerSettings(
             enableMouseButtonDrag: true,
             enableModifierLeftMouseDrag: true,
-            preferLayoutMode: false,
+            preferLayoutMode: true,
             applyLayoutImmediatelyWhileDragging: false,
             modifierGroups: [
                 [.ctrl, .cmd, .shift, .alt],
