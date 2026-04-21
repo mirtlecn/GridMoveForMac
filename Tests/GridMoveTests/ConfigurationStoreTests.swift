@@ -486,7 +486,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(configuration.layouts.map(\.id) == ["layout-1", "layout-2"])
     #expect(configuration.hotkeys.bindings.map(\.id) == ["binding-1"])
     #expect(configuration.hotkeys.bindings[0].action == .applyLayoutByIndex(layout: 2))
-    #expect(configuration.dragTriggers.preferLayoutMode == true)
+    #expect(configuration.dragTriggers.preferLayoutMode == false)
     #expect(configuration.dragTriggers.applyLayoutImmediatelyWhileDragging == false)
     #expect(configuration.layouts[1].triggerRegion == nil)
     #expect(configuration.layouts[1].includeInLayoutIndex == false)
@@ -602,6 +602,35 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
 
     #expect(missingFieldSettings.applyLayoutImmediatelyWhileDragging == false)
     #expect(invalidFieldSettings.applyLayoutImmediatelyWhileDragging == false)
+}
+
+@Test func dragTriggerSettingsDecodeMissingAndInvalidPreferLayoutModeDefaultsToFalse() async throws {
+    let missingFieldJSON = """
+    {
+      "enableMouseButtonDrag": true,
+      "enableModifierLeftMouseDrag": true,
+      "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
+      "activationDelayMilliseconds": 300,
+      "activationMoveThreshold": 10
+    }
+    """
+    let invalidFieldJSON = """
+    {
+      "enableMouseButtonDrag": true,
+      "enableModifierLeftMouseDrag": true,
+      "preferLayoutMode": "invalid",
+      "modifierGroups": [["ctrl", "cmd", "shift", "alt"]],
+      "activationDelayMilliseconds": 300,
+      "activationMoveThreshold": 10
+    }
+    """
+
+    let decoder = JSONDecoder()
+    let missingFieldSettings = try decoder.decode(DragTriggerSettings.self, from: Data(missingFieldJSON.utf8))
+    let invalidFieldSettings = try decoder.decode(DragTriggerSettings.self, from: Data(invalidFieldJSON.utf8))
+
+    #expect(missingFieldSettings.preferLayoutMode == false)
+    #expect(invalidFieldSettings.preferLayoutMode == false)
 }
 
 @Test func configurationStoreRejectsCommentedJSON() async throws {
@@ -1129,7 +1158,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(!hasAltLayoutBinding)
     #expect(hasHyperLayoutFourBinding)
     #expect(!hasFullscreenOrCloseBinding)
-    #expect(configuration.dragTriggers.preferLayoutMode == true)
+    #expect(configuration.dragTriggers.preferLayoutMode == false)
     #expect(configuration.dragTriggers.modifierGroups == [[.ctrl, .cmd, .shift, .alt], [.ctrl, .shift, .alt]])
     #expect(configuration.appearance.renderTriggerAreas == false)
     #expect(configuration.appearance.triggerGap == 0)

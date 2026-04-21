@@ -60,11 +60,11 @@ struct GeneralSettingsViewControllerTests {
         )
         controller.loadViewIfNeeded()
 
-        #expect(controller.preferLayoutModeDescriptionForTesting == UICopy.preferLayoutModeEnabledDescription)
-
-        controller.setPreferLayoutModeForTesting(false)
-
         #expect(controller.preferLayoutModeDescriptionForTesting == UICopy.preferLayoutModeDisabledDescription)
+
+        controller.setPreferLayoutModeForTesting(true)
+
+        #expect(controller.preferLayoutModeDescriptionForTesting == UICopy.preferLayoutModeEnabledDescription)
     }
 
     @Test func enableShowsStaticDescription() async throws {
