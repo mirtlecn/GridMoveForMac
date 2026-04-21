@@ -76,6 +76,6 @@ make release
 ## 附加说明
 
 - GridMove 这个名字来自我之前维护的一个 [Windows AHK 应用](https://github.com/mirtlecn/GridMove)。这个项目可以看作它的 macOS 对应版本。
-- 整个应用，包括图标、文档和演示视频，都是用 OpenAI Codex 制作的。用户使用的提示词见[这里](docs/prompts.md)。（注：文件 700 KB+。）
+- 整个应用，包括图标、文档和演示视频，都是用 OpenAI Codex 制作的。用户使用的提示词见[这里](docs/prompts.txt)。（注：文件 700 KB+。）
 - [docs/APP-DESIGN.md](docs/APP-DESIGN.md) — 运行时行为、架构、配置细节和实现说明
 - [docs/CONFIG-REFERENCE.jsonc](docs/CONFIG-REFERENCE.jsonc) — 进阶配置：注释的 JSON 配置参考
