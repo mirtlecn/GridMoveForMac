@@ -46,6 +46,18 @@ private func makeLeftMouseEvent(type: CGEventType, point: CGPoint) throws -> CGE
     )
 }
 
+private func makeKeyEvent(key: String) throws -> CGEvent {
+    let source = try #require(CGEventSource(stateID: .hidSystemState))
+    let keyCode = try #require(ShortcutKeyMap.keyCode(for: key))
+    return try #require(
+        CGEvent(
+            keyboardEventSource: source,
+            virtualKey: keyCode,
+            keyDown: true
+        )
+    )
+}
+
 private func makeManagedWindow(frame: CGRect, identity: String = "drag-grid-window") -> ManagedWindow {
     ManagedWindow(
         element: AXUIElementCreateSystemWide(),
@@ -244,6 +256,90 @@ private final class OverlayUpdateRecorder {
     #expect(controller.state.pendingDragMovePoint == nil)
     #expect(controller.state.currentWindowFrame?.origin == CGPoint(x: 220, y: 170))
     #expect(overlayRefreshCount == 2)
+}
+
+@MainActor
+@Test func triggerKeyXClosesWindowAndExitsInteraction() async throws {
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController()
+    let targetWindow = makeManagedWindow(frame: CGRect(x: 120, y: 80, width: 300, height: 200))
+    var closedWindowIDs: [String] = []
+
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { .defaultValue },
+        cycleActiveLayoutGroup: { _ in .defaultValue },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {},
+        testHooks: .init(
+            closeWindow: { window in
+                closedWindowIDs.append(window.identity)
+                return true
+            }
+        )
+    )
+
+    controller.state.active = true
+    controller.state.activeButton = .mouseButton
+    controller.state.interactionMode = .layoutSelection
+    controller.state.targetWindow = targetWindow
+
+    let result = try controller.handleKeyDown(event: makeKeyEvent(key: "x"), configuration: .defaultValue)
+
+    #expect(result == nil)
+    #expect(closedWindowIDs == [targetWindow.identity])
+    #expect(controller.state.active == false)
+    #expect(controller.state.targetWindow == nil)
+    #expect(controller.state.suppressedMouseUpButton == .mouseButton)
+}
+
+@MainActor
+@Test func triggerDigitZeroAppliesLayoutIndexTenAndExitsFromMoveMode() async throws {
+    let layoutEngine = LayoutEngine()
+    let windowController = WindowController(layoutEngine: layoutEngine)
+    let overlayController = OverlayController()
+    let configuration = AppConfiguration.defaultValue
+    let screen = try #require(NSScreen.screens.first)
+    let targetWindow = makeManagedWindow(frame: CGRect(x: 120, y: 80, width: 300, height: 200))
+    let expectedEntry = try #require(LayoutGroupResolver.entry(at: 10, configuration: configuration))
+    var appliedLayoutID: String?
+    var appliedScreenIdentifier: String?
+
+    let controller = DragGridController(
+        layoutEngine: layoutEngine,
+        windowController: windowController,
+        overlayController: overlayController,
+        configurationProvider: { configuration },
+        cycleActiveLayoutGroup: { _ in configuration },
+        accessibilityTrustedProvider: { true },
+        accessibilityAccessValidator: { true },
+        onAccessibilityRevoked: {},
+        testHooks: .init(
+            applyLayout: { layoutID, _, preferredScreen, _ in
+                appliedLayoutID = layoutID
+                appliedScreenIdentifier = preferredScreen.map(Geometry.screenIdentifier(for:))
+            }
+        )
+    )
+
+    controller.state.active = true
+    controller.state.activeButton = .left
+    controller.state.interactionMode = .moveOnly
+    controller.state.targetWindow = targetWindow
+    controller.state.activeScreen = screen
+
+    let result = try controller.handleKeyDown(event: makeKeyEvent(key: "0"), configuration: configuration)
+
+    #expect(result == nil)
+    #expect(appliedLayoutID == expectedEntry.layout.id)
+    #expect(appliedScreenIdentifier == Geometry.screenIdentifier(for: screen))
+    #expect(controller.state.active == false)
+    #expect(controller.state.targetWindow == nil)
+    #expect(controller.state.suppressedMouseUpButton == .left)
 }
 
 @MainActor

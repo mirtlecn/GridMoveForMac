@@ -330,6 +330,8 @@ Mode switching while active:
 Exit conditions:
 
 - `Esc`
+- `x`: exit and close the current target window
+- `1` ... `9`, `0`: exit and apply layout indexes `1` ... `9`, `10`
 - releasing the primary trigger button
 - Accessibility loss
 - event-tap shutdown paths

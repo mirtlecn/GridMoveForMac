@@ -3,6 +3,33 @@ import CoreGraphics
 import Foundation
 
 extension DragGridController {
+    private static func layoutIndexShortcut(for keyName: String) -> Int? {
+        switch keyName {
+        case "1", "keypad1":
+            return 1
+        case "2", "keypad2":
+            return 2
+        case "3", "keypad3":
+            return 3
+        case "4", "keypad4":
+            return 4
+        case "5", "keypad5":
+            return 5
+        case "6", "keypad6":
+            return 6
+        case "7", "keypad7":
+            return 7
+        case "8", "keypad8":
+            return 8
+        case "9", "keypad9":
+            return 9
+        case "0", "keypad0":
+            return 10
+        default:
+            return nil
+        }
+    }
+
     func handleLeftMouseDown(event: CGEvent, configuration: AppConfiguration) -> Unmanaged<CGEvent>? {
         guard isEnabled, configuration.dragTriggers.enableModifierLeftMouseDrag else {
             return Unmanaged.passUnretained(event)
@@ -261,16 +288,32 @@ extension DragGridController {
         return consumedEvent ? nil : Unmanaged.passUnretained(event)
     }
 
-    func handleKeyDown(event: CGEvent) -> Unmanaged<CGEvent>? {
-        guard event.getIntegerValueField(.keyboardEventKeycode) == Int64(kVK_Escape) else {
+    func handleKeyDown(event: CGEvent, configuration: AppConfiguration) -> Unmanaged<CGEvent>? {
+        let keyCode = CGKeyCode(event.getIntegerValueField(.keyboardEventKeycode))
+
+        if keyCode == CGKeyCode(kVK_Escape) {
+            guard state.active || state.activationTimer != nil else {
+                return Unmanaged.passUnretained(event)
+            }
+
+            cancelAndSuppressActiveMouseUp()
+            return nil
+        }
+
+        guard state.active, let keyName = ShortcutKeyMap.keyName(for: keyCode) else {
             return Unmanaged.passUnretained(event)
         }
 
-        guard state.active || state.activationTimer != nil else {
+        if keyName == "x" {
+            closeActiveWindowAndExit()
+            return nil
+        }
+
+        guard let layoutIndex = Self.layoutIndexShortcut(for: keyName) else {
             return Unmanaged.passUnretained(event)
         }
 
-        cancelAndSuppressActiveMouseUp()
+        applyLayoutIndexAndExit(layoutIndex: layoutIndex, configuration: configuration)
         return nil
     }
 }

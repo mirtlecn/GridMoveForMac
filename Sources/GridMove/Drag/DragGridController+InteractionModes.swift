@@ -1,3 +1,4 @@
+import AppKit
 import CoreGraphics
 import Foundation
 
@@ -280,6 +281,53 @@ extension DragGridController {
         applyLayoutSelection(slot: hoveredSlot, configuration: configuration)
     }
 
+    func applyLayoutIndexAndExit(layoutIndex: Int, configuration: AppConfiguration) {
+        guard let targetWindow = state.targetWindow else {
+            exitInteractionAfterKeyboardShortcut()
+            return
+        }
+
+        defer {
+            exitInteractionAfterKeyboardShortcut()
+        }
+
+        guard let resolvedEntry = LayoutGroupResolver.entry(at: layoutIndex, configuration: configuration) else {
+            return
+        }
+
+        let currentScreen = keyboardActionCurrentScreen(for: targetWindow)
+        guard let targetScreen = LayoutGroupResolver.targetScreen(
+            for: resolvedEntry,
+            currentScreen: currentScreen,
+            configuration: configuration
+        ) else {
+            return
+        }
+
+        let applyLayout = testHooks?.applyLayout ?? { [windowController] layoutID, window, preferredScreen, configuration in
+            windowController.applyLayout(
+                layoutID: layoutID,
+                to: window,
+                preferredScreen: preferredScreen,
+                configuration: configuration
+            )
+        }
+        applyLayout(resolvedEntry.layout.id, targetWindow, targetScreen, configuration)
+    }
+
+    func closeActiveWindowAndExit() {
+        guard let targetWindow = state.targetWindow else {
+            exitInteractionAfterKeyboardShortcut()
+            return
+        }
+
+        let closeWindow = testHooks?.closeWindow ?? { [windowController] window in
+            windowController.close(window)
+        }
+        _ = closeWindow(targetWindow)
+        exitInteractionAfterKeyboardShortcut()
+    }
+
     private func applyLayoutSelection(slot: ResolvedTriggerSlot, configuration: AppConfiguration) {
         guard let targetWindow = state.targetWindow else {
             return
@@ -293,12 +341,15 @@ extension DragGridController {
             return
         }
 
-        windowController.applyLayout(
-            layoutID: slot.layoutID,
-            to: targetWindow,
-            preferredScreen: state.activeScreen,
-            configuration: configuration
-        )
+        let applyLayout = testHooks?.applyLayout ?? { [windowController] layoutID, window, preferredScreen, configuration in
+            windowController.applyLayout(
+                layoutID: layoutID,
+                to: window,
+                preferredScreen: preferredScreen,
+                configuration: configuration
+            )
+        }
+        applyLayout(slot.layoutID, targetWindow, state.activeScreen, configuration)
         state.currentWindowFrame = slot.targetFrame
         state.lastAppliedLayoutID = slot.layoutID
     }
@@ -374,6 +425,13 @@ extension DragGridController {
         resetState(keepSuppressedMouseUp: true)
     }
 
+    func exitInteractionAfterKeyboardShortcut() {
+        if let activeButton = state.activeButton {
+            state.suppressedMouseUpButton = activeButton
+        }
+        resetState(keepSuppressedMouseUp: true)
+    }
+
     func resetState(keepSuppressedMouseUp: Bool = false) {
         state.activationTimer?.cancel()
         state.scrollGroupCycleResetWorkItem?.cancel()
@@ -437,5 +495,17 @@ extension DragGridController {
         case .layoutSelection:
             return state.hasDraggedPastThreshold && !configuration.dragTriggers.applyLayoutImmediatelyWhileDragging
         }
+    }
+
+    private func keyboardActionCurrentScreen(for targetWindow: ManagedWindow) -> NSScreen? {
+        if let activeScreen = state.activeScreen {
+            return activeScreen
+        }
+
+        if let frame = currentWindowFrame() {
+            return windowController.screenContaining(point: CGPoint(x: frame.midX, y: frame.midY))
+        }
+
+        return windowController.screenContaining(point: CGPoint(x: targetWindow.frame.midX, y: targetWindow.frame.midY))
     }
 }

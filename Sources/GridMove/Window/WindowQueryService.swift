@@ -111,6 +111,14 @@ final class WindowQueryService {
         _ = setBooleanAttribute(kAXFocusedAttribute as CFString, value: true, on: window.element)
     }
 
+    func close(_ window: ManagedWindow) -> Bool {
+        guard let closeButton: AXUIElement = copyAttribute(kAXCloseButtonAttribute as CFString, from: window.element) else {
+            return false
+        }
+
+        return AXUIElementPerformAction(closeButton, kAXPressAction as CFString) == .success
+    }
+
     private var mainDisplayHeight: CGFloat {
         mainDisplayHeightProvider()
     }

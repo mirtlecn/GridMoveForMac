@@ -72,6 +72,10 @@ final class WindowController {
         queryService.focus(window)
     }
 
+    func close(_ window: ManagedWindow) -> Bool {
+        queryService.close(window)
+    }
+
     func applyLayout(
         layoutID: String,
         to window: ManagedWindow,

@@ -9,6 +9,8 @@ final class DragGridController {
         var moveWindow: ((CGPoint, CGRect, ManagedWindow) -> Bool)?
         var currentWindowFrame: ((ManagedWindow) -> CGRect?)?
         var refreshOverlay: ((AppConfiguration) -> Void)?
+        var applyLayout: ((String, ManagedWindow, NSScreen?, AppConfiguration) -> Void)?
+        var closeWindow: ((ManagedWindow) -> Bool)?
     }
 
     let layoutEngine: LayoutEngine
@@ -165,7 +167,7 @@ final class DragGridController {
         case .flagsChanged:
             return handleFlagsChanged(event: event, configuration: configuration)
         case .keyDown:
-            return handleKeyDown(event: event)
+            return handleKeyDown(event: event, configuration: configuration)
         default:
             return Unmanaged.passUnretained(event)
         }
