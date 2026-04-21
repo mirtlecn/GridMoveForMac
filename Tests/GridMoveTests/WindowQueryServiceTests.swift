@@ -24,6 +24,31 @@ import Testing
 }
 
 @MainActor
+@Test func windowQueryServiceExcludesTrueFullscreenWindows() async throws {
+    let service = WindowQueryService(
+        mainDisplayHeightProvider: { 900 },
+        testHooks: .init(
+            isFullscreenWindow: { _ in true }
+        )
+    )
+    let window = ManagedWindow(
+        element: AXUIElementCreateSystemWide(),
+        pid: getpid(),
+        bundleIdentifier: "com.example.demo",
+        appName: "Demo App",
+        title: "Demo",
+        role: kAXWindowRole as String,
+        subrole: kAXStandardWindowSubrole as String,
+        frame: CGRect(x: 0, y: 0, width: 800, height: 600),
+        identity: "fullscreen-window",
+        cgWindowID: nil
+    )
+
+    #expect(service.isFullscreenWindowForTesting(window) == true)
+    #expect(service.exclusionReasonForTesting(window, configuration: .defaultValue) == "fullscreen-window")
+}
+
+@MainActor
 @Test func windowQueryServiceExcludesOnlyFullyNonOperableCandidates() async throws {
     let service = WindowQueryService(mainDisplayHeightProvider: { 900 })
 

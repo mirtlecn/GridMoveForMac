@@ -4,12 +4,21 @@ import Foundation
 
 @MainActor
 final class WindowQueryService {
+    struct TestHooks {
+        var isFullscreenWindow: ((ManagedWindow) -> Bool)?
+    }
+
     private let mainDisplayHeightProvider: () -> CGFloat
     private let builtInExcludedBundleIDs = Set(AppConfiguration.builtInExcludedBundleIDs)
     private let currentProcessIdentifier = getpid()
+    private let testHooks: TestHooks?
 
-    init(mainDisplayHeightProvider: @escaping () -> CGFloat) {
+    init(
+        mainDisplayHeightProvider: @escaping () -> CGFloat,
+        testHooks: TestHooks? = nil
+    ) {
         self.mainDisplayHeightProvider = mainDisplayHeightProvider
+        self.testHooks = testHooks
     }
 
     func focusedWindow(configuration: AppConfiguration) -> ManagedWindow? {
@@ -136,6 +145,10 @@ final class WindowQueryService {
             return "excluded-app-name=\(appName)"
         }
 
+        if isFullscreenWindow(window) {
+            return "fullscreen-window"
+        }
+
         let canSetPosition = isAttributeSettable(kAXPositionAttribute as CFString, on: window.element)
         let canSetSize = isAttributeSettable(kAXSizeAttribute as CFString, on: window.element)
         if shouldExcludeForOperability(canSetPosition: canSetPosition, canSetSize: canSetSize) {
@@ -178,6 +191,14 @@ final class WindowQueryService {
         isExcludedByIdentityRules(window, configuration: configuration)
     }
 
+    func exclusionReasonForTesting(_ window: ManagedWindow, configuration: AppConfiguration) -> String? {
+        exclusionReason(window, configuration: configuration)
+    }
+
+    func isFullscreenWindowForTesting(_ window: ManagedWindow) -> Bool {
+        isFullscreenWindow(window)
+    }
+
     func shouldExcludeForOperabilityForTesting(canSetPosition: Bool, canSetSize: Bool) -> Bool {
         shouldExcludeForOperability(canSetPosition: canSetPosition, canSetSize: canSetSize)
     }
@@ -214,6 +235,14 @@ final class WindowQueryService {
 
     private func isDesktopWindow(_ window: ManagedWindow) -> Bool {
         window.bundleIdentifier == "com.apple.finder" && window.title.isEmpty
+    }
+
+    private func isFullscreenWindow(_ window: ManagedWindow) -> Bool {
+        if let isFullscreenWindow = testHooks?.isFullscreenWindow {
+            return isFullscreenWindow(window)
+        }
+
+        return (copyAttribute("AXFullScreen" as CFString, from: window.element) as Bool?) == true
     }
 
     private func elementAtPoint(_ point: CGPoint) -> AXUIElement? {

@@ -172,3 +172,72 @@ private func decodeSize(from value: AXValue) -> CGSize {
 
     #expect(applyFrameCount == 0)
 }
+
+@MainActor
+@Test func windowFrameApplierSkipsTrueFullscreenWindowLayoutApply() async throws {
+    let screen = try #require(NSScreen.screens.first)
+    let layoutEngine = LayoutEngine()
+    var applyFrameCount = 0
+    var handoffCount = 0
+
+    let applier = WindowFrameApplier(
+        layoutEngine: layoutEngine,
+        mainDisplayHeightProvider: { screen.frame.height },
+        screenContainingProvider: { point in
+            screen.frame.contains(point) ? screen : nil
+        },
+        testHooks: .init(
+            currentFrameProvider: { _ in CGRect(x: 0, y: 0, width: 960, height: 720) },
+            applyPositionValue: { _, _ in
+                handoffCount += 1
+                return true
+            },
+            applyFrameValues: { _, _, _ in
+                applyFrameCount += 1
+                return true
+            },
+            isFullscreenWindow: { _ in true }
+        )
+    )
+
+    applier.applyLayout(
+        layoutID: "layout-1",
+        to: makeManagedWindow(frame: CGRect(x: 0, y: 0, width: 960, height: 720)),
+        preferredScreen: screen,
+        configuration: .defaultValue
+    )
+
+    #expect(handoffCount == 0)
+    #expect(applyFrameCount == 0)
+}
+
+@MainActor
+@Test func windowFrameApplierSkipsTrueFullscreenWindowMove() async throws {
+    let screen = try #require(NSScreen.screens.first)
+    let layoutEngine = LayoutEngine()
+    var applyPositionCount = 0
+
+    let applier = WindowFrameApplier(
+        layoutEngine: layoutEngine,
+        mainDisplayHeightProvider: { screen.frame.height },
+        screenContainingProvider: { point in
+            screen.frame.contains(point) ? screen : nil
+        },
+        testHooks: .init(
+            applyPositionValue: { _, _ in
+                applyPositionCount += 1
+                return true
+            },
+            isFullscreenWindow: { _ in true }
+        )
+    )
+
+    let didMove = applier.moveWindow(
+        to: CGPoint(x: 80, y: 120),
+        currentFrame: CGRect(x: 40, y: 50, width: 960, height: 720),
+        for: makeManagedWindow(frame: CGRect(x: 40, y: 50, width: 960, height: 720))
+    )
+
+    #expect(didMove == false)
+    #expect(applyPositionCount == 0)
+}

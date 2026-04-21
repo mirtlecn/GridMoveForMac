@@ -298,6 +298,7 @@ Window exclusion rules apply in both paths:
 - built-in excluded bundle IDs
 - configured excluded bundle IDs
 - configured excluded titles
+- true macOS fullscreen windows (`AXFullScreen == true`)
 - non-operable windows
 - desktop-like Finder window
 

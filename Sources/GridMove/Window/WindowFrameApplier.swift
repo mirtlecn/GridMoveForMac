@@ -9,13 +9,13 @@ final class WindowFrameApplier {
         var applyPositionValue: ((AXValue, AXUIElement) -> Bool)?
         var applyFrameValues: ((AXValue, AXValue, AXUIElement) -> Bool)?
         var scheduleCrossScreenSettle: ((DispatchWorkItem) -> Void)?
+        var isFullscreenWindow: ((ManagedWindow) -> Bool)?
     }
 
     private let layoutEngine: LayoutEngine
     private let mainDisplayHeightProvider: () -> CGFloat
     private let screenContainingProvider: (CGPoint) -> NSScreen?
     private let testHooks: TestHooks?
-    private let logger = AppLogger.shared
     // Cross-screen apply can leave delayed settle work behind. Track the latest request per
     // window so older settle work cannot override a newer layout choice.
     private var latestLayoutRequestIDs: [String: UUID] = [:]
@@ -39,6 +39,10 @@ final class WindowFrameApplier {
         preferredScreen: NSScreen?,
         configuration: AppConfiguration
     ) {
+        guard !isFullscreen(window) else {
+            return
+        }
+
         let requestID = registerLayoutRequest(for: window.identity)
         let currentFrame = currentFrame(for: window) ?? window.frame
         guard
@@ -76,22 +80,14 @@ final class WindowFrameApplier {
             }
         }
 
-        if isFullscreen(window) {
-            guard exitFullscreen(window) else {
-                logger.error("Failed to exit fullscreen before applying layout.")
-                return
-            }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                applyFrame()
-            }
-            return
-        }
-
         applyFrame()
     }
 
     func moveWindow(to origin: CGPoint, currentFrame: CGRect, for window: ManagedWindow) -> Bool {
+        guard !isFullscreen(window) else {
+            return false
+        }
+
         let nextFrame = CGRect(origin: origin, size: currentFrame.size)
         let quartzFrame = Geometry.quartzRect(fromAppKitRect: nextFrame, mainDisplayHeight: mainDisplayHeight)
         var point = CGPoint(x: quartzFrame.origin.x, y: quartzFrame.origin.y)
@@ -107,11 +103,11 @@ final class WindowFrameApplier {
     }
 
     private func isFullscreen(_ window: ManagedWindow) -> Bool {
-        (copyAttribute("AXFullScreen" as CFString, from: window.element) as Bool?) == true
-    }
+        if let isFullscreenWindow = testHooks?.isFullscreenWindow {
+            return isFullscreenWindow(window)
+        }
 
-    private func exitFullscreen(_ window: ManagedWindow) -> Bool {
-        setBooleanAttribute("AXFullScreen" as CFString, value: false, on: window.element)
+        return (copyAttribute("AXFullScreen" as CFString, from: window.element) as Bool?) == true
     }
 
     private func setFrame(
@@ -216,10 +212,6 @@ final class WindowFrameApplier {
             width: width,
             height: height
         ).integral
-    }
-
-    private func setBooleanAttribute(_ attribute: CFString, value: Bool, on element: AXUIElement) -> Bool {
-        AXUIElementSetAttributeValue(element, attribute, value as CFBoolean) == .success
     }
 
     private func applyPositionValue(_ positionValue: AXValue, to element: AXUIElement) -> Bool {
