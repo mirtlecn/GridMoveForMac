@@ -2,18 +2,6 @@ import AppKit
 
 @MainActor
 final class MenuBarController: NSObject {
-    private static let menuStatePlaceholderImage: NSImage = {
-        let referenceImage = NSMenuItem(title: "", action: nil, keyEquivalent: "").onStateImage
-        let imageSize = referenceImage?.size ?? NSSize(width: 18, height: 18)
-        let image = NSImage(size: imageSize)
-        image.lockFocus()
-        NSColor.clear.setFill()
-        NSBezierPath(rect: NSRect(origin: .zero, size: imageSize)).fill()
-        image.unlockFocus()
-        image.isTemplate = true
-        return image
-    }()
-
     struct ActionItem: Equatable {
         let title: String
         let action: HotkeyAction
@@ -132,7 +120,7 @@ final class MenuBarController: NSObject {
         menu.addItem(actionSectionSeparatorItem)
 
         settingsMenuItem.target = self
-        settingsMenuItem.action = #selector(openSettings)
+        settingsMenuItem.action = #selector(performPanelAction)
         settingsMenuItem.keyEquivalentModifierMask = [.command]
         setStateColumnSpacing(.preserved, for: settingsMenuItem)
         menu.addItem(settingsMenuItem)
@@ -286,15 +274,15 @@ final class MenuBarController: NSObject {
     private func setStateColumnSpacing(_ spacing: StateColumnSpacing, for item: NSMenuItem) {
         switch spacing {
         case .preserved:
-            item.offStateImage = Self.menuStatePlaceholderImage
-            item.mixedStateImage = Self.menuStatePlaceholderImage
+            item.offStateImage = nil
+            item.mixedStateImage = nil
         case .removed:
             item.offStateImage = nil
             item.mixedStateImage = nil
         }
     }
 
-    @objc private func openSettings() {
+    @objc private func performPanelAction() {
         onOpenSettings()
     }
 

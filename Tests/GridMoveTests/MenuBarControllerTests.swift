@@ -192,7 +192,7 @@ import Testing
 }
 
 @MainActor
-@Test func menuBarControllerKeepsStateColumnSpacingWhenItemsAreUnchecked() async throws {
+@Test func menuBarControllerDoesNotReserveStateColumnSpacingWhenItemsAreUnchecked() async throws {
     let controller = MenuBarController(
         dragGridEnabled: false,
         toggleSettings: .init(
@@ -219,9 +219,9 @@ import Testing
         onQuit: {}
     )
 
-    #expect(controller.stateColumnSpacingDescriptorsForTesting[UICopy.enableMenuTitle] == true)
-    #expect(controller.stateColumnSpacingDescriptorsForTesting[UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 3)] == true)
-    #expect(controller.stateColumnSpacingDescriptorsForTesting[UICopy.applyPreviousLayout] == true)
-    #expect(controller.stateColumnSpacingDescriptorsForTesting[UICopy.settingsMenuTitle] == true)
-    #expect(controller.stateColumnSpacingDescriptorsForTesting[UICopy.quitMenuTitle] == true)
+    #expect(controller.stateColumnSpacingDescriptorsForTesting[UICopy.enableMenuTitle] == false)
+    #expect(controller.stateColumnSpacingDescriptorsForTesting[UICopy.mouseButtonDragMenuTitle(mouseButtonNumber: 3)] == false)
+    #expect(controller.stateColumnSpacingDescriptorsForTesting[UICopy.applyPreviousLayout] == false)
+    #expect(controller.stateColumnSpacingDescriptorsForTesting[UICopy.settingsMenuTitle] == false)
+    #expect(controller.stateColumnSpacingDescriptorsForTesting[UICopy.quitMenuTitle] == false)
 }

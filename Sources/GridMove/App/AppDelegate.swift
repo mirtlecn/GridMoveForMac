@@ -596,7 +596,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         let applicationMenuItem = NSMenuItem()
         let applicationMenu = NSMenu(title: UICopy.applicationMenuTitle)
 
-        let settingsItem = NSMenuItem(title: UICopy.settingsMenuTitle, action: #selector(showSettingsFromMenu), keyEquivalent: ",")
+        let settingsItem = NSMenuItem(title: UICopy.settingsMenuTitle, action: #selector(performPanelMenuAction), keyEquivalent: ",")
         settingsItem.target = self
         settingsItem.keyEquivalentModifierMask = [.command]
         applicationMenu.addItem(settingsItem)
@@ -612,7 +612,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         NSApplication.shared.mainMenu = mainMenu
     }
 
-    @objc private func showSettingsFromMenu() {
+    @objc private func performPanelMenuAction() {
         showSettings()
     }
 
