@@ -363,7 +363,8 @@ Behavior:
 - when entering move-only mode, the current window frame is briefly highlighted with a fade-out flash
 - the flash uses the same style as the window highlight overlay (stroke color, stroke width, fill opacity)
 - the flash is only shown when `appearance.renderWindowHighlight` is enabled
-- after the flash fades out, the overlay is dismissed
+- after the flash fades out, the window highlight is dismissed
+- while the interaction remains active, the overlay can still show the move cursor feedback
 - only window position is updated
 - window size is preserved
 - movement keeps the pointer-to-window grab offset captured at mode entry
@@ -436,12 +437,15 @@ Overlay drawing is handled by `OverlayController`.
 
 Runtime rules:
 
-- overlay is only relevant in `layoutSelection`
+- overlay is active during drag interactions when there is trigger, highlight, badge, or cursor feedback to draw
 - before threshold crossing, it highlights the current target window
 - after threshold crossing, it highlights the target frame of the hovered slot
 - when `applyLayoutImmediatelyWhileDragging` is `false` and no trigger slot is hovered after threshold crossing, the highlight is hidden even though the window still follows the pointer
-- in `moveOnly`, a brief highlight flash of the current window frame is shown at mode entry, then the overlay fades out and is dismissed
+- in `moveOnly`, a brief highlight flash of the current window frame is shown at mode entry, then only the highlight fades out
 - the flash respects `appearance.renderWindowHighlight` and uses the same highlight style
+- cursor feedback is rendered in the same overlay panel as the other overlay layers; it does not create a second overlay panel or an `NSView` drawing path
+- cursor feedback follows the latest pointer point, falling back to the activation point and then the mouse-down point when needed
+- `layoutSelection` uses the layout cursor shape; `moveOnly` uses the move cursor shape
 
 Appearance is controlled by configuration:
 

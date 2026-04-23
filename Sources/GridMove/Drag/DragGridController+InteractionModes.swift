@@ -361,6 +361,7 @@ extension DragGridController {
         }
 
         let highlightFrame = overlayHighlightFrame(configuration: configuration)
+        let cursor = overlayCursorState()
 
         switch state.interactionMode {
         case .layoutSelection:
@@ -374,10 +375,11 @@ extension DragGridController {
                 slots: state.resolvedSlots,
                 highlightFrame: highlightFrame,
                 hoveredLayoutID: state.hoveredLayoutID,
-                configuration: configuration
+                configuration: configuration,
+                cursor: cursor
             )
         case .moveOnly:
-            guard let point = state.cursorPoint ?? state.overlayActivationPoint ?? state.mouseDownPoint else {
+            guard let point = cursor?.point else {
                 overlayController.dismiss()
                 return
             }
@@ -395,9 +397,22 @@ extension DragGridController {
                 slots: [],
                 highlightFrame: highlightFrame,
                 hoveredLayoutID: nil,
-                configuration: configuration
+                configuration: configuration,
+                cursor: cursor
             )
         }
+    }
+
+    func overlayCursorState() -> OverlayCursorState? {
+        guard state.active else {
+            return nil
+        }
+
+        guard let point = state.cursorPoint ?? state.overlayActivationPoint ?? state.mouseDownPoint else {
+            return nil
+        }
+
+        return OverlayCursorState(point: point, mode: state.interactionMode)
     }
 
     func cycleLayoutGroup(at point: CGPoint, direction: LayoutGroupCycleDirection = .next) {

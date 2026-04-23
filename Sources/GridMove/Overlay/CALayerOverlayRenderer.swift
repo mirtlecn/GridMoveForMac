@@ -4,6 +4,8 @@ import QuartzCore
 
 @MainActor
 final class CALayerOverlayRenderer {
+    private static let cursorOffset = CGPoint(x: 10, y: -18)
+
     private var panel: CALayerOverlayPanel?
     private var screenIdentifier: String?
     private let screenScaleProvider: (NSScreen) -> CGFloat
@@ -20,7 +22,8 @@ final class CALayerOverlayRenderer {
         highlightFrame: CGRect?,
         hoveredLayoutID: String?,
         configuration: AppConfiguration,
-        badge: OverlayBadgeState?
+        badge: OverlayBadgeState?,
+        cursor: OverlayCursorState? = nil
     ) {
         let identifier = Geometry.screenIdentifier(for: screen)
         if panel == nil || screenIdentifier != identifier {
@@ -81,6 +84,10 @@ final class CALayerOverlayRenderer {
                 viewBounds: contentView.bounds,
                 contentsScale: screenScaleProvider(screen)
             )
+        }
+
+        if let cursor {
+            addCursorLayer(to: rootLayer, cursor: cursor, screenOrigin: screenOrigin)
         }
 
         CATransaction.commit()
@@ -227,6 +234,217 @@ final class CALayerOverlayRenderer {
         rootLayer.addSublayer(textLayer)
     }
 
+    private func addCursorLayer(
+        to rootLayer: CALayer,
+        cursor: OverlayCursorState,
+        screenOrigin: CGPoint
+    ) {
+        let point = CGPoint(
+            x: cursor.point.x - screenOrigin.x + Self.cursorOffset.x,
+            y: cursor.point.y - screenOrigin.y + Self.cursorOffset.y
+        )
+
+        switch cursor.mode {
+        case .layoutSelection:
+            addLayoutCursorLayer(to: rootLayer, at: point)
+        case .moveOnly:
+            addMoveCursorLayer(to: rootLayer, at: point)
+        }
+    }
+
+    private func addLayoutCursorLayer(to rootLayer: CALayer, at point: CGPoint) {
+        let outerRadius: CGFloat = 8
+        let innerRadius: CGFloat = 2.25
+        let lineLength: CGFloat = 5
+        let gap: CGFloat = 4.5
+
+        addCursorStrokedShapeLayer(
+            to: rootLayer,
+            path: CGPath(
+                ellipseIn: CGRect(
+                    x: point.x - outerRadius,
+                    y: point.y - outerRadius,
+                    width: outerRadius * 2,
+                    height: outerRadius * 2
+                ),
+                transform: nil
+            ),
+            outlineWidth: 2,
+            fillWidth: 1,
+            shadow: true
+        )
+
+        let centerRect = CGRect(
+            x: point.x - innerRadius,
+            y: point.y - innerRadius,
+            width: innerRadius * 2,
+            height: innerRadius * 2
+        )
+        let centerOutlineLayer = CAShapeLayer()
+        centerOutlineLayer.path = CGPath(ellipseIn: centerRect, transform: nil)
+        centerOutlineLayer.fillColor = cursorOutlineColor
+        rootLayer.addSublayer(centerOutlineLayer)
+
+        let centerFillLayer = CAShapeLayer()
+        centerFillLayer.path = CGPath(ellipseIn: centerRect.insetBy(dx: 1, dy: 1), transform: nil)
+        centerFillLayer.fillColor = cursorFillColor
+        rootLayer.addSublayer(centerFillLayer)
+
+        let crosshairPath = CGMutablePath()
+        crosshairPath.move(to: CGPoint(x: point.x, y: point.y + gap))
+        crosshairPath.addLine(to: CGPoint(x: point.x, y: point.y + gap + lineLength))
+        crosshairPath.move(to: CGPoint(x: point.x + gap, y: point.y))
+        crosshairPath.addLine(to: CGPoint(x: point.x + gap + lineLength, y: point.y))
+        crosshairPath.move(to: CGPoint(x: point.x, y: point.y - gap))
+        crosshairPath.addLine(to: CGPoint(x: point.x, y: point.y - gap - lineLength))
+        crosshairPath.move(to: CGPoint(x: point.x - gap, y: point.y))
+        crosshairPath.addLine(to: CGPoint(x: point.x - gap - lineLength, y: point.y))
+
+        addCursorStrokedShapeLayer(
+            to: rootLayer,
+            path: crosshairPath,
+            outlineWidth: 2.75,
+            fillWidth: 1,
+            shadow: false
+        )
+    }
+
+    private func addMoveCursorLayer(to rootLayer: CALayer, at point: CGPoint) {
+        let coreRadius: CGFloat = 4
+        let arrowInset: CGFloat = 7
+        let arrowSize: CGFloat = 4
+
+        addCursorStrokedShapeLayer(
+            to: rootLayer,
+            path: CGPath(
+                ellipseIn: CGRect(
+                    x: point.x - coreRadius,
+                    y: point.y - coreRadius,
+                    width: coreRadius * 2,
+                    height: coreRadius * 2
+                ),
+                transform: nil
+            ),
+            outlineWidth: 2,
+            fillWidth: 1,
+            shadow: true
+        )
+
+        addMoveArrowLayer(
+            to: rootLayer,
+            from: CGPoint(x: point.x, y: point.y + coreRadius + 1.5),
+            to: CGPoint(x: point.x, y: point.y + arrowInset),
+            direction: .up,
+            size: arrowSize
+        )
+        addMoveArrowLayer(
+            to: rootLayer,
+            from: CGPoint(x: point.x, y: point.y - coreRadius - 1.5),
+            to: CGPoint(x: point.x, y: point.y - arrowInset),
+            direction: .down,
+            size: arrowSize
+        )
+        addMoveArrowLayer(
+            to: rootLayer,
+            from: CGPoint(x: point.x - coreRadius - 1.5, y: point.y),
+            to: CGPoint(x: point.x - arrowInset, y: point.y),
+            direction: .left,
+            size: arrowSize
+        )
+        addMoveArrowLayer(
+            to: rootLayer,
+            from: CGPoint(x: point.x + coreRadius + 1.5, y: point.y),
+            to: CGPoint(x: point.x + arrowInset, y: point.y),
+            direction: .right,
+            size: arrowSize
+        )
+    }
+
+    private func addMoveArrowLayer(
+        to rootLayer: CALayer,
+        from start: CGPoint,
+        to end: CGPoint,
+        direction: MoveArrowDirection,
+        size: CGFloat
+    ) {
+        let path = CGMutablePath()
+        path.move(to: start)
+        path.addLine(to: end)
+
+        let tipA: CGPoint
+        let tipB: CGPoint
+        switch direction {
+        case .up:
+            tipA = CGPoint(x: end.x - size, y: end.y - size)
+            tipB = CGPoint(x: end.x + size, y: end.y - size)
+        case .down:
+            tipA = CGPoint(x: end.x - size, y: end.y + size)
+            tipB = CGPoint(x: end.x + size, y: end.y + size)
+        case .left:
+            tipA = CGPoint(x: end.x + size, y: end.y - size)
+            tipB = CGPoint(x: end.x + size, y: end.y + size)
+        case .right:
+            tipA = CGPoint(x: end.x - size, y: end.y - size)
+            tipB = CGPoint(x: end.x - size, y: end.y + size)
+        }
+
+        path.move(to: tipA)
+        path.addLine(to: end)
+        path.addLine(to: tipB)
+
+        addCursorStrokedShapeLayer(
+            to: rootLayer,
+            path: path,
+            outlineWidth: 2.75,
+            fillWidth: 1,
+            shadow: false
+        )
+    }
+
+    private func addCursorStrokedShapeLayer(
+        to rootLayer: CALayer,
+        path: CGPath,
+        outlineWidth: CGFloat,
+        fillWidth: CGFloat,
+        shadow: Bool
+    ) {
+        let outlineLayer = CAShapeLayer()
+        outlineLayer.path = path
+        outlineLayer.fillColor = nil
+        outlineLayer.strokeColor = cursorOutlineColor
+        outlineLayer.lineWidth = outlineWidth
+        outlineLayer.lineCap = .round
+        outlineLayer.lineJoin = .round
+        if shadow {
+            applyCursorShadow(to: outlineLayer)
+        }
+        rootLayer.addSublayer(outlineLayer)
+
+        let fillLayer = CAShapeLayer()
+        fillLayer.path = path
+        fillLayer.fillColor = nil
+        fillLayer.strokeColor = cursorFillColor
+        fillLayer.lineWidth = fillWidth
+        fillLayer.lineCap = .round
+        fillLayer.lineJoin = .round
+        rootLayer.addSublayer(fillLayer)
+    }
+
+    private func applyCursorShadow(to layer: CALayer) {
+        layer.shadowColor = NSColor.black.withAlphaComponent(0.14).cgColor
+        layer.shadowOpacity = 1
+        layer.shadowRadius = 1.5
+        layer.shadowOffset = CGSize(width: 0, height: -0.5)
+    }
+
+    private var cursorFillColor: CGColor {
+        NSColor.white.withAlphaComponent(0.96).cgColor
+    }
+
+    private var cursorOutlineColor: CGColor {
+        NSColor.black.withAlphaComponent(0.9).cgColor
+    }
+
     private func localRect(from globalRect: CGRect, screenOrigin: CGPoint) -> CGRect {
         CGRect(
             x: globalRect.origin.x - screenOrigin.x,
@@ -234,6 +452,13 @@ final class CALayerOverlayRenderer {
             width: globalRect.width,
             height: globalRect.height
         )
+    }
+
+    private enum MoveArrowDirection {
+        case up
+        case down
+        case left
+        case right
     }
 }
 

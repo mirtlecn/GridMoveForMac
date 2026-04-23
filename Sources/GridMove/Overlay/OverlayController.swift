@@ -5,6 +5,11 @@ struct OverlayBadgeState {
     let text: String
 }
 
+struct OverlayCursorState: Equatable {
+    let point: CGPoint
+    let mode: DragInteractionMode
+}
+
 @MainActor
 final class OverlayController {
     struct TestHooks {
@@ -14,7 +19,8 @@ final class OverlayController {
             CGRect?,
             String?,
             AppConfiguration,
-            OverlayBadgeState?
+            OverlayBadgeState?,
+            OverlayCursorState?
         ) -> Void)?
         var dismissRenderer: (() -> Void)?
     }
@@ -25,6 +31,7 @@ final class OverlayController {
         let highlightFrame: CGRect?
         let hoveredLayoutID: String?
         let badge: OverlayBadgeState?
+        let cursor: OverlayCursorState?
         let configuration: AppConfiguration
     }
 
@@ -41,7 +48,8 @@ final class OverlayController {
         highlightFrame: CGRect?,
         hoveredLayoutID: String?,
         configuration: AppConfiguration,
-        badgeText: String? = nil
+        badgeText: String? = nil,
+        cursor: OverlayCursorState? = nil
     ) {
         let nextState = makeOverlayContentState(
             screen: screen,
@@ -49,7 +57,8 @@ final class OverlayController {
             highlightFrame: highlightFrame,
             hoveredLayoutID: hoveredLayoutID,
             configuration: configuration,
-            badgeText: badgeText
+            badgeText: badgeText,
+            cursor: cursor
         )
         applyOverlayState(nextState)
     }
@@ -64,9 +73,10 @@ final class OverlayController {
         highlightFrame: CGRect?,
         hoveredLayoutID: String?,
         configuration: AppConfiguration,
-        badgeText: String?
+        badgeText: String?,
+        cursor: OverlayCursorState?
     ) -> OverlayContentState? {
-        guard shouldRenderOverlay(configuration: configuration, badgeText: badgeText) else {
+        guard shouldRenderOverlay(configuration: configuration, badgeText: badgeText, cursor: cursor) else {
             return nil
         }
 
@@ -76,6 +86,7 @@ final class OverlayController {
             highlightFrame: highlightFrame,
             hoveredLayoutID: hoveredLayoutID,
             badge: badgeText.map { OverlayBadgeState(text: $0) },
+            cursor: cursor,
             configuration: configuration
         )
     }
@@ -92,17 +103,20 @@ final class OverlayController {
             highlightFrame: overlayContentState.highlightFrame,
             hoveredLayoutID: overlayContentState.hoveredLayoutID,
             configuration: overlayContentState.configuration,
-            badge: overlayContentState.badge
+            badge: overlayContentState.badge,
+            cursor: overlayContentState.cursor
         )
     }
 
     private func shouldRenderOverlay(
         configuration: AppConfiguration,
-        badgeText: String?
+        badgeText: String?,
+        cursor: OverlayCursorState?
     ) -> Bool {
         configuration.appearance.renderTriggerAreas
             || configuration.appearance.renderWindowHighlight
             || badgeText != nil
+            || cursor != nil
     }
 
     private func showOverlay(
@@ -111,10 +125,11 @@ final class OverlayController {
         highlightFrame: CGRect?,
         hoveredLayoutID: String?,
         configuration: AppConfiguration,
-        badge: OverlayBadgeState? = nil
+        badge: OverlayBadgeState? = nil,
+        cursor: OverlayCursorState? = nil
     ) {
         if let showOverlay = testHooks.showOverlay {
-            showOverlay(screen, slots, highlightFrame, hoveredLayoutID, configuration, badge)
+            showOverlay(screen, slots, highlightFrame, hoveredLayoutID, configuration, badge, cursor)
             return
         }
 
@@ -128,7 +143,8 @@ final class OverlayController {
             highlightFrame: highlightFrame,
             hoveredLayoutID: hoveredLayoutID,
             configuration: configuration,
-            badge: badge
+            badge: badge,
+            cursor: cursor
         )
     }
 
