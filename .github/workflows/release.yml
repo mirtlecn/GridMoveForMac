@@ -216,35 +216,35 @@ jobs:
           cask_file="$(mktemp)"
 
           cat > "${cask_file}" <<EOF
-cask "gridmove" do
-  version "${RELEASE_VERSION}"
-  sha256 "${sha256}"
-
-  url "https://github.com/mirtlecn/GridMoveForMac/releases/download/v#{version}/GridMove.arm64.dmg",
-      verified: "github.com/mirtlecn/GridMoveForMac/releases/download/"
-  name "GridMove"
-  desc "Move and snap windows into custom layouts"
-  homepage "https://github.com/mirtlecn/GridMoveForMac"
-
-  livecheck do
-    url :url
-    strategy :github_latest
-  end
-
-  depends_on arch: :arm64
-  depends_on macos: ">= :sonoma"
-
-  app "GridMove.app"
-
-  zap trash: [
-    "~/.config/GridMove",
-  ]
-
-  caveats do
-    unsigned_accessibility
-  end
-end
-EOF
+          cask "gridmove" do
+            version "${RELEASE_VERSION}"
+            sha256 "${sha256}"
+          
+            url "https://github.com/mirtlecn/GridMoveForMac/releases/download/v#{version}/GridMove.arm64.dmg",
+                verified: "github.com/mirtlecn/GridMoveForMac/releases/download/"
+            name "GridMove"
+            desc "Move and snap windows into custom layouts"
+            homepage "https://github.com/mirtlecn/GridMoveForMac"
+          
+            livecheck do
+              url :url
+              strategy :github_latest
+            end
+          
+            depends_on arch: :arm64
+            depends_on macos: ">= :sonoma"
+          
+            app "GridMove.app"
+          
+            zap trash: [
+              "~/.config/GridMove",
+            ]
+          
+            caveats do
+              unsigned_accessibility
+            end
+          end
+          EOF
 
           git fetch origin "${DEFAULT_BRANCH}:refs/remotes/origin/${DEFAULT_BRANCH}"
           git switch -C release-cask-update "origin/${DEFAULT_BRANCH}"
