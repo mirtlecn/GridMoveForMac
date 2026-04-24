@@ -21,15 +21,15 @@ import Testing
         "Full (menu bar)",
     ])
     #expect(layouts[0].windowSelection == GridSelection(x: 0, y: 0, w: 4, h: 6))
-    #expect(layouts[0].triggerRegion == .screen(GridSelection(x: 0, y: 0, w: 1, h: 6)))
+    #expect(layouts[0].triggerRegions.first == .screen(GridSelection(x: 0, y: 0, w: 1, h: 6)))
     #expect(layouts[3].windowSelection == GridSelection(x: 3, y: 1, w: 6, h: 4))
-    #expect(layouts[3].triggerRegion == .screen(GridSelection(x: 5, y: 1, w: 2, h: 5)))
+    #expect(layouts[3].triggerRegions.first == .screen(GridSelection(x: 5, y: 1, w: 2, h: 5)))
     #expect(layouts[7].windowSelection == GridSelection(x: 8, y: 0, w: 4, h: 3))
-    #expect(layouts[7].triggerRegion == .screen(GridSelection(x: 11, y: 0, w: 1, h: 2)))
+    #expect(layouts[7].triggerRegions.first == .screen(GridSelection(x: 11, y: 0, w: 1, h: 2)))
     #expect(layouts[9].windowSelection == GridSelection(x: 0, y: 0, w: 12, h: 6))
-    #expect(layouts[9].triggerRegion == .screen(GridSelection(x: 5, y: 0, w: 2, h: 1)))
+    #expect(layouts[9].triggerRegions.first == .screen(GridSelection(x: 5, y: 0, w: 2, h: 1)))
     #expect(layouts[10].windowSelection == GridSelection(x: 0, y: 0, w: 12, h: 6))
-    #expect(layouts[10].triggerRegion == .menuBar(MenuBarSelection(x: 0, w: 6)))
+    #expect(layouts[10].triggerRegions.first == .menuBar(MenuBarSelection(x: 0, w: 6)))
     #expect(layouts[10].includeInLayoutIndex == false)
     #expect(layouts[10].includeInMenu == false)
 }
@@ -155,7 +155,7 @@ import Testing
             gridColumns: 12,
             gridRows: 6,
             windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
-            triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 12, h: 6)),
+            triggerRegions: [.screen(GridSelection(x: 0, y: 0, w: 12, h: 6))],
             includeInLayoutIndex: true
         ),
         LayoutPreset(
@@ -164,7 +164,7 @@ import Testing
             gridColumns: 12,
             gridRows: 6,
             windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6),
-            triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 6, h: 6)),
+            triggerRegions: [.screen(GridSelection(x: 0, y: 0, w: 6, h: 6))],
             includeInLayoutIndex: true
         ),
     ]
@@ -189,7 +189,7 @@ import Testing
             gridColumns: 12,
             gridRows: 6,
             windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
-            triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 12, h: 6)),
+            triggerRegions: [.screen(GridSelection(x: 0, y: 0, w: 12, h: 6))],
             includeInLayoutIndex: true
         ),
         LayoutPreset(
@@ -198,7 +198,7 @@ import Testing
             gridColumns: 12,
             gridRows: 6,
             windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6),
-            triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 6, h: 6)),
+            triggerRegions: [.screen(GridSelection(x: 0, y: 0, w: 6, h: 6))],
             includeInLayoutIndex: true
         ),
     ]
@@ -227,7 +227,7 @@ import Testing
             gridColumns: 12,
             gridRows: 6,
             windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6),
-            triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 6, h: 6)),
+            triggerRegions: [.screen(GridSelection(x: 0, y: 0, w: 6, h: 6))],
             includeInLayoutIndex: true
         ),
     ]
@@ -377,7 +377,7 @@ import Testing
         gridColumns: 12,
         gridRows: 6,
         windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
-        triggerRegion: nil,
+        triggerRegions: [],
         includeInLayoutIndex: true
     )
     let fallbackLayout = LayoutPreset(
@@ -386,7 +386,7 @@ import Testing
         gridColumns: 12,
         gridRows: 6,
         windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
-        triggerRegion: nil,
+        triggerRegions: [],
         includeInLayoutIndex: true
     )
     let configuration = AppConfiguration(
@@ -433,7 +433,7 @@ import Testing
         gridColumns: 12,
         gridRows: 6,
         windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
-        triggerRegion: nil,
+        triggerRegions: [],
         includeInLayoutIndex: true
     )
     let configuration = AppConfiguration(
@@ -479,7 +479,7 @@ import Testing
         gridColumns: 12,
         gridRows: 6,
         windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
-        triggerRegion: nil,
+        triggerRegions: [],
         includeInLayoutIndex: true
     )
     let configuration = AppConfiguration(

@@ -135,7 +135,7 @@ struct AppearanceSettingsViewControllerTests {
             gridColumns: SettingsPreviewSupport.defaultPreviewColumns,
             gridRows: SettingsPreviewSupport.defaultPreviewRows,
             windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4),
-            triggerRegion: .screen(GridSelection(x: 5, y: 0, w: 2, h: 6)),
+            triggerRegions: [.screen(GridSelection(x: 5, y: 0, w: 2, h: 6))],
             includeInLayoutIndex: false,
             includeInMenu: false
         )
@@ -145,7 +145,7 @@ struct AppearanceSettingsViewControllerTests {
             gridColumns: SettingsPreviewSupport.defaultPreviewColumns,
             gridRows: SettingsPreviewSupport.defaultPreviewRows,
             windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4),
-            triggerRegion: nil,
+            triggerRegions: [],
             includeInLayoutIndex: false,
             includeInMenu: false
         )

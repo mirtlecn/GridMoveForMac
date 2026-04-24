@@ -81,26 +81,28 @@ final class LayoutEngine {
         triggerGap: Double,
         layoutGap: Int = 0
     ) -> [ResolvedTriggerSlot] {
-        let rawSlots: [ResolvedTriggerSlot] = layouts.compactMap { preset -> ResolvedTriggerSlot? in
-            guard let triggerFrame = triggerFrame(
-                for: preset,
-                screenFrame: screenFrame,
-                usableFrame: usableFrame,
-                gap: triggerGap
-            ) else {
-                return nil
-            }
-
+        let rawSlots: [ResolvedTriggerSlot] = layouts.flatMap { preset -> [ResolvedTriggerSlot] in
             guard let targetFrame = frame(for: preset, in: usableFrame, layoutGap: layoutGap) else {
-                return nil
+                return []
             }
-
-            return ResolvedTriggerSlot(
-                layoutID: preset.id,
-                triggerFrame: triggerFrame,
-                hitTestFrames: [triggerFrame],
-                targetFrame: targetFrame
-            )
+            return preset.triggerRegions.compactMap { region -> ResolvedTriggerSlot? in
+                guard let triggerFrame = triggerFrame(
+                    for: region,
+                    columns: preset.gridColumns,
+                    rows: preset.gridRows,
+                    screenFrame: screenFrame,
+                    usableFrame: usableFrame,
+                    gap: triggerGap
+                ) else {
+                    return nil
+                }
+                return ResolvedTriggerSlot(
+                    layoutID: preset.id,
+                    triggerFrame: triggerFrame,
+                    hitTestFrames: [triggerFrame],
+                    targetFrame: targetFrame
+                )
+            }
         }
         return resolveOverlappingHitTestFrames(in: rawSlots)
     }
@@ -270,21 +272,19 @@ final class LayoutEngine {
     }
 
     private func triggerFrame(
-        for preset: LayoutPreset,
+        for region: TriggerRegion,
+        columns: Int,
+        rows: Int,
         screenFrame: CGRect,
         usableFrame: CGRect,
         gap: Double
     ) -> CGRect? {
-        guard let triggerRegion = preset.triggerRegion else {
-            return nil
-        }
-
-        switch triggerRegion {
+        switch region {
         case let .screen(selection):
             return frame(
                 for: selection,
-                columns: preset.gridColumns,
-                rows: preset.gridRows,
+                columns: columns,
+                rows: rows,
                 in: usableFrame
             )
             .insetBy(dx: gap, dy: gap)
@@ -292,7 +292,7 @@ final class LayoutEngine {
         case let .menuBar(selection):
             return menuBarFrame(
                 for: selection,
-                segments: preset.gridRows,
+                segments: rows,
                 screenFrame: screenFrame,
                 usableFrame: usableFrame,
                 gap: gap

@@ -16,6 +16,9 @@ enum UICopy {
     static var settingsLayoutInlineTabTitle: String { localized("settingsLayoutInlineTabTitle", default: "Layout") }
     static var settingsWindowAreaInlineTabTitle: String { localized("settingsWindowAreaInlineTabTitle", default: "Window area") }
     static var settingsTriggerAreaInlineTabTitle: String { localized("settingsTriggerAreaInlineTabTitle", default: "Trigger area") }
+    static var settingsTriggerArea1InlineTabTitle: String { localized("settingsTriggerArea1InlineTabTitle", default: "Trigger area 1") }
+    static var settingsTriggerArea2InlineTabTitle: String { localized("settingsTriggerArea2InlineTabTitle", default: "Trigger area 2") }
+    static var settingsTriggerArea3InlineTabTitle: String { localized("settingsTriggerArea3InlineTabTitle", default: "Trigger area 3") }
     static var settingsDragBehaviorSectionTitle: String { localized("settingsDragBehaviorSectionTitle", default: "Drag behavior") }
     static var settingsExclusionsSectionTitle: String { localized("settingsExclusionsSectionTitle", default: "Exclusions") }
     static var settingsWindowAreaSectionTitle: String { localized("settingsWindowAreaSectionTitle", default: "Window area") }

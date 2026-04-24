@@ -207,8 +207,12 @@ final class TriggerTabContentView: NSView {
     private let rootStackView: NSView
     private var screenSelection: GridSelection
     private var menuBarSelection: MenuBarSelection
+    private let addButton = NSButton()
+    private let removeButton = NSButton()
     var onTriggerRegionChanged: ((TriggerRegion?) -> Void)?
     var onTriggerAreaKindChanged: ((TriggerAreaKind) -> Void)?
+    var onAddTriggerRegion: (() -> Void)?
+    var onRemoveTriggerRegion: (() -> Void)?
 
     var currentTriggerRegion: TriggerRegion? {
         switch selectedTriggerArea {
@@ -236,37 +240,73 @@ final class TriggerTabContentView: NSView {
         }
     }
 
-    init(layout: LayoutPreset) {
-        self.gridColumns = layout.gridColumns
-        self.gridRows = layout.gridRows
+    init(triggerRegion: TriggerRegion?, gridColumns: Int, gridRows: Int, allowNone: Bool, triggerCount: Int) {
+        self.gridColumns = gridColumns
+        self.gridRows = gridRows
 
-        switch layout.triggerRegion {
+        switch triggerRegion {
         case let .screen(selection):
             self.screenSelection = selection
-            self.menuBarSelection = MenuBarSelection(x: 0, w: layout.gridRows)
+            self.menuBarSelection = MenuBarSelection(x: 0, w: gridRows)
         case let .menuBar(selection):
-            self.screenSelection = GridSelection(x: 0, y: 0, w: max(1, layout.gridColumns), h: max(1, layout.gridRows))
+            self.screenSelection = GridSelection(x: 0, y: 0, w: max(1, gridColumns), h: max(1, gridRows))
             self.menuBarSelection = selection
         case nil:
-            self.screenSelection = GridSelection(x: 0, y: 0, w: max(1, layout.gridColumns), h: max(1, layout.gridRows))
-            self.menuBarSelection = MenuBarSelection(x: 0, w: layout.gridRows)
+            self.screenSelection = GridSelection(x: 0, y: 0, w: max(1, gridColumns), h: max(1, gridRows))
+            self.menuBarSelection = MenuBarSelection(x: 0, w: gridRows)
         }
 
         let triggerAreaRow = makeCenteredLabeledControlRow(
             label: UICopy.settingsTriggerAreaLabel,
             control: popupButton
         )
-        self.rootStackView = makeInlineTabContent(rows: [triggerAreaRow, dynamicRowsStackView], width: 460)
+
+        addButton.bezelStyle = .rounded
+        addButton.controlSize = .small
+        addButton.image = NSImage(systemSymbolName: "plus", accessibilityDescription: nil)
+        addButton.imagePosition = .imageOnly
+
+        removeButton.bezelStyle = .rounded
+        removeButton.controlSize = .small
+        removeButton.image = NSImage(systemSymbolName: "minus", accessibilityDescription: nil)
+        removeButton.imagePosition = .imageOnly
+        removeButton.isHidden = triggerCount <= 1
+
+        let buttonRow = makeHorizontalGroup(spacing: 6)
+        buttonRow.alignment = .centerY
+        let buttonSpacer = NSView()
+        buttonRow.addArrangedSubview(buttonSpacer)
+        buttonRow.addArrangedSubview(addButton)
+        let removeContainer = NSView()
+        removeButton.translatesAutoresizingMaskIntoConstraints = false
+        removeContainer.addSubview(removeButton)
+        buttonRow.addArrangedSubview(removeContainer)
+        NSLayoutConstraint.activate([
+            removeButton.leadingAnchor.constraint(equalTo: removeContainer.leadingAnchor),
+            removeButton.trailingAnchor.constraint(equalTo: removeContainer.trailingAnchor),
+            removeButton.topAnchor.constraint(equalTo: removeContainer.topAnchor),
+            removeButton.bottomAnchor.constraint(equalTo: removeContainer.bottomAnchor),
+            removeContainer.widthAnchor.constraint(equalTo: addButton.widthAnchor),
+        ])
+
+        self.rootStackView = makeInlineTabContent(rows: [triggerAreaRow, dynamicRowsStackView, buttonRow], width: 460)
 
         super.init(frame: .zero)
 
+        addButton.target = self
+        addButton.action = #selector(handleAddButtonClicked(_:))
+        removeButton.target = self
+        removeButton.action = #selector(handleRemoveButtonClicked(_:))
+
         popupButton.controlSize = .small
+        if allowNone {
+            popupButton.addItem(withTitle: UICopy.settingsNoneValue)
+        }
         popupButton.addItems(withTitles: [
-            UICopy.settingsNoneValue,
             UICopy.settingsScreenGridValue,
             UICopy.settingsMenuBarTriggerValue,
         ])
-        popupButton.selectItem(withTitle: selectedTitle(for: layout.triggerRegion))
+        popupButton.selectItem(withTitle: selectedTitle(for: triggerRegion))
         popupButton.target = self
         popupButton.action = #selector(handleTriggerAreaChange(_:))
 
@@ -279,6 +319,7 @@ final class TriggerTabContentView: NSView {
             rootStackView.bottomAnchor.constraint(equalTo: bottomAnchor),
         ])
 
+        updateAddButtonState(triggerCount: triggerCount)
         rebuildRows()
     }
 
@@ -287,11 +328,31 @@ final class TriggerTabContentView: NSView {
         nil
     }
 
+    func updateButtonStates(triggerCount: Int) {
+        removeButton.isHidden = triggerCount <= 1
+        updateAddButtonState(triggerCount: triggerCount)
+    }
+
+    private func updateAddButtonState(triggerCount: Int) {
+        addButton.isEnabled = triggerCount < 3 && selectedTriggerArea != .none
+    }
+
+    @objc
+    private func handleAddButtonClicked(_ sender: NSButton) {
+        onAddTriggerRegion?()
+    }
+
+    @objc
+    private func handleRemoveButtonClicked(_ sender: NSButton) {
+        onRemoveTriggerRegion?()
+    }
+
     @objc
     private func handleTriggerAreaChange(_ sender: NSPopUpButton) {
         rebuildRows()
         onTriggerAreaKindChanged?(selectedTriggerArea)
         onTriggerRegionChanged?(currentTriggerRegion)
+        updateAddButtonState(triggerCount: removeButton.isHidden ? 1 : 2)
     }
 
     func syncFromTriggerRegion(_ triggerRegion: TriggerRegion?) {

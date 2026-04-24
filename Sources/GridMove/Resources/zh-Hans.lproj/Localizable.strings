@@ -9,6 +9,9 @@
 "settingsLayoutInlineTabTitle" = "布局";
 "settingsWindowAreaInlineTabTitle" = "窗口区域";
 "settingsTriggerAreaInlineTabTitle" = "触发区域";
+"settingsTriggerArea1InlineTabTitle" = "触发区域 1";
+"settingsTriggerArea2InlineTabTitle" = "触发区域 2";
+"settingsTriggerArea3InlineTabTitle" = "触发区域 3";
 "settingsDragBehaviorSectionTitle" = "拖动行为";
 "settingsExclusionsSectionTitle" = "排除项";
 "settingsWindowAreaSectionTitle" = "窗口区域";

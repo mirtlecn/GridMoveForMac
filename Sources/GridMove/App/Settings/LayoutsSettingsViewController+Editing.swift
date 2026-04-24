@@ -126,9 +126,29 @@ extension LayoutsSettingsViewController {
         prototypeState.syncExternalConfiguration(refreshedConfiguration)
     }
 
-    func updateLayoutTriggerRegion(groupName: String, setIndex: Int, layoutID: String, triggerRegion: TriggerRegion?) {
+    func updateLayoutTriggerRegion(groupName: String, setIndex: Int, layoutID: String, atIndex triggerIndex: Int, region: TriggerRegion) {
         updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layoutID) { draftLayout in
-            draftLayout.triggerRegion = triggerRegion
+            guard draftLayout.triggerRegions.indices.contains(triggerIndex) else { return }
+            draftLayout.triggerRegions[triggerIndex] = region
+        }
+    }
+
+    func addTriggerRegion(groupName: String, setIndex: Int, layoutID: String, after triggerIndex: Int) {
+        selectedLayoutDetailTabIndex = triggerIndex + 3
+        updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layoutID) { draftLayout in
+            guard draftLayout.triggerRegions.count < 3 else { return }
+            let newRegion: TriggerRegion = draftLayout.triggerRegions.last
+                ?? .screen(GridSelection(x: 0, y: 0, w: max(1, draftLayout.gridColumns), h: max(1, draftLayout.gridRows)))
+            let insertIndex = min(triggerIndex + 1, draftLayout.triggerRegions.count)
+            draftLayout.triggerRegions.insert(newRegion, at: insertIndex)
+        }
+    }
+
+    func removeTriggerRegion(groupName: String, setIndex: Int, layoutID: String, atIndex triggerIndex: Int) {
+        selectedLayoutDetailTabIndex = max(0, triggerIndex - 1) + 2
+        updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layoutID) { draftLayout in
+            guard draftLayout.triggerRegions.indices.contains(triggerIndex) else { return }
+            draftLayout.triggerRegions.remove(at: triggerIndex)
         }
     }
 
@@ -182,7 +202,7 @@ extension LayoutsSettingsViewController {
             gridColumns: templateLayout.gridColumns,
             gridRows: templateLayout.gridRows,
             windowSelection: templateLayout.windowSelection,
-            triggerRegion: templateLayout.triggerRegion,
+            triggerRegions: templateLayout.triggerRegions,
             includeInLayoutIndex: templateLayout.includeInLayoutIndex,
             includeInMenu: templateLayout.includeInMenu
         )
@@ -463,19 +483,19 @@ extension LayoutsSettingsViewController {
         layout.windowSelection.x = max(0, min(layout.windowSelection.x, layout.gridColumns - layout.windowSelection.w))
         layout.windowSelection.y = max(0, min(layout.windowSelection.y, layout.gridRows - layout.windowSelection.h))
 
-        switch layout.triggerRegion {
-        case var .screen(selection):
-            selection.w = max(1, min(layout.gridColumns, selection.w))
-            selection.h = max(1, min(layout.gridRows, selection.h))
-            selection.x = max(0, min(selection.x, layout.gridColumns - selection.w))
-            selection.y = max(0, min(selection.y, layout.gridRows - selection.h))
-            layout.triggerRegion = .screen(selection)
-        case var .menuBar(selection):
-            selection.w = max(1, min(layout.gridRows, selection.w))
-            selection.x = max(0, min(selection.x, layout.gridRows - selection.w))
-            layout.triggerRegion = .menuBar(selection)
-        case nil:
-            break
+        layout.triggerRegions = layout.triggerRegions.map { region -> TriggerRegion in
+            switch region {
+            case var .screen(selection):
+                selection.w = max(1, min(layout.gridColumns, selection.w))
+                selection.h = max(1, min(layout.gridRows, selection.h))
+                selection.x = max(0, min(selection.x, layout.gridColumns - selection.w))
+                selection.y = max(0, min(selection.y, layout.gridRows - selection.h))
+                return .screen(selection)
+            case var .menuBar(selection):
+                selection.w = max(1, min(layout.gridRows, selection.w))
+                selection.x = max(0, min(selection.x, layout.gridRows - selection.w))
+                return .menuBar(selection)
+            }
         }
     }
 
@@ -641,7 +661,11 @@ extension LayoutsSettingsViewController {
     }
 
     func setCurrentLayoutTriggerAreaKindForTesting(_ kind: TriggerTabContentView.TriggerAreaKind) {
-        currentLayoutTriggerContentView?.setTriggerAreaKindForTesting(kind)
+        let triggerIndex = selectedLayoutDetailTabIndex - 2
+        let activeView = currentLayoutTriggerContentViews.indices.contains(triggerIndex)
+            ? currentLayoutTriggerContentViews[triggerIndex]
+            : currentLayoutTriggerContentViews.first
+        activeView?.setTriggerAreaKindForTesting(kind)
     }
 
     func simulateCurrentLayoutPreviewGridDragForTesting(

@@ -87,7 +87,7 @@ private final class Locked<Value: Sendable>: @unchecked Sendable {
             gridColumns: 12,
             gridRows: 6,
             windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6),
-            triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 2, h: 2)),
+            triggerRegions: [.screen(GridSelection(x: 0, y: 0, w: 2, h: 2))],
             includeInLayoutIndex: true
         ),
         LayoutPreset(
@@ -96,7 +96,7 @@ private final class Locked<Value: Sendable>: @unchecked Sendable {
             gridColumns: 12,
             gridRows: 6,
             windowSelection: GridSelection(x: 6, y: 0, w: 6, h: 6),
-            triggerRegion: .screen(GridSelection(x: 10, y: 0, w: 2, h: 2)),
+            triggerRegions: [.screen(GridSelection(x: 10, y: 0, w: 2, h: 2))],
             includeInLayoutIndex: true
         ),
     ]
@@ -147,7 +147,7 @@ private final class Locked<Value: Sendable>: @unchecked Sendable {
                             gridColumns: 12,
                             gridRows: 6,
                             windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6),
-                            triggerRegion: .screen(GridSelection(x: 0, y: 0, w: 2, h: 2)),
+                            triggerRegions: [.screen(GridSelection(x: 0, y: 0, w: 2, h: 2))],
                             includeInLayoutIndex: true
                         ),
                         LayoutPreset(
@@ -156,7 +156,7 @@ private final class Locked<Value: Sendable>: @unchecked Sendable {
                             gridColumns: 12,
                             gridRows: 6,
                             windowSelection: GridSelection(x: 6, y: 0, w: 6, h: 6),
-                            triggerRegion: nil,
+                            triggerRegions: [],
                             includeInLayoutIndex: false
                         ),
                         LayoutPreset(
@@ -165,7 +165,7 @@ private final class Locked<Value: Sendable>: @unchecked Sendable {
                             gridColumns: 12,
                             gridRows: 6,
                             windowSelection: GridSelection(x: 3, y: 1, w: 6, h: 4),
-                            triggerRegion: .screen(GridSelection(x: 5, y: 2, w: 2, h: 2)),
+                            triggerRegions: [.screen(GridSelection(x: 5, y: 2, w: 2, h: 2))],
                             includeInLayoutIndex: true
                         ),
                     ]
