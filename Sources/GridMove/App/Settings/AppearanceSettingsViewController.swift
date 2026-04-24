@@ -42,21 +42,21 @@ final class AppearanceSettingsViewController: NSViewController {
                 SettingsInlineTab(
                     title: UICopy.settingsWindowAreaSectionTitle,
                     contentView: makeInlineTabContent(rows: [
-                        makeLabeledControlRow(label: UICopy.settingsWindowGapLabel, control: layoutGapControl),
-                        makeLabeledControlRow(label: UICopy.settingsHighlightWindowAreaTitle, control: showHighlightCheckbox),
-                        makeLabeledControlRow(label: UICopy.settingsFillOpacityLabel, control: fillOpacityControl),
-                        makeLabeledControlRow(label: UICopy.settingsStrokeWidthLabel, control: strokeWidthControl),
-                        makeLabeledControlRow(label: UICopy.settingsStrokeColorLabel, control: strokeColorControl),
+                        makeCenteredLabeledControlRow(label: UICopy.settingsWindowGapLabel, control: layoutGapControl),
+                        makeCenteredLabeledControlRow(label: UICopy.settingsHighlightWindowAreaTitle, control: showHighlightCheckbox),
+                        makeCenteredLabeledControlRow(label: UICopy.settingsFillOpacityLabel, control: fillOpacityControl),
+                        makeCenteredLabeledControlRow(label: UICopy.settingsStrokeWidthLabel, control: strokeWidthControl),
+                        makeCenteredLabeledControlRow(label: UICopy.settingsStrokeColorLabel, control: strokeColorControl),
                     ])
                 ),
                 SettingsInlineTab(
                     title: UICopy.settingsTriggerAreaSectionTitle,
                     contentView: makeInlineTabContent(rows: [
-                        makeLabeledControlRow(label: UICopy.settingsTriggerGapLabel, control: triggerGapControl),
-                        makeLabeledControlRow(label: UICopy.settingsHighlightTriggerAreaTitle, control: triggerHighlightModePopupButton),
-                        makeLabeledControlRow(label: UICopy.settingsFillOpacityLabel, control: triggerFillOpacityControl),
-                        makeLabeledControlRow(label: UICopy.settingsStrokeWidthLabel, control: triggerStrokeWidthControl),
-                        makeLabeledControlRow(label: UICopy.settingsStrokeColorLabel, control: triggerStrokeColorControl),
+                        makeCenteredLabeledControlRow(label: UICopy.settingsTriggerGapLabel, control: triggerGapControl),
+                        makeCenteredLabeledControlRow(label: UICopy.settingsHighlightTriggerAreaTitle, control: triggerHighlightModePopupButton),
+                        makeCenteredLabeledControlRow(label: UICopy.settingsFillOpacityLabel, control: triggerFillOpacityControl),
+                        makeCenteredLabeledControlRow(label: UICopy.settingsStrokeWidthLabel, control: triggerStrokeWidthControl),
+                        makeCenteredLabeledControlRow(label: UICopy.settingsStrokeColorLabel, control: triggerStrokeColorControl),
                     ])
                 ),
             ]
