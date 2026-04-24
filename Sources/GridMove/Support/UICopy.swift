@@ -14,15 +14,15 @@ enum UICopy {
     static var settingsHotkeysTabTitle: String { localized("settingsHotkeysTabTitle", default: "Hotkeys") }
     static var settingsAboutTabTitle: String { localized("settingsAboutTabTitle", default: "About") }
     static var settingsLayoutInlineTabTitle: String { localized("settingsLayoutInlineTabTitle", default: "Layout") }
-    static var settingsWindowAreaInlineTabTitle: String { localized("settingsWindowAreaInlineTabTitle", default: "Window area") }
-    static var settingsTriggerAreaInlineTabTitle: String { localized("settingsTriggerAreaInlineTabTitle", default: "Trigger area") }
-    static var settingsTriggerArea1InlineTabTitle: String { localized("settingsTriggerArea1InlineTabTitle", default: "Trigger area 1") }
-    static var settingsTriggerArea2InlineTabTitle: String { localized("settingsTriggerArea2InlineTabTitle", default: "Trigger area 2") }
-    static var settingsTriggerArea3InlineTabTitle: String { localized("settingsTriggerArea3InlineTabTitle", default: "Trigger area 3") }
+    static var settingsWindowAreaInlineTabTitle: String { localized("settingsWindowAreaInlineTabTitle", default: "Window") }
+    static var settingsTriggerAreaInlineTabTitle: String { localized("settingsTriggerAreaInlineTabTitle", default: "Trigger") }
+    static var settingsTriggerArea1InlineTabTitle: String { localized("settingsTriggerArea1InlineTabTitle", default: "Trigger 1") }
+    static var settingsTriggerArea2InlineTabTitle: String { localized("settingsTriggerArea2InlineTabTitle", default: "Trigger 2") }
+    static var settingsTriggerArea3InlineTabTitle: String { localized("settingsTriggerArea3InlineTabTitle", default: "Trigger 3") }
     static var settingsDragBehaviorSectionTitle: String { localized("settingsDragBehaviorSectionTitle", default: "Drag behavior") }
     static var settingsExclusionsSectionTitle: String { localized("settingsExclusionsSectionTitle", default: "Exclusions") }
-    static var settingsWindowAreaSectionTitle: String { localized("settingsWindowAreaSectionTitle", default: "Window area") }
-    static var settingsTriggerAreaSectionTitle: String { localized("settingsTriggerAreaSectionTitle", default: "Trigger area") }
+    static var settingsWindowAreaSectionTitle: String { localized("settingsWindowAreaSectionTitle", default: "Window") }
+    static var settingsTriggerAreaSectionTitle: String { localized("settingsTriggerAreaSectionTitle", default: "Trigger") }
     static var settingsModifierGroupsLabel: String { localized("settingsModifierGroupsLabel", default: "Modifier groups") }
     static var settingsMouseButtonNumberLabel: String { localized("settingsMouseButtonNumberLabel", default: "Mouse button number") }
     static var settingsMouseDragTitle: String { localized("settingsMouseDragTitle", default: "Mouse drag") }
@@ -41,7 +41,7 @@ enum UICopy {
     static var settingsGridSizeLabel: String { localized("settingsGridSizeLabel", default: "Grid size") }
     static var settingsGridColumnsLabel: String { localized("settingsGridColumnsLabel", default: "Grid columns") }
     static var settingsGridRowsLabel: String { localized("settingsGridRowsLabel", default: "Grid rows") }
-    static var settingsTriggerAreaLabel: String { localized("settingsTriggerAreaLabel", default: "Trigger area") }
+    static var settingsTriggerAreaLabel: String { localized("settingsTriggerAreaLabel", default: "Trigger") }
     static var settingsApplyToLabel: String { localized("settingsApplyToLabel", default: "Apply to") }
     static var settingsIncludeInMenuLabel: String { localized("settingsIncludeInMenuLabel", default: "Include in menu") }
     static var settingsIncludeInLayoutIndexLabel: String { localized("settingsIncludeInLayoutIndexLabel", default: "Include in layout index") }
@@ -62,8 +62,8 @@ enum UICopy {
     static var settingsMonitorLabel: String { localized("settingsMonitorLabel", default: "Monitor") }
     static var settingsLayoutsCountLabel: String { localized("settingsLayoutsCountLabel", default: "Layouts") }
     static var settingsLayoutIndexLabel: String { localized("settingsLayoutIndexLabel", default: "Layout index") }
-    static var settingsWindowLayoutTabTitle: String { localized("settingsWindowLayoutTabTitle", default: "Window layout") }
-    static var settingsTriggerRegionsTabTitle: String { localized("settingsTriggerRegionsTabTitle", default: "Trigger regions") }
+    static var settingsWindowLayoutTabTitle: String { localized("settingsWindowLayoutTabTitle", default: "Window") }
+    static var settingsTriggerRegionsTabTitle: String { localized("settingsTriggerRegionsTabTitle", default: "Trigger") }
     static var settingsAllDisplaysValue: String { localized("settingsAllDisplaysValue", default: "All displays") }
     static var settingsMainDisplayValue: String { localized("settingsMainDisplayValue", default: "Main display") }
     static var settingsNoTriggerRegionValue: String { localized("settingsNoTriggerRegionValue", default: "No trigger region") }
@@ -220,7 +220,6 @@ enum UICopy {
         "Right 1/3 top",
         "Right 1/3 bottom",
         "Full",
-        "Full (menu bar)",
     ]
 
     static func applyLayout(_ name: String) -> String {
