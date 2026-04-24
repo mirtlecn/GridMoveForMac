@@ -272,24 +272,7 @@ final class TriggerTabContentView: NSView {
         removeButton.imagePosition = .imageOnly
         removeButton.isHidden = triggerCount <= 1
 
-        let buttonRow = makeHorizontalGroup(spacing: 6)
-        buttonRow.alignment = .centerY
-        let buttonSpacer = NSView()
-        buttonRow.addArrangedSubview(buttonSpacer)
-        buttonRow.addArrangedSubview(addButton)
-        let removeContainer = NSView()
-        removeButton.translatesAutoresizingMaskIntoConstraints = false
-        removeContainer.addSubview(removeButton)
-        buttonRow.addArrangedSubview(removeContainer)
-        NSLayoutConstraint.activate([
-            removeButton.leadingAnchor.constraint(equalTo: removeContainer.leadingAnchor),
-            removeButton.trailingAnchor.constraint(equalTo: removeContainer.trailingAnchor),
-            removeButton.topAnchor.constraint(equalTo: removeContainer.topAnchor),
-            removeButton.bottomAnchor.constraint(equalTo: removeContainer.bottomAnchor),
-            removeContainer.widthAnchor.constraint(equalTo: addButton.widthAnchor),
-        ])
-
-        self.rootStackView = makeInlineTabContent(rows: [triggerAreaRow, dynamicRowsStackView, buttonRow], width: 460)
+        self.rootStackView = makeInlineTabContent(rows: [triggerAreaRow, dynamicRowsStackView], width: 460)
 
         super.init(frame: .zero)
 
@@ -310,13 +293,21 @@ final class TriggerTabContentView: NSView {
         popupButton.target = self
         popupButton.action = #selector(handleTriggerAreaChange(_:))
 
+        addButton.translatesAutoresizingMaskIntoConstraints = false
+        removeButton.translatesAutoresizingMaskIntoConstraints = false
         rootStackView.translatesAutoresizingMaskIntoConstraints = false
         addSubview(rootStackView)
+        addSubview(removeButton)
+        addSubview(addButton)
         NSLayoutConstraint.activate([
             rootStackView.leadingAnchor.constraint(equalTo: leadingAnchor),
             rootStackView.trailingAnchor.constraint(equalTo: trailingAnchor),
             rootStackView.topAnchor.constraint(equalTo: topAnchor),
-            rootStackView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            addButton.trailingAnchor.constraint(equalTo: trailingAnchor),
+            addButton.topAnchor.constraint(equalTo: rootStackView.bottomAnchor, constant: 8),
+            addButton.bottomAnchor.constraint(equalTo: bottomAnchor),
+            removeButton.trailingAnchor.constraint(equalTo: addButton.leadingAnchor, constant: -4),
+            removeButton.centerYAnchor.constraint(equalTo: addButton.centerYAnchor),
         ])
 
         updateAddButtonState(triggerCount: triggerCount)

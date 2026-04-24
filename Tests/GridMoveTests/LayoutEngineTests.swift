@@ -5,8 +5,8 @@ import Testing
 @Test func defaultLayoutsMatchAgreedSelections() async throws {
     let layouts = AppConfiguration.defaultValue.layouts
 
-    #expect(layouts.count == 11)
-    #expect(layouts.map(\.id) == (1 ... 11).map { "layout-\($0)" })
+    #expect(layouts.count == 10)
+    #expect(layouts.map(\.id) == (1 ... 10).map { "layout-\($0)" })
     #expect(layouts.map(\.name) == [
         "Left 1/3",
         "Left 1/2",
@@ -18,7 +18,6 @@ import Testing
         "Right 1/3 top",
         "Right 1/3 bottom",
         "Full",
-        "Full (menu bar)",
     ])
     #expect(layouts[0].windowSelection == GridSelection(x: 0, y: 0, w: 4, h: 6))
     #expect(layouts[0].triggerRegions.first == .screen(GridSelection(x: 0, y: 0, w: 1, h: 6)))
@@ -27,11 +26,9 @@ import Testing
     #expect(layouts[7].windowSelection == GridSelection(x: 8, y: 0, w: 4, h: 3))
     #expect(layouts[7].triggerRegions.first == .screen(GridSelection(x: 11, y: 0, w: 1, h: 2)))
     #expect(layouts[9].windowSelection == GridSelection(x: 0, y: 0, w: 12, h: 6))
+    #expect(layouts[9].triggerRegions.count == 2)
     #expect(layouts[9].triggerRegions.first == .screen(GridSelection(x: 5, y: 0, w: 2, h: 1)))
-    #expect(layouts[10].windowSelection == GridSelection(x: 0, y: 0, w: 12, h: 6))
-    #expect(layouts[10].triggerRegions.first == .menuBar(MenuBarSelection(x: 0, w: 6)))
-    #expect(layouts[10].includeInLayoutIndex == false)
-    #expect(layouts[10].includeInMenu == false)
+    #expect(layouts[9].triggerRegions.last == .menuBar(MenuBarSelection(x: 0, w: 6)))
 }
 
 @Test func layoutFrameUsesTopOriginCoordinates() async throws {
@@ -86,8 +83,10 @@ import Testing
         triggerGap: Double(configuration.appearance.triggerGap)
     )
     let firstSlot = try #require(slots.first(where: { $0.layoutID == "layout-1" }))
-    let fullscreenSlot = try #require(slots.first(where: { $0.layoutID == "layout-10" }))
-    let menuBarSlot = try #require(slots.first(where: { $0.layoutID == "layout-11" }))
+    let layout10Slots = slots.filter { $0.layoutID == "layout-10" }
+    #expect(layout10Slots.count == 2)
+    let fullscreenSlot = try #require(layout10Slots.first(where: { $0.triggerFrame.origin.y == 750 }))
+    let menuBarSlot = try #require(layout10Slots.first(where: { $0.triggerFrame.origin.y >= 900 }))
 
     #expect(firstSlot.layoutID == "layout-1")
     #expect(firstSlot.triggerFrame.origin.x == 0)
@@ -139,7 +138,6 @@ import Testing
         "layout-8",
         "layout-9",
         "layout-10",
-        "layout-11",
         "layout-2",
     ])
     #expect(engine.nextLayoutID(for: "window-a", layouts: configuration.layouts) == "layout-1")

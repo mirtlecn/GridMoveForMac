@@ -54,7 +54,7 @@ struct LayoutsSettingsViewControllerTests {
 
         #expect(
             controller.moveLayoutForTesting(
-                id: "layout-14",
+                id: "layout-13",
                 groupName: AppConfiguration.fullscreenGroupName,
                 setIndex: 0,
                 toLocalIndex: 1
@@ -65,13 +65,13 @@ struct LayoutsSettingsViewControllerTests {
             controller.layoutTitlesForTesting(
                 groupName: AppConfiguration.fullscreenGroupName,
                 setIndex: 0
-            ) == ["Fullscreen main", "Main right 1/2", "Main left 1/2", "Fullscreen main (menu bar)"]
+            ) == ["Fullscreen main", "Main right 1/2", "Main left 1/2"]
         )
         #expect(
             controller.layoutTitlesForTesting(
                 groupName: AppConfiguration.fullscreenGroupName,
                 setIndex: 1
-            ) == ["Fullscreen other", "Fullscreen other (menu bar)"]
+            ) == ["Fullscreen other"]
         )
     }
 
@@ -80,7 +80,7 @@ struct LayoutsSettingsViewControllerTests {
 
         #expect(
             controller.moveLayoutForTesting(
-                id: "layout-14",
+                id: "layout-13",
                 groupName: AppConfiguration.fullscreenGroupName,
                 setIndex: 1,
                 toLocalIndex: 0
@@ -91,13 +91,13 @@ struct LayoutsSettingsViewControllerTests {
             controller.layoutTitlesForTesting(
                 groupName: AppConfiguration.fullscreenGroupName,
                 setIndex: 0
-            ) == ["Fullscreen main", "Main left 1/2", "Main right 1/2", "Fullscreen main (menu bar)"]
+            ) == ["Fullscreen main", "Main left 1/2", "Main right 1/2"]
         )
         #expect(
             controller.layoutTitlesForTesting(
                 groupName: AppConfiguration.fullscreenGroupName,
                 setIndex: 1
-            ) == ["Fullscreen other", "Fullscreen other (menu bar)"]
+            ) == ["Fullscreen other"]
         )
     }
 
@@ -393,6 +393,27 @@ struct LayoutsSettingsViewControllerTests {
             controller.draftConfigurationForTesting.layoutGroups[0].sets[0].layouts.first(where: { $0.id == "layout-1" })
         )
         #expect(updatedLayout.triggerRegions == noneTriggerLayout.triggerRegions)
+    }
+
+    @Test func triggerAreaCanSwitchBackFromNoneWithoutSaving() async throws {
+        let (controller, _, _) = makeController()
+
+        controller.selectLayoutForTesting(id: "layout-1")
+        controller.selectLayoutDetailTabForTesting(2)
+        controller.setCurrentLayoutTriggerAreaKindForTesting(.none)
+
+        var updatedLayout = try #require(
+            controller.draftConfigurationForTesting.layoutGroups[0].sets[0].layouts.first(where: { $0.id == "layout-1" })
+        )
+        #expect(updatedLayout.triggerRegions.isEmpty)
+
+        controller.setCurrentLayoutTriggerAreaKindForTesting(.screen)
+
+        updatedLayout = try #require(
+            controller.draftConfigurationForTesting.layoutGroups[0].sets[0].layouts.first(where: { $0.id == "layout-1" })
+        )
+        #expect(updatedLayout.triggerRegions == [.screen(GridSelection(x: 0, y: 0, w: 12, h: 6))])
+        #expect(controller.currentLayoutPreviewInteractionModeForTesting == .triggerScreenSelection)
     }
 
     @Test func previewCursorRegionMatchesInteractiveMode() async throws {

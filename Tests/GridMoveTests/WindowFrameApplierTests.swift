@@ -74,7 +74,7 @@ private func decodeSize(from value: AXValue) -> CGSize {
     let screen = try #require(NSScreen.screens.first)
     let layoutEngine = LayoutEngine()
     let configuration = AppConfiguration.defaultValue
-    let fullscreenPreset = try #require(layoutEngine.layoutPreset(for: "layout-11", in: configuration.layouts))
+    let fullscreenPreset = try #require(layoutEngine.layoutPreset(for: "layout-10", in: configuration.layouts))
     let thirdsPreset = try #require(layoutEngine.layoutPreset(for: "layout-1", in: configuration.layouts))
     let fullscreenFrame = try #require(
         layoutEngine.frame(
@@ -113,7 +113,7 @@ private func decodeSize(from value: AXValue) -> CGSize {
     let window = makeManagedWindow(frame: CGRect(x: -2000, y: -2000, width: 960, height: 720))
 
     applier.applyLayout(
-        layoutID: "layout-11",
+        layoutID: "layout-10",
         to: window,
         preferredScreen: screen,
         configuration: configuration

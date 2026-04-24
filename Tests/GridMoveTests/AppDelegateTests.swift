@@ -477,10 +477,10 @@ private final class TestLaunchAtLoginService: LaunchAtLoginServiceProtocol {
         UICopy.applyLayout("Fullscreen other"),
     ])
     #expect(layoutActions == [
+        .applyLayoutByID(layoutID: "layout-11"),
         .applyLayoutByID(layoutID: "layout-12"),
         .applyLayoutByID(layoutID: "layout-13"),
         .applyLayoutByID(layoutID: "layout-14"),
-        .applyLayoutByID(layoutID: "layout-16"),
     ])
     #expect(actionItems.dropFirst(2).map(\.shortcut) == [
         KeyboardShortcut(modifiers: [.ctrl, .cmd, .shift, .alt], key: "-"),
