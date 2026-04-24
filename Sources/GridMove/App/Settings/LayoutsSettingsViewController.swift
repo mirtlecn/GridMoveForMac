@@ -49,7 +49,7 @@ final class LayoutsSettingsViewController: NSViewController, NSOutlineViewDataSo
     var currentSetApplyToControl: ApplyToControlView?
     var currentLayoutNameControl: CallbackTextField?
     var currentLayoutPreviewView: LayoutPreviewView?
-    var currentLayoutTriggerContentView: TriggerTabContentView?
+    var currentLayoutTriggerContentViews: [TriggerTabContentView] = []
 
     private var hasAppliedInitialSplitPosition = false
 

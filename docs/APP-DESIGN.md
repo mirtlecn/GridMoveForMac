@@ -207,7 +207,8 @@ Compatibility behavior:
 - missing or invalid `preferLayoutMode` defaults to `true`
 - missing or invalid `applyLayoutImmediatelyWhileDragging` defaults to `false`
 - missing `includeInGroupCycle` defaults to `true`
-- missing `triggerRegion` means the layout is menu, shortcut, and CLI only
+- missing or empty `triggerRegions` means the layout is menu, shortcut, and CLI only
+- `triggerRegions` supports up to 3 entries; extra entries beyond 3 are silently ignored
 - missing `triggerHighlightMode` defaults to `none`
 - invalid `triggerHighlightMode` falls back to `all`
 - missing `triggerFillOpacity` defaults to `0.08`

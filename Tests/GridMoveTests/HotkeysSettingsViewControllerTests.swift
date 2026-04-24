@@ -13,7 +13,7 @@ private func makeTestLayout(
         gridColumns: 12,
         gridRows: 6,
         windowSelection: GridSelection(x: 0, y: 0, w: 6, h: 6),
-        triggerRegion: nil,
+        triggerRegions: [],
         includeInLayoutIndex: includeInLayoutIndex
     )
 }

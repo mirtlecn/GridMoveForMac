@@ -89,7 +89,7 @@ enum ConfigurationSchemaConverter {
                         gridColumns: layoutConfiguration.gridColumns,
                         gridRows: layoutConfiguration.gridRows,
                         windowSelection: layoutConfiguration.windowSelection,
-                        triggerRegion: layoutConfiguration.triggerRegion,
+                        triggerRegions: layoutConfiguration.triggerRegions,
                         includeInLayoutIndex: layoutConfiguration.includeInLayoutIndex,
                         includeInMenu: layoutConfiguration.includeInMenu
                     )

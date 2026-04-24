@@ -56,7 +56,7 @@ enum LayoutGroupResolver {
     }
 
     static func triggerableLayouts(for screen: NSScreen, configuration: AppConfiguration) -> [LayoutPreset] {
-        resolvedLayouts(for: screen, configuration: configuration).filter { $0.triggerRegion != nil }
+        resolvedLayouts(for: screen, configuration: configuration).filter { !$0.triggerRegions.isEmpty }
     }
 
     static func resolveNamedLayout(identifier: String, configuration: AppConfiguration) throws -> ResolvedLayoutEntry {

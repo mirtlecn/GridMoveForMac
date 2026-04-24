@@ -92,17 +92,19 @@
               "w": 6,
               "h": 4
             },
-            "triggerRegion": {
-              "kind": "screen", // Allowed values are screen and menuBar.
-              "gridSelection": {
-                "x": 5,
-                "y": 2,
-                "w": 2,
-                "h": 2
+            "triggerRegions": [ // Up to 3 trigger regions. Empty array means drag trigger is unavailable.
+              {
+                "kind": "screen", // Allowed values are screen and menuBar.
+                "gridSelection": {
+                  "x": 5,
+                  "y": 2,
+                  "w": 2,
+                  "h": 2
+                }
+                // If kind is menuBar, use:
+                // "menuBarSelection": { "x": 1, "w": 4 }
               }
-              // If kind is menuBar, use:
-              // "menuBarSelection": { "x": 1, "w": 4 }
-            },
+            ],
             "includeInLayoutIndex": true, // false excludes the layout from layout-index shortcuts and from cycle order.
             "includeInMenu": true // false hides the layout from the menu bar only.
           },
@@ -117,7 +119,7 @@
               "h": 4
             },
             "includeInLayoutIndex": false,
-            "includeInMenu": false // Missing triggerRegion means drag trigger is unavailable.
+            "includeInMenu": false // Missing or empty triggerRegions means drag trigger is unavailable.
           }
         ]
       }

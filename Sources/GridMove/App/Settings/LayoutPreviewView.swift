@@ -69,7 +69,7 @@ final class LayoutPreviewView: NSView {
     init(layout: LayoutPreset, appearance: AppearanceSettings, mode: Mode) {
         self.layout = layout
         self.appearanceSettings = appearance
-        self.triggerRegionOverride = layout.triggerRegion
+        self.triggerRegionOverride = layout.triggerRegions.first
         self.mode = mode
         super.init(frame: .zero)
     }
@@ -89,7 +89,7 @@ final class LayoutPreviewView: NSView {
 
         switch mode {
         case .combined:
-            drawTriggerRegion(in: geometry)
+            drawAllTriggerRegions(in: geometry)
             drawWindowLayout(in: geometry)
         case .windowLayout:
             drawWindowLayout(in: geometry)
@@ -123,11 +123,20 @@ final class LayoutPreviewView: NSView {
         )
     }
 
+    private func drawAllTriggerRegions(in geometry: SettingsPreviewGeometry) {
+        for region in layout.triggerRegions {
+            drawRegion(region, in: geometry)
+        }
+    }
+
     private func drawTriggerRegion(in geometry: SettingsPreviewGeometry) {
         guard let triggerRegion = displayedTriggerRegion else {
             return
         }
+        drawRegion(triggerRegion, in: geometry)
+    }
 
+    private func drawRegion(_ triggerRegion: TriggerRegion, in geometry: SettingsPreviewGeometry) {
         let regionRect: CGRect
         switch triggerRegion {
         case let .screen(selection):

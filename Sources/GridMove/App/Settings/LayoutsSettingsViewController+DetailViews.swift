@@ -14,7 +14,7 @@ extension LayoutsSettingsViewController {
         currentLayoutWindowHeightControl = nil
         detailContainerView.subviews.forEach { $0.removeFromSuperview() }
         currentLayoutPreviewView = nil
-        currentLayoutTriggerContentView = nil
+        currentLayoutTriggerContentViews = []
 
         guard let node = selectedNode else {
             updateCommandBar()
@@ -123,36 +123,84 @@ extension LayoutsSettingsViewController {
         currentLayoutPreviewView = previewView
         contentStackView.addArrangedSubview(makeCenteredContainer(for: previewView))
 
-        let triggerContentView = TriggerTabContentView(layout: layout)
-        currentLayoutTriggerContentView = triggerContentView
-        previewView.triggerRegionOverride = triggerContentView.currentTriggerRegion
-        previewView.interactionMode = previewInteractionMode(
-            for: selectedLayoutDetailTabIndex,
-            triggerAreaKind: triggerContentView.currentTriggerAreaKind
-        )
+        let triggerCount = max(1, layout.triggerRegions.count)
+        var triggerContentViews: [TriggerTabContentView] = []
+        for triggerIndex in 0..<triggerCount {
+            let region = layout.triggerRegions.indices.contains(triggerIndex) ? layout.triggerRegions[triggerIndex] : nil
+            let contentView = TriggerTabContentView(
+                triggerRegion: region,
+                gridColumns: layout.gridColumns,
+                gridRows: layout.gridRows,
+                allowNone: triggerCount == 1,
+                triggerCount: triggerCount
+            )
+            contentView.onTriggerAreaKindChanged = { [weak self, weak previewView, weak contentView] _ in
+                guard let self else { return }
+                let activeTab = self.selectedLayoutDetailTabIndex
+                guard activeTab - 2 == triggerIndex else { return }
+                previewView?.interactionMode = self.previewInteractionMode(
+                    for: activeTab,
+                    triggerAreaKind: contentView?.currentTriggerAreaKind ?? .none
+                )
+            }
+            contentView.onTriggerRegionChanged = { [weak self, weak previewView] triggerRegion in
+                guard let self else { return }
+                let activeTab = self.selectedLayoutDetailTabIndex
+                if activeTab - 2 == triggerIndex {
+                    previewView?.triggerRegionOverride = triggerRegion
+                }
+                if let triggerRegion {
+                    self.updateLayoutTriggerRegion(
+                        groupName: groupName, setIndex: setIndex, layoutID: layout.id,
+                        atIndex: triggerIndex, region: triggerRegion
+                    )
+                } else {
+                    self.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
+                        draftLayout.triggerRegions = []
+                    }
+                }
+            }
+            contentView.onAddTriggerRegion = { [weak self] in
+                self?.addTriggerRegion(groupName: groupName, setIndex: setIndex, layoutID: layout.id, after: triggerIndex)
+            }
+            contentView.onRemoveTriggerRegion = { [weak self] in
+                self?.removeTriggerRegion(groupName: groupName, setIndex: setIndex, layoutID: layout.id, atIndex: triggerIndex)
+            }
+            triggerContentViews.append(contentView)
+        }
+        currentLayoutTriggerContentViews = triggerContentViews
+
+        let activeTriggerIndex = selectedLayoutDetailTabIndex - 2
+        if triggerContentViews.indices.contains(activeTriggerIndex) {
+            previewView.triggerRegionOverride = triggerContentViews[activeTriggerIndex].currentTriggerRegion
+            previewView.interactionMode = previewInteractionMode(
+                for: selectedLayoutDetailTabIndex,
+                triggerAreaKind: triggerContentViews[activeTriggerIndex].currentTriggerAreaKind
+            )
+        } else {
+            previewView.interactionMode = previewInteractionMode(for: selectedLayoutDetailTabIndex, triggerAreaKind: .none)
+        }
+
         previewView.onWindowSelectionCommitted = { [weak self] selection in
             self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
                 draftLayout.windowSelection = selection
             }
         }
-        previewView.onTriggerRegionCommitted = { [weak self, weak previewView, weak triggerContentView] triggerRegion in
-            triggerContentView?.syncFromTriggerRegion(triggerRegion)
+        previewView.onTriggerRegionCommitted = { [weak self, weak previewView] triggerRegion in
+            guard let self else { return }
+            let activeTrigger = self.selectedLayoutDetailTabIndex - 2
+            let clampedIndex = max(0, activeTrigger)
+            let activeView = triggerContentViews.indices.contains(clampedIndex) ? triggerContentViews[clampedIndex] : nil
+            activeView?.syncFromTriggerRegion(triggerRegion)
             previewView?.triggerRegionOverride = triggerRegion
-            previewView?.interactionMode = self?.previewInteractionMode(
-                for: self?.selectedLayoutDetailTabIndex ?? 0,
-                triggerAreaKind: triggerContentView?.currentTriggerAreaKind ?? .none
-            ) ?? .none
-            self?.updateLayoutTriggerRegion(groupName: groupName, setIndex: setIndex, layoutID: layout.id, triggerRegion: triggerRegion)
-        }
-        triggerContentView.onTriggerAreaKindChanged = { [weak self, weak previewView, weak triggerContentView] _ in
-            previewView?.interactionMode = self?.previewInteractionMode(
-                for: self?.selectedLayoutDetailTabIndex ?? 0,
-                triggerAreaKind: triggerContentView?.currentTriggerAreaKind ?? .none
-            ) ?? .none
-        }
-        triggerContentView.onTriggerRegionChanged = { [weak self, weak previewView] triggerRegion in
-            previewView?.triggerRegionOverride = triggerRegion
-            self?.updateLayoutTriggerRegion(groupName: groupName, setIndex: setIndex, layoutID: layout.id, triggerRegion: triggerRegion)
+            previewView?.interactionMode = self.previewInteractionMode(
+                for: self.selectedLayoutDetailTabIndex,
+                triggerAreaKind: activeView?.currentTriggerAreaKind ?? .none
+            )
+            self.updateLayoutTriggerRegion(
+                groupName: groupName, setIndex: setIndex, layoutID: layout.id,
+                atIndex: clampedIndex, region: triggerRegion
+            )
         }
 
         let gridColumnsControl = SettingsIntegerStepperControl(value: layout.gridColumns, minValue: 1, maxValue: nil)
@@ -219,6 +267,21 @@ extension LayoutsSettingsViewController {
         }
         currentLayoutWindowHeightControl = windowHeightControl
 
+        let triggerTabTitles: [String] = {
+            if triggerCount == 1 {
+                return [UICopy.settingsTriggerAreaInlineTabTitle]
+            }
+            return [
+                UICopy.settingsTriggerArea1InlineTabTitle,
+                UICopy.settingsTriggerArea2InlineTabTitle,
+                UICopy.settingsTriggerArea3InlineTabTitle,
+            ].prefix(triggerCount).map { $0 }
+        }()
+
+        let triggerTabs: [SettingsInlineTab] = triggerContentViews.enumerated().map { index, contentView in
+            SettingsInlineTab(title: triggerTabTitles[index], contentView: contentView)
+        }
+
         let detailTabsView = SettingsInlineTabsView(
             tabs: [
                 SettingsInlineTab(
@@ -277,20 +340,23 @@ extension LayoutsSettingsViewController {
                         ),
                     ], width: 460)
                 ),
-                SettingsInlineTab(
-                    title: UICopy.settingsTriggerAreaInlineTabTitle,
-                    contentView: triggerContentView
-                ),
-            ],
+            ] + triggerTabs,
             selectedIndex: selectedLayoutDetailTabIndex
         )
         detailTabsView.onSelectionChanged = { [weak self, weak previewView] (selectedIndex: Int) in
-            self?.selectedLayoutDetailTabIndex = selectedIndex
-            previewView?.mode = self?.previewMode(for: selectedIndex) ?? .combined
-            previewView?.interactionMode = self?.previewInteractionMode(
-                for: selectedIndex,
-                triggerAreaKind: triggerContentView.currentTriggerAreaKind
-            ) ?? .none
+            guard let self else { return }
+            self.selectedLayoutDetailTabIndex = selectedIndex
+            previewView?.mode = self.previewMode(for: selectedIndex)
+            let triggerIdx = selectedIndex - 2
+            if triggerContentViews.indices.contains(triggerIdx) {
+                previewView?.triggerRegionOverride = triggerContentViews[triggerIdx].currentTriggerRegion
+                previewView?.interactionMode = self.previewInteractionMode(
+                    for: selectedIndex,
+                    triggerAreaKind: triggerContentViews[triggerIdx].currentTriggerAreaKind
+                )
+            } else {
+                previewView?.interactionMode = self.previewInteractionMode(for: selectedIndex, triggerAreaKind: .none)
+            }
         }
 
         contentStackView.addArrangedSubview(makeFullWidthContainer(for: detailTabsView))
@@ -334,7 +400,7 @@ extension LayoutsSettingsViewController {
         switch selectedIndex {
         case 1:
             return .windowLayout
-        case 2:
+        case _ where selectedIndex >= 2:
             return .triggerRegion
         default:
             return .combined
@@ -348,7 +414,7 @@ extension LayoutsSettingsViewController {
         switch selectedIndex {
         case 1:
             return .windowSelection
-        case 2:
+        case _ where selectedIndex >= 2:
             switch triggerAreaKind {
             case .none:
                 return .none

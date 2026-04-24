@@ -229,7 +229,7 @@ struct LayoutConfiguration: Codable {
     let gridColumns: Int
     let gridRows: Int
     let windowSelection: GridSelection
-    let triggerRegion: TriggerRegion?
+    let triggerRegions: [TriggerRegion]
     let includeInLayoutIndex: Bool
     let includeInMenu: Bool
 
@@ -238,7 +238,7 @@ struct LayoutConfiguration: Codable {
         case gridColumns
         case gridRows
         case windowSelection
-        case triggerRegion
+        case triggerRegions
         case includeInLayoutIndex
         case includeInMenu
     }
@@ -248,7 +248,7 @@ struct LayoutConfiguration: Codable {
         gridColumns = layout.gridColumns
         gridRows = layout.gridRows
         windowSelection = layout.windowSelection
-        triggerRegion = layout.triggerRegion
+        triggerRegions = layout.triggerRegions
         includeInLayoutIndex = layout.includeInLayoutIndex
         includeInMenu = layout.includeInMenu
     }
@@ -259,7 +259,8 @@ struct LayoutConfiguration: Codable {
         gridColumns = try container.decode(Int.self, forKey: .gridColumns)
         gridRows = try container.decode(Int.self, forKey: .gridRows)
         windowSelection = try container.decode(GridSelection.self, forKey: .windowSelection)
-        triggerRegion = try container.decodeIfPresent(TriggerRegion.self, forKey: .triggerRegion)
+        let decoded = try container.decodeIfPresent([TriggerRegion].self, forKey: .triggerRegions) ?? []
+        triggerRegions = Array(decoded.prefix(3))
         includeInLayoutIndex = try container.decodeIfPresent(Bool.self, forKey: .includeInLayoutIndex) ?? true
         includeInMenu = try container.decodeIfPresent(Bool.self, forKey: .includeInMenu) ?? true
     }

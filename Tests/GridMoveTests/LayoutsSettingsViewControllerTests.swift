@@ -222,7 +222,7 @@ struct LayoutsSettingsViewControllerTests {
         #expect(addedLayout.gridColumns == templateLayout.gridColumns)
         #expect(addedLayout.gridRows == templateLayout.gridRows)
         #expect(addedLayout.windowSelection == templateLayout.windowSelection)
-        #expect(addedLayout.triggerRegion == templateLayout.triggerRegion)
+        #expect(addedLayout.triggerRegions == templateLayout.triggerRegions)
         #expect(addedLayout.includeInMenu == templateLayout.includeInMenu)
         #expect(addedLayout.includeInLayoutIndex == templateLayout.includeInLayoutIndex)
     }
@@ -338,7 +338,7 @@ struct LayoutsSettingsViewControllerTests {
         let updatedLayout = try #require(
             controller.draftConfigurationForTesting.layoutGroups[0].sets[0].layouts.first(where: { $0.id == "layout-1" })
         )
-        #expect(updatedLayout.triggerRegion == .screen(GridSelection(x: 2, y: 0, w: 3, h: 4)))
+        #expect(updatedLayout.triggerRegions.first == .screen(GridSelection(x: 2, y: 0, w: 3, h: 4)))
     }
 
     @Test func previewDragInTriggerMenuBarAreaCommitsMenuBarTriggerRegion() async throws {
@@ -355,7 +355,7 @@ struct LayoutsSettingsViewControllerTests {
         let updatedLayout = try #require(
             controller.draftConfigurationForTesting.layoutGroups[0].sets[0].layouts.first(where: { $0.id == "layout-1" })
         )
-        #expect(updatedLayout.triggerRegion == .menuBar(MenuBarSelection(x: 1, w: 4)))
+        #expect(updatedLayout.triggerRegions.first == .menuBar(MenuBarSelection(x: 1, w: 4)))
     }
 
     @Test func previewIsNotInteractiveOutsideWindowAreaAndEnabledTriggerKinds() async throws {
@@ -376,7 +376,7 @@ struct LayoutsSettingsViewControllerTests {
             controller.draftConfigurationForTesting.layoutGroups[0].sets[0].layouts.first(where: { $0.id == "layout-1" })
         )
         #expect(updatedLayout.windowSelection == originalLayout.windowSelection)
-        #expect(updatedLayout.triggerRegion == originalLayout.triggerRegion)
+        #expect(updatedLayout.triggerRegions == originalLayout.triggerRegions)
 
         controller.selectLayoutDetailTabForTesting(2)
         controller.setCurrentLayoutTriggerAreaKindForTesting(.none)
@@ -385,14 +385,14 @@ struct LayoutsSettingsViewControllerTests {
         let noneTriggerLayout = try #require(
             controller.draftConfigurationForTesting.layoutGroups[0].sets[0].layouts.first(where: { $0.id == "layout-1" })
         )
-        #expect(noneTriggerLayout.triggerRegion == nil)
+        #expect(noneTriggerLayout.triggerRegions.isEmpty)
 
         controller.simulateCurrentLayoutPreviewMenuBarDragForTesting(from: 0, to: 3)
 
         updatedLayout = try #require(
             controller.draftConfigurationForTesting.layoutGroups[0].sets[0].layouts.first(where: { $0.id == "layout-1" })
         )
-        #expect(updatedLayout.triggerRegion == noneTriggerLayout.triggerRegion)
+        #expect(updatedLayout.triggerRegions == noneTriggerLayout.triggerRegions)
     }
 
     @Test func previewCursorRegionMatchesInteractiveMode() async throws {

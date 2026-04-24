@@ -347,7 +347,7 @@ struct LayoutPreset: Codable, Equatable, Hashable, Identifiable {
     var gridColumns: Int
     var gridRows: Int
     var windowSelection: GridSelection
-    var triggerRegion: TriggerRegion?
+    var triggerRegions: [TriggerRegion]
     var includeInLayoutIndex: Bool
     var includeInMenu: Bool
 
@@ -357,7 +357,7 @@ struct LayoutPreset: Codable, Equatable, Hashable, Identifiable {
         gridColumns: Int,
         gridRows: Int,
         windowSelection: GridSelection,
-        triggerRegion: TriggerRegion?,
+        triggerRegions: [TriggerRegion],
         includeInLayoutIndex: Bool,
         includeInMenu: Bool = true
     ) {
@@ -366,7 +366,7 @@ struct LayoutPreset: Codable, Equatable, Hashable, Identifiable {
         self.gridColumns = gridColumns
         self.gridRows = gridRows
         self.windowSelection = windowSelection
-        self.triggerRegion = triggerRegion
+        self.triggerRegions = triggerRegions
         self.includeInLayoutIndex = includeInLayoutIndex
         self.includeInMenu = includeInMenu
     }
@@ -377,7 +377,7 @@ struct LayoutPreset: Codable, Equatable, Hashable, Identifiable {
         case gridColumns
         case gridRows
         case windowSelection
-        case triggerRegion
+        case triggerRegions
         case includeInLayoutIndex
         case includeInMenu
     }
@@ -389,7 +389,7 @@ struct LayoutPreset: Codable, Equatable, Hashable, Identifiable {
         gridColumns = try container.decode(Int.self, forKey: .gridColumns)
         gridRows = try container.decode(Int.self, forKey: .gridRows)
         windowSelection = try container.decode(GridSelection.self, forKey: .windowSelection)
-        triggerRegion = try container.decodeIfPresent(TriggerRegion.self, forKey: .triggerRegion)
+        triggerRegions = try container.decodeIfPresent([TriggerRegion].self, forKey: .triggerRegions) ?? []
         includeInLayoutIndex = try container.decodeIfPresent(Bool.self, forKey: .includeInLayoutIndex) ?? true
         includeInMenu = try container.decodeIfPresent(Bool.self, forKey: .includeInMenu) ?? true
     }
@@ -401,7 +401,7 @@ struct LayoutPreset: Codable, Equatable, Hashable, Identifiable {
         try container.encode(gridColumns, forKey: .gridColumns)
         try container.encode(gridRows, forKey: .gridRows)
         try container.encode(windowSelection, forKey: .windowSelection)
-        try container.encodeIfPresent(triggerRegion, forKey: .triggerRegion)
+        try container.encode(triggerRegions, forKey: .triggerRegions)
         try container.encode(includeInLayoutIndex, forKey: .includeInLayoutIndex)
         try container.encode(includeInMenu, forKey: .includeInMenu)
     }

@@ -9,6 +9,9 @@
 "settingsLayoutInlineTabTitle" = "Layout";
 "settingsWindowAreaInlineTabTitle" = "Window area";
 "settingsTriggerAreaInlineTabTitle" = "Trigger area";
+"settingsTriggerArea1InlineTabTitle" = "Trigger area 1";
+"settingsTriggerArea2InlineTabTitle" = "Trigger area 2";
+"settingsTriggerArea3InlineTabTitle" = "Trigger area 3";
 "settingsDragBehaviorSectionTitle" = "Drag behavior";
 "settingsExclusionsSectionTitle" = "Exclusions";
 "settingsWindowAreaSectionTitle" = "Window area";

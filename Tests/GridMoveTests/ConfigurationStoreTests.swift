@@ -459,10 +459,12 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
               "gridColumns": 12,
               "gridRows": 6,
               "windowSelection": { "x": 0, "y": 0, "w": 4, "h": 6 },
-              "triggerRegion": {
-                "kind": "screen",
-                "gridSelection": { "x": 0, "y": 0, "w": 2, "h": 6 }
-              },
+              "triggerRegions": [
+                {
+                  "kind": "screen",
+                  "gridSelection": { "x": 0, "y": 0, "w": 2, "h": 6 }
+                }
+              ],
               "includeInLayoutIndex": true
             },
             {
@@ -491,7 +493,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(configuration.hotkeys.bindings[0].action == .applyLayoutByIndex(layout: 2))
     #expect(configuration.dragTriggers.preferLayoutMode == true)
     #expect(configuration.dragTriggers.applyLayoutImmediatelyWhileDragging == false)
-    #expect(configuration.layouts[1].triggerRegion == nil)
+    #expect(configuration.layouts[1].triggerRegions.isEmpty)
     #expect(configuration.layouts[1].includeInLayoutIndex == false)
     #expect(configuration.layouts[0].includeInMenu == true)
     #expect(configuration.layouts[1].includeInMenu == true)
