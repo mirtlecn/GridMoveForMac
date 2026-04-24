@@ -93,6 +93,8 @@ final class SettingsInlineTabsView: NSView {
         addSubview(segmentedBridgeView)
         addSubview(segmentedControl)
 
+        contentStackView.alignment = .centerX
+
         NSLayoutConstraint.activate([
             contentBackgroundView.leadingAnchor.constraint(equalTo: leadingAnchor),
             contentBackgroundView.trailingAnchor.constraint(equalTo: trailingAnchor),
@@ -104,10 +106,11 @@ final class SettingsInlineTabsView: NSView {
             segmentedBridgeView.bottomAnchor.constraint(equalTo: segmentedControl.bottomAnchor, constant: SettingsLayoutMetrics.inlineTabBridgeVerticalInset),
             segmentedControl.centerXAnchor.constraint(equalTo: centerXAnchor),
             segmentedControl.topAnchor.constraint(equalTo: topAnchor),
-            contentStackView.leadingAnchor.constraint(equalTo: contentBackgroundView.leadingAnchor, constant: SettingsLayoutMetrics.inlineTabPanelInsets.left),
+            contentStackView.centerXAnchor.constraint(equalTo: contentBackgroundView.centerXAnchor),
+            contentStackView.leadingAnchor.constraint(greaterThanOrEqualTo: contentBackgroundView.leadingAnchor, constant: SettingsLayoutMetrics.inlineTabPanelInsets.left),
             contentStackView.trailingAnchor.constraint(lessThanOrEqualTo: contentBackgroundView.trailingAnchor, constant: -SettingsLayoutMetrics.inlineTabPanelInsets.right),
             contentStackView.topAnchor.constraint(equalTo: contentBackgroundView.topAnchor, constant: SettingsLayoutMetrics.inlineTabPanelInsets.top),
-            contentStackView.bottomAnchor.constraint(equalTo: contentBackgroundView.bottomAnchor, constant: -SettingsLayoutMetrics.inlineTabPanelInsets.bottom),
+            contentStackView.bottomAnchor.constraint(lessThanOrEqualTo: contentBackgroundView.bottomAnchor, constant: -SettingsLayoutMetrics.inlineTabPanelInsets.bottom),
         ])
 
         for (index, tabView) in tabViews.enumerated() {

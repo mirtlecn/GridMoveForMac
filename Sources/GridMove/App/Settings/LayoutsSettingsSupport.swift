@@ -252,7 +252,7 @@ final class TriggerTabContentView: NSView {
             self.menuBarSelection = MenuBarSelection(x: 0, w: layout.gridRows)
         }
 
-        let triggerAreaRow = makeLabeledControlRow(
+        let triggerAreaRow = makeCenteredLabeledControlRow(
             label: UICopy.settingsTriggerAreaLabel,
             control: popupButton
         )
@@ -321,7 +321,7 @@ final class TriggerTabContentView: NSView {
             rows = []
         case .screen:
             rows = [
-                makeLabeledControlRow(
+                makeCenteredLabeledControlRow(
                     label: UICopy.settingsXPositionLabel,
                     control: makeNumericStepperControl(
                         value: screenSelection.x,
@@ -335,7 +335,7 @@ final class TriggerTabContentView: NSView {
                         }
                     )
                 ),
-                makeLabeledControlRow(
+                makeCenteredLabeledControlRow(
                     label: UICopy.settingsYPositionLabel,
                     control: makeNumericStepperControl(
                         value: screenSelection.y,
@@ -349,7 +349,7 @@ final class TriggerTabContentView: NSView {
                         }
                     )
                 ),
-                makeLabeledControlRow(
+                makeCenteredLabeledControlRow(
                     label: UICopy.settingsWidthLabel,
                     control: makeNumericStepperControl(
                         value: screenSelection.w,
@@ -363,7 +363,7 @@ final class TriggerTabContentView: NSView {
                         }
                     )
                 ),
-                makeLabeledControlRow(
+                makeCenteredLabeledControlRow(
                     label: UICopy.settingsHeightLabel,
                     control: makeNumericStepperControl(
                         value: screenSelection.h,
@@ -380,7 +380,7 @@ final class TriggerTabContentView: NSView {
             ]
         case .menuBar:
             rows = [
-                makeLabeledControlRow(
+                makeCenteredLabeledControlRow(
                     label: UICopy.settingsStartLabel,
                     control: makeNumericStepperControl(
                         value: menuBarSelection.x,
@@ -394,7 +394,7 @@ final class TriggerTabContentView: NSView {
                         }
                     )
                 ),
-                makeLabeledControlRow(
+                makeCenteredLabeledControlRow(
                     label: UICopy.settingsWidthLabel,
                     control: makeNumericStepperControl(
                         value: menuBarSelection.w,
@@ -411,7 +411,14 @@ final class TriggerTabContentView: NSView {
             ]
         }
 
-        rows.forEach { dynamicRowsStackView.addArrangedSubview($0) }
+        rows.forEach { row in
+            row.translatesAutoresizingMaskIntoConstraints = false
+            dynamicRowsStackView.addArrangedSubview(row)
+            NSLayoutConstraint.activate([
+                row.leadingAnchor.constraint(equalTo: dynamicRowsStackView.leadingAnchor),
+                row.trailingAnchor.constraint(equalTo: dynamicRowsStackView.trailingAnchor),
+            ])
+        }
     }
 
     private func selectedTitle(for triggerRegion: TriggerRegion?) -> String {

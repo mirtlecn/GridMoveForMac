@@ -58,6 +58,7 @@ extension LayoutsSettingsViewController {
 
     func makeGroupDetailView(group: LayoutGroup, isActive _: Bool) -> NSView {
         let contentStackView = makeSettingsPageStackView()
+        contentStackView.alignment = .centerX
         let nameControl = makeEditableTextControl(value: group.name, width: 220, isEditable: !group.protect) { [weak self] value in
             self?.renameGroup(from: group.name, to: value)
         }
@@ -76,12 +77,12 @@ extension LayoutsSettingsViewController {
             descriptionLabel: includeInCycleDescriptionLabel
         )
         var rows = [
-            makeLabeledControlRow(label: UICopy.settingsNameLabel, control: nameControl),
-            makeLabeledControlRow(label: UICopy.settingsIncludeInGroupCycleLabel, control: includeInCycleContent),
+            makeCenteredLabeledControlRow(label: UICopy.settingsNameLabel, control: nameControl),
+            makeCenteredLabeledControlRow(label: UICopy.settingsIncludeInGroupCycleLabel, control: includeInCycleContent),
         ]
         if group.protect {
             rows.append(
-                makeLabeledControlRow(
+                makeCenteredLabeledControlRow(
                     label: UICopy.settingsNoteLabel,
                     control: makeInfoMessageRow(text: UICopy.settingsProtectedGroupInfo)
                 )
@@ -107,8 +108,9 @@ extension LayoutsSettingsViewController {
             self?.refreshMonitorMetadata()
         }
         currentSetApplyToControl = applyToControl
+        contentStackView.alignment = .centerX
         let formView = makeInlineTabContent(rows: [
-            makeLabeledControlRow(label: UICopy.settingsApplyToLabel, control: applyToControl),
+            makeCenteredLabeledControlRow(label: UICopy.settingsApplyToLabel, control: applyToControl),
         ])
         contentStackView.addArrangedSubview(makeDetailContentContainer(for: formView))
         return makeDetailPanelContainer(contentView: contentStackView)
@@ -222,7 +224,7 @@ extension LayoutsSettingsViewController {
                 SettingsInlineTab(
                     title: UICopy.settingsLayoutInlineTabTitle,
                     contentView: makeInlineTabContent(rows: [
-                        makeLabeledControlRow(
+                        makeCenteredLabeledControlRow(
                             label: UICopy.settingsNameLabel,
                             control: {
                                 let nameControl = makeEditableTextControl(value: layout.name, width: 220) { [weak self] value in
@@ -234,7 +236,7 @@ extension LayoutsSettingsViewController {
                                 return nameControl
                             }()
                         ),
-                        makeLabeledControlRow(
+                        makeCenteredLabeledControlRow(
                             label: UICopy.settingsIncludeInMenuLabel,
                             control: makeEditableCheckboxControl(isOn: layout.includeInMenu) { [weak self] isOn in
                                 self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
@@ -242,7 +244,7 @@ extension LayoutsSettingsViewController {
                                 }
                             }
                         ),
-                        makeLabeledControlRow(
+                        makeCenteredLabeledControlRow(
                             label: UICopy.settingsIncludeInLayoutIndexLabel,
                             control: makeEditableCheckboxControl(isOn: layout.includeInLayoutIndex) { [weak self] isOn in
                                 self?.updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layout.id) { draftLayout in
@@ -250,26 +252,26 @@ extension LayoutsSettingsViewController {
                                 }
                             }
                         ),
-                        makeLabeledControlRow(label: UICopy.settingsGridColumnsLabel, control: makeGridControlRow(control: gridColumnsControl)),
-                        makeLabeledControlRow(label: UICopy.settingsGridRowsLabel, control: makeGridControlRow(control: gridRowsControl)),
+                        makeCenteredLabeledControlRow(label: UICopy.settingsGridColumnsLabel, control: makeGridControlRow(control: gridColumnsControl)),
+                        makeCenteredLabeledControlRow(label: UICopy.settingsGridRowsLabel, control: makeGridControlRow(control: gridRowsControl)),
                     ], width: 460)
                 ),
                 SettingsInlineTab(
                     title: UICopy.settingsWindowAreaInlineTabTitle,
                     contentView: makeInlineTabContent(rows: [
-                        makeLabeledControlRow(
+                        makeCenteredLabeledControlRow(
                             label: UICopy.settingsXPositionLabel,
                             control: makeGridControlRow(control: windowXControl)
                         ),
-                        makeLabeledControlRow(
+                        makeCenteredLabeledControlRow(
                             label: UICopy.settingsYPositionLabel,
                             control: makeGridControlRow(control: windowYControl)
                         ),
-                        makeLabeledControlRow(
+                        makeCenteredLabeledControlRow(
                             label: UICopy.settingsWidthLabel,
                             control: makeGridControlRow(control: windowWidthControl)
                         ),
-                        makeLabeledControlRow(
+                        makeCenteredLabeledControlRow(
                             label: UICopy.settingsHeightLabel,
                             control: makeGridControlRow(control: windowHeightControl)
                         ),
@@ -309,10 +311,10 @@ extension LayoutsSettingsViewController {
         containerView.addSubview(view)
 
         NSLayoutConstraint.activate([
-            view.leadingAnchor.constraint(equalTo: containerView.leadingAnchor, constant: SettingsLayoutMetrics.inlineTabPanelInsets.left),
+            view.leadingAnchor.constraint(equalTo: containerView.leadingAnchor),
+            view.trailingAnchor.constraint(equalTo: containerView.trailingAnchor),
             view.topAnchor.constraint(equalTo: containerView.topAnchor),
             view.bottomAnchor.constraint(equalTo: containerView.bottomAnchor),
-            containerView.trailingAnchor.constraint(greaterThanOrEqualTo: view.trailingAnchor),
         ])
 
         return containerView

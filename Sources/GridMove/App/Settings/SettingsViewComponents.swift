@@ -95,8 +95,49 @@ func makeInlineTabContent(rows: [NSView], width: CGFloat = SettingsLayoutMetrics
     let preferredWidthConstraint = stackView.widthAnchor.constraint(equalToConstant: width)
     preferredWidthConstraint.priority = .defaultHigh
     preferredWidthConstraint.isActive = true
-    rows.forEach { stackView.addArrangedSubview($0) }
+    for row in rows {
+        row.translatesAutoresizingMaskIntoConstraints = false
+        stackView.addArrangedSubview(row)
+        NSLayoutConstraint.activate([
+            row.leadingAnchor.constraint(equalTo: stackView.leadingAnchor),
+            row.trailingAnchor.constraint(equalTo: stackView.trailingAnchor),
+        ])
+    }
     return stackView
+}
+
+@MainActor
+func makeCenteredLabeledControlRow(label: String, control: NSView) -> NSView {
+    let container = NSView()
+    let labelField = makeFieldLabel(label)
+    labelField.alignment = .right
+    labelField.translatesAutoresizingMaskIntoConstraints = false
+    control.translatesAutoresizingMaskIntoConstraints = false
+    container.translatesAutoresizingMaskIntoConstraints = false
+    container.addSubview(labelField)
+    container.addSubview(control)
+
+    let halfGap = SettingsLayoutMetrics.formColumnSpacing / 2
+    let labelHeight = labelField.heightAnchor.constraint(equalTo: container.heightAnchor)
+    labelHeight.priority = .defaultHigh
+    let controlHeight = control.heightAnchor.constraint(equalTo: container.heightAnchor)
+    controlHeight.priority = .defaultHigh
+    NSLayoutConstraint.activate([
+        labelField.trailingAnchor.constraint(equalTo: container.centerXAnchor, constant: -halfGap),
+        labelField.leadingAnchor.constraint(greaterThanOrEqualTo: container.leadingAnchor),
+        control.leadingAnchor.constraint(equalTo: container.centerXAnchor, constant: halfGap),
+        control.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor),
+        labelField.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+        control.centerYAnchor.constraint(equalTo: container.centerYAnchor),
+        container.heightAnchor.constraint(greaterThanOrEqualTo: labelField.heightAnchor),
+        container.heightAnchor.constraint(greaterThanOrEqualTo: control.heightAnchor),
+        labelHeight,
+        controlHeight,
+    ])
+
+    container.setContentHuggingPriority(.required, for: .vertical)
+    container.setContentCompressionResistancePriority(.required, for: .vertical)
+    return container
 }
 
 @MainActor
