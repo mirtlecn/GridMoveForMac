@@ -27,7 +27,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(initialConfiguration.general.activeLayoutGroup == AppConfiguration.defaultGroupName)
     #expect(initialConfiguration.layoutGroups.count == 2)
     #expect(initialConfiguration.layoutGroups[0].sets.count == 1)
-    #expect(initialConfiguration.layouts.count == 11)
+    #expect(initialConfiguration.layouts.count == 10)
     #expect(initialConfiguration.layoutGroupNames() == [AppConfiguration.defaultGroupName, AppConfiguration.fullscreenGroupName])
     #expect(initialConfiguration.appearance.highlightStrokeColor.hexString == "#666666FF")
     #expect(FileManager.default.fileExists(atPath: store.fileURL.path))
@@ -1148,18 +1148,10 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
         "Fullscreen main",
         "Main left 1/2",
         "Main right 1/2",
-        "Fullscreen main (menu bar)",
     ])
     #expect(configuration.layoutGroups[1].sets[1].layouts.map(\.name) == [
         "Fullscreen other",
-        "Fullscreen other (menu bar)",
     ])
-    #expect(configuration.layoutGroups[0].sets[0].layouts[10].includeInLayoutIndex == false)
-    #expect(configuration.layoutGroups[0].sets[0].layouts[10].includeInMenu == false)
-    #expect(configuration.layoutGroups[1].sets[0].layouts[3].includeInLayoutIndex == false)
-    #expect(configuration.layoutGroups[1].sets[0].layouts[3].includeInMenu == false)
-    #expect(configuration.layoutGroups[1].sets[1].layouts[1].includeInLayoutIndex == false)
-    #expect(configuration.layoutGroups[1].sets[1].layouts[1].includeInMenu == false)
     #expect(!hasAltLayoutBinding)
     #expect(hasHyperLayoutFourBinding)
     #expect(!hasFullscreenOrCloseBinding)
@@ -1308,7 +1300,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     #expect(!configuration.layouts.contains(where: { $0.id == "layout-10" }))
     #expect(!configuration.hotkeys.bindings.contains(where: { $0.action == .applyLayoutByIndex(layout: 10) }))
     #expect(!configuration.hotkeys.bindings.contains(where: { $0.action == .applyLayoutByIndex(layout: 9) }))
-    #expect(configuration.layouts.last?.id == "layout-11")
+    #expect(configuration.layouts.last?.id == "layout-9")
 }
 
 @Test func removingLayoutExcludedFromIndexesLeavesDirectBindingsUnchanged() async throws {
@@ -1330,7 +1322,7 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     configuration.removeLayout(id: "layout-13")
 
     let activeGroup = try #require(configuration.activeGroup)
-    #expect(activeGroup.sets[0].layouts.map(\.id) == ["layout-12", "layout-14", "layout-15"])
+    #expect(activeGroup.sets[0].layouts.map(\.id) == ["layout-11", "layout-12"])
     #expect(activeGroup.sets[1].layouts.map(\.id) == otherSetLayoutIDsBeforeRemoval)
 }
 
@@ -1338,17 +1330,17 @@ private func writeLayoutFile(_ fileName: String, json: String, to store: Configu
     var configuration = AppConfiguration.defaultValue
     configuration.general.activeLayoutGroup = AppConfiguration.fullscreenGroupName
 
-    configuration.moveLayout(id: "layout-14", to: 1)
+    configuration.moveLayout(id: "layout-13", to: 1)
 
     let reorderedGroup = try #require(configuration.activeGroup)
-    #expect(reorderedGroup.sets[0].layouts.map(\.id) == ["layout-12", "layout-14", "layout-13", "layout-15"])
-    #expect(reorderedGroup.sets[1].layouts.map(\.id) == ["layout-16", "layout-17"])
+    #expect(reorderedGroup.sets[0].layouts.map(\.id) == ["layout-11", "layout-13", "layout-12"])
+    #expect(reorderedGroup.sets[1].layouts.map(\.id) == ["layout-14"])
 
-    configuration.moveLayout(id: "layout-14", to: configuration.layouts.count)
+    configuration.moveLayout(id: "layout-14", to: 0)
 
     let unchangedGroup = try #require(configuration.activeGroup)
-    #expect(unchangedGroup.sets[0].layouts.map(\.id) == ["layout-12", "layout-14", "layout-13", "layout-15"])
-    #expect(unchangedGroup.sets[1].layouts.map(\.id) == ["layout-16", "layout-17"])
+    #expect(unchangedGroup.sets[0].layouts.map(\.id) == ["layout-11", "layout-13", "layout-12"])
+    #expect(unchangedGroup.sets[1].layouts.map(\.id) == ["layout-14"])
 }
 
 @Test func appearanceSettingsDecodeMissingTriggerStrokeColorWithDefaultValue() async throws {

@@ -19,8 +19,7 @@ extension AppConfiguration {
             LayoutPreset(id: "layout-7", name: UICopy.defaultLayoutNames[6], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 6), triggerRegions: [.screen(GridSelection(x: 11, y: 2, w: 1, h: 2))], includeInLayoutIndex: true),
             LayoutPreset(id: "layout-8", name: UICopy.defaultLayoutNames[7], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 0, w: 4, h: 3), triggerRegions: [.screen(GridSelection(x: 11, y: 0, w: 1, h: 2))], includeInLayoutIndex: true),
             LayoutPreset(id: "layout-9", name: UICopy.defaultLayoutNames[8], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 8, y: 3, w: 4, h: 3), triggerRegions: [.screen(GridSelection(x: 11, y: 4, w: 1, h: 2))], includeInLayoutIndex: true),
-            LayoutPreset(id: "layout-10", name: UICopy.defaultLayoutNames[9], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegions: [.screen(GridSelection(x: 5, y: 0, w: 2, h: 1))], includeInLayoutIndex: true),
-            LayoutPreset(id: "layout-11", name: UICopy.defaultLayoutNames[10], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegions: [.menuBar(MenuBarSelection(x: 0, w: 6))], includeInLayoutIndex: false, includeInMenu: false),
+            LayoutPreset(id: "layout-10", name: UICopy.defaultLayoutNames[9], gridColumns: 12, gridRows: 6, windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6), triggerRegions: [.screen(GridSelection(x: 5, y: 0, w: 2, h: 1)), .menuBar(MenuBarSelection(x: 0, w: 6))], includeInLayoutIndex: true),
         ]
     }
 
@@ -43,16 +42,16 @@ extension AppConfiguration {
                         monitor: .main,
                         layouts: [
                             LayoutPreset(
-                                id: "layout-12",
+                                id: "layout-11",
                                 name: "Fullscreen main",
                                 gridColumns: 12,
                                 gridRows: 6,
                                 windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
-                                triggerRegions: [.screen(GridSelection(x: 0, y: 0, w: 12, h: 6))],
+                                triggerRegions: [.screen(GridSelection(x: 0, y: 0, w: 12, h: 6)), .menuBar(MenuBarSelection(x: 0, w: 6))],
                                 includeInLayoutIndex: true
                             ),
                             LayoutPreset(
-                                id: "layout-13",
+                                id: "layout-12",
                                 name: "Main left 1/2",
                                 gridColumns: 12,
                                 gridRows: 6,
@@ -61,7 +60,7 @@ extension AppConfiguration {
                                 includeInLayoutIndex: true
                             ),
                             LayoutPreset(
-                                id: "layout-14",
+                                id: "layout-13",
                                 name: "Main right 1/2",
                                 gridColumns: 12,
                                 gridRows: 6,
@@ -69,39 +68,19 @@ extension AppConfiguration {
                                 triggerRegions: [.screen(GridSelection(x: 9, y: 0, w: 3, h: 6))],
                                 includeInLayoutIndex: true
                             ),
-                            LayoutPreset(
-                                id: "layout-15",
-                                name: "Fullscreen main (menu bar)",
-                                gridColumns: 12,
-                                gridRows: 6,
-                                windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
-                                triggerRegions: [.menuBar(MenuBarSelection(x: 0, w: 6))],
-                                includeInLayoutIndex: false,
-                                includeInMenu: false
-                            ),
                         ]
                     ),
                     LayoutSet(
                         monitor: .all,
                         layouts: [
                             LayoutPreset(
-                                id: "layout-16",
+                                id: "layout-14",
                                 name: "Fullscreen other",
                                 gridColumns: 12,
                                 gridRows: 6,
                                 windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
-                                triggerRegions: [.screen(GridSelection(x: 0, y: 0, w: 12, h: 6))],
+                                triggerRegions: [.screen(GridSelection(x: 0, y: 0, w: 12, h: 6)), .menuBar(MenuBarSelection(x: 0, w: 6))],
                                 includeInLayoutIndex: true
-                            ),
-                            LayoutPreset(
-                                id: "layout-17",
-                                name: "Fullscreen other (menu bar)",
-                                gridColumns: 12,
-                                gridRows: 6,
-                                windowSelection: GridSelection(x: 0, y: 0, w: 12, h: 6),
-                                triggerRegions: [.menuBar(MenuBarSelection(x: 0, w: 6))],
-                                includeInLayoutIndex: false,
-                                includeInMenu: false
                             ),
                         ]
                     ),

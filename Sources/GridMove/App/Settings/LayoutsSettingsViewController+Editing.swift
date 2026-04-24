@@ -128,8 +128,16 @@ extension LayoutsSettingsViewController {
 
     func updateLayoutTriggerRegion(groupName: String, setIndex: Int, layoutID: String, atIndex triggerIndex: Int, region: TriggerRegion) {
         updateLayout(groupName: groupName, setIndex: setIndex, layoutID: layoutID) { draftLayout in
-            guard draftLayout.triggerRegions.indices.contains(triggerIndex) else { return }
-            draftLayout.triggerRegions[triggerIndex] = region
+            if draftLayout.triggerRegions.indices.contains(triggerIndex) {
+                draftLayout.triggerRegions[triggerIndex] = region
+                return
+            }
+
+            let insertIndex = min(triggerIndex, draftLayout.triggerRegions.count)
+            guard insertIndex <= draftLayout.triggerRegions.count else {
+                return
+            }
+            draftLayout.triggerRegions.insert(region, at: insertIndex)
         }
     }
 
